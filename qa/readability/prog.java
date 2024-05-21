@@ -70,8 +70,8 @@ public class prog implements CobolRunnable {
       module.setProgramId("prog");
 
       b_RETURN_CODE.set((int)0);
-      b_num1.setByte('0');
-      b_num2.fillBytes('0', 2);
+      x_num1 = 0;
+      x_num2 = 0;
       this.initialized = true;
     }
     /* PROCEDURE DIVISION */
@@ -119,11 +119,11 @@ public class prog implements CobolRunnable {
       public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
         /* prog.cbl:13: MOVE */
         {
-          f_num2.moveFrom (f_num1);
+          x_num2 = x_num1;
         }
         /* prog.cbl:14: IF */
         {
-          if (((long)b_num1.cmpNumdisp (1, 0) == 0L))
+          if(x_num1 == 0)
             {
               /* prog.cbl:15: DISPLAY */
               {
@@ -140,7 +140,7 @@ public class prog implements CobolRunnable {
         }
         /* prog.cbl:19: DISPLAY */
         {
-          CobolTerminal.display (0, 1, 1, f_num1);
+          System.out.println(x_num1);
         }
         return Optional.of(CobolControl.pure());
       }
@@ -177,8 +177,6 @@ public class prog implements CobolRunnable {
 
       /* PROGRAM-ID : prog */
       b_RETURN_CODE = new CobolDataStorage(4);	/* RETURN-CODE */
-      b_num1 = new CobolDataStorage(1);	/* num1 */
-      b_num2 = new CobolDataStorage(2);	/* num2 */
 
       /* End of data storage */
 
@@ -188,8 +186,6 @@ public class prog implements CobolRunnable {
       /* Fields */
 
       /* PROGRAM-ID : prog */
-      f_num1	= CobolFieldFactory.makeCobolField(1, b_num1, a_2);	/* num1 */
-      f_num2	= CobolFieldFactory.makeCobolField(2, b_num2, a_1);	/* num2 */
 
       /* End of fields */
 
@@ -219,8 +215,6 @@ public class prog implements CobolRunnable {
 
   /* PROGRAM-ID : prog */
   private CobolDataStorage b_RETURN_CODE;	/* RETURN-CODE */
-  private CobolDataStorage b_num1;	/* num1 */
-  private CobolDataStorage b_num2;	/* num2 */
 
   /* End of data storage */
 
@@ -228,8 +222,8 @@ public class prog implements CobolRunnable {
   /* Fields */
 
   /* PROGRAM-ID : prog */
-  private AbstractCobolField f_num1;	/* num1 */
-  private AbstractCobolField f_num2;	/* num2 */
+  private int x_num1;	/* num1 */
+  private int x_num2;	/* num2 */
 
   /* End of fields */
 
