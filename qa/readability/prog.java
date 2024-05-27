@@ -70,8 +70,12 @@ public class prog implements CobolRunnable {
       module.setProgramId("prog");
 
       b_RETURN_CODE.set((int)0);
-      b_num1.setByte('0');
-      b_num2.fillBytes('0', 2);
+      b_num1.setBytes (str_0_12345, 5);
+      b_num2.setBytes (str_1_9876543, 7);
+      b_num3.setBytes (str_2_456, 3);
+      b_str1.setBytes (str_3_hello, 5);
+      b_str2.memcpy(str_4_world, 5);
+      b_str2.memset(5, 32, 5);      b_str3.setBytes (str_5_abc, 3);
       this.initialized = true;
     }
     /* PROCEDURE DIVISION */
@@ -104,43 +108,185 @@ public class prog implements CobolRunnable {
     new CobolControl(l_prog, CobolControl.LabelType.label) {
       public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
 
-        return Optional.of(contList[l_MAIN]);
+        return Optional.of(contList[l_MAIN_SECTION]);
       }
     },
     /* MAIN SECTION */
-    new CobolControl(l_MAIN, CobolControl.LabelType.section) {
+    new CobolControl(l_MAIN_SECTION, CobolControl.LabelType.section) {
       public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
 
-        return Optional.of(contList[l_MAIN_SECTION__DEFAULT_PARAGRAPH]);
+        return Optional.of(contList[l_MAIN_SECTION__DISPLAY_VALUES]);
       }
     },
-    /* MAIN_SECTION__DEFAULT_PARAGRAPH */
-    new CobolControl(l_MAIN_SECTION__DEFAULT_PARAGRAPH, CobolControl.LabelType.label) {
+    /* DISPLAY-VALUES */
+    new CobolControl(l_MAIN_SECTION__DISPLAY_VALUES, CobolControl.LabelType.label) {
       public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
-        /* prog.cbl:13: MOVE */
+        /* prog.cbl:20: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_num1);
+        }
+        /* prog.cbl:21: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_num2);
+        }
+        /* prog.cbl:22: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_num3);
+        }
+        /* prog.cbl:23: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_str1);
+        }
+        /* prog.cbl:24: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_str2);
+        }
+        /* prog.cbl:25: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_str3);
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__MVOE_VALUES]);
+      }
+    },
+    /* MVOE-VALUES */
+    new CobolControl(l_MAIN_SECTION__MVOE_VALUES, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:28: MOVE */
         {
           f_num2.moveFrom (f_num1);
         }
-        /* prog.cbl:14: IF */
+        /* prog.cbl:29: DISPLAY */
         {
-          if (((long)b_num1.cmpNumdisp (1, 0) == 0L))
+          CobolTerminal.display (0, 1, 1, f_num2);
+        }
+        /* prog.cbl:31: MOVE */
+        {
+          f_num3.moveFrom (f_num1);
+        }
+        /* prog.cbl:32: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_num3);
+        }
+        /* prog.cbl:34: MOVE */
+        {
+          f_str2.moveFrom (f_str1);
+        }
+        /* prog.cbl:35: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_str2);
+        }
+        /* prog.cbl:37: MOVE */
+        {
+          b_str3.setBytes (b_str1, 3);
+        }
+        /* prog.cbl:38: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, f_str3);
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__IF_STATEMENTS]);
+      }
+    },
+    /* IF-STATEMENTS */
+    new CobolControl(l_MAIN_SECTION__IF_STATEMENTS, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:41: IF */
+        {
+          if (((long)b_num1.cmpNumdisp (5, 12345) == 0L))
             {
-              /* prog.cbl:15: DISPLAY */
+              /* prog.cbl:42: DISPLAY */
               {
-                CobolTerminal.display (0, 1, 1, c_1_hellO);
-              }
-            }
-          else
-            {
-              /* prog.cbl:17: DISPLAY */
-              {
-                CobolTerminal.display (0, 1, 1, c_2_world);
+                CobolTerminal.display (0, 1, 1, c_1_OK);
               }
             }
         }
-        /* prog.cbl:19: DISPLAY */
+        /* prog.cbl:45: IF */
         {
-          CobolTerminal.display (0, 1, 1, f_num1);
+          if (((long)b_str1.memcmp (str_6_hello, 5) == 0L))
+            {
+              /* prog.cbl:46: DISPLAY */
+              {
+                CobolTerminal.display (0, 1, 1, c_2_OK);
+              }
+            }
+        }
+        /* prog.cbl:49: IF */
+        {
+          if (((long)f_num1.compareTo (f_str1) != 0L))
+            {
+              /* prog.cbl:50: DISPLAY */
+              {
+                CobolTerminal.display (0, 1, 1, c_3_OK);
+              }
+            }
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__LABEL_TEST_GOTO]);
+      }
+    },
+    /* LABEL-TEST-GOTO */
+    new CobolControl(l_MAIN_SECTION__LABEL_TEST_GOTO, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:54: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_4_OK);
+        }
+        /* prog.cbl:55: GO TO */
+        {
+          if(true) return Optional.of(contList[l_MAIN_SECTION__LABEL_TEST_PERFORM          ]);
+
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__LABEL_PERFORM_PROC]);
+      }
+    },
+    /* LABEL-PERFORM-PROC */
+    new CobolControl(l_MAIN_SECTION__LABEL_PERFORM_PROC, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:57: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_5_OK);
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC1]);
+      }
+    },
+    /* LABEL-PERFORM-THRU-PROC1 */
+    new CobolControl(l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC1, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:59: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_6_OK);
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC2]);
+      }
+    },
+    /* LABEL-PERFORM-THRU-PROC2 */
+    new CobolControl(l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC2, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:61: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_7_OK);
+        }
+
+        return Optional.of(contList[l_MAIN_SECTION__LABEL_TEST_PERFORM]);
+      }
+    },
+    /* LABEL-TEST-PERFORM */
+    new CobolControl(l_MAIN_SECTION__LABEL_TEST_PERFORM, CobolControl.LabelType.label) {
+      public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+        /* prog.cbl:63: PERFORM */
+        /* PERFORM LABEL-PERFORM-THRU-PROC1 THRU LABEL-PERFORM-THRU-PROC2 */
+        CobolControl.performThrough(contList, 
+l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC1, l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC2).run();
+        /* prog.cbl:65: PERFORM */
+        /* PERFORM LABEL-PERFORM-PROC */
+        CobolControl.perform(contList, l_MAIN_SECTION__LABEL_PERFORM_PROC).run();
+        /* prog.cbl:66: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_8_OK);
         }
         return Optional.of(CobolControl.pure());
       }
@@ -177,8 +323,12 @@ public class prog implements CobolRunnable {
 
       /* PROGRAM-ID : prog */
       b_RETURN_CODE = new CobolDataStorage(4);	/* RETURN-CODE */
-      b_num1 = new CobolDataStorage(1);	/* num1 */
-      b_num2 = new CobolDataStorage(2);	/* num2 */
+      b_num1 = new CobolDataStorage(5);	/* num1 */
+      b_num2 = new CobolDataStorage(7);	/* num2 */
+      b_num3 = new CobolDataStorage(3);	/* num3 */
+      b_str1 = new CobolDataStorage(5);	/* str1 */
+      b_str2 = new CobolDataStorage(10);	/* str2 */
+      b_str3 = new CobolDataStorage(3);	/* str3 */
 
       /* End of data storage */
 
@@ -188,16 +338,26 @@ public class prog implements CobolRunnable {
       /* Fields */
 
       /* PROGRAM-ID : prog */
-      f_num1	= CobolFieldFactory.makeCobolField(1, b_num1, a_2);	/* num1 */
-      f_num2	= CobolFieldFactory.makeCobolField(2, b_num2, a_1);	/* num2 */
+      f_num1	= CobolFieldFactory.makeCobolField(5, b_num1, a_1);	/* num1 */
+      f_num2	= CobolFieldFactory.makeCobolField(7, b_num2, a_2);	/* num2 */
+      f_num3	= CobolFieldFactory.makeCobolField(3, b_num3, a_3);	/* num3 */
+      f_str1	= CobolFieldFactory.makeCobolField(5, b_str1, a_4);	/* str1 */
+      f_str2	= CobolFieldFactory.makeCobolField(10, b_str2, a_4);	/* str2 */
+      f_str3	= CobolFieldFactory.makeCobolField(3, b_str3, a_4);	/* str3 */
 
       /* End of fields */
 
 
       /* Constants */
 
-      c_1_hellO	= CobolFieldFactory.makeCobolField(5, str_0_hellO, a_3);
-      c_2_world	= CobolFieldFactory.makeCobolField(5, str_1_world, a_3);
+      c_1_OK	= CobolFieldFactory.makeCobolField(6, str_7_OK, a_4);
+      c_2_OK	= CobolFieldFactory.makeCobolField(6, str_8_OK, a_4);
+      c_3_OK	= CobolFieldFactory.makeCobolField(6, str_9_OK, a_4);
+      c_4_OK	= CobolFieldFactory.makeCobolField(6, str_10_OK, a_4);
+      c_5_OK	= CobolFieldFactory.makeCobolField(6, str_11_OK, a_4);
+      c_6_OK	= CobolFieldFactory.makeCobolField(6, str_12_OK, a_4);
+      c_7_OK	= CobolFieldFactory.makeCobolField(6, str_13_OK, a_4);
+      c_8_OK	= CobolFieldFactory.makeCobolField(6, str_14_OK, a_4);
 
     } catch(NullPointerException e) {
       System.out.println("Error - NullpointerException");
@@ -209,9 +369,10 @@ public class prog implements CobolRunnable {
   private void initAttr() {
     /* Attributes */
 
-    a_1 = new CobolFieldAttribute (16, 2, 0, 0, null);
-    a_2 = new CobolFieldAttribute (16, 1, 0, 0, null);
-    a_3 = new CobolFieldAttribute (33, 0, 0, 0, null);
+    a_1 = new CobolFieldAttribute (16, 5, 0, 0, null);
+    a_2 = new CobolFieldAttribute (16, 7, 0, 0, null);
+    a_3 = new CobolFieldAttribute (16, 3, 0, 0, null);
+    a_4 = new CobolFieldAttribute (33, 0, 0, 0, null);
 
   }
 
@@ -221,6 +382,10 @@ public class prog implements CobolRunnable {
   private CobolDataStorage b_RETURN_CODE;	/* RETURN-CODE */
   private CobolDataStorage b_num1;	/* num1 */
   private CobolDataStorage b_num2;	/* num2 */
+  private CobolDataStorage b_num3;	/* num3 */
+  private CobolDataStorage b_str1;	/* str1 */
+  private CobolDataStorage b_str2;	/* str2 */
+  private CobolDataStorage b_str3;	/* str3 */
 
   /* End of data storage */
 
@@ -230,6 +395,10 @@ public class prog implements CobolRunnable {
   /* PROGRAM-ID : prog */
   private AbstractCobolField f_num1;	/* num1 */
   private AbstractCobolField f_num2;	/* num2 */
+  private AbstractCobolField f_num3;	/* num3 */
+  private AbstractCobolField f_str1;	/* str1 */
+  private AbstractCobolField f_str2;	/* str2 */
+  private AbstractCobolField f_str3;	/* str3 */
 
   /* End of fields */
 
@@ -238,11 +407,18 @@ public class prog implements CobolRunnable {
 
   /* Constants */
 
-  private AbstractCobolField c_2_world;
-  private AbstractCobolField c_1_hellO;
+  private AbstractCobolField c_8_OK;
+  private AbstractCobolField c_7_OK;
+  private AbstractCobolField c_6_OK;
+  private AbstractCobolField c_5_OK;
+  private AbstractCobolField c_4_OK;
+  private AbstractCobolField c_3_OK;
+  private AbstractCobolField c_2_OK;
+  private AbstractCobolField c_1_OK;
 
   /* Attributes */
 
+  private CobolFieldAttribute a_4;
   private CobolFieldAttribute a_3;
   private CobolFieldAttribute a_2;
   private CobolFieldAttribute a_1;
@@ -250,13 +426,33 @@ public class prog implements CobolRunnable {
 
 
   /* String literals */
-  public static final byte[] str_1_world = CobolUtil.stringToBytes("world");
-  public static final byte[] str_0_hellO = CobolUtil.stringToBytes("hellO");
+  public static final byte[] str_14_OK = CobolUtil.stringToBytes("OK 008");
+  public static final byte[] str_13_OK = CobolUtil.stringToBytes("OK 006");
+  public static final byte[] str_12_OK = CobolUtil.stringToBytes("OK 005");
+  public static final byte[] str_11_OK = CobolUtil.stringToBytes("OK 007");
+  public static final byte[] str_10_OK = CobolUtil.stringToBytes("OK 004");
+  public static final byte[] str_9_OK = CobolUtil.stringToBytes("OK 003");
+  public static final byte[] str_8_OK = CobolUtil.stringToBytes("OK 002");
+  public static final byte[] str_7_OK = CobolUtil.stringToBytes("OK 001");
+  public static final byte[] str_6_hello = CobolUtil.stringToBytes("hello");
+  public static final byte[] str_5_abc = CobolUtil.stringToBytes("abc");
+  public static final byte[] str_4_world = CobolUtil.stringToBytes("world");
+  public static final byte[] str_3_hello = CobolUtil.stringToBytes("hello");
+  public static final byte[] str_2_456 = CobolUtil.stringToBytes("456");
+  public static final byte[] str_1_9876543 = CobolUtil.stringToBytes("9876543");
+  public static final byte[] str_0_12345 = CobolUtil.stringToBytes("12345");
 
   /* Sections and Labels */
   private final static int l_prog = 1;
-  private final static int l_MAIN = 2;
-  private final static int l_MAIN_SECTION__DEFAULT_PARAGRAPH = 3;
-  private final static int l_Default_Error_Handler = 4;
+  private final static int l_MAIN_SECTION = 2;
+  private final static int l_MAIN_SECTION__DISPLAY_VALUES = 3;
+  private final static int l_MAIN_SECTION__MVOE_VALUES = 4;
+  private final static int l_MAIN_SECTION__IF_STATEMENTS = 5;
+  private final static int l_MAIN_SECTION__LABEL_TEST_GOTO = 6;
+  private final static int l_MAIN_SECTION__LABEL_PERFORM_PROC = 7;
+  private final static int l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC1 = 8;
+  private final static int l_MAIN_SECTION__LABEL_PERFORM_THRU_PROC2 = 9;
+  private final static int l_MAIN_SECTION__LABEL_TEST_PERFORM = 10;
+  private final static int l_Default_Error_Handler = 11;
 
 }
