@@ -1,9 +1,14 @@
 public class prog {
 
-    private prog$Storage storage;
+    public int num1;
+    public int num2;
+    public int num3;
+    public String str1;
+    public String str2;
+    public String str3;
 
     public prog() {
-        this.storage = new prog$Storage();
+        initStorage();
     }
 
     public static void main(String[] args) {
@@ -24,34 +29,34 @@ public class prog {
             switch(nextLabel) {
                 case prog$Label.DISPLAY_VALUES:
                 {
-                    System.out.println(storage.num1); // prog.cbl:20: DISPLAY
-                    System.out.println(storage.num2); // prog.cbl:21: DISPLAY
-                    System.out.println(storage.num3); // prog.cbl:22: DISPLAY
+                    System.out.println(num1); // prog.cbl:20: DISPLAY
+                    System.out.println(num2); // prog.cbl:21: DISPLAY
+                    System.out.println(num3); // prog.cbl:22: DISPLAY
                     nextLabel = prog$Label.MOVE_VALUES;
                     break;
                 }
                 case prog$Label.MOVE_VALUES:
                 {
-                    storage.num2 = storage.num1; // prog.cbl:28 MOVE
-                    System.out.println(storage.num2); //prog.cbl:29: DISPLAY
-                    storage.num3 = storage.num1; //prog.cbl:31: MOVE
-                    System.out.println(storage.num3); //prog.cbl:32: DISPLAY
-                    storage.str2 = storage.str1.toString(); // prog.cbl:34: MOVE
-                    System.out.println(storage.str2); //prog.cbl:35: DISPLAY
-                    storage.str3 = storage.str1.toString(); //prog.cbl:37: MOVE
-                    System.out.println(storage.str3); //prog.cbl:38: DISPLAY
+                    num2 = num1; // prog.cbl:28 MOVE
+                    System.out.println(num2); //prog.cbl:29: DISPLAY
+                    num3 = num1; //prog.cbl:31: MOVE
+                    System.out.println(num3); //prog.cbl:32: DISPLAY
+                    str2 = str1.toString(); // prog.cbl:34: MOVE
+                    System.out.println(str2); //prog.cbl:35: DISPLAY
+                    str3 = str1.toString(); //prog.cbl:37: MOVE
+                    System.out.println(str3); //prog.cbl:38: DISPLAY
                     nextLabel = prog$Label.IF_STATEMENTS;
                     break;
                 }
                 case prog$Label.IF_STATEMENTS:
                 {
-                    if (storage.num1 == 12345) { // prog.cbl:41: IF
+                    if (num1 == 12345) { // prog.cbl:41: IF
                         System.out.println("OK 001"); // prog.cbl:42: DISPLAY
                     }
-                    if(storage.str1.equals("hello")) { //prog.cbl:45: IF
+                    if(str1.equals("hello")) { //prog.cbl:45: IF
                         System.out.println("OK 002"); // prog.cbl:46: DISPLAY
                     }
-                    if(!storage.str1.equals(String.valueOf(storage.num1))) { //prog.cbl:49: IF
+                    if(!str1.equals(String.valueOf(num1))) { //prog.cbl:49: IF
                         System.out.println("OK 003"); // prog.cbl:50: DISPLAY
                     }
                     nextLabel = prog$Label.LABEL_TEST_GOTO;
@@ -93,5 +98,25 @@ public class prog {
             }
         }
         return 0;
+    }
+
+    public prog initStorage() {
+        num1 = 12345;
+        num2 = 9876543;
+        num3 = 456;
+        str1 = "hello";
+        str2 = "world";
+        str3 = "abc";
+        return this;
+    }
+
+    public prog clearStorage() {
+        num1 = 0;
+        num2 = 0;
+        num3 = 0;
+        str1 = "";
+        str2 = "";
+        str3 = "";
+        return this;
     }
 }
