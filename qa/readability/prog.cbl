@@ -11,7 +11,7 @@
        01 num2 pic 9(7) value 9876543.
        01 num3 pic 9(3) value 456.
 
-       01 str1 pic x(5) value "hello".
+       01 str1 pic x(5) value "12345".
        01 str2 pic x(10) value "world".
        01 str3 pic x(3) value "abc".
 
@@ -36,6 +36,12 @@
 
            move str1 to str3.
            display str3.
+
+           move str1 to num2.
+           display num2.
+
+           move num1 to str2.
+           display str2.
 
        IF-STATEMENTS.
            if num1 = 12345 then
