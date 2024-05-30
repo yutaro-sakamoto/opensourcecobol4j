@@ -19,11 +19,11 @@ jobs:
       run: nuget restore ./win/
 
     - name: Build
-      run: msbuild /p:AdditionalIncludePaths=./:./cobj/:./win:./lib /p:Configuration=Release win/opensourcecobol4j.sln
+      run: msbuild /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
 
     - name: exec cobj
       run: |
-        cd win/x64/Release
+        cd win/x64/Debug
         ./cobj.exe --version
 
     - name: Create a Release
@@ -31,4 +31,4 @@ jobs:
       with:
         body_path: ReleaseNote.md
         files: |
-          win/x64/Release/cobj.exe
+          win/x64/Debug/cobj.exe
