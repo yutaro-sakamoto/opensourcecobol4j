@@ -64,6 +64,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>%INCLUDE%;$(SolutionDir);$(SolutionDir)..\lib;$(SolutionDir)..\cobj;$(SolutionDir)..\;$(IncludePath)</IncludePath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <IncludePath>%INCLUDE%;$(SolutionDir);$(SolutionDir)..\lib;$(SolutionDir)..\cobj;$(SolutionDir)..\;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
