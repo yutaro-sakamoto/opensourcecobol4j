@@ -1,0 +1,24 @@
+name: Create a Release
+
+on:
+  create:
+    tags:
+      - v*.*.*
+
+jobs:
+  publish-cobj-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Restore NuGet packages
+      run: nuget restore ./win/
+
+    - name: Create a Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body_path: ReleaseNote.md
