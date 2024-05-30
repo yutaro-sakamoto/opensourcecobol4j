@@ -1,11 +1,28 @@
 public class prog {
 
-    public int num1;
-    public int num2;
-    public int num3;
-    public String str1;
-    public String str2;
-    public String str3;
+    private int num1;
+    private int num2;
+    private int num3;
+    private String str1;
+    private String str2;
+    private String str3;
+
+    private int returnCode;
+
+
+    // label向けの定数
+    enum CobolLabel {
+        $DEFAULT$,
+        DISPLAY_VALUES,
+        MOVE_VALUES,
+        IF_STATEMENTS,
+        LABEL_TEST_GOTO,
+        LABEL_PERFORM_PROC,
+        LABEL_PERFORM_THRU_PROC1,
+        LABEL_PERFORM_THRU_PROC2,
+        LABEL_TEST_PERFORM,
+        EXIT,
+    }
 
     public prog() {
         initStorage();
@@ -16,26 +33,28 @@ public class prog {
     }
 
     public int runProgram() {
-        return runProgram(1, prog$Label.$EXIT$);
+        returnCode = 0;
+        return runProgram(CobolLabel.DISPLAY_VALUES, CobolLabel.EXIT);
     }
 
-    public int runProgram(int label) {
+    private int runProgram(CobolLabel label) {
         return runProgram(label, label);
     }
 
-    public int runProgram(int beginLabel, int endLabel) {
-        int nextLabel = beginLabel;
-        while(nextLabel != prog$Label.$EXIT$ && nextLabel <= endLabel) {
+    private int runProgram(CobolLabel beginLabel, CobolLabel endLabel) {
+        CobolLabel nextLabel = beginLabel;
+        CobolLabel prevLabel = CobolLabel.$DEFAULT$;
+        while(nextLabel != CobolLabel.EXIT && prevLabel != endLabel) {
             switch(nextLabel) {
-                case prog$Label.DISPLAY_VALUES:
+                case DISPLAY_VALUES:
                 {
                     System.out.println(num1); // prog.cbl:20: DISPLAY
                     System.out.println(num2); // prog.cbl:21: DISPLAY
                     System.out.println(num3); // prog.cbl:22: DISPLAY
-                    nextLabel = prog$Label.MOVE_VALUES;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.MOVE_VALUES;
                     break;
                 }
-                case prog$Label.MOVE_VALUES:
+                case MOVE_VALUES:
                 {
                     num2 = num1; // prog.cbl:28 MOVE
                     System.out.println(num2); //prog.cbl:29: DISPLAY
@@ -49,10 +68,10 @@ public class prog {
                     System.out.println(num2); //prog.cbl:41: DISPLAY
                     str2 = String.valueOf(num1); //prog.cbl:43: MOVE
                     System.out.println(str2); //prog.cbl:44: DISPLAY
-                    nextLabel = prog$Label.IF_STATEMENTS;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.IF_STATEMENTS;
                     break;
                 }
-                case prog$Label.IF_STATEMENTS:
+                case IF_STATEMENTS:
                 {
                     if (num1 == 12345) { // prog.cbl:47: IF
                         System.out.println("OK 001"); // prog.cbl:48: DISPLAY
@@ -63,45 +82,45 @@ public class prog {
                     if(!str1.equals(String.valueOf(num1))) { //prog.cbl:55: IF
                         System.out.println("OK 003"); // prog.cbl:56: DISPLAY
                     }
-                    nextLabel = prog$Label.LABEL_TEST_GOTO;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.LABEL_TEST_GOTO;
                     break;
                 }
-                case prog$Label.LABEL_TEST_GOTO:
+                case LABEL_TEST_GOTO:
                 {
                     System.out.println("OK 004"); // prog.cbl:60: DISPLAY
-                    nextLabel = prog$Label.LABEL_TEST_PERFORM; if(true) break; // prog.cbl:61: GO TO
-                    nextLabel = prog$Label.LABEL_PERFORM_PROC;
+                    nextLabel = CobolLabel.LABEL_TEST_PERFORM; if(true) break; // prog.cbl:61: GO TO
+                    prevLabel = nextLabel; nextLabel = CobolLabel.LABEL_PERFORM_PROC;
                     break;
                 }
-                case prog$Label.LABEL_PERFORM_PROC:
+                case LABEL_PERFORM_PROC:
                 {
                     System.out.println("OK 007"); // prog.cbl:63: DISPLAY
-                    nextLabel = prog$Label.LABEL_PERFORM_THRU_PROC1;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.LABEL_PERFORM_THRU_PROC1;
                     break;
                 }
-                case prog$Label.LABEL_PERFORM_THRU_PROC1:
+                case LABEL_PERFORM_THRU_PROC1:
                 {
                     System.out.println("OK 005"); // prog.cbl:65: DISPLAY
-                    nextLabel = prog$Label.LABEL_PERFORM_THRU_PROC2;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.LABEL_PERFORM_THRU_PROC2;
                     break;
                 }
-                case prog$Label.LABEL_PERFORM_THRU_PROC2:
+                case LABEL_PERFORM_THRU_PROC2:
                 {
                     System.out.println("OK 006"); // prog.cbl:67: DISPLAY
-                    nextLabel = prog$Label.LABEL_TEST_PERFORM;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.LABEL_TEST_PERFORM;
                     break;
                 }
-                case prog$Label.LABEL_TEST_PERFORM:
+                case LABEL_TEST_PERFORM:
                 {
-                    runProgram(prog$Label.LABEL_PERFORM_THRU_PROC1, prog$Label.LABEL_PERFORM_THRU_PROC2); // prog.cbl:69: PERFORM
-                    runProgram(prog$Label.LABEL_PERFORM_PROC); // prog.cbl:71: PERFORM
+                    runProgram(CobolLabel.LABEL_PERFORM_THRU_PROC1, CobolLabel.LABEL_PERFORM_THRU_PROC2); // prog.cbl:69: PERFORM
+                    runProgram(CobolLabel.LABEL_PERFORM_PROC); // prog.cbl:71: PERFORM
                     System.out.println("OK 008"); // prog.cbl:72: DISPLAY
-                    nextLabel = prog$Label.$EXIT$;
+                    prevLabel = nextLabel; nextLabel = CobolLabel.EXIT;
                     break;
                 }
             }
         }
-        return 0;
+        return returnCode;
     }
 
     public prog initStorage() {
