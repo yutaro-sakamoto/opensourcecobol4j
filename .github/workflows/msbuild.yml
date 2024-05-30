@@ -20,15 +20,15 @@ jobs:
       run: nuget restore ./win/
 
     - name: Build
-      run: msbuild /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
+      run: msbuild /p:AdditionalIncludePaths=./:./cobj/:./win:./lib /p:Configuration=Release win/opensourcecobol4j.sln
 
     - name: exec cobj
       run: |
-        cd win/x64/Debug
+        cd win/x64/Release
         ./cobj.exe --version
 
     - name: Upload an artifact
       uses: actions/upload-artifact@v4
       with:
         name: cobj.exe
-        path: win/x64/Debug/cobj.exe
+        path: win/x64/Release/cobj.exe
