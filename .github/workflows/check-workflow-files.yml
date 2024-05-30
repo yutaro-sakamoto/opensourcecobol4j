@@ -1,0 +1,22 @@
+name: Check workflow files
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install actionlint
+        run: |
+          curl -L -o actionlint_1.7.1_linux_amd64.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.1/actionlint_1.7.1_linux_amd64.tar.gz
+          tar zxf actionlint_1.7.1_linux_amd64.tar.gz
+      
+      - name: Run actionlint
+        run: ./actionlint
