@@ -20,7 +20,7 @@
 bin_PROGRAMS = cobj
 cobj_SOURCES = cobj.c cobj.h config.c tree.c tree.h reserved.c error.c \
 	parser.c parser.h scanner.c field.c typeck.c codegen.c \
-	ppparse.c ppparse.h pplex.c \
+	ppparse.c ppparse.h pplex.c simple_typeck.c simple_codegen.c \
 	config.def flag.def warning.def exception.def system.def
 
 cobj_CFLAGS = -I$(top_srcdir)

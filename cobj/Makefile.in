@@ -125,7 +125,8 @@ am_cobj_OBJECTS = cobj-cobj.$(OBJEXT) cobj-config.$(OBJEXT) \
 	cobj-error.$(OBJEXT) cobj-parser.$(OBJEXT) \
 	cobj-scanner.$(OBJEXT) cobj-field.$(OBJEXT) \
 	cobj-typeck.$(OBJEXT) cobj-codegen.$(OBJEXT) \
-	cobj-ppparse.$(OBJEXT) cobj-pplex.$(OBJEXT)
+	cobj-ppparse.$(OBJEXT) cobj-pplex.$(OBJEXT) \
+	cobj-simple_typeck.$(OBJEXT) cobj-simple_codegen.$(OBJEXT)
 cobj_OBJECTS = $(am_cobj_OBJECTS)
 cobj_DEPENDENCIES = $(top_builddir)/lib/libsupport.a
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -155,7 +156,8 @@ am__depfiles_remade = ./$(DEPDIR)/cobj-cobj.Po \
 	./$(DEPDIR)/cobj-error.Po ./$(DEPDIR)/cobj-field.Po \
 	./$(DEPDIR)/cobj-parser.Po ./$(DEPDIR)/cobj-pplex.Po \
 	./$(DEPDIR)/cobj-ppparse.Po ./$(DEPDIR)/cobj-reserved.Po \
-	./$(DEPDIR)/cobj-scanner.Po ./$(DEPDIR)/cobj-tree.Po \
+	./$(DEPDIR)/cobj-scanner.Po ./$(DEPDIR)/cobj-simple_codegen.Po \
+	./$(DEPDIR)/cobj-simple_typeck.Po ./$(DEPDIR)/cobj-tree.Po \
 	./$(DEPDIR)/cobj-typeck.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -365,7 +367,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 cobj_SOURCES = cobj.c cobj.h config.c tree.c tree.h reserved.c error.c \
 	parser.c parser.h scanner.c field.c typeck.c codegen.c \
-	ppparse.c ppparse.h pplex.c \
+	ppparse.c ppparse.h pplex.c simple_typeck.c simple_codegen.c \
 	config.def flag.def warning.def exception.def system.def
 
 cobj_CFLAGS = -I$(top_srcdir)
@@ -477,6 +479,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-ppparse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-reserved.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-scanner.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-simple_codegen.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-simple_typeck.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-tree.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-typeck.Po@am__quote@ # am--include-marker
 
@@ -675,6 +679,34 @@ cobj-pplex.obj: pplex.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-pplex.obj `if test -f 'pplex.c'; then $(CYGPATH_W) 'pplex.c'; else $(CYGPATH_W) '$(srcdir)/pplex.c'; fi`
 
+cobj-simple_typeck.o: simple_typeck.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-simple_typeck.o -MD -MP -MF $(DEPDIR)/cobj-simple_typeck.Tpo -c -o cobj-simple_typeck.o `test -f 'simple_typeck.c' || echo '$(srcdir)/'`simple_typeck.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-simple_typeck.Tpo $(DEPDIR)/cobj-simple_typeck.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='simple_typeck.c' object='cobj-simple_typeck.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-simple_typeck.o `test -f 'simple_typeck.c' || echo '$(srcdir)/'`simple_typeck.c
+
+cobj-simple_typeck.obj: simple_typeck.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-simple_typeck.obj -MD -MP -MF $(DEPDIR)/cobj-simple_typeck.Tpo -c -o cobj-simple_typeck.obj `if test -f 'simple_typeck.c'; then $(CYGPATH_W) 'simple_typeck.c'; else $(CYGPATH_W) '$(srcdir)/simple_typeck.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-simple_typeck.Tpo $(DEPDIR)/cobj-simple_typeck.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='simple_typeck.c' object='cobj-simple_typeck.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-simple_typeck.obj `if test -f 'simple_typeck.c'; then $(CYGPATH_W) 'simple_typeck.c'; else $(CYGPATH_W) '$(srcdir)/simple_typeck.c'; fi`
+
+cobj-simple_codegen.o: simple_codegen.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-simple_codegen.o -MD -MP -MF $(DEPDIR)/cobj-simple_codegen.Tpo -c -o cobj-simple_codegen.o `test -f 'simple_codegen.c' || echo '$(srcdir)/'`simple_codegen.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-simple_codegen.Tpo $(DEPDIR)/cobj-simple_codegen.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='simple_codegen.c' object='cobj-simple_codegen.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-simple_codegen.o `test -f 'simple_codegen.c' || echo '$(srcdir)/'`simple_codegen.c
+
+cobj-simple_codegen.obj: simple_codegen.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-simple_codegen.obj -MD -MP -MF $(DEPDIR)/cobj-simple_codegen.Tpo -c -o cobj-simple_codegen.obj `if test -f 'simple_codegen.c'; then $(CYGPATH_W) 'simple_codegen.c'; else $(CYGPATH_W) '$(srcdir)/simple_codegen.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-simple_codegen.Tpo $(DEPDIR)/cobj-simple_codegen.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='simple_codegen.c' object='cobj-simple_codegen.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-simple_codegen.obj `if test -f 'simple_codegen.c'; then $(CYGPATH_W) 'simple_codegen.c'; else $(CYGPATH_W) '$(srcdir)/simple_codegen.c'; fi`
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
@@ -822,6 +854,8 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cobj-ppparse.Po
 	-rm -f ./$(DEPDIR)/cobj-reserved.Po
 	-rm -f ./$(DEPDIR)/cobj-scanner.Po
+	-rm -f ./$(DEPDIR)/cobj-simple_codegen.Po
+	-rm -f ./$(DEPDIR)/cobj-simple_typeck.Po
 	-rm -f ./$(DEPDIR)/cobj-tree.Po
 	-rm -f ./$(DEPDIR)/cobj-typeck.Po
 	-rm -f Makefile
@@ -879,6 +913,8 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cobj-ppparse.Po
 	-rm -f ./$(DEPDIR)/cobj-reserved.Po
 	-rm -f ./$(DEPDIR)/cobj-scanner.Po
+	-rm -f ./$(DEPDIR)/cobj-simple_codegen.Po
+	-rm -f ./$(DEPDIR)/cobj-simple_typeck.Po
 	-rm -f ./$(DEPDIR)/cobj-tree.Po
 	-rm -f ./$(DEPDIR)/cobj-typeck.Po
 	-rm -f Makefile
