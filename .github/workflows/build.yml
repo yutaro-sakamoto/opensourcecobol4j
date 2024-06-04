@@ -33,21 +33,31 @@ jobs:
         run: |
           apt-get update -y
           apt-get install -y build-essential gettext autoconf
+          echo "JDK_DESCRIPTION=temurin-21" >> "$GITHUB_ENV"
 
       - name: Install dependencies on AlmaLinux 9
         if: inputs.os == 'almalinux:9'
         run: |
           dnf -y update
           dnf install -y gcc make autoconf diffutils gettext
+          echo "JDK_DESCRIPTION=temurin-11" >> "$GITHUB_ENV"
 
       - name: Install dependencies on Amazon Linux 2023
         if: inputs.os == 'amazonlinux:2023'
         run: |
           dnf -y update
           dnf install -y java-21-amazon-corretto-devel gcc make autoconf diffutils gettext tar gzip
+          echo "JDK_DESCRIPTION=amazon-corretto-21" >> "$GITHUB_ENV"
 
       - name: Checkout opensource COBOL 4J
         uses: actions/checkout@v4
+
+      - name: Cache gradle
+        uses: actions/cache@v4
+        with:
+          key: docker-${{ inputs.os }}-${{ env.JDK_DESCRIPTION }}-gradle-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle-wrapper.properties') }}
+          path: |
+            ./libcobj/.gradle
       
       - name: Install opensource COBOL 4J
         run: |
