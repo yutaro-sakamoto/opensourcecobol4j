@@ -55,11 +55,7 @@ jobs:
         run: |
           dnf install -y java-11-amazon-corretto-devel
 
-      - name: Install opensource COBOL 4J
-        run: |
-          tar zxf opensourcecobol4j.tar.gz
-          mv opensourcecobol4j/* .
-          make install
+      - uses: actions/checkout@v4
 
       - name: Run tests cobj-api
         run:
