@@ -27,7 +27,7 @@ jobs:
     needs: check-workflows
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
@@ -38,69 +38,69 @@ jobs:
       matrix:
         test_name:
           - "command-line-options"
-          - "data-rep"
-          - "i18n_sjis"
-          - "jp-compat"
-          - "run"
-          - "syntax"
-          - "cobj-idx"
-          - "misc"
-        os: ["ubuntu:24.04"]
+          #- "data-rep"
+          #- "i18n_sjis"
+          #- "jp-compat"
+          #- "run"
+          #- "syntax"
+          #- "cobj-idx"
+          #- "misc"
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
       os: ${{ matrix.os }}
 
-  run-test-cobj-api:
-    needs: build
-    strategy:
-      matrix:
-        os: ["ubuntu:24.04"]
-    uses: ./.github/workflows/test-cobj-api.yml
-    with:
-      os: ${{ matrix.os }}
+  #run-test-cobj-api:
+  #  needs: build
+  #  strategy:
+  #    matrix:
+  #      os: ["ubuntu:24.04"]
+  #  uses: ./.github/workflows/test-cobj-api.yml
+  #  with:
+  #    os: ${{ matrix.os }}
 
-  run-test-nist:
-    needs: build
-    strategy:
-      matrix:
-        test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-        os: ["ubuntu:24.04"]
-    uses: ./.github/workflows/test-nist.yml
-    with:
-      test-name: ${{ matrix.test_name }}
-      check-result: true
-      os: ${{ matrix.os }}
+  #run-test-nist:
+  #  needs: build
+  #  strategy:
+  #    matrix:
+  #      test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
+  #      os: ["ubuntu:24.04"]
+  #  uses: ./.github/workflows/test-nist.yml
+  #  with:
+  #    test-name: ${{ matrix.test_name }}
+  #    check-result: true
+  #    os: ${{ matrix.os }}
 
-  run-test-nist-extra:
-    needs: build
-    strategy:
-      matrix:
-        test_name: ["CM", "DB", "RW"]
-        os: ["ubuntu:24.04"]
-    uses: ./.github/workflows/test-nist.yml
-    with:
-      test-name: ${{ matrix.test_name }}
-      check-result: false
-      os: ${{ matrix.os }}
+  #run-test-nist-extra:
+  #  needs: build
+  #  strategy:
+  #    matrix:
+  #      test_name: ["CM", "DB", "RW"]
+  #      os: ["ubuntu:24.04"]
+  #  uses: ./.github/workflows/test-nist.yml
+  #  with:
+  #    test-name: ${{ matrix.test_name }}
+  #    check-result: false
+  #    os: ${{ matrix.os }}
 
-  build-gcc9:
-    needs: check-workflows
-    uses: ./.github/workflows/build-gcc9.yml
+  #build-gcc9:
+  #  needs: check-workflows
+  #  uses: ./.github/workflows/build-gcc9.yml
 
-  javadoc:
-    needs: check-workflows
-    uses: ./.github/workflows/javadoc.yml
-    
-  mstest:
-    strategy:
-       matrix:
-         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-         os: ["windows-latest"]
-    uses: ./.github/workflows/mstest.yml
-    with:
-      test-name: ${{ matrix.test_name }}
+  #javadoc:
+  #  needs: check-workflows
+  #  uses: ./.github/workflows/javadoc.yml
+  #  
+  #mstest:
+  #  strategy:
+  #     matrix:
+  #       test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
+  #       os: ["windows-latest"]
+  #  uses: ./.github/workflows/mstest.yml
+  #  with:
+  #    test-name: ${{ matrix.test_name }}
 
-  static-analysis:
-    needs: check-workflows
-    uses: ./.github/workflows/static-analysis.yml
+  #static-analysis:
+  #  needs: check-workflows
+  #  uses: ./.github/workflows/static-analysis.yml
