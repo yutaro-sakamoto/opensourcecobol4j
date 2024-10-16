@@ -33,6 +33,7 @@ jobs:
 
       - name: Check format with google-java-format and clang-format
         run: |
+          clang-format --version
           ./check-format
 
       - name: Run SpotBugs
