@@ -41,6 +41,7 @@ tests/Makefile
 tests/atconfig
 tests/atlocal
 tests/cobol85/Makefile
+tests/cobol85/summary.log
 tests/command-line-options
 tests/data-rep
 tests/i18n_sjis
@@ -49,6 +50,17 @@ tests/jp-compat
 tests/misc
 tests/run
 tests/syntax
+tests/run.log
+tests/cobol85/IC
+tests/cobol85/IF
+tests/cobol85/IX
+tests/cobol85/NC
+tests/cobol85/OB
+tests/cobol85/RL
+tests/cobol85/SG
+tests/cobol85/SM
+tests/cobol85/SQ
+tests/cobol85/ST
 texi/Makefile
 bin/.deps/
 bin/cob-config
