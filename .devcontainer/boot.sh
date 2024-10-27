@@ -6,11 +6,7 @@ make
 make install
 
 # Set up pre-commit hook
-echo << EOF
-#!/bin/bash
+cp .devcontainer/term_settings/pre-commit .git/hooks/pre-commit
 
-./format
-git add -u
-EOF > .git/hooks/pre-commit
-
-chmod +x .git/hooks/pre-commit
+# Set up ~/.bashrc
+cat .devcontainer/term_settings/extra_bashrc.sh >> ~/.bashrc
