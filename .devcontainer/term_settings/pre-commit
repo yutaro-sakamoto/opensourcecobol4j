@@ -1,4 +1,4 @@
 #!/bin/bash
 
-git add -u
 ./format
+git add -u
