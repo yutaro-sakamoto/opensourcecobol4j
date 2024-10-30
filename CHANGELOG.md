@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [1.1.3] - 2024-10-31
+### Add
+* Add a new option `-variable` (#513)
+  * With `-variable`, cobj allows 73 or more characters for each lines
+* Add documentations that describe the structure of libcobj and generated Java files (#492)
+* Add Visual Studio Code Dev Container of opensource COBOL 4J (#529, #530)
+
+### Fix
+* Fix a build error of opensource COBOL 4J on Windows 10 (489)
+* Fix a build error of opensource COBOL 4J on Docker (#511)
+* Fix `cobj-api` (#528)
+  * `cobj-api` previously generated invalid constructors in record classses
+* Fix typos of `cobj-idx` command (#503)
+* Fix a command line option `-fserial-variable` (#534)
+
+### Miscellaneous
+* Improve the readability of variable names containing multi-byte characters (#502)
+* Convert some EVALUATE statements to switch statements (#504)
+
 ## [1.1.2] - 2024-07-31
 ### Added
 * Add a new command line option `-Wtruncate` (#459)
