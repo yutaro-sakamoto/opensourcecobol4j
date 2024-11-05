@@ -219,7 +219,8 @@ misc_DEPENDENCIES = \
 	misc.src/read_prev_after_start.at \
 	misc.src/japanese-char-section-var.at \
 	misc.src/evaluate-switch.at \
-	misc.src/fserial-variable.at
+	misc.src/fserial-variable.at \
+	misc.src/file-handler-japanese.at
 
 EXTRA_DIST = $(srcdir)/package.m4 \
 	$(TESTS) \
