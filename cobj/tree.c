@@ -1724,7 +1724,6 @@ struct cb_file *build_file(cb_tree name) {
   p->cname = to_cname(p->name);
 
   p->organization = cb_default_organization;
-  ;
   p->access_mode = COB_ACCESS_SEQUENTIAL;
   p->handler = CB_LABEL(cb_standard_error_handler);
   p->handler_prog = current_program;
