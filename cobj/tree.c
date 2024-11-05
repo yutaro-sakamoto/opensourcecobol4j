@@ -124,8 +124,13 @@ static char *to_cname(const char *s) {
   unsigned char *p;
 
   copy = strdup(s);
-  for (p = (unsigned char *)copy; *p; p++) {
-    *p = (*p == '-') ? '_' : (unsigned char)toupper(*p);
+  for (p = (unsigned char *)copy; *p;) {
+    if ((0x81 <= *p && *p <= 0x9F) || (0xE0 <= *p && *p <= 0xFC)) {
+      p += 2;
+    } else {
+      *p = (*p == '-') ? '_' : (unsigned char)toupper(*p);
+      p++;
+    }
   }
   return copy;
 }
