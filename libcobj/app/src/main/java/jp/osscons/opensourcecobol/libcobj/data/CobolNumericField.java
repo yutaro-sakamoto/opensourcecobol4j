@@ -767,6 +767,9 @@ public class CobolNumericField extends AbstractCobolField {
 
             /* perform subtraction */
             byte val = data.getByte(sp);
+            if (val >= 0x70) {
+                val -= 0x40;
+            }
             data.setByte(sp, (byte) (val - (i + carry)));
             if (val - (i + carry) < '0') {
                 carry = 1;
