@@ -117,7 +117,7 @@ public class IndexedCursor {
     IndexedCursor cursor = new IndexedCursor(conn, key, tableIndex, isDuplicate, comparator);
     cursor.forwardCursor = getCursor(conn, key, tableIndex, isDuplicate, comparator, true);
     cursor.backwardCursor = getCursor(conn, key, tableIndex, isDuplicate, comparator, false);
-    if (cursor.forwardCursor.isEmpty() || cursor.backwardCursor.isEmpty()) {
+    if (cursor.forwardCursor.isPresent() || cursor.backwardCursor.isPresent()) {
       return Optional.empty();
     } else {
       return Optional.of(cursor);
@@ -167,14 +167,14 @@ public class IndexedCursor {
 
     Optional<FetchResult> reFetchResult =
         reFetch(this.conn, this.tableIndex, this.isDuplicate, result);
-    if (!reFetchResult.isEmpty()) {
+    if (!reFetchResult.isPresent()) {
       FetchResult r = reFetchResult.get();
       newCursor.forwardBuffer.add(r);
       newCursor.cursorIndex = 0;
       newCursor.firstFetch = false;
     }
 
-    if (newCursor.forwardCursor.isEmpty() || newCursor.backwardCursor.isEmpty()) {
+    if (newCursor.forwardCursor.isPresent() || newCursor.backwardCursor.isPresent()) {
       return Optional.empty();
     } else {
       return Optional.of(newCursor);
@@ -398,7 +398,7 @@ public class IndexedCursor {
    *     return Optional.empty()
    */
   public Optional<FetchResult> next() {
-    if (this.forwardCursor.isEmpty()) {
+    if (this.forwardCursor.isPresent()) {
       return Optional.empty();
     }
     ResultSet cursor = this.forwardCursor.get();
@@ -447,7 +447,7 @@ public class IndexedCursor {
    *     return Optional.empty()
    */
   public Optional<FetchResult> prev() {
-    if (this.backwardCursor.isEmpty()) {
+    if (this.backwardCursor.isPresent()) {
       return Optional.empty();
     }
     ResultSet cursor = this.backwardCursor.get();
@@ -512,7 +512,7 @@ public class IndexedCursor {
       boolean forward) {
     final Optional<String> optionalCompOperator = getCompOperator(comparator, forward);
 
-    if (optionalCompOperator.isEmpty()) {
+    if (optionalCompOperator.isPresent()) {
       return Optional.empty();
     }
 
@@ -605,7 +605,7 @@ public class IndexedCursor {
   public boolean moveToFirst() {
     Optional<ResultSet> cursor =
         getCursorForFirstLast(this.tableIndex, this.isDuplicate, CursorReadOption.FIRST);
-    if (cursor.isEmpty()) {
+    if (cursor.isPresent()) {
       return false;
     }
     this.forwardCursor = cursor;
@@ -618,7 +618,7 @@ public class IndexedCursor {
   public boolean moveToLast() {
     Optional<ResultSet> cursor =
         getCursorForFirstLast(this.tableIndex, this.isDuplicate, CursorReadOption.LAST);
-    if (cursor.isEmpty()) {
+    if (cursor.isPresent()) {
       return false;
     }
     this.backwardCursor = cursor;
