@@ -437,6 +437,27 @@ public abstract class AbstractCobolField {
     }
 
     /**
+     * 整数値との比較を行う
+     * @param n 比較対象の整数値
+     * @return 保持する数値データの比較を行い,this&lt;nなら負の値,this==nなら0,this&gt;nなら正の値
+     */
+    public int cmpInteger(long n) {
+        CobolDecimal d1 = this.getDecimal();
+        CobolDecimal d2 = new CobolDecimal(n);
+        d2.setScale(0);
+        return d1.compareTo(d2);
+    }
+
+    /**
+     * 整数値との比較を行う
+     * @param n 比較対象の整数値
+     * @return 保持する数値データの比較を行い,this&lt;nなら負の値,this==nなら0,this&gt;nなら正の値
+     */
+    public int cmpInteger(int n) {
+        return this.cmpInteger((long) n);
+    }
+
+    /**
      * TODO: 準備中
      *
      * @param n TODO: 準備中

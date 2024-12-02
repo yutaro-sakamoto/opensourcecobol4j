@@ -114,16 +114,6 @@ static const char *const bin_set_funcs[] = {NULL,
                                             "setSwpS56Binary",
                                             "setSwpS64Binary"};
 
-static const char *const bin_compare_funcs[] = {
-    "cmpU8Binary",     "cmpU16Binary",    "cmpU24Binary",    "cmpU32Binary",
-    "cmpU40Binary",    "cmpU48Binary",    "cmpU56Binary",    "cmpU64Binary",
-    "cmpS8Binary",     "cmpS16Binary",    "cmpS24Binary",    "cmpS32Binary",
-    "cmpS40Binary",    "cmpS48Binary",    "cmpS56Binary",    "cmpS64Binary",
-    "cmpU8Binary",     "cmpSwpU16Binary", "cmpSwpU24Binary", "cmpSwpU32Binary",
-    "cmpSwpU40Binary", "cmpSwpU48Binary", "cmpSwpU56Binary", "cmpSwpU64Binary",
-    "cmpS8Binary",     "cmpSwpS16Binary", "cmpSwpS24Binary", "cmpSwpS32Binary",
-    "cmpSwpS40Binary", "cmpSwpS48Binary", "cmpSwpS56Binary", "cmpSwpS64Binary"};
-
 static const char *const bin_add_funcs[] = {
     "addU8Binary",     "addU16Binary",    "addU24Binary",    "addU32Binary",
     "addU40Binary",    "addU48Binary",    "addU56Binary",    "addU64Binary",
@@ -2245,7 +2235,7 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
     if (!fy->pic->have_sign &&
         (fy->usage == CB_USAGE_BINARY || fy->usage == CB_USAGE_COMP_5 ||
          fy->usage == CB_USAGE_COMP_X)) {
-      return cb_build_method_call_2("cmpUint", p->x,
+      return cb_build_method_call_2("cmpInteger", p->x,
                                     cb_build_cast_integer(p->y));
     }
   }
@@ -2253,10 +2243,10 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
     struct cb_field *f = cb_field(p->x);
     if (!f->pic->scale && f->usage == CB_USAGE_PACKED) {
       if (f->pic->digits < 10) {
-        return cb_build_method_call_2("cmpInt", p->x,
+        return cb_build_method_call_2("cmpInteger", p->x,
                                       cb_build_cast_integer(p->y));
       } else {
-        return cb_build_method_call_2("cmpInt", p->x,
+        return cb_build_method_call_2("cmpInteger", p->x,
                                       cb_build_cast_integer(p->y));
       }
     }
@@ -2287,16 +2277,12 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
     if (!f->pic->scale &&
         (f->usage == CB_USAGE_BINARY || f->usage == CB_USAGE_COMP_5 ||
          f->usage == CB_USAGE_INDEX || f->usage == CB_USAGE_COMP_X)) {
-      size_t n = (f->size - 1) + (8 * (f->pic->have_sign ? 1 : 0)) +
-                 (16 * (f->flag_binary_swap ? 1 : 0));
-      const char *s = bin_compare_funcs[n];
-      if (s) {
-        return cb_build_method_call_2(s, cb_build_cast_address(p->x),
-                                      cb_build_cast_integer(p->y));
-      }
+      return cb_build_method_call_2("cmpInteger", p->x,
+                                    cb_build_cast_integer(p->y));
     }
   }
-  return cb_build_method_call_2("cmpInt", p->x, cb_build_cast_integer(p->y));
+  return cb_build_method_call_2("cmpInteger", p->x,
+                                cb_build_cast_integer(p->y));
 }
 
 static int cb_chk_num_cond(cb_tree x, cb_tree y) {
