@@ -419,41 +419,11 @@ public abstract class AbstractCobolField {
      * @param n TODO: 準備中
      * @return TODO: 準備中
      */
-    public int cmpInt(int n) {
+    public int cmpInteger(long n) {
         CobolDecimal d1 = this.getDecimal();
         CobolDecimal d2 = new CobolDecimal(n);
         d2.setScale(0);
         return d1.compareTo(d2);
-    }
-
-    /**
-     * TODO: 準備中
-     *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
-     */
-    public int cmpInt(long n) {
-        return this.cmpInt((int) n);
-    }
-
-    /**
-     * TODO: 準備中
-     *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
-     */
-    public int cmpUint(int n) {
-        return this.cmpInt(n);
-    }
-
-    /**
-     * TODO: 準備中
-     *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
-     */
-    public int cmpUint(long n) {
-        return this.cmpUint((int) n);
     }
 
     /**
@@ -779,7 +749,7 @@ public abstract class AbstractCobolField {
         }
         if (attr2.isTypeAlphanumAll()) {
             if (f2 == CobolConstant.zero && attr1.isTypeNumeric()) {
-                return f1.cmpInt(0);
+                return f1.cmpInteger(0);
             } else if (f2.getSize() == 1) {
                 return f1.cmpChar(f2.getDataStorage().getByte(0));
             } else {
@@ -787,7 +757,7 @@ public abstract class AbstractCobolField {
             }
         } else if (attr1.isTypeAlphanumAll()) {
             if (f1 == CobolConstant.zero && attr2.isTypeNumeric()) {
-                return -f2.cmpInt(0);
+                return -f2.cmpInteger(0);
             } else if (f1.getSize() == 1) {
                 return -f2.cmpChar(f1.getDataStorage().getByte(0));
             } else {
@@ -795,7 +765,7 @@ public abstract class AbstractCobolField {
             }
         } else if (attr2.isTypeNationalAll()) {
             if (f2 == CobolConstant.zero && attr1.isTypeNumeric()) {
-                return f1.cmpInt(0);
+                return f1.cmpInteger(0);
             } else if (f2.getSize() == 1) {
                 return f1.cmpChar(f2.getDataStorage().getByte(0));
             } else {
@@ -803,7 +773,7 @@ public abstract class AbstractCobolField {
             }
         } else if (attr1.isTypeNationalAll()) {
             if (f1 == CobolConstant.zero && attr2.isTypeNumeric()) {
-                return -f2.cmpInt(0);
+                return -f2.cmpInteger(0);
             } else if (f1.getSize() == 1) {
                 return -f2.cmpChar(f1.getDataStorage().getByte(0));
             } else {

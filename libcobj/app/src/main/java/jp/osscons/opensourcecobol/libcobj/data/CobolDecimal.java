@@ -68,7 +68,7 @@ public class CobolDecimal {
     static byte[] packedValue = new byte[20];
 
     /** TODO: 準備中 */
-    static int packedValueInt = 0;
+    static long packedValueInt = 0;
 
     /** TODO: 準備中 */
     public static void cobInitNumeric() {

@@ -750,9 +750,9 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     @Override
-    public int cmpInt(int n) {
+    public int cmpInteger(long n) {
         if (this.getAttribute().getDigits() < 10) {
-            return this.cmpPackedInt(n);
+            return this.cmpPackedLong(n);
         } else {
             return this.cmpPacked(n);
         }
@@ -764,7 +764,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
      * @param n TODO: 準備中
      * @return TODO: 準備中
      */
-    private int cmpPackedInt(int n) {
+    private int cmpPackedLong(long n) {
         CobolDataStorage data = this.getDataStorage();
         int val = 0;
         int p = 0;
@@ -790,7 +790,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
      * @param n TODO: 準備中
      * @return TODO: 準備中
      */
-    private int cmpPacked(int n) {
+    private int cmpPacked(long n) {
         int sign = this.getSign();
         if (sign >= 0 && n < 0) {
             return 1;
@@ -829,7 +829,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
                 p--;
                 n /= 10;
                 while (n != 0) {
-                    size = n % 100;
+                    size = (int)(n % 100);
                     CobolDecimal.packedValue[p] = (byte) ((size % 10) | ((size / 10) << 4));
                     n /= 100;
                     p--;

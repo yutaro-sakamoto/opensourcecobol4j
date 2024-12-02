@@ -2245,7 +2245,7 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
     if (!fy->pic->have_sign &&
         (fy->usage == CB_USAGE_BINARY || fy->usage == CB_USAGE_COMP_5 ||
          fy->usage == CB_USAGE_COMP_X)) {
-      return cb_build_method_call_2("cmpUint", p->x,
+      return cb_build_method_call_2("cmpInteger", p->x,
                                     cb_build_cast_integer(p->y));
     }
   }
@@ -2253,10 +2253,10 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
     struct cb_field *f = cb_field(p->x);
     if (!f->pic->scale && f->usage == CB_USAGE_PACKED) {
       if (f->pic->digits < 10) {
-        return cb_build_method_call_2("cmpInt", p->x,
+        return cb_build_method_call_2("cmpInteger", p->x,
                                       cb_build_cast_integer(p->y));
       } else {
-        return cb_build_method_call_2("cmpInt", p->x,
+        return cb_build_method_call_2("cmpInteger", p->x,
                                       cb_build_cast_integer(p->y));
       }
     }
@@ -2296,7 +2296,7 @@ static cb_tree cb_build_optim_cond(struct cb_binary_op *p) {
       }
     }
   }
-  return cb_build_method_call_2("cmpInt", p->x, cb_build_cast_integer(p->y));
+  return cb_build_method_call_2("cmpInteger", p->x, cb_build_cast_integer(p->y));
 }
 
 static int cb_chk_num_cond(cb_tree x, cb_tree y) {

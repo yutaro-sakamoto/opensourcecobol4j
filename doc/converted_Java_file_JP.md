@@ -159,7 +159,7 @@ IF文やPERFORM VARYING文は、それぞれJavaのif文やfor文に変換され
 ```java
         /* a.cbl:6: IF */
         {
-          if (((long)c_1.cmpInt (1) == 0L))
+          if (((long)c_1.cmpInteger (1) == 0L))
             {
               /* a.cbl:7: DISPLAY */
               {
