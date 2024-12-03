@@ -1277,3 +1277,261 @@ AT_CHECK([java prog], [0],
 ])
 
 AT_CLEANUP
+
+# compare COMP data
+
+AT_SETUP([compare COMP])
+
+AT_DATA([prog.cbl],[
+       identification division.
+       program-id. prog.
+       data division.
+       working-storage section.
+       01 u9 pic 9(9) comp.
+       01 u18 pic 9(18) comp.
+       01 s4 pic s9(4) comp.
+       01 s9 pic s9(9) comp.
+       01 s18 pic s9(18) comp.
+       procedure division.
+       move 2 to u9. move -1 to s4.
+       if u9 <= s4 then display "ng 00-00" end-if.
+       move 2 to u9. move -3 to s4.
+       if u9 <= s4 then display "ng 00-01" end-if.
+       move 2 to u9. move -9999 to s4.
+       if u9 <= s4 then display "ng 00-02" end-if.
+       move 2 to u9. move 0 to s4.
+       if u9 <= s4 then display "ng 00-03" end-if.
+       move 2 to u9. move 1 to s4.
+       if u9 <= s4 then display "ng 00-04" end-if.
+       move 2 to u9. move 2 to s4.
+       if u9 <> s4 then display "ng 00-05" end-if.
+       move 2 to u9. move 3 to s4.
+       if u9 >= s4 then display "ng 00-06" end-if.
+       move 2 to u9. move 9999 to s4.
+       if u9 >= s4 then display "ng 00-06" end-if.
+       move 0 to u9. move -1 to s4.
+       if u9 <= s4 then display "ng 00-07" end-if.
+       move 0 to u9. move -3 to s4.
+       if u9 <= s4 then display "ng 00-08" end-if.
+       move 0 to u9. move -9999 to s4.
+       if u9 <= s4 then display "ng 00-09" end-if.
+       move 0 to u9. move 0 to s4.
+       if u9 <> s4 then display "ng 00-10" end-if.
+       move 0 to u9. move 1 to s4.
+       if u9 >= s4 then display "ng 00-11" end-if.
+       move 0 to u9. move 2 to s4.
+       if u9 >= s4 then display "ng 00-12" end-if.
+       move 0 to u9. move 3 to s4.
+       if u9 >= s4 then display "ng 00-13" end-if.
+       move 0 to u9. move 9999 to s4.
+       if u9 >= s4 then display "ng 00-14" end-if.
+       move 999999999 to u9. move -1 to s4.
+       if u9 <= s4 then display "ng 00-15" end-if.
+       move 999999999 to u9. move -3 to s4.
+       if u9 <= s4 then display "ng 00-16" end-if.
+       move 999999999 to u9. move -9999 to s4.
+       if u9 <= s4 then display "ng 00-17" end-if.
+       move 999999999 to u9. move 0 to s4.
+       if u9 <= s4 then display "ng 00-18" end-if.
+       move 999999999 to u9. move 1 to s4.
+       if u9 <= s4 then display "ng 00-19" end-if.
+       move 999999999 to u9. move 2 to s4.
+       if u9 <= s4 then display "ng 00-20" end-if.
+       move 999999999 to u9. move 9999 to s4.
+       if u9 <= s4 then display "ng 00-21" end-if.
+      ******************************************************************
+       move 2 to u9. move -1 to s9.
+       if u9 <= s9 then display "ng 01-00" end-if.
+       move 2 to u9. move -3 to s9.
+       if u9 <= s9 then display "ng 01-01" end-if.
+       move 2 to u9. move -999999999 to s9.
+       if u9 <= s9 then display "ng 01-02" end-if.
+       move 2 to u9. move 0 to s9.
+       if u9 <= s9 then display "ng 01-03" end-if.
+       move 2 to u9. move 1 to s9.
+       if u9 <= s9 then display "ng 01-04" end-if.
+       move 2 to u9. move 2 to s9.
+       if u9 <> s9 then display "ng 01-05" end-if.
+       move 2 to u9. move 3 to s9.
+       if u9 >= s9 then display "ng 01-06" end-if.
+       move 2 to u9. move 999999999 to s9.
+       if u9 >= s9 then display "ng 01-06" end-if.
+       move 0 to u9. move -1 to s9.
+       if u9 <= s9 then display "ng 01-07" end-if.
+       move 0 to u9. move -3 to s9.
+       if u9 <= s9 then display "ng 01-08" end-if.
+       move 0 to u9. move -999999999 to s9.
+       if u9 <= s9 then display "ng 01-09" end-if.
+       move 0 to u9. move 0 to s9.
+       if u9 <> s9 then display "ng 01-10" end-if.
+       move 0 to u9. move 1 to s9.
+       if u9 >= s9 then display "ng 01-11" end-if.
+       move 0 to u9. move 2 to s9.
+       if u9 >= s9 then display "ng 01-12" end-if.
+       move 0 to u9. move 3 to s9.
+       if u9 >= s9 then display "ng 01-13" end-if.
+       move 0 to u9. move 999999999 to s9.
+       if u9 >= s9 then display "ng 01-14" end-if.
+       move 999999999 to u9. move -1 to s9.
+       if u9 <= s9 then display "ng 01-15" end-if.
+       move 999999999 to u9. move -3 to s9.
+       if u9 <= s9 then display "ng 01-16" end-if.
+       move 999999999 to u9. move -999999999 to s9.
+       if u9 <= s9 then display "ng 01-17" end-if.
+       move 999999999 to u9. move 0 to s9.
+       if u9 <= s9 then display "ng 01-18" end-if.
+       move 999999999 to u9. move 1 to s9.
+       if u9 <= s9 then display "ng 01-19" end-if.
+       move 999999999 to u9. move 2 to s9.
+       if u9 <= s9 then display "ng 01-20" end-if.
+       move 999999999 to u9. move 999999999 to s9.
+       if u9 <> s9 then display "ng 01-21" end-if.
+      ******************************************************************
+       move 2 to u9. move -1 to s18.
+       if u9 <= s18 then display "ng 02-00" end-if.
+       move 2 to u9. move -3 to s18.
+       if u9 <= s18 then display "ng 02-01" end-if.
+       move 2 to u9. move -999999999999999999 to s18.
+       if u9 <= s18 then display "ng 02-02" end-if.
+       move 2 to u9. move 0 to s18.
+       if u9 <= s18 then display "ng 02-03" end-if.
+       move 2 to u9. move 1 to s18.
+       if u9 <= s18 then display "ng 02-04" end-if.
+       move 2 to u9. move 2 to s18.
+       if u9 <> s18 then display "ng 02-05" end-if.
+       move 2 to u9. move 3 to s18.
+       if u9 >= s18 then display "ng 02-06" end-if.
+       move 2 to u9. move 999999999999999999 to s18.
+       if u9 >= s18 then display "ng 02-06" end-if.
+       move 0 to u9. move -1 to s18.
+       if u9 <= s18 then display "ng 02-07" end-if.
+       move 0 to u9. move -3 to s18.
+       if u9 <= s18 then display "ng 02-08" end-if.
+       move 0 to u9. move -999999999999999999 to s18.
+       if u9 <= s18 then display "ng 02-09" end-if.
+       move 0 to u9. move 0 to s18.
+       if u9 <> s18 then display "ng 02-10" end-if.
+       move 0 to u9. move 1 to s18.
+       if u9 >= s18 then display "ng 02-11" end-if.
+       move 0 to u9. move 2 to s18.
+       if u9 >= s18 then display "ng 02-12" end-if.
+       move 0 to u9. move 3 to s18.
+       if u9 >= s18 then display "ng 02-13" end-if.
+       move 0 to u9. move 999999999999999999 to s18.
+       if u9 >= s18 then display "ng 02-14" end-if.
+       move 999999999 to u9. move -1 to s18.
+       if u9 <= s18 then display "ng 02-15" end-if.
+       move 999999999 to u9. move -3 to s18.
+       if u9 <= s18 then display "ng 02-16" end-if.
+       move 999999999 to u9. move -999999999999999999 to s18.
+       if u9 <= s18 then display "ng 02-17" end-if.
+       move 999999999 to u9. move 0 to s18.
+       if u9 <= s18 then display "ng 02-18" end-if.
+       move 999999999 to u9. move 1 to s18.
+       if u9 <= s18 then display "ng 02-19" end-if.
+       move 999999999 to u9. move 2 to s18.
+       if u9 <= s18 then display "ng 02-20" end-if.
+       move 999999999 to u9. move 999999999999999999 to s18.
+       if u9 >= s18 then display "ng 02-21" end-if.
+      ******************************************************************
+       move 2 to u18. move -1 to s9.
+       if u18 <= s9 then display "ng 03-00" end-if.
+       move 2 to u18. move -3 to s9.
+       if u18 <= s9 then display "ng 03-01" end-if.
+       move 2 to u18. move -999999999 to s9.
+       if u18 <= s9 then display "ng 03-02" end-if.
+       move 2 to u18. move 0 to s9.
+       if u18 <= s9 then display "ng 03-03" end-if.
+       move 2 to u18. move 1 to s9.
+       if u18 <= s9 then display "ng 03-04" end-if.
+       move 2 to u18. move 2 to s9.
+       if u18 <> s9 then display "ng 03-05" end-if.
+       move 2 to u18. move 3 to s9.
+       if u18 >= s9 then display "ng 03-06" end-if.
+       move 2 to u18. move 999999999 to s9.
+       if u18 >= s9 then display "ng 03-06" end-if.
+       move 0 to u18. move -1 to s9.
+       if u18 <= s9 then display "ng 03-07" end-if.
+       move 0 to u18. move -3 to s9.
+       if u18 <= s9 then display "ng 03-08" end-if.
+       move 0 to u18. move -999999999 to s9.
+       if u18 <= s9 then display "ng 03-09" end-if.
+       move 0 to u18. move 0 to s9.
+       if u18 <> s9 then display "ng 03-10" end-if.
+       move 0 to u18. move 1 to s9.
+       if u18 >= s9 then display "ng 03-11" end-if.
+       move 0 to u18. move 2 to s9.
+       if u18 >= s9 then display "ng 03-12" end-if.
+       move 0 to u18. move 3 to s9.
+       if u18 >= s9 then display "ng 03-13" end-if.
+       move 0 to u18. move 999999999 to s9.
+       if u18 >= s9 then display "ng 03-14" end-if.
+       move 999999999999999999 to u18. move -1 to s9.
+       if u18 <= s9 then display "ng 03-15" end-if.
+       move 999999999999999999 to u18. move -3 to s9.
+       if u18 <= s9 then display "ng 03-16" end-if.
+       move 999999999999999999 to u18. move -999999999 to s9.
+       if u18 <= s9 then display "ng 03-17" end-if.
+       move 999999999999999999 to u18. move 0 to s9.
+       if u18 <= s9 then display "ng 03-18" end-if.
+       move 999999999999999999 to u18. move 1 to s9.
+       if u18 <= s9 then display "ng 03-19" end-if.
+       move 999999999999999999 to u18. move 2 to s9.
+       if u18 <= s9 then display "ng 03-20" end-if.
+       move 999999999999999999 to u18. move 999999999 to s9.
+       if u18 <= s9 then display "ng 03-21" end-if.
+      ******************************************************************
+       move 2 to u18. move -1 to s18.
+       if u18 <= s18 then display "ng 04-00" end-if.
+       move 2 to u18. move -3 to s18.
+       if u18 <= s18 then display "ng 04-01" end-if.
+       move 2 to u18. move -999999999999999999 to s18.
+       if u18 <= s18 then display "ng 04-02" end-if.
+       move 2 to u18. move 0 to s18.
+       if u18 <= s18 then display "ng 04-03" end-if.
+       move 2 to u18. move 1 to s18.
+       if u18 <= s18 then display "ng 04-04" end-if.
+       move 2 to u18. move 2 to s18.
+       if u18 <> s18 then display "ng 04-05" end-if.
+       move 2 to u18. move 3 to s18.
+       if u18 >= s18 then display "ng 04-06" end-if.
+       move 2 to u18. move 999999999999999999 to s18.
+       if u18 >= s18 then display "ng 04-06" end-if.
+       move 0 to u18. move -1 to s18.
+       if u18 <= s18 then display "ng 04-07" end-if.
+       move 0 to u18. move -3 to s18.
+       if u18 <= s18 then display "ng 04-08" end-if.
+       move 0 to u18. move -999999999999999999 to s18.
+       if u18 <= s18 then display "ng 04-09" end-if.
+       move 0 to u18. move 0 to s18.
+       if u18 <> s18 then display "ng 04-10" end-if.
+       move 0 to u18. move 1 to s18.
+       if u18 >= s18 then display "ng 04-11" end-if.
+       move 0 to u18. move 2 to s18.
+       if u18 >= s18 then display "ng 04-12" end-if.
+       move 0 to u18. move 3 to s18.
+       if u18 >= s18 then display "ng 04-13" end-if.
+       move 0 to u18. move 999999999999999999 to s18.
+       if u18 >= s18 then display "ng 04-14" end-if.
+       move 999999999999999999 to u18. move -1 to s18.
+       if u18 <= s18 then display "ng 04-15" end-if.
+       move 999999999999999999 to u18. move -3 to s18.
+       if u18 <= s18 then display "ng 04-16" end-if.
+       move 999999999999999999 to u18. move -999999999999999999 to s18.
+       if u18 <= s18 then display "ng 04-17" end-if.
+       move 999999999999999999 to u18. move 0 to s18.
+       if u18 <= s18 then display "ng 04-18" end-if.
+       move 999999999999999999 to u18. move 1 to s18.
+       if u18 <= s18 then display "ng 04-19" end-if.
+       move 999999999999999999 to u18. move 2 to s18.
+       if u18 <= s18 then display "ng 04-20" end-if.
+       move 999999999999999999 to u18. move 999999999999999999 to s18.
+       if u18 <> s18 then display "ng 04-21" end-if.
+      ******************************************************************
+           stop run.
+])
+
+AT_CHECK([${COMPILE} prog.cbl])
+AT_CHECK([java prog])
+
+AT_CLEANUP
