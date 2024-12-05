@@ -30,7 +30,7 @@ jobs:
         if: inputs.os != 'amazonlinux:2023'
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: '21'
 
       - name: Install dependencies on Ubuntu 24.04
         if: inputs.os == 'ubuntu:24.04'
