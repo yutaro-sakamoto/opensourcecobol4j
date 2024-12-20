@@ -95,8 +95,6 @@ jobs:
 
   windows-build:
     needs: check-workflows
-    strategy:
-       fail-fast: false
     uses: ./.github/workflows/windows-build.yml
     with: 
       upload-artifacts: true
