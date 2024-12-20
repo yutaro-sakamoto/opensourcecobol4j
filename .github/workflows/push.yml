@@ -29,6 +29,16 @@ jobs:
     with:
       os: ${{ matrix.os }}
 
+  build-utf8:
+    needs: check-workflows
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ${{ matrix.os }}
+      configure-args: --enable-utf8
+
   run-test-other:
     needs: build
     strategy:
@@ -37,6 +47,25 @@ jobs:
           - "command-line-options"
           - "data-rep"
           - "i18n_sjis"
+          - "jp-compat"
+          - "run"
+          - "syntax"
+          - "cobj-idx"
+          - "misc"
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-other.yml
+    with:
+      test-name: ${{ matrix.test_name }}
+      os: ${{ matrix.os }}
+  
+  run-test-other-utf8:
+    needs: build-utf8
+    strategy:
+      matrix:
+        test_name:
+          - "command-line-options"
+          - "data-rep"
+          - "cobol_utf8"
           - "jp-compat"
           - "run"
           - "syntax"
@@ -59,6 +88,18 @@ jobs:
 
   run-test-nist:
     needs: build
+    strategy:
+      matrix:
+        test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-nist.yml
+    with:
+      test-name: ${{ matrix.test_name }}
+      check-result: true
+      os: ${{ matrix.os }}
+
+  run-test-nist-utf8:
+    needs: build-utf8
     strategy:
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]

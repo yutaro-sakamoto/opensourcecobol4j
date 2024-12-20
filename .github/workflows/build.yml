@@ -6,6 +6,10 @@ on:
       os:
         required: true
         type: string
+      configure-args:
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -51,7 +55,7 @@ jobs:
       
       - name: Install opensource COBOL 4J
         run: |
-          ./configure --prefix=/usr/ CFLAGS=-Werror
+          ./configure --prefix=/usr/ CFLAGS=-Werror ${{ inputs.configure-args }}
           make
           echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
 
