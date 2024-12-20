@@ -42,6 +42,7 @@ jobs:
   run-test-other:
     needs: build
     strategy:
+      fail-fast: false
       matrix:
         test_name:
           - "command-line-options"
@@ -61,6 +62,7 @@ jobs:
   run-test-other-utf8:
     needs: build-utf8
     strategy:
+      fail-fast: false
       matrix:
         test_name:
           - "command-line-options"
@@ -90,6 +92,7 @@ jobs:
   run-test-nist:
     needs: build
     strategy:
+      fail-fast: false
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
         os: ["ubuntu:24.04"]
@@ -102,6 +105,7 @@ jobs:
   run-test-nist-utf8:
     needs: build-utf8
     strategy:
+      fail-fast: false
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
         os: ["ubuntu:24.04"]
@@ -138,8 +142,6 @@ jobs:
 
   windows-build:
     needs: check-workflows
-    strategy:
-       fail-fast: false
     uses: ./.github/workflows/windows-build.yml
     with: 
       upload-artifacts: true
