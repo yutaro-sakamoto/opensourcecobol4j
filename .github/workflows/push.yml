@@ -76,6 +76,7 @@ jobs:
     with:
       test-name: ${{ matrix.test_name }}
       os: ${{ matrix.os }}
+      configure-args: --enable-utf8
 
   run-test-cobj-api:
     needs: build
@@ -109,6 +110,7 @@ jobs:
       test-name: ${{ matrix.test_name }}
       check-result: true
       os: ${{ matrix.os }}
+      configure-args: --enable-utf8
 
   run-test-nist-extra:
     needs: build

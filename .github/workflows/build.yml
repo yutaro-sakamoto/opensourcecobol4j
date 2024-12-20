@@ -68,5 +68,5 @@ jobs:
       - name: Upload an artifact
         uses: actions/upload-artifact@v4
         with:
-          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}
+          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
           path: opensourcecobol4j.tar.gz
