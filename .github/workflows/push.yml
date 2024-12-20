@@ -68,6 +68,7 @@ jobs:
           - "command-line-options"
           - "data-rep"
           - "cobol_utf8"
+          #- "i18n_utf8"
           - "jp-compat"
           - "run"
           - "syntax"

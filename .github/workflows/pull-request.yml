@@ -67,7 +67,8 @@ jobs:
         test_name:
           - "command-line-options"
           - "data-rep"
-          - "i18n_sjis"
+          - "cobol_utf8"
+          #- "i18n_utf8"
           - "jp-compat"
           - "run"
           - "syntax"
