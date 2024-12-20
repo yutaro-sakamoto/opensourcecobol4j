@@ -577,7 +577,7 @@ SUBDIRS = cobol85
 @I18N_UTF8_TRUE@	run-O \
 @I18N_UTF8_TRUE@	data-rep \
 @I18N_UTF8_TRUE@	data-rep-O \
-@I18N_UTF8_TRUE@	i18n_utf8 \
+@I18N_UTF8_TRUE@	cobol_utf8 \
 @I18N_UTF8_TRUE@	jp-compat \
 @I18N_UTF8_TRUE@	command-line-options \
 @I18N_UTF8_TRUE@	cobj-idx \
@@ -647,6 +647,17 @@ i18n_sjis_DEPENDENCIES = \
 	i18n_sjis.src/limits.at \
 	i18n_sjis.src/national.at \
 	i18n_sjis.src/mb-space.at
+
+cobol_utf8_DEPENDENCIES = \
+	cobol_utf8.at \
+	cobol_utf8.src/user-defined-word.at \
+	cobol_utf8.src/pic-x.at \
+	cobol_utf8.src/pic-n.at \
+	cobol_utf8.src/program-id.at \
+	cobol_utf8.src/error-print.at \
+	cobol_utf8.src/limits.at \
+	cobol_utf8.src/national.at \
+	cobol_utf8.src/mb-space.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \
@@ -1130,9 +1141,9 @@ misc.log: misc
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-i18n_utf8.log: i18n_utf8
-	@p='i18n_utf8'; \
-	b='i18n_utf8'; \
+cobol_utf8.log: cobol_utf8
+	@p='cobol_utf8'; \
+	b='cobol_utf8'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
@@ -1359,6 +1370,7 @@ $(srcdir)/syntax: $(syntax_DEPENDENCIES)
 $(srcdir)/run: $(run_DEPENDENCIES)
 $(srcdir)/data-rep: $(data_rep_DEPENDENCIES)
 $(srcdir)/i18n_utf8: $(i18n_utf8_DEPENDENCIES)
+$(srcdir)/cobol_utf8: $(cobol_utf8_DEPENDENCIES)
 $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
