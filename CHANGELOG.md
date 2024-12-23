@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## [1.1.5] - 2024-12-27
+
+### Add
+
+* Convert string literals containing SJIS characters to Java string literals (#561)
+  * The older versions convert string literals containing SJIS characters to a byte arrays with hexdecimal integers.
+
+### Fix
+
+* Fix comparisons of COMP data (#559)
+  * With older versions, comparisons of COMP data are invalid in some cases.
+
 ## [1.1.4] - 2024-11-29
 
 ### Fix
