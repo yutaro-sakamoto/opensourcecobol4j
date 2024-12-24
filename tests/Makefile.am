@@ -118,7 +118,12 @@ cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.src/error-print.at \
 	cobol_utf8.src/limits.at \
 	cobol_utf8.src/national.at \
-	cobol_utf8.src/mb-space.at
+	cobol_utf8.src/mb-space.at \
+	cobol_utf8.src/compare-national-diff-size.at \
+	cobol_utf8.src/compare-national.at \
+	cobol_utf8.src/file-handler-japanese.at \
+	cobol_utf8.src/japanese-char-section-var.at \
+	cobol_utf8.src/java-interface.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \

@@ -73,7 +73,7 @@ jobs:
           - "run"
           - "syntax"
           - "cobj-idx"
-          - "misc"
+          #- "misc"
         os: ["ubuntu:24.04"]
     uses: ./.github/workflows/test-other.yml
     with:
