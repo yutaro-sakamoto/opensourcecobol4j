@@ -329,6 +329,12 @@ static const struct option long_options[] = {
 #undef CB_WARNDEF
     {NULL, 0, NULL, 0}};
 
+#ifdef i18N_UTF8
+static const char *JAVAC_ENCODING = "UTF-8";
+#else
+static const char *JAVAC_ENCODING = "SJIS";
+#endif
+
 static const char *cob_cc;                    /* gcc */
 static char cob_java_flags[COB_SMALL_BUFF];   /* -I... */
 static char cob_libs[COB_MEDIUM_BUFF];        /* -L... -lcob */
@@ -1772,8 +1778,9 @@ static int process_compile(struct filename *fn) {
 
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
-    snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding SJIS -d %s %s/%s.java",
-             cob_java_flags, output_name_a, java_source_dir_a, *program_id);
+    snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding %s -d %s %s/%s.java",
+             cob_java_flags, JAVAC_ENCODING, output_name_a, java_source_dir_a,
+             *program_id);
     ret = process(buff);
 
     if (ret) {
@@ -2044,8 +2051,8 @@ static int process_build_single_jar() {
 #else
   char remove_cmd[] = "rm -f";
 #endif
-  sprintf(buff, "javac %s -encoding SJIS -d %s %s/*.java", cob_java_flags,
-          output_name_a, java_source_dir_a);
+  sprintf(buff, "javac %s -encoding %s -d %s %s/*.java", cob_java_flags,
+          JAVAC_ENCODING, output_name_a, java_source_dir_a);
 
   ret = process(buff);
   if (ret) {
