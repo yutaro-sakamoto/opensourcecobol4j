@@ -52,6 +52,10 @@ jobs:
 
       - name: Checkout opensource COBOL 4J
         uses: actions/checkout@v4
+
+      - name: refresh m4 files
+        run: |
+          touch cobj/*.m4
       
       - name: Install opensource COBOL 4J
         run: |
