@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fix
 
-* Fix comparisons of COMP data (#559)
+* Fix comparisons of COMP data. (#559)
   * With older versions, comparisons of COMP data are invalid in some cases.
 
 ## [1.1.4] - 2024-11-29
