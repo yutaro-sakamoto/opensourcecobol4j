@@ -505,7 +505,8 @@ static void joutput_string_write(const unsigned char *s, int size,
                                  enum cb_string_category category) {
   int i;
 
-  if (category == CB_STRING_CATEGORY_ALL_ASCII) {
+  if (category == CB_STRING_CATEGORY_ALL_ASCII ||
+      category == CB_STRING_CATEGORY_ALL_SJIS) {
     if (param_wrap_string_flag) {
       joutput("new CobolDataStorage(");
     } else {
