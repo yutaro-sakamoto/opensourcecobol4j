@@ -9,10 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Add
 
-* Convert string literals containing SJIS characters to Java string literals (#561)
-  * The older versions convert string literals containing SJIS characters to a byte arrays with hexdecimal integers.
-    * Older versions convert `"日本語"` to `CobolUtil.toBytes((byte)0x93, (byte)0xfa, (byte)0x96, (byte)0x7b, (byte)0x8c, (byte)0xea)`.
-    * The new version converts `"日本語"` to `CobolUtil.stringToBytes("日本語")`.
+* Convert string literals containing SJIS characters to Java string literals. (#561)
+  * The older versions convert string literals containing SJIS characters into byte arrays with hexdecimal integers.
+    * Older versions convert `"日本語"` into `CobolUtil.toBytes((byte)0x93, (byte)0xfa, (byte)0x96, (byte)0x7b, (byte)0x8c, (byte)0xea)`.
+    * Latest version converts `"日本語"` to `CobolUtil.stringToBytes("日本語")`.
 
 ### Fix
 
