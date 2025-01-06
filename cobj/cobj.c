@@ -329,7 +329,7 @@ static const struct option long_options[] = {
 #undef CB_WARNDEF
     {NULL, 0, NULL, 0}};
 
-#ifdef i18N_UTF8
+#ifdef I18N_UTF8
 static const char *JAVAC_ENCODING = "UTF-8";
 #else
 static const char *JAVAC_ENCODING = "SJIS";

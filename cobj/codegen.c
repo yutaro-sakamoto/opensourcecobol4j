@@ -449,9 +449,12 @@ static void joutput_indent(const char *str) {
 }
 
 enum cb_string_category {
+  // all chracters are ASCII
   CB_STRING_CATEGORY_ALL_ASCII,
-  CB_STRING_CATEGORY_ALL_SJIS,
-  CB_STRING_CATEGORY_CONTAINS_NON_SJIS,
+  // string contains non-ASCII characters but no uncommon characters
+  CB_STRING_CATEGORY_CONTAINS_NON_ASCII,
+  // string contains uncommon characters
+  CB_STRING_CATEGORY_CONTAINS_UNCOMMON,
 };
 
 struct string_literal_cache {
@@ -483,6 +486,7 @@ static void free_string_literal_list() {
   }
 }
 
+
 static enum cb_string_category get_string_category(const unsigned char *s,
                                                    int size) {
   int i;
@@ -491,11 +495,38 @@ static enum cb_string_category get_string_category(const unsigned char *s,
     int c = s[i];
     if (0x20 <= c && c <= 0x7e) {
       i += 1;
+#ifdef I18N_UTF8
+    } else if (0xc2 <= c && c <= 0xdf) {
+      if(i + 1 < size && 0x80 <= s[i + 1] && s[i + 1] <= 0xbf) {
+        i += 2;
+        category = CB_STRING_CATEGORY_CONTAINS_NON_ASCII;
+      } else {
+        return CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
+      }
+    } else if (0xe0 <= c && c <= 0xef) {
+      if(i + 2 < size && 0x80 <= s[i + 1] && s[i + 1] <= 0xbf &&
+         0x80 <= s[i + 2] && s[i + 2] <= 0xbf) {
+        i += 3;
+        category = CB_STRING_CATEGORY_CONTAINS_NON_ASCII;
+      } else {
+        return CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
+      }
+    } else if(0xf0 <= c && c <= 0xf4) {
+      if(i + 3 < size && 0x80 <= s[i + 1] && s[i + 1] <= 0xbf &&
+         0x80 <= s[i + 2] && s[i + 2] <= 0xbf &&
+         0x80 <= s[i + 3] && s[i + 3] <= 0xbf) {
+        i += 4;
+        category = CB_STRING_CATEGORY_CONTAINS_NON_ASCII;
+      } else {
+        return CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
+      }
+#else
     } else if ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef)) {
       i += 2;
-      category = CB_STRING_CATEGORY_ALL_SJIS;
+      category = CB_STRING_CATEGORY_CONTAINS_NON_ASCII;
+#endif
     } else {
-      return CB_STRING_CATEGORY_CONTAINS_NON_SJIS;
+      return CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
     }
   }
   return category;
@@ -506,7 +537,7 @@ static void joutput_string_write(const unsigned char *s, int size,
   int i;
 
   if (category == CB_STRING_CATEGORY_ALL_ASCII ||
-      category == CB_STRING_CATEGORY_ALL_SJIS) {
+      category == CB_STRING_CATEGORY_CONTAINS_NON_ASCII) {
     if (param_wrap_string_flag) {
       joutput("new CobolDataStorage(");
     } else {
@@ -515,6 +546,18 @@ static void joutput_string_write(const unsigned char *s, int size,
 
     joutput("\"");
 
+#ifdef I18N_UTF8
+    for(i = 0; i< size; i++) {
+      int c = s[i];
+      if(c == '\"' || c == '\\') {
+        joutput("\\%c", c);
+      } else if(c == '\n') {
+        joutput("\\n");
+      } else {
+        joutput("%c", c);
+      }
+    }
+#else
     int output_multibyte = 0;
     for (i = 0; i < size; i++) {
       int c = s[i];
@@ -528,7 +571,7 @@ static void joutput_string_write(const unsigned char *s, int size,
       output_multibyte = !output_multibyte &&
                          ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
     }
-
+#endif
     joutput("\")");
   } else {
     if (param_wrap_string_flag) {
