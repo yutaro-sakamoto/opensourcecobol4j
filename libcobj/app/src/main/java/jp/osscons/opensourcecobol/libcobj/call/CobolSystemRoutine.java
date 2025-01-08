@@ -72,7 +72,7 @@ public class CobolSystemRoutine {
      */
     public static int SYSTEM(CobolDataStorage cmd) throws CobolStopRunException {
         int size = SYSTEM_getParameterSize();
-        String cmdStr = new String(cmd.getByteArray(0, size));
+        String cmdStr = new String(cmd.getByteArray(0, size), AbstractCobolField.charSetSJIS);
         return SYSTEM_main(cmdStr);
     }
 
@@ -696,7 +696,7 @@ public class CobolSystemRoutine {
         for (int n = 0; n < length; ++n) {
             byte b = data.getByte(n);
             byte[] bytes = {b};
-            byte result = new String(bytes).toLowerCase().getBytes()[0];
+            byte result = new String(bytes, AbstractCobolField.charSetSJIS).toLowerCase().getBytes()[0];
             data.setByte(n, result);
         }
         return 0;
@@ -729,7 +729,7 @@ public class CobolSystemRoutine {
         for (int n = 0; n < length; ++n) {
             byte b = data.getByte(n);
             byte[] bytes = {b};
-            byte result = new String(bytes).toUpperCase().getBytes()[0];
+            byte result = new String(bytes, AbstractCobolField.charSetSJIS).toUpperCase().getBytes()[0];
             data.setByte(n, result);
         }
         return 0;

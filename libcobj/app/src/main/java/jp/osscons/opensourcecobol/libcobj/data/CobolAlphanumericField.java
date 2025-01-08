@@ -44,11 +44,7 @@ public class CobolAlphanumericField extends AbstractCobolField {
 
     @Override
     public String getString() {
-        try {
-            return new String(dataStorage.getByteArray(0, this.getSize()), "SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return "";
-        }
+        return new String(dataStorage.getByteArray(0, this.getSize()), AbstractCobolField.charSetSJIS);
     }
 
     @Override

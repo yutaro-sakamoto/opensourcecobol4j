@@ -1187,9 +1187,12 @@ static void joutput_attr(cb_tree x) {
  * AbstractCobolField型の変数をインスタンス化するコードを出力する
  */
 static void joutput_field(cb_tree x) {
+
   joutput("CobolFieldFactory.makeCobolField(");
-  joutput_size(x);
-  joutput(", ");
+  if(!(CB_LITERAL_P(x) && (CB_TREE_CATEGORY(x) == CB_CATEGORY_ALPHANUMERIC || CB_LITERAL_P(x) && CB_TREE_CATEGORY(x) == CB_CATEGORY_NATIONAL))) {
+    joutput_size(x);
+    joutput(", ");
+  }
   joutput_data(x);
   joutput(", ");
   joutput_attr(x);
@@ -1717,8 +1720,10 @@ static void joutput_param(cb_tree x, int id) {
       }
 #endif
       joutput("CobolFieldFactory.makeCobolField(");
-      joutput_size(x);
-      joutput(", ");
+      if(!(CB_LITERAL_P(x) && (CB_TREE_CATEGORY(x) == CB_CATEGORY_ALPHANUMERIC || CB_LITERAL_P(x) && CB_TREE_CATEGORY(x) == CB_CATEGORY_NATIONAL))) {
+        joutput_size(x);
+        joutput(", ");
+      }
       joutput_data(x);
       joutput(", ");
       joutput_attr(x);

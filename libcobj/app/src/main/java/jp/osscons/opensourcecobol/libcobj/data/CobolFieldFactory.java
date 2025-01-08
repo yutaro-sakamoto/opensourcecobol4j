@@ -52,6 +52,19 @@ public class CobolFieldFactory {
     }
 
     /**
+     * TODO: 準備中
+     *
+     * @param size TODO: 準備中
+     * @param bytes TODO: 準備中
+     * @param attr TODO: 準備中
+     * @return TODO: 準備中
+     */
+    public static AbstractCobolField makeCobolField(
+            byte[] bytes, CobolFieldAttribute attr) {
+        return CobolFieldFactory.makeCobolField(bytes.length, new CobolDataStorage(bytes), attr);
+    }
+
+    /**
      * 引数に応じて適切なAbstractCobolFieldクラスのサブクラスを生成する。
      * 特にattrに設定された値に応じて適切なAbstractCobolFieldのサブクラスのインスタンスを生成する。
      *

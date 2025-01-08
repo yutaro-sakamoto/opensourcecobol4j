@@ -47,11 +47,7 @@ public class CobolNationalField extends AbstractCobolField {
 
     @Override
     public String getString() {
-        try {
-            return new String(dataStorage.getData(), "SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return "";
-        }
+        return new String(dataStorage.getData(), AbstractCobolField.charSetSJIS);
     }
 
     @Override

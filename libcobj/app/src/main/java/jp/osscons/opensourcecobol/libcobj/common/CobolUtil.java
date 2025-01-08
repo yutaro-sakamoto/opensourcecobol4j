@@ -214,11 +214,7 @@ public class CobolUtil {
      */
     public static void cobCheckRefMod(int offset, long length, int size, byte[] name)
             throws CobolStopRunException {
-        try {
-            CobolUtil.cobCheckRefMod(offset, length, size, new String(name, "Shift_JIS"));
-        } catch (UnsupportedEncodingException e) {
-            CobolUtil.cobCheckRefMod(offset, length, size, "");
-        }
+        CobolUtil.cobCheckRefMod(offset, length, size, new String(name, AbstractCobolField.charSetSJIS));
     }
 
     /**
