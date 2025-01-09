@@ -1,4 +1,5 @@
 AT_SETUP([PIC N Value clause])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -17,6 +18,7 @@ AT_CHECK([java prog], [0], [日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -36,6 +38,7 @@ AT_CHECK([java prog], [0], [日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with trunc])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -60,6 +63,7 @@ AT_CHECK([java prog], [0], [日本語])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with padding by full-width SPC])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -79,6 +83,7 @@ AT_CHECK([java prog], [0], [日本語の文字列　　])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with justify])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -98,6 +103,7 @@ AT_CHECK([java prog], [0], [　　日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([PIC N EDITED w/ VALUE])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -116,6 +122,7 @@ AT_CHECK([java prog], [0], [日本／中国　文字０])
 AT_CLEANUP
 
 AT_SETUP([INITIALIZE PIC N EDITED])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -136,6 +143,7 @@ AT_CHECK([java prog], [0], [　　／　　　　　０])
 AT_CLEANUP
 
 AT_SETUP([INITIALIZE PIC N EDITED TO VALUE])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -156,6 +164,7 @@ AT_CHECK([java prog], [0], [日本／中国　文字０])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move to NATIONAL EDITED])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -175,6 +184,7 @@ AT_CHECK([java prog], [0], [日本／中国　文字０])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with half-width alnum conv.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -194,6 +204,7 @@ AT_CHECK([java prog], [0], [ＡＢＣ０１２３])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with half-width kana conv.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -214,6 +225,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 83 
 AT_CLEANUP
 
 AT_SETUP([PIC N Ref mod(n:)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -233,6 +245,7 @@ AT_CHECK([java prog], [0], [文字列])
 AT_CLEANUP
 
 AT_SETUP([PIC N Ref mod(n:m)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -252,6 +265,7 @@ AT_CHECK([java prog], [0], [文字])
 AT_CLEANUP
 
 AT_SETUP([PIC N STRING by size])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -275,6 +289,7 @@ AT_CHECK([java prog], [0], [私の名前はありません])
 AT_CLEANUP
 
 AT_SETUP([PIC N STRING with delimiter (causes warn)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -298,6 +313,7 @@ AT_CHECK([java prog], [0], [私の名前])
 AT_CLEANUP
 
 AT_SETUP([PIC N STRING with NATIONAL delimiter])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -321,6 +337,7 @@ AT_CHECK([java prog], [0], [私の名前])
 AT_CLEANUP
 
 AT_SETUP([PIC N STRING with pointer])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -345,6 +362,7 @@ AT_CHECK([java prog], [0], [言えません私の名前は])
 AT_CLEANUP
 
 AT_SETUP([PIC N INSPECT REPLACING])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -364,6 +382,7 @@ AT_CHECK([java prog], [0], [１２３４０１２３４０])
 AT_CLEANUP
 
 AT_SETUP([PIC N INSPECT REPLACING by ZERO])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -383,6 +402,7 @@ AT_CHECK([java prog], [0], [１２３４０１２３４０])
 AT_CLEANUP
 
 AT_SETUP([PIC N INSPECT REPLACING by NATIONAL ZERO])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -402,6 +422,7 @@ AT_CHECK([java prog], [0], [１２３４０１２３４０])
 AT_CLEANUP
 
 AT_SETUP([PIC N INSPECT TALLYING])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -422,6 +443,7 @@ AT_CHECK([java prog], [0], [02])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with half-width dakuten kana.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -441,6 +463,7 @@ AT_CHECK([java prog], [0], [゛ダ・ヴィンチ])
 AT_CLEANUP
 
 AT_SETUP([PIC N Move with half-width han-dakuten kana.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.

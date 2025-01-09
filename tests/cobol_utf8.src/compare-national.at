@@ -1,4 +1,5 @@
 AT_SETUP([compare national])
+export LC_ALL=''
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION DIVISION.

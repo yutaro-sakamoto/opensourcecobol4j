@@ -1,4 +1,5 @@
 AT_SETUP([Zenkaku SPC delims in headings])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION　DIVISION.
@@ -17,6 +18,7 @@ AT_CHECK([java prog], [0], [OK])
 AT_CLEANUP
 
 AT_SETUP([Zenkaku SPC delims in record def])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -41,6 +43,7 @@ AT_CHECK([java prog], [0], [Zen SPC between item name and PIC clause])
 AT_CLEANUP
 
 AT_SETUP([Zenkaku SPC delims in COPY stmt])
+export LC_ALL=''
 
 AT_DATA([inc.cpy], [
        01 項目　PIC X(2) VALUE "OK".

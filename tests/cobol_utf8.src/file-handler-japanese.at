@@ -1,4 +1,5 @@
 AT_SETUP([file-handler-japanese])
+export LC_ALL=''
 
 # This test verifies that Issue 539 is fixed.
 

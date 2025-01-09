@@ -1,4 +1,5 @@
 AT_SETUP([japanese word section variable])
+export LC_ALL=''
 
 AT_DATA([prog.cbl], [       IDENTIFICATION              DIVISION.
        PROGRAM-ID.                 prog.

@@ -1,4 +1,5 @@
 AT_SETUP([no-argument])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -28,6 +29,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC 9(3)])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -75,6 +77,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC S9(3)])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -128,6 +131,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC S9(3)V99])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -184,6 +188,7 @@ AT_CLEANUP
 
 
 AT_SETUP([PIC 9(3) USAGE COMP-3])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -231,6 +236,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC S9(3) USAGE COMP-3])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -284,6 +290,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC S9(3)V99 USAGE COMP-3])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -339,6 +346,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([PIC X(3)])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -377,6 +385,7 @@ AT_CHECK([java a], [0],
 AT_CLEANUP
 
 AT_SETUP([Out of range])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -410,6 +419,7 @@ AT_CHECK([java a 2>&1 | grep 'The index is out of range' > /dev/null], [0])
 AT_CLEANUP
 
 AT_SETUP([Type mismatch])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -475,6 +485,7 @@ jp.osscons.opensourcecobol.libcobj.ui.CobolResultSetException: The result type i
 AT_CLEANUP
 
 AT_SETUP([Japanese])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.
@@ -520,6 +531,7 @@ AT_CLEANUP
 
 
 AT_SETUP([COMP-3 Integer.MIN_VALUE])
+export LC_ALL=''
 
 AT_DATA([b.cbl], [
        identification division.

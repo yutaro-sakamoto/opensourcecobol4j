@@ -1,4 +1,5 @@
 AT_SETUP([undefined not message])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        identification division.
@@ -22,6 +23,7 @@ AT_CHECK([${COMPILE} -x prog.cob], [1], [],
 AT_CLEANUP
 
 AT_SETUP([Encoding alphanumeric name item])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -39,6 +41,7 @@ AT_CHECK([${COMPILE} -x prog.cob], [1], [],
 AT_CLEANUP
 
 AT_SETUP([Encoding national name item])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -56,6 +59,7 @@ AT_CHECK([${COMPILE} -x prog.cob], [1], [],
 AT_CLEANUP
 
 AT_SETUP([Decoding national section name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.

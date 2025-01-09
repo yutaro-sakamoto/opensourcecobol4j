@@ -1,4 +1,5 @@
 AT_SETUP([PROGRAM-ID NATIONAL C89 no warning])
+export LC_ALL=''
 
 AT_DATA([test.conf], [
 include "default.conf"
@@ -19,6 +20,7 @@ AT_CLEANUP
 
 
 AT_SETUP([PROGRAM-ID NATIONAL C89 warning])
+export LC_ALL=''
 AT_CHECK([${SKIP_TEST}])
 AT_DATA([test.conf], [
 include "default.conf"
@@ -41,6 +43,7 @@ prog.cob:6: Warning: PROGRAM-ID length exceeds C89 function name limit
 AT_CLEANUP
 
 AT_SETUP([PROGRAM-ID NATIONAL C89 ignore])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -56,6 +59,7 @@ AT_CHECK([${COMPILE} prog.cob], [0])
 AT_CLEANUP
 
 AT_SETUP([PROGRAM-ID NATIONAL 32 character no over])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -71,6 +75,7 @@ AT_CHECK([${COMPILE} prog.cob], [0])
 AT_CLEANUP
 
 AT_SETUP([PROGRAM-ID NATIONAL 32 character over])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.

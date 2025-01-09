@@ -1,4 +1,5 @@
 AT_SETUP([Value clause])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -17,6 +18,7 @@ AT_CHECK([java prog], [0], [日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([Move])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -36,6 +38,7 @@ AT_CHECK([java prog], [0], [日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([Move with trunc])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -60,6 +63,7 @@ AT_CHECK([java prog], [0], [日本語])
 AT_CLEANUP
 
 AT_SETUP([Move ALL with trunc and trimming])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -80,6 +84,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 8a 
 AT_CLEANUP
 
 AT_SETUP([Move with trunc and trimming 1])
+export LC_ALL=''
 AT_CHECK([${SKIP_TEST}])
 
 AT_DATA([prog.cob], [
@@ -106,6 +111,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 
 AT_CLEANUP
 
 AT_SETUP([Move from field with trunc and trimming 1])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -127,6 +133,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 
 AT_CLEANUP
 
 AT_SETUP([Move with padding])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -146,6 +153,7 @@ AT_CHECK([java prog], [0], [日本語の文字列  ])
 AT_CLEANUP
 
 AT_SETUP([Move with justify])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -165,6 +173,7 @@ AT_CHECK([java prog], [0], [ 日本語の文字列])
 AT_CLEANUP
 
 AT_SETUP([Move to alnum EDITED])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -184,6 +193,7 @@ AT_CHECK([java prog], [0], [日本/中国 文字0])
 AT_CLEANUP
 
 AT_SETUP([Move to alnum EDITED (pic too short)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -207,6 +217,7 @@ AT_CHECK([java prog], [0], [日/本 中0])
 AT_CLEANUP
 
 AT_SETUP([Move to alnum EDITED (pic too long)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -226,6 +237,7 @@ AT_CHECK([java prog], [0], [日/本   0])
 AT_CLEANUP
 
 AT_SETUP([Move to alnum EDITED (No char break)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -245,6 +257,7 @@ AT_CHECK([java prog], [0], [日 本])
 AT_CLEANUP
 
 AT_SETUP([Move to alnum EDITED (char break & junk chars)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -265,6 +278,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 
 AT_CLEANUP
 
 AT_SETUP([Move group to group in bad alignment])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -290,6 +304,7 @@ AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 
 AT_CLEANUP
 
 AT_SETUP([Redifinition breaking char pos.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -315,6 +330,7 @@ AT_CLEANUP
 
 
 AT_SETUP([Ref mod(n:)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -334,6 +350,7 @@ AT_CHECK([java prog], [0], [文字列])
 AT_CLEANUP
 
 AT_SETUP([Ref mod(n:m)])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -353,6 +370,7 @@ AT_CHECK([java prog], [0], [文字])
 AT_CLEANUP
 
 AT_SETUP([STRING by size])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -376,6 +394,7 @@ AT_CHECK([java prog], [0], [私の名前はありません])
 AT_CLEANUP
 
 AT_SETUP([STRING with delimiter])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -403,6 +422,7 @@ AT_CHECK([java prog], [0], [私の名前])
 AT_CLEANUP
 
 AT_SETUP([STRING with pointer])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -427,6 +447,7 @@ AT_CHECK([java prog], [0], [言えません私の名前は])
 AT_CLEANUP
 
 AT_SETUP([INSPECT REPLACING])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -446,6 +467,7 @@ AT_CHECK([java prog], [0], [１２３４０１２３４０])
 AT_CLEANUP
 
 AT_SETUP([INSPECT REPLACING by ZERO])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -465,6 +487,7 @@ AT_CHECK([java prog], [0], [１２３４０１２３４０])
 AT_CLEANUP
 
 AT_SETUP([INSPECT TALLYING])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -485,6 +508,7 @@ AT_CHECK([java prog], [0], [02])
 AT_CLEANUP
 
 AT_SETUP([Readable string literals])
+export LC_ALL=''
 # Older compilers converts string literals "日本語" in COBOL source code
 # to `CobolUtil.toBytes((byte)0x93, (byte)0xfa, (byte)0x96, (byte)0x7b, (byte)0x8c, (byte)0xea)` in Java source code.
 # The following tests check that the compiler converts the string literals to readable ones.

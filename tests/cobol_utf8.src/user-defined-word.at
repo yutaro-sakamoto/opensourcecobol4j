@@ -1,4 +1,5 @@
 AT_SETUP([Program name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -12,6 +13,7 @@ AT_CHECK([${COMPILE} prog.cob])
 AT_CLEANUP
 
 AT_SETUP([Field name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -31,6 +33,7 @@ AT_CHECK([java prog], [0], [Unicode])
 AT_CLEANUP
 
 AT_SETUP([Long field name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -56,6 +59,7 @@ AT_CLEANUP
 
 
 AT_SETUP([Field lookup])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -75,6 +79,7 @@ AT_CHECK([java prog], [0], [AB])
 AT_CLEANUP
 
 AT_SETUP([Section name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -97,6 +102,7 @@ AT_CHECK([java prog], [0], [Hello, and good bye.])
 AT_CLEANUP
 
 AT_SETUP([Long section name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -119,6 +125,7 @@ AT_CHECK([java prog], [0], [Hello, and good bye.])
 AT_CLEANUP
 
 AT_SETUP([Too long section name])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -143,6 +150,7 @@ prog.cob:9: Error: User defined name must be less than 32 characters
 AT_CLEANUP
 
 AT_SETUP([Nihongo Filename])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -178,6 +186,7 @@ AT_CHECK([java prog], [0], [OK])
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in numeric test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -194,13 +203,14 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:11: libcobj: 'U項目' not numeric: 'ABCD'
-])
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:11: libcobj: 'U項目' not numeric: 'ABCD'" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in BASED test msg.])
+export LC_ALL=''
 AT_CHECK([${SKIP_TEST}])
 
 AT_DATA([prog.cob], [
@@ -216,13 +226,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:9: libcobj: BASED/LINKAGE item 'Y項目' has NULL address
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:9: libcobj: BASED/LINKAGE item 'Y項目' has NULL address" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in ODO test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -238,13 +250,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: OCCURS DEPENDING ON 'I項目' out of bounds: 4
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: OCCURS DEPENDING ON 'I項目' out of bounds: 4" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in Subscript test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -260,13 +274,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: Subscript of 'Y項目' out of bounds: 3
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: Subscript of 'Y項目' out of bounds: 3" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in length of ref_mod test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -282,13 +298,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: Length of 'X項目' out of bounds: 6
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: Length of 'X項目' out of bounds: 6" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in offset of ref_mod test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -304,13 +322,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: Offset of 'X項目' out of bounds: 6
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: Offset of 'X項目' out of bounds: 6" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in length of N_refmod test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -326,13 +346,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: Length of 'X項目' out of bounds: 18
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: Length of 'X項目' out of bounds: 18" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in offset of N_refmod test msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION    DIVISION.
@@ -348,13 +370,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:10: libcobj: Offset of 'X項目' out of bounds: 18
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:10: libcobj: Offset of 'X項目' out of bounds: 18" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in extaddr test msg.])
+export LC_ALL=''
 AT_CHECK([${SKIP_TEST}])
 
 AT_DATA([prog.cob], [
@@ -377,13 +401,15 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -debug prog.cob])
-AT_CHECK([java prog], [1], [],
-[prog.cob:8: libcobj: EXTERNAL item 'X項目' has size > 6
-])
+
+AT_CHECK([java prog 2> out1.txt], [1])
+AT_CHECK([echo "prog.cob:8: libcobj: EXTERNAL item 'X項目' has size > 6" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in undefined error msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -423,6 +449,7 @@ prog.cob:19: Error: 'NO項目' in 'G集団項目' in 'NO集団項目' undefined
 AT_CLEANUP
 
 AT_SETUP([Nihongo field name in ambiguous error msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
@@ -459,6 +486,7 @@ prog.cob:12: Error: 'B項目' in 'G2集団' in 'G1集団' defined here
 AT_CLEANUP
 
 AT_SETUP([Nihongo label name in ambiguous error msg.])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
