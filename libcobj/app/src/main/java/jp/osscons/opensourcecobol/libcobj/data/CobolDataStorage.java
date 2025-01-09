@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
@@ -180,7 +179,7 @@ public class CobolDataStorage {
      */
     public CobolDataStorage(String str) {
         try {
-            byte[] bytes = str.getBytes("SHIFT-JIS");
+            byte[] bytes = str.getBytes(AbstractCobolField.charSetSJIS);
             this.data = bytes;
             this.index = 0;
         } catch (Exception e) {
@@ -269,11 +268,7 @@ public class CobolDataStorage {
      * @param size TODO: 準備中
      */
     public void memcpy(String str, int size) {
-        try {
-            this.memcpy(str.getBytes("SJIS"), size);
-        } catch (UnsupportedEncodingException e) {
-            this.memcpy(str.getBytes(), size);
-        }
+        this.memcpy(str.getBytes(AbstractCobolField.charSetSJIS), size);
     }
 
     /**
@@ -394,7 +389,7 @@ public class CobolDataStorage {
      * @return TODO: 準備中
      */
     public int memcmp(String buf, int size) {
-        return this.memcmp(buf.getBytes(), size);
+        return this.memcmp(buf.getBytes(AbstractCobolField.charSetSJIS), size);
     }
 
     /**
@@ -644,7 +639,7 @@ public class CobolDataStorage {
      */
     public void setBytes(String str, int length) {
         try {
-            this.setBytes(str.getBytes("SHIFT-JIS"), length);
+            this.setBytes(str.getBytes(AbstractCobolField.charSetSJIS), length);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -693,7 +688,7 @@ public class CobolDataStorage {
     public void setString(String str) {
         this.fillBytes((byte) 0x20, this.data.length);
         try {
-            this.setBytes(str.getBytes("SHIFT-JIS"));
+            this.setBytes(str.getBytes(AbstractCobolField.charSetSJIS));
         } catch (Exception e) {
             e.printStackTrace();
         }

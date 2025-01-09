@@ -1122,7 +1122,7 @@ public abstract class AbstractCobolField {
      * @param size TODO: 準備中
      */
     public void memcpy(String src, int size) {
-        byte[] bytes = src.getBytes();
+        byte[] bytes = src.getBytes(AbstractCobolField.charSetSJIS);
         this.memcpy(bytes, size);
     }
 
@@ -1132,7 +1132,7 @@ public abstract class AbstractCobolField {
      * @param src TODO: 準備中
      */
     public void memcpy(String src) {
-        this.memcpy(src.getBytes());
+        this.memcpy(src.getBytes(AbstractCobolField.charSetSJIS));
     }
 
     /**

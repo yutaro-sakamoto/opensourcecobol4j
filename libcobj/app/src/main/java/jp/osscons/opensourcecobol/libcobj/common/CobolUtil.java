@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.common;
 
-import java.io.UnsupportedEncodingException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Calendar;
@@ -632,11 +631,7 @@ public class CobolUtil {
      * @return TODO: 準備中
      */
     public static byte[] stringToBytes(String s) {
-        try {
-            return s.getBytes("Shift_JIS");
-        } catch (UnsupportedEncodingException e) {
-            return null;
-        }
+        return s.getBytes(AbstractCobolField.charSetSJIS);
     }
 
     /**

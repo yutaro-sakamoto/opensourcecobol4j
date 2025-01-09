@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
@@ -85,11 +84,7 @@ public class CobolGroupField extends AbstractCobolField {
     @Override
     public void moveFrom(String string) {
         byte[] bytes;
-        try {
-            bytes = string.getBytes("SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return;
-        }
+        bytes = string.getBytes(AbstractCobolField.charSetSJIS);
 
         this.moveFrom(bytes);
     }

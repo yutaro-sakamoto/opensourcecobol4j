@@ -52,7 +52,7 @@ public class CobolIntrinsic {
     private static AbstractCobolField[] calcField = new AbstractCobolField[DEPTH_LEVEL];
     private static Random random = new Random();
     private static byte[] localeBuff;
-    private static final byte[] byteArray00 = "00".getBytes();
+    private static final byte[] byteArray00 = "00".getBytes(AbstractCobolField.charSetSJIS);
 
     /** libcob/intrinsicのmake_double_entryの実装 */
     private static void makeDoubleEntry() {
@@ -416,7 +416,7 @@ public class CobolIntrinsic {
                         CobolUtil.cal.get(Calendar.MINUTE),
                         CobolUtil.cal.get(Calendar.SECOND),
                         CobolUtil.cal.get(Calendar.MILLISECOND) / 10);
-        currField.getDataStorage().memcpy(dateString.getBytes());
+        currField.getDataStorage().memcpy(dateString.getBytes(AbstractCobolField.charSetSJIS));
 
         if (offset > 0) {
             calcRefMod(currField, offset, length);
@@ -514,7 +514,7 @@ public class CobolIntrinsic {
             }
         }
         String dateString = String.format("%04d%02d%02d", baseyear, i, days);
-        currField.getDataStorage().memcpy(dateString.getBytes());
+        currField.getDataStorage().memcpy(dateString.getBytes(AbstractCobolField.charSetSJIS));
         return currField;
     }
 
@@ -554,7 +554,7 @@ public class CobolIntrinsic {
             }
         }
         String dateString = String.format("%04d%03d", baseyear, days);
-        currField.getDataStorage().memcpy(dateString.getBytes());
+        currField.getDataStorage().memcpy(dateString.getBytes(AbstractCobolField.charSetSJIS));
         return currField;
     }
 
@@ -1905,7 +1905,7 @@ public class CobolIntrinsic {
             return currField;
         }
         str = String.format("%7d%5d", srdays, srtime);
-        byte[] buff = str.getBytes();
+        byte[] buff = str.getBytes(AbstractCobolField.charSetSJIS);
         for (int i = 0; i < buff.length; i++) {
             if (buff[i] == ' ') {
                 buff[i] = '0';
@@ -2105,7 +2105,7 @@ public class CobolIntrinsic {
             makeFieldEntry(field);
             data = new byte[2 + flen];
             System.arraycopy(CobolFile.errorFile.getFileStatus(), 0, data, 0, 2);
-            System.arraycopy(CobolFile.errorFile.getSelectName().getBytes(), 0, data, 2, flen);
+            System.arraycopy(CobolFile.errorFile.getSelectName().getBytes(AbstractCobolField.charSetSJIS), 0, data, 2, flen);
             currField.setDataStorage(new CobolDataStorage(data));
         }
         return currField;
@@ -2162,7 +2162,7 @@ public class CobolIntrinsic {
                             CobolRuntimeException.getOrigProgramId(),
                             CobolRuntimeException.getOrigLine());
         }
-        localeBuff = buff.getBytes();
+        localeBuff = buff.getBytes(AbstractCobolField.charSetSJIS);
         field.setSize(localeBuff.length);
         currField.setDataStorage(new CobolDataStorage(localeBuff));
         return currField;
@@ -2183,15 +2183,15 @@ public class CobolIntrinsic {
         byte[] data;
         if (CobolRuntimeException.getExceptionCode() != 0
                 && CobolRuntimeException.getOrigStatement() != null) {
-            data = String.format("%-31s", CobolRuntimeException.getOrigStatement()).getBytes();
+            data = String.format("%-31s", CobolRuntimeException.getOrigStatement()).getBytes(AbstractCobolField.charSetSJIS);
         } else {
-            data = String.format("%-31s", "").getBytes();
+            data = String.format("%-31s", "").getBytes(AbstractCobolField.charSetSJIS);
         }
         currField.setDataStorage(new CobolDataStorage(data));
         return currField;
     }
 
-    private static final byte[] CONST_STRING_EXCEPTION_OBJECT = "EXCEPTION-OBJECT".getBytes();
+    private static final byte[] CONST_STRING_EXCEPTION_OBJECT = "EXCEPTION-OBJECT".getBytes(AbstractCobolField.charSetSJIS);
 
     // cob_intr_exception_statusの実装
     /**
@@ -2207,14 +2207,14 @@ public class CobolIntrinsic {
         AbstractCobolField field =
                 CobolFieldFactory.makeCobolField(31, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
-        byte[] data = String.format("%-31s", "").getBytes();
+        byte[] data = String.format("%-31s", "").getBytes(AbstractCobolField.charSetSJIS);
         currField.setDataStorage(new CobolDataStorage(data));
         if (CobolRuntimeException.getExceptionCode() != 0) {
             try {
                 exceptName =
                         CobolRuntimeException.getExceptionName(
                                         CobolRuntimeException.getExceptionCode())
-                                .getBytes();
+                                .getBytes(AbstractCobolField.charSetSJIS);
             } catch (Exception e) {
                 exceptName = CONST_STRING_EXCEPTION_OBJECT;
             }
@@ -2661,7 +2661,7 @@ public class CobolIntrinsic {
         // Return the result
         field.setSize(dateString.length());
         makeFieldEntry(field);
-        currField.getDataStorage().memcpy(dateString.getBytes());
+        currField.getDataStorage().memcpy(dateString.getBytes(AbstractCobolField.charSetSJIS));
         if (offset > 0) {
             calcRefMod(field, offset, length);
         }
@@ -2761,7 +2761,7 @@ public class CobolIntrinsic {
         // Return the result
         field.setSize(timeString.length());
         makeFieldEntry(field);
-        currField.getDataStorage().memcpy(timeString.getBytes());
+        currField.getDataStorage().memcpy(timeString.getBytes(AbstractCobolField.charSetSJIS));
         if (offset > 0) {
             calcRefMod(field, offset, length);
         }
@@ -2830,7 +2830,7 @@ public class CobolIntrinsic {
         // Return the result
         field.setSize(timeString.length());
         makeFieldEntry(field);
-        currField.getDataStorage().memcpy(timeString.getBytes());
+        currField.getDataStorage().memcpy(timeString.getBytes(AbstractCobolField.charSetSJIS));
         if (offset > 0) {
             calcRefMod(field, offset, length);
         }
