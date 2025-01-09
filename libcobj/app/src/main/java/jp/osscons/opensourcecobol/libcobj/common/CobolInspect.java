@@ -223,7 +223,9 @@ public class CobolInspect {
                     n = n * 10 + (b >= 0x70 ? b - 0x70 : b - 0x30);
                     fig++;
                 }
-                p2 = new CobolDataStorage(String.format("%d", n).getBytes(AbstractCobolField.charSetSJIS));
+                p2 =
+                        new CobolDataStorage(
+                                String.format("%d", n).getBytes(AbstractCobolField.charSetSJIS));
                 break;
             default:
                 fig = str.getSize();

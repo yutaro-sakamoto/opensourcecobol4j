@@ -696,7 +696,10 @@ public class CobolSystemRoutine {
         for (int n = 0; n < length; ++n) {
             byte b = data.getByte(n);
             byte[] bytes = {b};
-            byte result = new String(bytes, AbstractCobolField.charSetSJIS).toLowerCase().getBytes(AbstractCobolField.charSetSJIS)[0];
+            byte result =
+                    new String(bytes, AbstractCobolField.charSetSJIS)
+                            .toLowerCase()
+                            .getBytes(AbstractCobolField.charSetSJIS)[0];
             data.setByte(n, result);
         }
         return 0;
@@ -729,7 +732,10 @@ public class CobolSystemRoutine {
         for (int n = 0; n < length; ++n) {
             byte b = data.getByte(n);
             byte[] bytes = {b};
-            byte result = new String(bytes, AbstractCobolField.charSetSJIS).toUpperCase().getBytes(AbstractCobolField.charSetSJIS)[0];
+            byte result =
+                    new String(bytes, AbstractCobolField.charSetSJIS)
+                            .toUpperCase()
+                            .getBytes(AbstractCobolField.charSetSJIS)[0];
             data.setByte(n, result);
         }
         return 0;

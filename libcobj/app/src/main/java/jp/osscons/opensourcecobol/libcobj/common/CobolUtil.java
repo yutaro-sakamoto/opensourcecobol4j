@@ -213,7 +213,8 @@ public class CobolUtil {
      */
     public static void cobCheckRefMod(int offset, long length, int size, byte[] name)
             throws CobolStopRunException {
-        CobolUtil.cobCheckRefMod(offset, length, size, new String(name, AbstractCobolField.charSetSJIS));
+        CobolUtil.cobCheckRefMod(
+                offset, length, size, new String(name, AbstractCobolField.charSetSJIS));
     }
 
     /**

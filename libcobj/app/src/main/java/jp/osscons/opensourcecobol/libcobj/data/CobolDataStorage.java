@@ -609,6 +609,23 @@ public class CobolDataStorage {
     /**
      * TODO: 準備中
      *
+     * @param bytes コピー元のバイト配列
+     * @param length コピーする最大バイト数
+     */
+    public void setByByteArrayAndPaddingSpaces(byte[] bytes, int length) {
+        int copyLength = Math.min(bytes.length, length);
+        int i;
+        for (i = 0; i < copyLength; ++i) {
+            this.setByte(i, bytes[i]);
+        }
+        for (; i < length; ++i) {
+            this.setByte(i, (byte) ' ');
+        }
+    }
+
+    /**
+     * TODO: 準備中
+     *
      * @param bytes コピー元の配列
      * @param length コピーするバイト数
      */

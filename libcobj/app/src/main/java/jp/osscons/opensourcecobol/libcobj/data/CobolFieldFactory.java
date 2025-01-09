@@ -58,8 +58,7 @@ public class CobolFieldFactory {
      * @param attr TODO: 準備中
      * @return TODO: 準備中
      */
-    public static AbstractCobolField makeCobolField(
-            byte[] bytes, CobolFieldAttribute attr) {
+    public static AbstractCobolField makeCobolField(byte[] bytes, CobolFieldAttribute attr) {
         return CobolFieldFactory.makeCobolField(bytes.length, new CobolDataStorage(bytes), attr);
     }
 

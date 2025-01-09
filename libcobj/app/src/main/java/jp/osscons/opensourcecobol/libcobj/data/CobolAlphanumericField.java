@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
@@ -44,7 +43,8 @@ public class CobolAlphanumericField extends AbstractCobolField {
 
     @Override
     public String getString() {
-        return new String(dataStorage.getByteArray(0, this.getSize()), AbstractCobolField.charSetSJIS);
+        return new String(
+                dataStorage.getByteArray(0, this.getSize()), AbstractCobolField.charSetSJIS);
     }
 
     @Override

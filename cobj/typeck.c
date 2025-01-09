@@ -4685,18 +4685,18 @@ int validate_move(cb_tree src, cb_tree dst, size_t is_value) {
       /* size check */
       size = cb_field_size(dst);
 #ifdef I18N_UTF8
-      // if (CB_TREE_CATEGORY(dst) == CB_CATEGORY_NATIONAL) {
-      //   /* I18N_UTF8: check in converted length. */
-      //   i = utf8_national_length(l->data, l->size);
-      //   if ((int)i < 0) {
-      //     goto invalid_national;
-      //   }
-      //   if (size >= 0 && i > size) {
-      //     goto size_overflow;
-      //   }
-      // } else if (size >= 0 && (int)l->size > size) {
-      //   goto size_overflow;
-      // }
+      if (CB_TREE_CATEGORY(dst) == CB_CATEGORY_NATIONAL) {
+        /* I18N_UTF8: check in converted length. */
+        i = utf8_national_length(l->data, l->size);
+        if ((int)i < 0) {
+          goto invalid_national;
+        }
+        if (size >= 0 && i > size) {
+          goto size_overflow;
+        }
+      } else if (size >= 0 && (int)l->size > size) {
+        goto size_overflow;
+      }
 #else  /*!I18N_UTF8*/
       if (size >= 0 && (int)l->size > size) {
         goto size_overflow;
@@ -4962,9 +4962,9 @@ size_overflow_2:
                     _("Some digits may be truncated"));
 
 #ifdef I18N_UTF8
-// invalid_national:
-//   return move_error(src, dst, is_value, cb_warn_constant, 1,
-//                     _("Invalid NATIONAL string."));
+invalid_national:
+  return move_error(src, dst, is_value, cb_warn_constant, 1,
+                    _("Invalid NATIONAL string."));
 #endif /*I18N_UTF8*/
 }
 

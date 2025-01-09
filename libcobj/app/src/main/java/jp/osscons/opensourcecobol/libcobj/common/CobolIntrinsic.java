@@ -2105,7 +2105,12 @@ public class CobolIntrinsic {
             makeFieldEntry(field);
             data = new byte[2 + flen];
             System.arraycopy(CobolFile.errorFile.getFileStatus(), 0, data, 0, 2);
-            System.arraycopy(CobolFile.errorFile.getSelectName().getBytes(AbstractCobolField.charSetSJIS), 0, data, 2, flen);
+            System.arraycopy(
+                    CobolFile.errorFile.getSelectName().getBytes(AbstractCobolField.charSetSJIS),
+                    0,
+                    data,
+                    2,
+                    flen);
             currField.setDataStorage(new CobolDataStorage(data));
         }
         return currField;
@@ -2183,7 +2188,9 @@ public class CobolIntrinsic {
         byte[] data;
         if (CobolRuntimeException.getExceptionCode() != 0
                 && CobolRuntimeException.getOrigStatement() != null) {
-            data = String.format("%-31s", CobolRuntimeException.getOrigStatement()).getBytes(AbstractCobolField.charSetSJIS);
+            data =
+                    String.format("%-31s", CobolRuntimeException.getOrigStatement())
+                            .getBytes(AbstractCobolField.charSetSJIS);
         } else {
             data = String.format("%-31s", "").getBytes(AbstractCobolField.charSetSJIS);
         }
@@ -2191,7 +2198,8 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    private static final byte[] CONST_STRING_EXCEPTION_OBJECT = "EXCEPTION-OBJECT".getBytes(AbstractCobolField.charSetSJIS);
+    private static final byte[] CONST_STRING_EXCEPTION_OBJECT =
+            "EXCEPTION-OBJECT".getBytes(AbstractCobolField.charSetSJIS);
 
     // cob_intr_exception_statusの実装
     /**
@@ -2285,19 +2293,31 @@ public class CobolIntrinsic {
             p1 = new String(formatData.getByteArray(n, 2), AbstractCobolField.charSetSJIS);
 
             if ("hh".equals(p1) && !hoursSeen) {
-                p2 = Integer.parseInt(new String(valueData.getByteArray(n, 2), AbstractCobolField.charSetSJIS));
+                p2 =
+                        Integer.parseInt(
+                                new String(
+                                        valueData.getByteArray(n, 2),
+                                        AbstractCobolField.charSetSJIS));
                 hours = p2;
                 hoursSeen = true;
                 continue;
             }
             if ("mm".equals(p1) && !minutesSeen) {
-                p2 = Integer.parseInt(new String(valueData.getByteArray(n, 2), AbstractCobolField.charSetSJIS));
+                p2 =
+                        Integer.parseInt(
+                                new String(
+                                        valueData.getByteArray(n, 2),
+                                        AbstractCobolField.charSetSJIS));
                 minutes = p2;
                 minutesSeen = true;
                 continue;
             }
             if ("ss".equals(p1) && !secondsSeen) {
-                p2 = Integer.parseInt(new String(valueData.getByteArray(n, 2), AbstractCobolField.charSetSJIS));
+                p2 =
+                        Integer.parseInt(
+                                new String(
+                                        valueData.getByteArray(n, 2),
+                                        AbstractCobolField.charSetSJIS));
                 seconds = p2;
                 secondsSeen = true;
                 continue;

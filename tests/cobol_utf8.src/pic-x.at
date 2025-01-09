@@ -12,8 +12,10 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0], [日本語の文字列])
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 日本語の文字列 | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
