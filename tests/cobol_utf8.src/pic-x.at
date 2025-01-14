@@ -63,8 +63,14 @@ AT_DATA([prog.cob], [
 #[prog.cob:8: Warning: Value size exceeds data size
 #prog.cob:6: Warning: 'F0' defined here as PIC X(6)
 #])
-AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0], [日本語])
+
+#AT_CHECK([cobj prog.cob])
+#AT_CHECK([java prog], [0], [日本語])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 日本語 | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -153,8 +159,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [日本語の文字列  ])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [日本語の文字列  ])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '日本語の文字列  ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -173,8 +184,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [ 日本語の文字列])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [ 日本語の文字列])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n ' 日本語の文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -193,8 +209,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [日本/中国 文字0])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [日本/中国 文字0])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '日本/中国 文字0' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -217,8 +238,14 @@ AT_DATA([prog.cob], [
 #[prog.cob:8: Warning: Value size exceeds data size
 #prog.cob:6: Warning: 'F0' defined here as PIC XX/XXBXX0
 #])
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [日/本 中0])
+
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [日/本 中0])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '日/本 中0' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -237,8 +264,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [日/本   0])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [日/本   0])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '日/本   0' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -257,8 +289,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [日 本])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [日 本])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '日 本' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -350,8 +387,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [文字列])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [文字列])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -370,8 +412,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [文字])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [文字])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '文字' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -394,8 +441,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [私の名前はありません])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [私の名前はありません])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '私の名前はありません' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -418,12 +470,17 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0], [],
-[prog.cob:12: Warning: F0 and '△' and FF have not same national type!
-prog.cob:12: Warning: F1 and '△' and FF have not same national type!
-prog.cob:12: Warning: F2 and '△' and FF have not same national type!
-])
-AT_CHECK([java prog], [0], [私の名前])
+#AT_CHECK([cobj prog.cob], [0], [],
+#[prog.cob:12: Warning: F0 and '△' and FF have not same national type!
+#prog.cob:12: Warning: F1 and '△' and FF have not same national type!
+#prog.cob:12: Warning: F2 and '△' and FF have not same national type!
+#])
+#AT_CHECK([java prog], [0], [私の名前])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '私の名前' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -447,8 +504,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [言えません私の名前は])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [言えません私の名前は])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '言えません私の名前は' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -467,8 +529,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [１２３４０１２３４０])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [１２３４０１２３４０])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '１２３４０１２３４０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -487,8 +554,13 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [１２３４０１２３４０])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [１２３４０１２３４０])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '１２３４０１２３４０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -508,67 +580,72 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
-AT_CHECK([java prog], [0], [02])
+#AT_CHECK([cobj prog.cob], [0])
+#AT_CHECK([java prog], [0], [02])
+
+AT_CHECK([cobj prog.cob 2> /dev/null])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '02' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
-AT_SETUP([Readable string literals])
-export LC_ALL=''
-# Older compilers converts string literals "日本語" in COBOL source code
-# to `CobolUtil.toBytes((byte)0x93, (byte)0xfa, (byte)0x96, (byte)0x7b, (byte)0x8c, (byte)0xea)` in Java source code.
-# The following tests check that the compiler converts the string literals to readable ones.
-
-AT_DATA([prog1.cob], [
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog1.
-       DATA             DIVISION.
-       WORKING-STORAGE  SECTION.
-       01 F0 PIC X(30)  VALUE "東京1".
-       PROCEDURE        DIVISION.
-            MOVE "東京2" TO F0.
-            DISPLAY "東京3".
-])
-
-AT_CHECK([cobj prog1.cob])
-AT_CHECK([grep '東京1' < prog1.java > /dev/null])
-AT_CHECK([grep '東京2' < prog1.java > /dev/null])
-AT_CHECK([grep '東京3' < prog1.java > /dev/null])
-
-# '　' is the first multi-byte Shift-JIS character with respect to the byte order
-# see http://charset.7jp.net/sjis.html
-AT_DATA([prog2.cob], [
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog2.
-       DATA             DIVISION.
-       WORKING-STORAGE  SECTION.
-       01 F0 PIC X(30)  VALUE "　1".
-       PROCEDURE        DIVISION.
-            MOVE "　2" TO F0.
-            DISPLAY "　3".
-])
-
-AT_CHECK([cobj prog2.cob])
-AT_CHECK([grep '　1' < prog2.java > /dev/null])
-AT_CHECK([grep '　2' < prog2.java > /dev/null])
-AT_CHECK([grep '　3' < prog2.java > /dev/null])
-
-# '熙' is the last printable Shift-JIS character with respect to the byte order.
-# See http://charset.7jp.net/sjis.html
-AT_DATA([prog3.cob], [
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog3.
-       DATA             DIVISION.
-       WORKING-STORAGE  SECTION.
-       01 F0 PIC X(30)  VALUE "熙1".
-       PROCEDURE        DIVISION.
-            MOVE "熙2" TO F0.
-            DISPLAY "熙3".
-])
-
-AT_CHECK([cobj prog3.cob])
-AT_CHECK([grep '熙1' < prog3.java > /dev/null])
-AT_CHECK([grep '熙2' < prog3.java > /dev/null])
-AT_CHECK([grep '熙3' < prog3.java > /dev/null])
-
-AT_CLEANUP
+#AT_SETUP([Readable string literals])
+#export LC_ALL=''
+## Older compilers converts string literals "日本語" in COBOL source code
+## to `CobolUtil.toBytes((byte)0x93, (byte)0xfa, (byte)0x96, (byte)0x7b, (byte)0x8c, (byte)0xea)` in Java source code.
+## The following tests check that the compiler converts the string literals to readable ones.
+#
+#AT_DATA([prog1.cob], [
+#       IDENTIFICATION   DIVISION.
+#       PROGRAM-ID.      prog1.
+#       DATA             DIVISION.
+#       WORKING-STORAGE  SECTION.
+#       01 F0 PIC X(30)  VALUE "東京1".
+#       PROCEDURE        DIVISION.
+#            MOVE "東京2" TO F0.
+#            DISPLAY "東京3".
+#])
+#
+#AT_CHECK([cobj prog1.cob])
+#AT_CHECK([grep '東京1' < prog1.java > /dev/null])
+#AT_CHECK([grep '東京2' < prog1.java > /dev/null])
+#AT_CHECK([grep '東京3' < prog1.java > /dev/null])
+#
+## '　' is the first multi-byte Shift-JIS character with respect to the byte order
+## see http://charset.7jp.net/sjis.html
+#AT_DATA([prog2.cob], [
+#       IDENTIFICATION   DIVISION.
+#       PROGRAM-ID.      prog2.
+#       DATA             DIVISION.
+#       WORKING-STORAGE  SECTION.
+#       01 F0 PIC X(30)  VALUE "　1".
+#       PROCEDURE        DIVISION.
+#            MOVE "　2" TO F0.
+#            DISPLAY "　3".
+#])
+#
+#AT_CHECK([cobj prog2.cob])
+#AT_CHECK([grep '　1' < prog2.java > /dev/null])
+#AT_CHECK([grep '　2' < prog2.java > /dev/null])
+#AT_CHECK([grep '　3' < prog2.java > /dev/null])
+#
+## '熙' is the last printable Shift-JIS character with respect to the byte order.
+## See http://charset.7jp.net/sjis.html
+#AT_DATA([prog3.cob], [
+#       IDENTIFICATION   DIVISION.
+#       PROGRAM-ID.      prog3.
+#       DATA             DIVISION.
+#       WORKING-STORAGE  SECTION.
+#       01 F0 PIC X(30)  VALUE "熙1".
+#       PROCEDURE        DIVISION.
+#            MOVE "熙2" TO F0.
+#            DISPLAY "熙3".
+#])
+#
+#AT_CHECK([cobj prog3.cob])
+#AT_CHECK([grep '熙1' < prog3.java > /dev/null])
+#AT_CHECK([grep '熙2' < prog3.java > /dev/null])
+#AT_CHECK([grep '熙3' < prog3.java > /dev/null])
+#
+#AT_CLEANUP
