@@ -5288,9 +5288,15 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
       buff[i - 1] = ' ';
     }
 #endif /*I18N_UTF8*/
+#ifdef I18N_UTF8
+    return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
+                                  cb_build_string(l->data, l->size),
+                                  cb_build_cast_length(dst));
+#else
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
                                   cb_build_string(buff, f->size),
                                   cb_build_cast_length(dst));
+#endif
   } else if ((cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
               f->pic->scale == l->scale && !f->flag_sign_leading &&
               !f->flag_sign_separate) ||
@@ -5350,9 +5356,15 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
       return cb_build_method_call_3("fillBytes", cb_build_cast_address(dst),
                                     cb_int(bbyte), cb_build_cast_length(dst));
     }
+#ifdef I18N_UTF8
+    return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
+                                  cb_build_string(l->data, l->size),
+                                  cb_build_cast_length(dst));
+#else
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
                                   cb_build_string(buff, f->size),
                                   cb_build_cast_length(dst));
+#endif
   } else if (cb_fits_int(src) && f->size <= 8 &&
              (f->usage == CB_USAGE_BINARY || f->usage == CB_USAGE_COMP_5 ||
               f->usage == CB_USAGE_COMP_X)) {
