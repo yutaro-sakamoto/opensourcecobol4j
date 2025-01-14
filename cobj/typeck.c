@@ -5289,7 +5289,7 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     }
 #endif /*I18N_UTF8*/
 #ifdef I18N_UTF8
-    return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
+    return cb_build_method_call_3("setByByteArrayAndPaddingSpaces", cb_build_cast_address(dst),
                                   cb_build_string(l->data, l->size),
                                   cb_build_cast_length(dst));
 #else
@@ -5357,7 +5357,7 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
                                     cb_int(bbyte), cb_build_cast_length(dst));
     }
 #ifdef I18N_UTF8
-    return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
+    return cb_build_method_call_3("setByByteArrayAndPaddingSpaces", cb_build_cast_address(dst),
                                   cb_build_string(l->data, l->size),
                                   cb_build_cast_length(dst));
 #else
