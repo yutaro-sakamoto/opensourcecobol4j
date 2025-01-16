@@ -3976,17 +3976,17 @@ static int check_equal_data_size(cb_tree x, cb_tree y) {
   return rt;
 }
 
-static int cb_validate_inspect_replaceable(cb_tree x, cb_tree y) {
-  int rt = 0;
-
-  if (y == cb_zero || y == cb_space || y == cb_quote || y == cb_high ||
-      y == cb_low) {
-    /* always replaceable */
-  } else if (check_equal_data_size(x, y)) {
-    rt = 1;
-  }
-  return rt;
-}
+// static int cb_validate_inspect_replaceable(cb_tree x, cb_tree y) {
+//   int rt = 0;
+//
+//   if (y == cb_zero || y == cb_space || y == cb_quote || y == cb_high ||
+//       y == cb_low) {
+//     /* always replaceable */
+//   } else if (check_equal_data_size(x, y)) {
+//     rt = 1;
+//   }
+//   return rt;
+// }
 
 static int cb_validate_inspect_convertible(cb_tree x, cb_tree y) {
   unsigned char *data1;
@@ -4160,7 +4160,7 @@ cb_tree cb_build_replacing_characters(cb_tree x, cb_tree l, cb_tree var) {
 
 cb_tree cb_build_replacing_all(cb_tree x, cb_tree y, cb_tree l, cb_tree var) {
 #ifdef I18N_UTF8
-  cb_validate_inspect_replaceable(x, y);
+  // cb_validate_inspect_replaceable(x, y);
 #else  /*I18N_UTF8*/
   /*
    * caution: cb_validate_inspect() never returns error (<0)
