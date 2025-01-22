@@ -741,6 +741,23 @@ cb_tree cb_build_identifier(cb_tree x) {
           }
         }
 
+#ifdef I18N_UTF8
+        int utf8_name_size = 0;
+        size_t char_size = 0;
+        const unsigned char *str = (const unsigned char *)name;
+
+        while(str < (const unsigned char *) name + strlen(name)){
+         char_size = COB_U8BYTE_1(*str);
+          if (char_size == 1){
+            utf8_name_size += 1;
+            str++;
+          }else{
+            utf8_name_size += 2;
+            str += char_size;
+          }
+        }
+#endif /*I18N_UTF8*/
+
         /* run-time check */
         if (CB_EXCEPTION_ENABLE(COB_EC_BOUND_SUBSCRIPT)) {
           if (p->occurs_depending) {
@@ -754,7 +771,11 @@ cb_tree cb_build_identifier(cb_tree x) {
               e2 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_build_cast_integer(p->occurs_depending),
+#ifdef I18N_UTF8
+                  cb_build_string0((ucharptr)name), cb_int(utf8_name_size));
+#else  /*!I18N_UTF8*/
                   cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+#endif /*I18N_UTF8*/
             } else {
               e1 = cb_build_funcall_4(
                   "CobolCheck.checkOdo", cb_int(p->occurs_max),
@@ -764,7 +785,11 @@ cb_tree cb_build_identifier(cb_tree x) {
               e2 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_int(p->occurs_max),
+#ifdef I18N_UTF8
+                  cb_build_string0((ucharptr)name), cb_int(utf8_name_size));
+#else  /*!I18N_UTF8*/
                   cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+#endif /*I18N_UTF8*/
             }
             r->check = cb_list_add(r->check, e1);
             r->check = cb_list_add(r->check, e2);
@@ -773,7 +798,11 @@ cb_tree cb_build_identifier(cb_tree x) {
               e1 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_int(p->occurs_max),
+#ifdef I18N_UTF8
+                  cb_build_string0((ucharptr)name), cb_int(utf8_name_size));
+#else  /*!I18N_UTF8*/
                   cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+#endif /*I18N_UTF8*/
               r->check = cb_list_add(r->check, e1);
             }
           }
@@ -4691,11 +4720,13 @@ int validate_move(cb_tree src, cb_tree dst, size_t is_value) {
         if ((int)i < 0) {
           goto invalid_national;
         }
-        if (size >= 0 && i > size) {
-          goto size_overflow;
-        }
-      } else if (size >= 0 && (int)l->size > size) {
-        goto size_overflow;
+        // if (size >= 0 && i > size) {
+        //   printf("db: overflow 1\n");
+        //   goto size_overflow;
+        // }
+      // } else if (size >= 0 && (int)l->size > size) {
+      //   printf("db: overflow 2\n");
+      //   goto size_overflow;
       }
 #else  /*!I18N_UTF8*/
       if (size >= 0 && (int)l->size > size) {

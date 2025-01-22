@@ -1467,7 +1467,7 @@ cb_tree cb_build_picture(const char *str) {
                             (c == '0' || c == 'B' || c == '/'))) {
 #ifdef I18N_UTF8
       /* I18N_UTF8: 3bytes for BMP. */
-      size += n * 2;
+      size += n ;
 #else  /*!I18N_UTF8*/
       size += n;
 #endif /*I18N_UTF8*/
