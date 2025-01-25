@@ -4259,10 +4259,7 @@ static int move_error(cb_tree src, cb_tree dst, const size_t value_flag,
     return 0;
   }
   loc = src->source_line ? src : dst;
-  if (flag < 0) {
-    cb_note_x(loc, msg);
-    return 0;
-  }
+
   if (value_flag) {
     /* VALUE clause */
     cb_warning_x(loc, msg);
@@ -4984,10 +4981,6 @@ size_overflow_1:
 size_overflow_2:
   return move_error(src, dst, is_value, cb_warn_truncate, 1,
                     _("Some digits may be truncated"));
-
-size_overflow_3:
-  return move_error(src, dst, is_value, -1, 0,
-                    _("Value size may exceed data size"));
 
 #ifdef I18N_UTF8
 invalid_national:

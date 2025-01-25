@@ -1373,7 +1373,6 @@ extern void cb_list_map(cb_tree (*func)(cb_tree x), cb_tree l);
 
 /* error.c */
 extern void cb_warning_x(cb_tree x, const char *fmt, ...) COB_A_FORMAT23;
-extern void cb_note_x(cb_tree x, const char *fmt, ...) COB_A_FORMAT23;
 extern void cb_error_x(cb_tree x, const char *fmt, ...) COB_A_FORMAT23;
 
 extern char *check_filler_name(char *name);
