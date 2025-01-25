@@ -534,16 +534,20 @@ static enum cb_string_category get_string_category(const unsigned char *s,
 static void joutput_string_write(const unsigned char *s, int size,
                                  enum cb_string_category category) {
   int i;
-  int utf8_multi_byte = 0;
+  int multi_byte = 0;
 
 #ifdef I18N_UTF8
   if (utf8_ext_pick(s)) {
-    utf8_multi_byte = 1;
+    multi_byte = 1;
+  }
+#else  /* I18N_UTF8 */
+  if (sjis_pick(s)) {
+    multi_byte = 1;
   }
 #endif /* I18N_UTF8 */
 
   if (category == CB_STRING_CATEGORY_ALL_ASCII ||
-      category == CB_STRING_CATEGORY_CONTAINS_NON_ASCII || utf8_multi_byte) {
+      category == CB_STRING_CATEGORY_CONTAINS_NON_ASCII || multi_byte) {
     if (param_wrap_string_flag) {
       joutput("new CobolDataStorage(");
     } else {
