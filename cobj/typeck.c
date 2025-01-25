@@ -4717,11 +4717,9 @@ int validate_move(cb_tree src, cb_tree dst, size_t is_value) {
         if ((int)i < 0) {
           goto invalid_national;
         }
-        // } else if (size >= 0 && (int)l->size > size) {
-        //   goto size_overflow;
       }
       if (size >= 0 && utf8_calc_sjis_size(l->data, l->size) > size) {
-        goto size_overflow_3;
+        goto size_overflow;
       }
 #else  /*!I18N_UTF8*/
       if (size >= 0 && (int)l->size > size) {

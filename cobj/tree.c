@@ -2728,12 +2728,12 @@ cb_tree cb_build_intrinsic(cb_tree name, cb_tree args, cb_tree refmod) {
 char *cb_get_hexword(char *name) {
   unsigned char *p;
   int non_sjis_utf8 = 0;
-  int n;
   char *rt = NULL;
 
   for (p = (unsigned char *)name; *p;) {
     unsigned char c = *p;
 #ifdef I18N_UTF8
+    int n;
     if ((n = COB_U8BYTE_1(c))) {
       p += n;
     } else {
