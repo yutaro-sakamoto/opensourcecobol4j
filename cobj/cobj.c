@@ -670,6 +670,48 @@ void sjis_spc_to_ascii(char *str) {
 }
 #endif /*I18N_UTF8*/
 
+#ifdef I18N_UTF8
+size_t utf8_calc_sjis_size(const unsigned char *data, int len) {
+  const unsigned char *p = data;
+  const unsigned char *ub = data + len;
+  int char_size = 0;
+  size_t name_size = 0;
+  while (p < ub) {
+    char_size = COB_U8BYTE_1(*p);
+    if (char_size == 1) {
+      name_size += 1;
+      p++;
+    } else if (char_size == 3 && utf8_hankaku_kana(p)) { // Hankaku Kana
+      name_size += 1;
+      p += char_size;
+    } else {
+      name_size += 2;
+      p += char_size;
+    }
+  }
+  return name_size;
+}
+
+int utf8_hankaku_kana(const unsigned char *data) {
+  const unsigned char *p = data;
+  if (*p == 0xef) {
+    p++;
+    if (*p == 0xbd) {
+      p++;
+      if (*p >= 0xa1 && *p <= 0xbf) {
+        return 1;
+      }
+    } else if (*p == 0xbe) {
+      p++;
+      if (*p >= 0x80 && *p <= 0x9f) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+#endif /*I18N_UTF8*/
+
 /*
  * Local functions
  */

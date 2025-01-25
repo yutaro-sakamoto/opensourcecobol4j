@@ -17,7 +17,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} -x prog.cob], [1], [],
-[prog.cob:8: Error: Size of 'ｗｋ−０３' larger than size of 'wk-02'
+[prog.cob:8: Error: Size of 'ｗｋ_０３' larger than size of 'wk-02'
 ])
 
 AT_CLEANUP

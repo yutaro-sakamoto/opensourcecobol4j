@@ -1465,12 +1465,7 @@ cb_tree cb_build_picture(const char *str) {
       size += n;
     } else if (c == 'N' || (category == PIC_NATIONAL_EDITED &&
                             (c == '0' || c == 'B' || c == '/'))) {
-#ifdef I18N_UTF8
-      /* I18N_UTF8: 3bytes for BMP. */
-      size += n ;
-#else  /*!I18N_UTF8*/
       size += n;
-#endif /*I18N_UTF8*/
     }
 
     /* store in the buffer */
@@ -1514,14 +1509,15 @@ cb_tree cb_build_picture(const char *str) {
     break;
   case PIC_NATIONAL:
     pic->category = CB_CATEGORY_NATIONAL;
-#ifdef I18N_UTF8
-    /* I18N_UTF8: NATIONAL allocates 3bytes/char for BMP. */
-    CHECK_CHARACTER_LENGTH(cb_max_utf8_character_data_size,
-                           "National field cannot be larger than %d digits");
-#else  /*!I18N_UTF8*/
+    // #ifdef I18N_UTF8
+    //     /* I18N_UTF8: NATIONAL allocates 3bytes/char for BMP. */
+    //     CHECK_CHARACTER_LENGTH(cb_max_utf8_character_data_size,
+    //                            "National field cannot be larger than %d
+    //                            digits");
+    // #else  /*!I18N_UTF8*/
     CHECK_CHARACTER_LENGTH(cb_max_sjis_character_data_size,
                            "National field cannot be larger than %d digits");
-#endif /*I18N_UTF8*/
+    // #endif /*I18N_UTF8*/
     break;
   case PIC_NUMERIC_EDITED:
     pic->str = cobc_malloc(idx + 1);
@@ -1547,16 +1543,16 @@ cb_tree cb_build_picture(const char *str) {
     memcpy(pic->str, buff, idx);
     pic->category = CB_CATEGORY_NATIONAL_EDITED;
     pic->lenstr = idx;
-#ifdef I18N_UTF8
-    /* I18N_UTF8: NATIONAL allocates 3bytes/char for BMP. */
-    CHECK_CHARACTER_LENGTH(
-        cb_max_utf8_character_data_size,
-        "NationalEdit field cannot be larger than %d digits");
-#else  /*!I18N_UTF8*/
+    // #ifdef I18N_UTF8
+    //     /* I18N_UTF8: NATIONAL allocates 3bytes/char for BMP. */
+    //     CHECK_CHARACTER_LENGTH(
+    //         cb_max_utf8_character_data_size,
+    //         "NationalEdit field cannot be larger than %d digits");
+    // #else  /*!I18N_UTF8*/
     CHECK_CHARACTER_LENGTH(
         cb_max_sjis_character_data_size,
         "NationalEdit field cannot be larger than %d digits");
-#endif /*I18N_UTF8*/
+    // #endif /*I18N_UTF8*/
     break;
   default:
     goto error;
@@ -2731,22 +2727,31 @@ cb_tree cb_build_intrinsic(cb_tree name, cb_tree args, cb_tree refmod) {
 
 char *cb_get_hexword(char *name) {
   unsigned char *p;
-  int non_sjis = 0;
+  int non_sjis_utf8 = 0;
+  int n;
   char *rt = NULL;
 
   for (p = (unsigned char *)name; *p;) {
     unsigned char c = *p;
+#ifdef I18N_UTF8
+    if ((n = COB_U8BYTE_1(c))) {
+      p += n;
+    } else {
+      non_sjis_utf8 = 1;
+      break;
+    }
+#else  /*!I18N_UTF8*/
     if (c < 0x80) {
       p++;
     } else if ((0x81 <= c && c <= 0x9F) || (0xE0 <= c && c <= 0xEF)) {
       p += 2;
     } else {
-      non_sjis = 1;
+      non_sjis_utf8 = 1;
       break;
     }
+#endif /*I18N_UTF8*/
   }
-
-  if (!non_sjis) {
+  if (!non_sjis_utf8) {
     rt = strdup(name);
   } else {
     rt = cobc_malloc(strlen(name) * 2 + 7);

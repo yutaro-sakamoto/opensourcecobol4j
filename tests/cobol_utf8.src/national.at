@@ -16,7 +16,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [ＡＢＣＤＺ])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'ＡＢＣＤＺ'| nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -38,7 +40,10 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [ＡＢＣ１２３])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'ＡＢＣ１２３'| nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
+
 
 AT_CLEANUP
 
@@ -60,7 +65,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [！！！！！])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '！！！！！' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -81,8 +88,12 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [￥        ])
+AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob], [0], [], 
+[prog.cob:9: Note: Value size may exceed data size
+])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '￥        ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -104,7 +115,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [＋　      ])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n '＋　      ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -126,7 +139,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [レディガガ　　　])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'レディガガ　　　' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -148,7 +163,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
-AT_CHECK([java prog], [0], [ポピン　　])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'ポピン　　' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -168,13 +185,14 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0],
-[いろは
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'いろは
 ｲﾛﾊ
 ﾎﾟﾋﾟﾝ
 ABC
 #$%
-])
+'| nkf -x --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -194,13 +212,14 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0],
-[いろは
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'いろは
 ｲﾛﾊ
 ﾎﾟﾋﾟﾝ
 ABC
 #$%
-])
+'| nkf -x --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -220,13 +239,14 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0],
-[いろは
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'いろは
 ｲﾛﾊ
 ﾎﾟﾋﾟﾝ
 ABC
 #$%
-])
+'| nkf -x --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
@@ -242,8 +262,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([cobj prog.cob])
-AT_CHECK([java prog], [0],
-[いろは
-])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n 'いろは
+' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP

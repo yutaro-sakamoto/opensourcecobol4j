@@ -34,14 +34,14 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 44444
 ])
 AT_CHECK([cat prog.java | grep "新宿" > /dev/null])
-AT_CHECK([cat prog.java | grep "横浜−１" > /dev/null])
-AT_CHECK([cat prog.java | grep "甲府−2" > /dev/null])
+AT_CHECK([cat prog.java | grep "横浜_１" > /dev/null])
+AT_CHECK([cat prog.java | grep "甲府_2" > /dev/null])
 AT_CHECK([cat prog.java | grep "宇都宮１" > /dev/null])
 AT_CHECK([cat prog.java | grep "仙台2" > /dev/null])
 
 AT_CHECK([cat prog.java | grep "東京ラベル" > /dev/null])
-AT_CHECK([cat prog.java | grep "神奈川−１ラベル" > /dev/null])
-AT_CHECK([cat prog.java | grep "山梨−2ラベル" > /dev/null])
+AT_CHECK([cat prog.java | grep "神奈川_１ラベル" > /dev/null])
+AT_CHECK([cat prog.java | grep "山梨_2ラベル" > /dev/null])
 AT_CHECK([cat prog.java | grep "栃木１ラベル" > /dev/null])
 AT_CHECK([cat prog.java | grep "宮城2ラベル" > /dev/null])
 

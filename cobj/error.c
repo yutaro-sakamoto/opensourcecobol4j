@@ -177,6 +177,16 @@ void cb_warning_x(cb_tree x, const char *fmt, ...) {
   warningcount++;
 }
 
+void cb_note_x(cb_tree x, const char *fmt, ...) {
+  va_list ap;
+
+  va_start(ap, fmt);
+  print_error((char *)(x->source_file), x->source_line, "Note: ", fmt, ap);
+  va_end(ap);
+
+  warningcount++;
+}
+
 void cb_error_x(cb_tree x, const char *fmt, ...) {
   va_list ap;
 
