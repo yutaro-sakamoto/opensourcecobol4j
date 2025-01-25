@@ -5321,17 +5321,22 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
                cat == CB_CATEGORY_ALPHANUMERIC) &&
               f->size < (int)(l->size + 16) && !cb_field_variable_size(f))) {
 #ifdef I18N_UTF8
-    diff = (int)(f->size - utf8_calc_sjis_size(l->data, l->size));
-    if (diff > 0) {
-      dst_size = strlen((char *)l->data) + diff;
+    if (!utf8_ext_pick(l->data)) {
+      diff = (int)(f->size - l->size);
+      dst_size = f->size;
     } else {
-      dst_size = strlen((char *)l->data);
+      diff = (int)(f->size - utf8_calc_sjis_size(l->data, l->size));
+      if (diff > 0) {
+        dst_size = strlen((char *)l->data) + diff;
+      } else {
+        dst_size = strlen((char *)l->data);
+      }
     }
     buff = cobc_malloc(dst_size);
 #else  /*!I18N_UTF8*/
     diff = (int)(f->size - l->size);
     dst_size = (size_t)f->size;
-    buff = cobc_malloc((size_t)f->size);
+    buff = cobc_malloc(dst_size);
 #endif /*I18N_UTF8*/
 
     if (cat == CB_CATEGORY_NUMERIC) {
