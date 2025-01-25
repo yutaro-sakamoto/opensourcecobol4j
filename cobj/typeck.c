@@ -846,10 +846,11 @@ cb_tree cb_build_identifier(cb_tree x) {
     /* I18N_UTF8: No wide char support. */
     if (CB_EXCEPTION_ENABLE(COB_EC_BOUND_REF_MOD)) {
       if (!CB_LITERAL_P(r->offset) || (r->length && !CB_LITERAL_P(r->length))) {
-        e1 = cb_build_funcall_4(
+        e1 = cb_build_funcall_5(
             "CobolUtil.cobCheckRefMod", cb_build_cast_integer(r->offset),
             r->length ? cb_build_cast_integer(r->length) : cb_int1,
-            cb_int(f->size), cb_build_string0((ucharptr)f->name));
+            cb_int(f->size), cb_build_string0((ucharptr)f->name),
+            cb_int(strlen(f->name)));
         r->check = cb_list_add(r->check, e1);
       }
     }
