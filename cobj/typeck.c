@@ -743,20 +743,6 @@ cb_tree cb_build_identifier(cb_tree x) {
         }
 
 #ifdef I18N_UTF8
-        // name_size = 0;
-        // size_t char_size = 0;
-        // const unsigned char *str = (const unsigned char *)name;
-
-        // while (str < (const unsigned char *)name + strlen(name)) {
-        //   char_size = COB_U8BYTE_1(*str);
-        //   if (char_size == 1) {
-        //     name_size += 1;
-        //     str++;
-        //   } else {
-        //     name_size += 2;
-        //     str += char_size;
-        //   }
-        // }
         name_size =
             utf8_calc_sjis_size((const unsigned char *)name, strlen(name));
 #else  /*!I18N_UTF8*/
