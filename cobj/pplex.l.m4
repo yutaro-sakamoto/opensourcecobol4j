@@ -472,6 +472,13 @@ convert_ucs_hyphen_minus (char *namebuf)
         memmove(p+1, p+3, strlen(p+3)+1);
         p++;
 	}
+
+	p = namebuf;
+	while (NULL != (p = strstr (p, UTF8_FULLWIDTH_HYPHEN_MINUS))) {
+		*p = '_';
+        memmove(p+1, p+3, strlen(p+3)+1);
+        p++;
+	}
 	return;
 }
 #endif /*I18N_UTF8*/
