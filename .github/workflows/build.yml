@@ -60,11 +60,30 @@ jobs:
           touch cobj/*.m4
           export LC_ALL=''
           export LC_CTYPE=''
+          export LANG=''
+          export LANGUAGE=
+          export LC_CTYPE=''
+          export LC_NUMERIC=''
+          export LC_TIME=''
+          export LC_COLLATE=''
+          export LC_MONETARY=''
+          export LC_MESSAGES=''
+          export LC_PAPER=''
+          export LC_NAME=''
+          export LC_ADDRESS=''
+          export LC_TELEPHONE=''
+          export LC_MEASUREMENT=''
+          export LC_IDENTIFICATION=''
+          export LC_ALL=''
           make
           echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
           make install
+          java -version
+          echo "LC_ALL=$LC_ALL"
+          echo "LC_CTYPE=$LC_CTYPE"
           cobj prog.cob
           java prog
+
 
       - name: Create an artifact file
         run: |
