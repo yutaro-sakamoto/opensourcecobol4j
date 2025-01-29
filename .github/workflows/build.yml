@@ -57,6 +57,8 @@ jobs:
         run: |
           ./configure --prefix=/usr/ CFLAGS=-Werror ${{ inputs.configure-args }}
           touch cobj/*.m4
+          export LC_ALL=''
+          export LC_CTYPE=''
           make
           echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
 

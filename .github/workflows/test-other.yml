@@ -66,6 +66,8 @@ jobs:
         run: |
           tar zxf opensourcecobol4j.tar.gz
           mv opensourcecobol4j/* .
+          export LC_ALL=''
+          export LC_CTYPE=''
           make install
       
       - name: Run tests ${{ inputs.test-name }}
