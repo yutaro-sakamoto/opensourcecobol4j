@@ -143,9 +143,21 @@ prog.cob:9: Error: User defined name must be less than 32 characters
 AT_CLEANUP
 
 AT_SETUP([Nihongo Filename])
-export LC_ALL=''
+export LANG=''
+export LANGUAGE=
 export LC_CTYPE=''
-
+export LC_NUMERIC=''
+export LC_TIME=''
+export LC_COLLATE=''
+export LC_MONETARY=''
+export LC_MESSAGES=''
+export LC_PAPER=''
+export LC_NAME=''
+export LC_ADDRESS=''
+export LC_TELEPHONE=''
+export LC_MEASUREMENT=''
+export LC_IDENTIFICATION=''
+export LC_ALL=''
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
        PROGRAM-ID.      prog.
@@ -174,8 +186,8 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([LC_ALL='' LC_CTYPE='' ${COMPILE} prog.cob])
-AT_CHECK([LC_ALL='' LC_CTYPE='' java prog], [0], [OK])
+AT_CHECK([LC_ALL='' LANGUAGE='' LC_CTYPE='' LC_NUMERIC='' LC_TIME='' LC_COLLATE='' LC_MONETARY='' LC_MESSAGES='' LC_PAPER='' LC_NAME='' LC_ADDRESS='' LC_TELEPHONE='' LC_MEASUREMENT='' LC_IDENTIFICATION='' ${COMPILE} prog.cob])
+AT_CHECK([LC_ALL='' LANGUAGE='' LC_CTYPE='' LC_NUMERIC='' LC_TIME='' LC_COLLATE='' LC_MONETARY='' LC_MESSAGES='' LC_PAPER='' LC_NAME='' LC_ADDRESS='' LC_TELEPHONE='' LC_MEASUREMENT='' LC_IDENTIFICATION='' java prog], [0], [OK])
 
 AT_CLEANUP
 
