@@ -520,7 +520,7 @@ public class a {
 ])
 
 AT_CHECK([cobj b.cbl])
-AT_CHECK([javac a.java])
+AT_CHECK([javac -encoding UTF8 a.java])
 AT_CHECK([java -Dfile.encoding=SJIS a > out1.txt])
 AT_CHECK([echo -n '100
 あいうえお
