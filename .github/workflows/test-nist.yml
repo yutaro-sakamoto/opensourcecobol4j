@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-java@v4
         if: inputs.os != 'amazonlinux:2023'
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '21'
 
       - name: Install dependencies on Ubuntu 24.04
