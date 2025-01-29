@@ -21,23 +21,23 @@ jobs:
     container:
       image: ${{ inputs.os }}
     steps: 
-      - uses: actions/setup-java@v4
-        if: inputs.os == 'ubuntu:24.04'
-        with:
-          distribution: 'zulu'
-          java-version: '21'
+      #- uses: actions/setup-java@v4
+      #  if: inputs.os == 'ubuntu:24.04'
+      #  with:
+      #    distribution: 'zulu'
+      #    java-version: '21'
 
-      - uses: actions/setup-java@v4
-        if: inputs.os == 'almalinux:9'
-        with:
-          distribution: 'zulu'
-          java-version: '11'
+      #- uses: actions/setup-java@v4
+      #  if: inputs.os == 'almalinux:9'
+      #  with:
+      #    distribution: 'zulu'
+      #    java-version: '11'
 
       - name: Install dependencies on Ubuntu 24.04
         if: inputs.os == 'ubuntu:24.04'
         run: |
           apt-get update -y
-          apt-get install -y build-essential gettext autoconf bison flex
+          apt-get install -y build-essential gettext autoconf bison flex openjdk-21-jdk
 
       - name: Install dependencies on AlmaLinux 9
         if: inputs.os == 'almalinux:9'
