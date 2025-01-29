@@ -88,9 +88,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob], [0], [], 
-[prog.cob:9: Note: Value size may exceed data size
-])
+AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '￥        ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -257,7 +255,7 @@ AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
        PROGRAM-ID.      prog.
        PROCEDURE        DIVISION.
-           DISPLAY NX"82A282EB82CD".
+           DISPLAY NX"E38184E3828DE381AF".
            STOP RUN.
 ])
 

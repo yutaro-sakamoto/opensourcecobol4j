@@ -72,6 +72,9 @@ public class CobolConstant {
     /** TODO: 準備中 */
     public static final AbstractCobolField zero = CobolFieldFactory.makeCobolField(1, "0", allAttr);
 
+    public static final AbstractCobolField zeroUTF8 =
+            CobolFieldFactory.makeCobolField(2, "０", allAttr);
+
     /** TODO: 準備中 */
     public static final AbstractCobolField space =
             CobolFieldFactory.makeCobolField(1, " ", allAttr);
