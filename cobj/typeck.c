@@ -376,23 +376,20 @@ char *cb_encode_program_id(const char *name) {
   }
   /* encode invalid letters */
 #ifdef I18N_UTF8
-  unsigned char *q;
-  int non_sjis_utf8 = 0;
-  for (q = (unsigned char *)name; *q;) {
-    unsigned char c = *p;
-    int n;
-    if ((n = COB_U8BYTE_1(c))) {
-      q += n;
+  for (; *s; s++) {
+    if (isalnum(*s) || *s == '_') {
+      *p++ = *s;
+    } else if (*s == '-') {
+      *p++ = '_';
+      *p++ = '_';
+    } else if (COB_U8BYTE_1(*p)) {
+      p += sprintf((char *)p, "_%02X%02X%02X", s[0], s[1], s[2]);
+      s += 2;
     } else {
-      non_sjis_utf8 = 1;
-      break;
+      p += sprintf((char *)p, "_%02X", *s);
     }
   }
-  if (!non_sjis_utf8) {
-    return strdup(name);
-  }
-#endif /*I18N_UTF8*/
-
+#else /*!I18N_UTF8*/
   for (; *s; s++) {
     if (isalnum(*s) || *s == '_') {
       *p++ = *s;
@@ -403,7 +400,9 @@ char *cb_encode_program_id(const char *name) {
       p += sprintf((char *)p, "_%02X", *s);
     }
   }
+#endif
   *p = 0;
+
   return strdup((char *)buff);
 }
 
@@ -4190,10 +4189,11 @@ cb_tree cb_build_replacing_all(cb_tree x, cb_tree y, cb_tree l, cb_tree var) {
 #ifdef I18N_UTF8
   // cb_validate_inspect_replaceable(x, y);
 
-  struct cb_literal *f = CB_LITERAL(x);
-  const unsigned char *p = f->data;
-  if (COB_U8BYTE_1(*p) > 1 && y == cb_zero) {
-    y = cb_zero_utf8;
+  if (CB_LITERAL_P(x)) {
+    const unsigned char *p = CB_LITERAL(x)->data;
+    if (COB_U8BYTE_1(*p) > 1 && y == cb_zero) {
+      y = cb_zero_utf8;
+    }
   }
 #else  /*I18N_UTF8*/
   /*
