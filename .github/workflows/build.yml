@@ -13,7 +13,8 @@ on:
 
 permissions:
   contents: read
-
+env:
+  CLASSPATH: ":/usr/lib/opensourcecobol4j/libcobj.jar"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -61,6 +62,9 @@ jobs:
           export LC_CTYPE=''
           make
           echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
+          make install
+          cobj prog.cob
+          java prog
 
       - name: Create an artifact file
         run: |
