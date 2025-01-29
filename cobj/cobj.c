@@ -671,9 +671,8 @@ void sjis_spc_to_ascii(char *str) {
 #endif /*I18N_UTF8*/
 
 #ifdef I18N_UTF8
-size_t utf8_calc_sjis_size(const unsigned char *data, int len) {
-  const unsigned char *p = data;
-  const unsigned char *ub = data + len;
+size_t utf8_calc_sjis_size(const unsigned char *p, int len) {
+  const unsigned char *ub = p + len;
   int char_size = 0;
   size_t name_size = 0;
   while (p < ub) {
@@ -681,7 +680,7 @@ size_t utf8_calc_sjis_size(const unsigned char *data, int len) {
     if (char_size == 1) {
       name_size += 1;
       p++;
-    } else if (char_size == 3 && utf8_hankaku_kana(p)) { // Hankaku Kana
+    } else if (char_size == 3 && utf8_hankaku_kana(p)) {
       name_size += 1;
       p += char_size;
     } else {
@@ -692,18 +691,14 @@ size_t utf8_calc_sjis_size(const unsigned char *data, int len) {
   return name_size;
 }
 
-int utf8_hankaku_kana(const unsigned char *data) {
-  const unsigned char *p = data;
-  if (*p == 0xef) {
-    p++;
-    if (*p == 0xbd) {
-      p++;
-      if (*p >= 0xa1 && *p <= 0xbf) {
+int utf8_hankaku_kana(const unsigned char *p) {
+  if (p[0] == 0xef) {
+    if (p[1] == 0xbd) {
+      if (p[2] >= 0xa1 && p[2] <= 0xbf) {
         return 1;
       }
-    } else if (*p == 0xbe) {
-      p++;
-      if (*p >= 0x80 && *p <= 0x9f) {
+    } else if (p[1] == 0xbe) {
+      if (p[2] >= 0x80 && p[2] <= 0x9f) {
         return 1;
       }
     }
