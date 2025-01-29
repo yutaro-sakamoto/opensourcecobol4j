@@ -88,7 +88,10 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob])
+AT_CHECK([cobj ${FLAGS_JP_COMPAT} prog.cob], [0], [],
+[prog.cob:9: Warning: Value size exceeds data size
+prog.cob:6: Warning: 'I-STR' defined here as PIC X(1)
+])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '￥        ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
