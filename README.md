@@ -60,6 +60,18 @@ make
 sudo make install
 ```
 
+### Install opensource COBOL 4J (UTF-8 version)
+
+```
+curl -L -o opensourcecobol4j-v1.1.5.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.5.tar.gz
+tar zxvf opensourcecobol4j-v1.1.5.tar.gz
+cd opensourcecobol4j-1.1.5
+./configure --prefix=/usr/ --enable-utf8
+touch cobj/*.m4
+make
+sudo make install
+```
+
 ### Set $CLASSPATH
 Add /usr/lib/opensourcecobol4j/libcobj.jar to the environment variable $CLASSPATH.
 For instance, run the following code in Unix-like systems.
