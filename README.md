@@ -60,6 +60,18 @@ make
 sudo make install
 ```
 
+In order to install a compiler for UTF-8 encoded COBOL source code, run the following commands.
+
+```
+curl -L -o opensourcecobol4j-v1.1.6.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.6.tar.gz
+tar zxvf opensourcecobol4j-v1.1.6.tar.gz
+cd opensourcecobol4j-1.1.6
+./configure --prefix=/usr/
+touch cobj/*.m4
+make
+sudo make install
+```
+
 ### Set $CLASSPATH
 Add /usr/lib/opensourcecobol4j/libcobj.jar to the environment variable $CLASSPATH.
 For instance, run the following code in Unix-like systems.
