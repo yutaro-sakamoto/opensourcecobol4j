@@ -579,7 +579,7 @@ public class CobolDecimal {
         String numString = this.value.toPlainString();
         int dPointIndex = numString.indexOf('.');
         numString = numString.replace(".", "");
-        byte[] numBuffPtr = numString.getBytes();
+        byte[] numBuffPtr = numString.getBytes(AbstractCobolField.charSetSJIS);
         if (dPointIndex < 0) {
             dPointIndex = numBuffPtr.length;
         }
@@ -626,7 +626,7 @@ public class CobolDecimal {
         String numString = this.value.toPlainString();
         int dPointIndex = numString.indexOf('.');
         numString = numString.replace(".", "");
-        byte[] numBuffPtr = numString.getBytes();
+        byte[] numBuffPtr = numString.getBytes(AbstractCobolField.charSetSJIS);
         if (dPointIndex < 0) {
             dPointIndex = numBuffPtr.length;
         }

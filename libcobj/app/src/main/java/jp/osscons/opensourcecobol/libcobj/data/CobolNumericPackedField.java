@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
@@ -186,7 +185,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
 
     @Override
     public void setDecimal(BigDecimal decimal) {
-        byte[] decimalBytes = decimal.toPlainString().getBytes();
+        byte[] decimalBytes = decimal.toPlainString().getBytes(AbstractCobolField.charSetSJIS);
         int length = Math.min(this.size, decimalBytes.length);
 
         for (int i = 0; i < length; ++i) {
@@ -308,11 +307,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
 
     @Override
     public void moveFrom(String string) {
-        try {
-            this.dataStorage.setData(string.getBytes("SJIS"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        this.dataStorage.setData(string.getBytes(AbstractCobolField.charSetSJIS));
     }
 
     @Override

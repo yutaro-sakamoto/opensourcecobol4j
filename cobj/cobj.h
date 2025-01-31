@@ -198,6 +198,8 @@ extern size_t utf8_strlen(const unsigned char *p);
 extern int utf8_casecmp(const char *s1, const char *s2);
 extern void utf8_spc_to_ascii(char *);
 extern int utf8_national_length(const unsigned char *str, int len);
+extern size_t utf8_calc_sjis_size(const unsigned char *data, int len);
+extern int utf8_hankaku_kana(const unsigned char *data);
 #else  /*!I18N_UTF8*/
 extern const unsigned char *sjis_pick(const unsigned char *);
 extern size_t sjis_strlen(const unsigned char *);

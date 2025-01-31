@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
@@ -47,11 +46,7 @@ public class CobolNationalField extends AbstractCobolField {
 
     @Override
     public String getString() {
-        try {
-            return new String(dataStorage.getData(), "SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return "";
-        }
+        return new String(dataStorage.getData(), AbstractCobolField.charSetSJIS);
     }
 
     @Override
@@ -1045,17 +1040,12 @@ public class CobolNationalField extends AbstractCobolField {
 
     @Override
     public void moveFrom(String string) {
-        try {
-            byte[] bytes = string.getBytes("SJIS");
-            CobolDataStorage data = new CobolDataStorage(bytes);
-            CobolFieldAttribute a =
-                    new CobolFieldAttribute(
-                            CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
-            CobolAlphanumericField f = new CobolAlphanumericField(bytes.length, data, a);
-            this.moveFrom(f);
-        } catch (UnsupportedEncodingException e) {
-            return;
-        }
+        byte[] bytes = string.getBytes(AbstractCobolField.charSetSJIS);
+        CobolDataStorage data = new CobolDataStorage(bytes);
+        CobolFieldAttribute a =
+                new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
+        CobolAlphanumericField f = new CobolAlphanumericField(bytes.length, data, a);
+        this.moveFrom(f);
     }
 
     @Override

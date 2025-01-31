@@ -961,7 +961,7 @@ public class CobolFile {
         byte[] dst;
         boolean simple;
         if (CobolModule.getCurrentModule().flag_filename_mapping != 0) {
-            src = file_open_name.getBytes();
+            src = file_open_name.getBytes(AbstractCobolField.charSetSJIS);
             dst = file_open_buff;
             simple = true;
             int srcI = 0;
@@ -985,9 +985,11 @@ public class CobolFile {
                     file_open_env[i - 1] = 0;
                     String p =
                             CobolUtil.getEnv(
-                                    new String(Arrays.copyOfRange(file_open_env, 0, i - 1)));
+                                    new String(
+                                            Arrays.copyOfRange(file_open_env, 0, i - 1),
+                                            AbstractCobolField.charSetSJIS));
                     if (p != null) {
-                        byte[] pbytes = p.getBytes();
+                        byte[] pbytes = p.getBytes(AbstractCobolField.charSetSJIS);
                         for (int j = 0; j < pbytes.length; ++j) {
                             dst[dstI + j] = pbytes[j];
                         }
@@ -999,30 +1001,36 @@ public class CobolFile {
                 }
             }
 
-            file_open_name = new String(Arrays.copyOfRange(dst, 0, dstI));
+            file_open_name =
+                    new String(Arrays.copyOfRange(dst, 0, dstI), AbstractCobolField.charSetSJIS);
 
-            byte[] fileOpenNameBytes = file_open_name.getBytes();
+            byte[] fileOpenNameBytes = file_open_name.getBytes(AbstractCobolField.charSetSJIS);
             cb_get_jisword_buff(file_open_buff, fileOpenNameBytes, COB_SMALL_BUFF);
 
             if (simple) {
                 int i;
                 for (i = 0; i < NUM_PREFIX; i++) {
-                    byte[] fileOpenBuff = concatString(prefix[i], file_open_name).getBytes();
-                    String p = CobolUtil.getEnv(new String(fileOpenBuff));
+                    byte[] fileOpenBuff =
+                            concatString(prefix[i], file_open_name)
+                                    .getBytes(AbstractCobolField.charSetSJIS);
+                    String p =
+                            CobolUtil.getEnv(
+                                    new String(fileOpenBuff, AbstractCobolField.charSetSJIS));
                     if (p != null) {
-                        fileOpenNameBytes = p.getBytes();
+                        fileOpenNameBytes = p.getBytes(AbstractCobolField.charSetSJIS);
                         break;
                     }
                 }
 
                 if (i == NUM_PREFIX && cob_file_path != null) {
                     byte[] fileOpenBuff =
-                            concatString(cob_file_path, "/", file_open_name).getBytes();
+                            concatString(cob_file_path, "/", file_open_name)
+                                    .getBytes(AbstractCobolField.charSetSJIS);
                     fileOpenNameBytes = fileOpenBuff;
                 }
             }
 
-            file_open_name = new String(fileOpenNameBytes);
+            file_open_name = new String(fileOpenNameBytes, AbstractCobolField.charSetSJIS);
         }
 
         boolean wasNotExist = false;
@@ -1376,7 +1384,7 @@ public class CobolFile {
             for (int i = 0; i < 2; ++i) {
                 sbuff[i] = fnstatus.getDataStorage().getByte(i);
             }
-            int status = Integer.parseInt(new String(sbuff));
+            int status = Integer.parseInt(new String(sbuff, AbstractCobolField.charSetSJIS));
             saveStatus(status, fnstatus);
             return;
         }
@@ -1962,7 +1970,7 @@ public class CobolFile {
         byte[] dst;
         boolean simple;
         if (CobolModule.getCurrentModule().flag_filename_mapping != 0) {
-            src = file_open_name.getBytes();
+            src = file_open_name.getBytes(AbstractCobolField.charSetSJIS);
             dst = file_open_buff;
             simple = true;
             int srcI = 0;
@@ -1986,9 +1994,11 @@ public class CobolFile {
                     file_open_env[i - 1] = 0;
                     String p =
                             CobolUtil.getEnv(
-                                    new String(Arrays.copyOfRange(file_open_env, 0, i - 1)));
+                                    new String(
+                                            Arrays.copyOfRange(file_open_env, 0, i - 1),
+                                            AbstractCobolField.charSetSJIS));
                     if (p != null) {
-                        byte[] pbytes = p.getBytes();
+                        byte[] pbytes = p.getBytes(AbstractCobolField.charSetSJIS);
                         for (int j = 0; j < pbytes.length; ++j) {
                             dst[dstI + j] = pbytes[j];
                         }
@@ -2000,30 +2010,36 @@ public class CobolFile {
                 }
             }
 
-            file_open_name = new String(Arrays.copyOfRange(dst, 0, dstI));
+            file_open_name =
+                    new String(Arrays.copyOfRange(dst, 0, dstI), AbstractCobolField.charSetSJIS);
 
-            byte[] fileOpenNameBytes = file_open_name.getBytes();
+            byte[] fileOpenNameBytes = file_open_name.getBytes(AbstractCobolField.charSetSJIS);
             cb_get_jisword_buff(file_open_buff, fileOpenNameBytes, COB_SMALL_BUFF);
 
             if (simple) {
                 int i;
                 for (i = 0; i < NUM_PREFIX; i++) {
-                    byte[] fileOpenBuff = concatString(prefix[i], file_open_name).getBytes();
-                    String p = CobolUtil.getEnv(new String(fileOpenBuff));
+                    byte[] fileOpenBuff =
+                            concatString(prefix[i], file_open_name)
+                                    .getBytes(AbstractCobolField.charSetSJIS);
+                    String p =
+                            CobolUtil.getEnv(
+                                    new String(fileOpenBuff, AbstractCobolField.charSetSJIS));
                     if (p != null) {
-                        fileOpenNameBytes = p.getBytes();
+                        fileOpenNameBytes = p.getBytes(AbstractCobolField.charSetSJIS);
                         break;
                     }
                 }
 
                 if (i == NUM_PREFIX && cob_file_path != null) {
                     byte[] fileOpenBuff =
-                            concatString(cob_file_path, "/", file_open_name).getBytes();
+                            concatString(cob_file_path, "/", file_open_name)
+                                    .getBytes(AbstractCobolField.charSetSJIS);
                     fileOpenNameBytes = fileOpenBuff;
                 }
             }
 
-            file_open_name = new String(fileOpenNameBytes);
+            file_open_name = new String(fileOpenNameBytes, AbstractCobolField.charSetSJIS);
         }
 
         Path filePath;

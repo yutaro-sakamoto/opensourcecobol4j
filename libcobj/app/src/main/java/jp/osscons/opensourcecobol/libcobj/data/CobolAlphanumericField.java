@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
@@ -44,11 +43,8 @@ public class CobolAlphanumericField extends AbstractCobolField {
 
     @Override
     public String getString() {
-        try {
-            return new String(dataStorage.getByteArray(0, this.getSize()), "SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return "";
-        }
+        return new String(
+                dataStorage.getByteArray(0, this.getSize()), AbstractCobolField.charSetSJIS);
     }
 
     @Override
@@ -183,19 +179,15 @@ public class CobolAlphanumericField extends AbstractCobolField {
 
     @Override
     public void moveFrom(String string) {
-        try {
-            byte[] bytes = string.getBytes("SJIS");
-            int length = Math.min(bytes.length, this.getSize());
-            CobolDataStorage data = this.getDataStorage();
-            // ' '埋め
-            for (int i = 0; i < this.getSize(); ++i) {
-                data.setByte(i, (byte) 0x20);
-            }
-            for (int i = 0; i < length; ++i) {
-                data.setByte(i, bytes[i]);
-            }
-        } catch (UnsupportedEncodingException e) {
-            return;
+        byte[] bytes = string.getBytes(AbstractCobolField.charSetSJIS);
+        int length = Math.min(bytes.length, this.getSize());
+        CobolDataStorage data = this.getDataStorage();
+        // ' '埋め
+        for (int i = 0; i < this.getSize(); ++i) {
+            data.setByte(i, (byte) 0x20);
+        }
+        for (int i = 0; i < length; ++i) {
+            data.setByte(i, bytes[i]);
         }
     }
 

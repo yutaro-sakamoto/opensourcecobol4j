@@ -329,6 +329,12 @@ static const struct option long_options[] = {
 #undef CB_WARNDEF
     {NULL, 0, NULL, 0}};
 
+#ifdef I18N_UTF8
+static const char *JAVAC_ENCODING = "UTF-8";
+#else
+static const char *JAVAC_ENCODING = "SJIS";
+#endif
+
 static const char *cob_cc;                    /* gcc */
 static char cob_java_flags[COB_SMALL_BUFF];   /* -I... */
 static char cob_libs[COB_MEDIUM_BUFF];        /* -L... -lcob */
@@ -661,6 +667,43 @@ void sjis_spc_to_ascii(char *str) {
       p++;
     }
   }
+}
+#endif /*I18N_UTF8*/
+
+#ifdef I18N_UTF8
+size_t utf8_calc_sjis_size(const unsigned char *p, int len) {
+  const unsigned char *ub = p + len;
+  int char_size = 0;
+  size_t name_size = 0;
+  while (p < ub) {
+    char_size = COB_U8BYTE_1(*p);
+    if (char_size == 1) {
+      name_size += 1;
+      p++;
+    } else if (char_size == 3 && utf8_hankaku_kana(p)) {
+      name_size += 1;
+      p += char_size;
+    } else {
+      name_size += 2;
+      p += char_size;
+    }
+  }
+  return name_size;
+}
+
+int utf8_hankaku_kana(const unsigned char *p) {
+  if (p[0] == 0xef) {
+    if (p[1] == 0xbd) {
+      if (p[2] >= 0xa1 && p[2] <= 0xbf) {
+        return 1;
+      }
+    } else if (p[1] == 0xbe) {
+      if (p[2] >= 0x80 && p[2] <= 0x9f) {
+        return 1;
+      }
+    }
+  }
+  return 0;
 }
 #endif /*I18N_UTF8*/
 
@@ -1772,8 +1815,9 @@ static int process_compile(struct filename *fn) {
 
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
-    snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding SJIS -d %s %s/%s.java",
-             cob_java_flags, output_name_a, java_source_dir_a, *program_id);
+    snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding %s -d %s %s/%s.java",
+             cob_java_flags, JAVAC_ENCODING, output_name_a, java_source_dir_a,
+             *program_id);
     ret = process(buff);
 
     if (ret) {
@@ -2044,8 +2088,8 @@ static int process_build_single_jar() {
 #else
   char remove_cmd[] = "rm -f";
 #endif
-  sprintf(buff, "javac %s -encoding SJIS -d %s %s/*.java", cob_java_flags,
-          output_name_a, java_source_dir_a);
+  sprintf(buff, "javac %s -encoding %s -d %s %s/*.java", cob_java_flags,
+          JAVAC_ENCODING, output_name_a, java_source_dir_a);
 
   ret = process(buff);
   if (ret) {

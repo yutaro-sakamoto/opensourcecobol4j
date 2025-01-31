@@ -93,7 +93,7 @@ public class CobolNationalEditedField extends AbstractCobolField {
 
         final int sizeOfInt = 4;
 
-        byte[] picBytes = this.getAttribute().getPic().getBytes();
+        byte[] picBytes = this.getAttribute().getPic().getBytes(AbstractCobolField.charSetSJIS);
         for (int p = 0; p < picBytes.length; ) {
             byte c = picBytes[p++];
             ByteBuffer buf = ByteBuffer.wrap(picBytes, p, sizeOfInt);

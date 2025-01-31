@@ -92,7 +92,7 @@ public class CobolNumericEditedField extends AbstractCobolField {
         int sign = src.getSign();
         src.putSign(+1);
         boolean neg = sign < 0;
-        byte[] picBytes = dst.getAttribute().getPic().getBytes();
+        byte[] picBytes = dst.getAttribute().getPic().getBytes(AbstractCobolField.charSetSJIS);
         int count = 0;
         int countSign = 1;
         int countCurr = 1;

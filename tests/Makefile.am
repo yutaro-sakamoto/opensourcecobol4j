@@ -26,7 +26,7 @@ TESTS = syntax \
 	run-O \
 	data-rep \
 	data-rep-O \
-	i18n_utf8 \
+	cobol_utf8 \
 	jp-compat \
 	command-line-options \
 	cobj-idx \
@@ -108,6 +108,22 @@ i18n_sjis_DEPENDENCIES = \
 	i18n_sjis.src/limits.at \
 	i18n_sjis.src/national.at \
 	i18n_sjis.src/mb-space.at
+
+cobol_utf8_DEPENDENCIES = \
+	cobol_utf8.at \
+	cobol_utf8.src/user-defined-word.at \
+	cobol_utf8.src/pic-x.at \
+	cobol_utf8.src/pic-n.at \
+	cobol_utf8.src/program-id.at \
+	cobol_utf8.src/error-print.at \
+	cobol_utf8.src/limits.at \
+	cobol_utf8.src/national.at \
+	cobol_utf8.src/mb-space.at \
+	cobol_utf8.src/compare-national-diff-size.at \
+	cobol_utf8.src/compare-national.at \
+	cobol_utf8.src/file-handler-japanese.at \
+	cobol_utf8.src/japanese-char-section-var.at \
+	cobol_utf8.src/java-interface.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \
@@ -264,6 +280,7 @@ $(srcdir)/syntax: $(syntax_DEPENDENCIES)
 $(srcdir)/run: $(run_DEPENDENCIES)
 $(srcdir)/data-rep: $(data_rep_DEPENDENCIES)
 $(srcdir)/i18n_utf8: $(i18n_utf8_DEPENDENCIES)
+$(srcdir)/cobol_utf8: $(cobol_utf8_DEPENDENCIES)
 $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)

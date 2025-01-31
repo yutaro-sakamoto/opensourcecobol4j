@@ -22834,7 +22834,7 @@ esac
 
 if test "`basename $CC`" = "gcc"
 then
-	CFLAGS="$CFLAGS -fsigned-char -Wall -Wwrite-strings -Wmissing-prototypes -Wno-format-security"
+	CFLAGS="$CFLAGS -fsigned-char -Wall -Wwrite-strings -Wmissing-prototypes -Wno-format-security -Wno-parentheses"
 fi
 
 if test "x$lt_cv_dlopen_self" != "xyes"

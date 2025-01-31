@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-import java.io.UnsupportedEncodingException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
 /** AbstractCobolFieldのサブクラスを生成するためのメソッドを定義するクラス */
@@ -49,6 +48,18 @@ public class CobolFieldFactory {
     public static AbstractCobolField makeCobolField(
             int size, byte[] bytes, CobolFieldAttribute attr) {
         return CobolFieldFactory.makeCobolField(size, new CobolDataStorage(bytes), attr);
+    }
+
+    /**
+     * TODO: 準備中
+     *
+     * @param size TODO: 準備中
+     * @param bytes TODO: 準備中
+     * @param attr TODO: 準備中
+     * @return TODO: 準備中
+     */
+    public static AbstractCobolField makeCobolField(byte[] bytes, CobolFieldAttribute attr) {
+        return CobolFieldFactory.makeCobolField(bytes.length, new CobolDataStorage(bytes), attr);
     }
 
     /**
@@ -113,11 +124,7 @@ public class CobolFieldFactory {
      */
     public static AbstractCobolField makeCobolField(String str) {
         byte[] bytes;
-        try {
-            bytes = str.getBytes("SJIS");
-        } catch (UnsupportedEncodingException e) {
-            return null;
-        }
+        bytes = str.getBytes(AbstractCobolField.charSetSJIS);
         CobolFieldAttribute attr =
                 new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
         return new CobolAlphanumericField(bytes.length, new CobolDataStorage(bytes), attr);

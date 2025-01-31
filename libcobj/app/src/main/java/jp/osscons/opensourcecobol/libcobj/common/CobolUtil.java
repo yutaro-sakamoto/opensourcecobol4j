@@ -18,7 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.common;
 
-import java.io.UnsupportedEncodingException;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.util.Calendar;
@@ -214,11 +213,8 @@ public class CobolUtil {
      */
     public static void cobCheckRefMod(int offset, long length, int size, byte[] name)
             throws CobolStopRunException {
-        try {
-            CobolUtil.cobCheckRefMod(offset, length, size, new String(name, "Shift_JIS"));
-        } catch (UnsupportedEncodingException e) {
-            CobolUtil.cobCheckRefMod(offset, length, size, "");
-        }
+        CobolUtil.cobCheckRefMod(
+                offset, length, size, new String(name, AbstractCobolField.charSetSJIS));
     }
 
     /**
@@ -636,11 +632,7 @@ public class CobolUtil {
      * @return TODO: 準備中
      */
     public static byte[] stringToBytes(String s) {
-        try {
-            return s.getBytes("Shift_JIS");
-        } catch (UnsupportedEncodingException e) {
-            return null;
-        }
+        return s.getBytes(AbstractCobolField.charSetSJIS);
     }
 
     /**

@@ -124,7 +124,7 @@ public class CobolAlphanumericEditedField extends AbstractCobolField {
         int max = src.getFieldSize();
         int srcp = src.getFirstDataIndex();
         int dstp = 0;
-        byte[] picBytes = dst.getAttribute().getPic().getBytes();
+        byte[] picBytes = dst.getAttribute().getPic().getBytes(AbstractCobolField.charSetSJIS);
         final int sizeOfInt = 4;
 
         for (int p = 0; p < picBytes.length; ) {

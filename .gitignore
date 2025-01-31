@@ -49,6 +49,7 @@ tests/command-line-options
 tests/data-rep
 tests/i18n_sjis
 tests/i18n_utf8
+tests/cobol_utf8
 tests/jp-compat
 tests/cobj-idx
 tests/misc

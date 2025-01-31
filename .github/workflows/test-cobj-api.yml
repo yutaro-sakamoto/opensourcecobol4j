@@ -6,6 +6,10 @@ on:
       os:
         required: true
         type: string
+      configure-args:
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -24,7 +28,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}
+          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
 
       - uses: actions/setup-java@v4
         if: inputs.os != 'amazonlinux:2023'

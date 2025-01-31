@@ -508,7 +508,7 @@ class IndexedFileUtilMain {
 
             // Construct a CobolFile instance
             byte[] fileStatus = new byte[4];
-            byte[] indxedFilePathBytes = indexedFilePath.getBytes();
+            byte[] indxedFilePathBytes = indexedFilePath.getBytes(AbstractCobolField.charSetSJIS);
             AbstractCobolField assignField =
                     CobolFieldFactory.makeCobolField(
                             indxedFilePathBytes.length,

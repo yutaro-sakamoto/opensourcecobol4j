@@ -375,6 +375,26 @@ char *cb_encode_program_id(const char *name) {
     p += sprintf((char *)p, "_%02X", *s++);
   }
   /* encode invalid letters */
+#ifdef I18N_UTF8
+  int n, i;
+
+  for (; *s; s++) {
+    if (isalnum(*s) || *s == '_') {
+      *p++ = *s;
+    } else if (*s == '-') {
+      *p++ = '_';
+      *p++ = '_';
+    } else if ((n = COB_U8BYTE_1(*s))) {
+      p += sprintf((char *)p, "_");
+      for (i = 0; i < n; i++) {
+        p += sprintf((char *)p, "%02X", s[i]);
+      }
+      s += n - 1;
+    } else {
+      p += sprintf((char *)p, "_%02X", *s);
+    }
+  }
+#else /*!I18N_UTF8*/
   for (; *s; s++) {
     if (isalnum(*s) || *s == '_') {
       *p++ = *s;
@@ -385,7 +405,9 @@ char *cb_encode_program_id(const char *name) {
       p += sprintf((char *)p, "_%02X", *s);
     }
   }
+#endif
   *p = 0;
+
   return strdup((char *)buff);
 }
 
@@ -661,6 +683,7 @@ cb_tree cb_build_identifier(cb_tree x) {
   cb_tree sub;
   int size;
   int n;
+  int name_size;
 
   if (x == cb_error_node) {
     return cb_error_node;
@@ -741,6 +764,13 @@ cb_tree cb_build_identifier(cb_tree x) {
           }
         }
 
+#ifdef I18N_UTF8
+        name_size =
+            utf8_calc_sjis_size((const unsigned char *)name, strlen(name));
+#else  /*!I18N_UTF8*/
+        name_size = strlen(name);
+#endif /*I18N_UTF8*/
+
         /* run-time check */
         if (CB_EXCEPTION_ENABLE(COB_EC_BOUND_SUBSCRIPT)) {
           if (p->occurs_depending) {
@@ -754,7 +784,7 @@ cb_tree cb_build_identifier(cb_tree x) {
               e2 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_build_cast_integer(p->occurs_depending),
-                  cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+                  cb_build_string0((ucharptr)name), cb_int(name_size));
             } else {
               e1 = cb_build_funcall_4(
                   "CobolCheck.checkOdo", cb_int(p->occurs_max),
@@ -764,7 +794,7 @@ cb_tree cb_build_identifier(cb_tree x) {
               e2 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_int(p->occurs_max),
-                  cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+                  cb_build_string0((ucharptr)name), cb_int(name_size));
             }
             r->check = cb_list_add(r->check, e1);
             r->check = cb_list_add(r->check, e2);
@@ -773,7 +803,7 @@ cb_tree cb_build_identifier(cb_tree x) {
               e1 = cb_build_funcall_5(
                   "CobolCheck.checkSubscript", cb_build_cast_integer(sub),
                   cb_int1, cb_int(p->occurs_max),
-                  cb_build_string0((ucharptr)name), cb_int(strlen(name)));
+                  cb_build_string0((ucharptr)name), cb_int(name_size));
               r->check = cb_list_add(r->check, e1);
             }
           }
@@ -820,18 +850,6 @@ cb_tree cb_build_identifier(cb_tree x) {
 #endif /*I18N_UTF8*/
 
     /* run-time check */
-#ifdef I18N_UTF8
-    /* I18N_UTF8: No wide char support. */
-    if (CB_EXCEPTION_ENABLE(COB_EC_BOUND_REF_MOD)) {
-      if (!CB_LITERAL_P(r->offset) || (r->length && !CB_LITERAL_P(r->length))) {
-        e1 = cb_build_funcall_4(
-            "CobolUtil.cobCheckRefMod", cb_build_cast_integer(r->offset),
-            r->length ? cb_build_cast_integer(r->length) : cb_int1,
-            cb_int(f->size), cb_build_string0((ucharptr)f->name));
-        r->check = cb_list_add(r->check, e1);
-      }
-    }
-#else  /*!I18N_UTF8*/
     if (CB_EXCEPTION_ENABLE(COB_EC_BOUND_REF_MOD)) {
       if (!CB_LITERAL_P(r->offset) || (r->length && !CB_LITERAL_P(r->length))) {
         if (cb_tree_category(CB_TREE(r)) == CB_CATEGORY_NATIONAL ||
@@ -851,7 +869,6 @@ cb_tree cb_build_identifier(cb_tree x) {
         r->check = cb_list_add(r->check, e1);
       }
     }
-#endif /*I18N_UTF8*/
   }
 
   if (f->storage == CB_STORAGE_CONSTANT) {
@@ -3976,17 +3993,17 @@ static int check_equal_data_size(cb_tree x, cb_tree y) {
   return rt;
 }
 
-static int cb_validate_inspect_replaceable(cb_tree x, cb_tree y) {
-  int rt = 0;
-
-  if (y == cb_zero || y == cb_space || y == cb_quote || y == cb_high ||
-      y == cb_low) {
-    /* always replaceable */
-  } else if (check_equal_data_size(x, y)) {
-    rt = 1;
-  }
-  return rt;
-}
+// static int cb_validate_inspect_replaceable(cb_tree x, cb_tree y) {
+//   int rt = 0;
+//
+//   if (y == cb_zero || y == cb_space || y == cb_quote || y == cb_high ||
+//       y == cb_low) {
+//     /* always replaceable */
+//   } else if (check_equal_data_size(x, y)) {
+//     rt = 1;
+//   }
+//   return rt;
+// }
 
 static int cb_validate_inspect_convertible(cb_tree x, cb_tree y) {
   unsigned char *data1;
@@ -4160,7 +4177,14 @@ cb_tree cb_build_replacing_characters(cb_tree x, cb_tree l, cb_tree var) {
 
 cb_tree cb_build_replacing_all(cb_tree x, cb_tree y, cb_tree l, cb_tree var) {
 #ifdef I18N_UTF8
-  cb_validate_inspect_replaceable(x, y);
+  // cb_validate_inspect_replaceable(x, y);
+
+  if (CB_LITERAL_P(x)) {
+    const unsigned char *p = CB_LITERAL(x)->data;
+    if (COB_U8BYTE_1(*p) == 3 && y == cb_zero) {
+      y = cb_zen_zero;
+    }
+  }
 #else  /*I18N_UTF8*/
   /*
    * caution: cb_validate_inspect() never returns error (<0)
@@ -4237,6 +4261,7 @@ static int move_error(cb_tree src, cb_tree dst, const size_t value_flag,
     return 0;
   }
   loc = src->source_line ? src : dst;
+
   if (value_flag) {
     /* VALUE clause */
     cb_warning_x(loc, msg);
@@ -4691,10 +4716,8 @@ int validate_move(cb_tree src, cb_tree dst, size_t is_value) {
         if ((int)i < 0) {
           goto invalid_national;
         }
-        if (size >= 0 && i > size) {
-          goto size_overflow;
-        }
-      } else if (size >= 0 && (int)l->size > size) {
+      }
+      if (size >= 0 && utf8_calc_sjis_size(l->data, l->size) > size) {
         goto size_overflow;
       }
 #else  /*!I18N_UTF8*/
@@ -5240,6 +5263,7 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
   int val;
   int n;
   unsigned char bbyte;
+  size_t dst_size;
 
   l = CB_LITERAL(src);
   f = cb_field(dst);
@@ -5297,17 +5321,34 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
              ((cat == CB_CATEGORY_ALPHABETIC ||
                cat == CB_CATEGORY_ALPHANUMERIC) &&
               f->size < (int)(l->size + 16) && !cb_field_variable_size(f))) {
-    buff = cobc_malloc((size_t)f->size);
+#ifdef I18N_UTF8
+    if (!utf8_ext_pick(l->data)) {
+      diff = (int)(f->size - l->size);
+      dst_size = f->size;
+    } else {
+      diff = (int)(f->size - utf8_calc_sjis_size(l->data, l->size));
+      if (diff > 0) {
+        dst_size = strlen((char *)l->data) + diff;
+      } else {
+        dst_size = strlen((char *)l->data);
+      }
+    }
+    buff = cobc_malloc(dst_size);
+#else  /*!I18N_UTF8*/
     diff = (int)(f->size - l->size);
+    dst_size = (size_t)f->size;
+    buff = cobc_malloc(dst_size);
+#endif /*I18N_UTF8*/
+
     if (cat == CB_CATEGORY_NUMERIC) {
       if (diff <= 0) {
-        memcpy(buff, l->data - diff, (size_t)f->size);
+        memcpy(buff, l->data - diff, dst_size);
       } else {
         memset(buff, '0', (size_t)diff);
         memcpy(buff + diff, l->data, (size_t)l->size);
       }
       if (f->pic->have_sign) {
-        p = &buff[f->size - 1];
+        p = &buff[dst_size - 1];
         if (cb_display_sign) {
           cob_put_sign_ebcdic(p, l->sign);
         } else if (l->sign < 0) {
@@ -5321,14 +5362,14 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     } else {
       if (f->flag_justified) {
         if (diff <= 0) {
-          memcpy(buff, l->data - diff, (size_t)f->size);
+          memcpy(buff, l->data - diff, dst_size);
         } else {
           memset(buff, ' ', (size_t)diff);
           memcpy(buff + diff, l->data, (size_t)l->size);
         }
       } else {
         if (diff <= 0) {
-          memcpy(buff, l->data, (size_t)f->size);
+          memcpy(buff, l->data, dst_size);
         } else {
           memcpy(buff, l->data, (size_t)l->size);
           memset(buff + l->size, ' ', (size_t)diff);
@@ -5336,22 +5377,22 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
       }
     }
     bbyte = *buff;
-    if (f->size == 1) {
+    if (dst_size == 1) {
       free(buff);
       return cb_build_funcall_2("$E", dst, cb_int(bbyte));
     }
-    for (i = 0; i < f->size; i++) {
+    for (i = 0; i < dst_size; i++) {
       if (bbyte != buff[i]) {
         break;
       }
     }
-    if (i == f->size) {
+    if (i == dst_size) {
       free(buff);
       return cb_build_method_call_3("fillBytes", cb_build_cast_address(dst),
                                     cb_int(bbyte), cb_build_cast_length(dst));
     }
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
-                                  cb_build_string(buff, f->size),
+                                  cb_build_string(buff, dst_size),
                                   cb_build_cast_length(dst));
   } else if (cb_fits_int(src) && f->size <= 8 &&
              (f->usage == CB_USAGE_BINARY || f->usage == CB_USAGE_COMP_5 ||
