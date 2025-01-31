@@ -19,7 +19,8 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Run javadoc
-        working-directory: libcobj 
+        working-directory: libcobj
         run: |
+          ./gradlew javadoc
           ./gradlew javadoc | tee javadoc.log
           test "$(grep '[1-9][0-9]* warning' javadoc.log)" = ""
