@@ -54,6 +54,14 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Install opensource COBOL 4J
+        if: inputs.configure-args == ''
+        run: |
+          ./configure --prefix=/usr/ CFLAGS=-Werror
+          make
+          echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
+
+      - name: Install opensource COBOL 4J
+        if: inputs.configure-args != ''
         run: |
           ./configure --prefix=/usr/ CFLAGS=-Werror ${{ inputs.configure-args }}
           touch cobj/*.m4

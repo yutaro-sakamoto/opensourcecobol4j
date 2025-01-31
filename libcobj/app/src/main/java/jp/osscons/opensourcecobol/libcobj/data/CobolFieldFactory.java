@@ -53,7 +53,6 @@ public class CobolFieldFactory {
     /**
      * TODO: 準備中
      *
-     * @param size TODO: 準備中
      * @param bytes TODO: 準備中
      * @param attr TODO: 準備中
      * @return TODO: 準備中
