@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.6] - 2025-01-31
+
+### Add
+
+* Compile UTF-8 Source Code
+  * The latest version of cobj is now able to accept UTF-8 encoded COBOL and generate UTF-8 encoded Java.
 
 ## [1.1.5] - 2024-12-27
 
