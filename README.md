@@ -66,7 +66,7 @@ In order to install a compiler for UTF-8 encoded COBOL source code, run the foll
 curl -L -o opensourcecobol4j-v1.1.6.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.6.tar.gz
 tar zxvf opensourcecobol4j-v1.1.6.tar.gz
 cd opensourcecobol4j-1.1.6
-./configure --prefix=/usr/
+./configure --prefix=/usr/ --enable-utf8
 touch cobj/*.m4
 make
 sudo make install
