@@ -72,6 +72,14 @@ public class CobolUtil {
     /** TDOD: 準備中 */
     public static int fileSeqWriteBufferSize = 10;
 
+    enum CobolEncoding {
+        UTF8,
+        SHIFT_JIS,
+    };
+
+    static CobolEncoding displayStatementEncoding = CobolEncoding.SHIFT_JIS;
+    static CobolEncoding acceptStatementEncoding = CobolEncoding.SHIFT_JIS;
+
     private static boolean lineTrace = false;
 
     /** TDOD: 準備中 */
@@ -347,6 +355,28 @@ public class CobolUtil {
             int size = Integer.parseInt(s);
             if (size >= 0) {
                 CobolUtil.fileSeqWriteBufferSize = size;
+            }
+        }
+
+        s = System.getenv("COB_DISPLAY_ENCODING");
+        if (s != null) {
+            Pattern p = Pattern.compile("[uU][tT][fF]-?8");
+            Matcher m = p.matcher(s);
+            if (m.matches()) {
+                CobolUtil.displayStatementEncoding = CobolEncoding.UTF8;
+            } else {
+                CobolUtil.displayStatementEncoding = CobolEncoding.SHIFT_JIS;
+            }
+        }
+
+        s = System.getenv("COB_ACCEPT_ENCODING");
+        if (s != null) {
+            Pattern p = Pattern.compile("[uU][tT][fF]-?8");
+            Matcher m = p.matcher(s);
+            if (m.matches()) {
+                CobolUtil.acceptStatementEncoding = CobolEncoding.UTF8;
+            } else {
+                CobolUtil.acceptStatementEncoding = CobolEncoding.SHIFT_JIS;
             }
         }
     }
