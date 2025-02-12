@@ -453,16 +453,8 @@ convert_ucs_hyphen_minus (char *namebuf)
 {
 	char *p = namebuf;
 	while (NULL != (p = strstr (p, UTF8_MINUS_SIGN))) {
-		*p = '_';
-        memmove(p+1, p+3, strlen(p+3)+1);
-        p++;
-	}
-
-	p = namebuf;
-	while (NULL != (p = strstr (p, UTF8_FULLWIDTH_HYPHEN_MINUS))) {
-		*p = '_';
-        memmove(p+1, p+3, strlen(p+3)+1);
-        p++;
+		memcpy (p, UTF8_FULLWIDTH_HYPHEN_MINUS, 3);
+		p += 3;
 	}
 	return;
 }
