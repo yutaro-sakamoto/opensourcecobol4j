@@ -72,13 +72,11 @@ public class CobolUtil {
     /** TDOD: 準備中 */
     public static int fileSeqWriteBufferSize = 10;
 
-    enum CobolEncoding {
-        UTF8,
-        SHIFT_JIS,
-    };
+    /** DISPLAY文によるデータ出力時のエンコーディング */
+    public static CobolEncoding displayStatementEncoding = CobolEncoding.SHIFT_JIS;
 
-    static CobolEncoding displayStatementEncoding = CobolEncoding.SHIFT_JIS;
-    static CobolEncoding acceptStatementEncoding = CobolEncoding.SHIFT_JIS;
+    /** ACCEPT文によるデータ入力時のエンコーディング */
+    public static CobolEncoding acceptStatementEncoding = CobolEncoding.SHIFT_JIS;
 
     private static boolean lineTrace = false;
 
@@ -359,19 +357,18 @@ public class CobolUtil {
         }
 
         s = System.getenv("COB_DISPLAY_ENCODING");
+        CobolUtil.displayStatementEncoding = CobolEncoding.SHIFT_JIS;
         if (s != null) {
-            Pattern p = Pattern.compile("[uU][tT][fF]-?8");
+            Pattern p = Pattern.compile("[uU][tT][fF][_-]?8");
             Matcher m = p.matcher(s);
             if (m.matches()) {
                 CobolUtil.displayStatementEncoding = CobolEncoding.UTF8;
-            } else {
-                CobolUtil.displayStatementEncoding = CobolEncoding.SHIFT_JIS;
             }
         }
 
         s = System.getenv("COB_ACCEPT_ENCODING");
         if (s != null) {
-            Pattern p = Pattern.compile("[uU][tT][fF]-?8");
+            Pattern p = Pattern.compile("[uU][tT][fF][_-]?8");
             Matcher m = p.matcher(s);
             if (m.matches()) {
                 CobolUtil.acceptStatementEncoding = CobolEncoding.UTF8;
