@@ -573,24 +573,12 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([cobj prog.cbl])
 
-AT_CHECK([java prog                               < ../../i18n_sjis.src/data/in-sjis.txt > disp-none-acc-none.txt])
-AT_CHECK([COB_ACCEPT_ENCODING=SHIFT_JIS java prog < ../../i18n_sjis.src/data/in-sjis.txt > disp-none-acc-sjis.txt])
-AT_CHECK([COB_ACCEPT_ENCODING=UTF-8     java prog < ../../i18n_sjis.src/data/in-utf8.txt > disp-none-acc-utf8.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=SHIFT_JIS java prog                               < ../../i18n_sjis.src/data/in-sjis.txt > disp-sjis-acc-none.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=SHIFT_JIS COB_ACCEPT_ENCODING=SHIFT_JIS java prog < ../../i18n_sjis.src/data/in-sjis.txt > disp-sjis-acc-sjis.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=SHIFT_JIS COB_ACCEPT_ENCODING=UTF-8     java prog < ../../i18n_sjis.src/data/in-utf8.txt > disp-sjis-acc-utf8.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=UTF-8 java prog                               < ../../i18n_sjis.src/data/in-sjis.txt > disp-utf8-acc-none.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=UTF-8 COB_ACCEPT_ENCODING=SHIFT_JIS java prog < ../../i18n_sjis.src/data/in-sjis.txt > disp-utf8-acc-sjis.txt])
-AT_CHECK([COB_DISPLAY_ENCODING=UTF-8 COB_ACCEPT_ENCODING=UTF-8     java prog < ../../i18n_sjis.src/data/in-utf8.txt > disp-utf8-acc-utf8.txt])
+AT_CHECK([java prog                                 < ../../i18n_sjis.src/data/in-sjis.txt > out-none.txt])
+AT_CHECK([COB_TERMINAL_ENCODING=SHIFT_JIS java prog < ../../i18n_sjis.src/data/in-sjis.txt > out-sjis.txt])
+AT_CHECK([COB_TERMINAL_ENCODING=UTF-8     java prog < ../../i18n_sjis.src/data/in-utf8.txt > out-utf8.txt])
 
-AT_CHECK([diff disp-none-acc-none.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-none-acc-sjis.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-none-acc-utf8.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-sjis-acc-none.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-sjis-acc-sjis.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-sjis-acc-utf8.txt ../../i18n_sjis.src/data/disp-acc-expected-sjis.txt])
-AT_CHECK([diff disp-utf8-acc-none.txt ../../i18n_sjis.src/data/disp-acc-expected-utf8.txt])
-AT_CHECK([diff disp-utf8-acc-sjis.txt ../../i18n_sjis.src/data/disp-acc-expected-utf8.txt])
-AT_CHECK([diff disp-utf8-acc-utf8.txt ../../i18n_sjis.src/data/disp-acc-expected-utf8.txt])
+AT_CHECK([diff out-none.txt ../../i18n_sjis.src/data/out-sjis.txt])
+AT_CHECK([diff out-sjis.txt ../../i18n_sjis.src/data/out-sjis.txt])
+AT_CHECK([diff out-utf8.txt ../../i18n_sjis.src/data/out-utf8.txt])
 
 AT_CLEANUP

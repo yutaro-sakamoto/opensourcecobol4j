@@ -73,7 +73,7 @@ public class CobolTerminal {
 
     private static void displayAlnum(AbstractCobolField f, PrintStream stream) {
         CobolDataStorage storage = f.getDataStorage();
-        if (CobolUtil.displayStatementEncoding == CobolEncoding.UTF8) {
+        if (CobolUtil.terminalEncoding == CobolEncoding.UTF8) {
             byte[] utf8Bytes =
                     new String(
                                     storage.getByteArrayRef(0, f.getSize()),
@@ -123,7 +123,7 @@ public class CobolTerminal {
         try {
             if (scan == null) {
                 // scan = new Scanner(System.in);
-                if (CobolUtil.acceptStatementEncoding == CobolEncoding.UTF8) {
+                if (CobolUtil.terminalEncoding == CobolEncoding.UTF8) {
                     scan = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
                 } else {
                     try {
