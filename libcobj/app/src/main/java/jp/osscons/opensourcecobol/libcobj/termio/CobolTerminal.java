@@ -122,7 +122,6 @@ public class CobolTerminal {
     public static void accept(AbstractCobolField f) {
         try {
             if (scan == null) {
-                // scan = new Scanner(System.in);
                 if (CobolUtil.terminalEncoding == CobolEncoding.UTF8) {
                     scan = new Scanner(new InputStreamReader(System.in, StandardCharsets.UTF_8));
                 } else {
