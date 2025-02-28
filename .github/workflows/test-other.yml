@@ -60,12 +60,7 @@ jobs:
         if: inputs.os == 'amazonlinux:2023'
         run: |
           dnf -y update
-          dnf install -y gcc make diffutils tar gzip unzip wget
-          wget "https://github.com/nurse/nkf/archive/refs/tags/v2_1_3.tar.gz" -O nkf-2.1.3.tar.gz
-          tar zxf nkf-2.1.3.tar.gz
-          cd nkf-2_1_3
-          make
-          make install
+          dnf install -y gcc make diffutils tar gzip unzip wget nkf
 
       - name: Install Java
         if: inputs.os == 'amazonlinux:2023'
