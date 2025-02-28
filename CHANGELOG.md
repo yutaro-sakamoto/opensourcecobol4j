@@ -8,11 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Add
 
-* Support a new environment variable `COB_TERMINAL_ENCODING`.
-  * If the value of `COB_TERMINAL_ENCODING` is `UTF-8`, then DISPLAY statements convert the encoding of given data to UTF-8 and output it. Otherwise, DISPLAY statements output raw data (usually the encoding is Shift JIS).
-  * If the value of `COB_TERMINAL_ENCODING` is `UTF-8`, then ACCEPT statements assume that the encoding of input data is UTF-8. Otherwise ACCEPT statements assume that the encoding of input data is Shift JIS.
-* Fix the UTF-8 compatible compiler so that the compiler recognizes that the size of a multibyte character in COBOL source code is 2 bytes instead of 3 bytes.
-  * This change allows users to write more multibyte characters in each line of COBOL source code.
+* Implement the environment variable `COB_TERMINAL_ENCODING`. (#590)
+  * If the value of `COB_TERMINAL_ENCODING` is `UTF-8`, the DISPLAY statement outputs data after converting it to UTF-8. Otherwise, it outputs raw data (typically encoded in Shift JIS).
+  * If the value of `COB_TERMINAL_ENCODING` is `UTF-8`, the ACCEPT statement processes input data as UTF-8 encoded. Otherwise, it processes input data as Shift JIS encoded.
+* Fix the UTF-8 compatible compiler to recognize that the size of multibyte characters in COBOL source code as 2 bytes instead of 3 bytes. (#592)
+  * This change allows users to write more multibyte characters on each line of the COBOL source code.
 
 ## [1.1.6] - 2025-01-31
 
