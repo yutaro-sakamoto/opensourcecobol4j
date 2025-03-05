@@ -75,9 +75,7 @@ public class CobolTerminal {
         CobolDataStorage storage = f.getDataStorage();
         if (CobolUtil.terminalEncoding == CobolEncoding.UTF8) {
             byte[] utf8Bytes =
-                    new String(
-                                    storage.getByteArrayRef(0, f.getSize()),
-                                    AbstractCobolField.charSetSJIS)
+                    new String(storage.getByteArray(0, f.getSize()), AbstractCobolField.charSetSJIS)
                             .getBytes(StandardCharsets.UTF_8);
             stream.write(utf8Bytes, 0, utf8Bytes.length);
         } else {
