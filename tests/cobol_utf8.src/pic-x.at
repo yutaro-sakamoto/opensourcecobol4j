@@ -587,7 +587,7 @@ AT_DATA([prog.cbl], [
 AT_CHECK([cobj prog.cbl])
 AT_CHECK([COB_TERMINAL_ENCODING=UTF-8 java prog], [0], 
 [従業員番号: 0012
-名前　　　: 千葉  二郎          
+名前　　　: 千葉  二郎          @&t@
 部署コード: 02
 入社日　　: 19990401
 ])
@@ -609,7 +609,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([cobj prog.cbl])
 AT_CHECK([COB_TERMINAL_ENCODING=UTF-8 java prog], [0], 
-[千葉  二郎
+[千葉  二郎       @&t@
 ])
 
 AT_CLEANUP
