@@ -2460,6 +2460,7 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
                 break;
               }
             }
+#if !I18N_UTF8
             if (n > 2) {
               joutput_data(x);
               joutput(".memcpy(");
@@ -2470,6 +2471,7 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
               joutput(".memset(%d, %d, %d);", f->size - n, buffchar, n);
               return;
             }
+#endif
           }
           joutput_data(x);
 #if I18N_UTF8
