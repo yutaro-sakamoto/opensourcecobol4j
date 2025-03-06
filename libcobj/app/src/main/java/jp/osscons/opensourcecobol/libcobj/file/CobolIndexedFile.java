@@ -453,6 +453,7 @@ public class CobolIndexedFile extends CobolFile {
             }
             this.cursor.get().moveToLast();
         } else if (this.updateWhileReading) {
+            CobolIndexedFile.showTable(p, 1);
             this.updateWhileReading = false;
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
@@ -677,6 +678,30 @@ public class CobolIndexedFile extends CobolFile {
             return rs.next();
         } catch (SQLException e) {
             return false;
+        }
+    }
+
+    private static void showTable(IndexedFile p, int index) {
+        String query =
+                String.format(
+                        "select key, value, dupNo from %s " + "order by key, dupNo",
+                        getTableName(index));
+        System.out.println("[dbg] ---------");
+        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
+            ResultSet rs = selectStatement.executeQuery();
+            while (rs.next()) {
+                byte[] keyBytes = rs.getBytes(1);
+                byte[] primaryKeyBytes = rs.getBytes(2);
+                int dupNo = rs.getInt(3);
+                System.out.println(
+                        String.format(
+                                "[dbg] key: %s, value: %s, dupNo: %d",
+                                new String(keyBytes), new String(primaryKeyBytes), dupNo));
+            }
+        } catch (SQLException e) {
+            System.out.println("[dbg] read tables error");
+        } finally {
+            System.out.println("[dbg] ---------");
         }
     }
 
