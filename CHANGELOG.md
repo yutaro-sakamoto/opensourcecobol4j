@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.7-hotfix1] - 2025-02-28
+
+### Fix
+
+* Fix bugs related to UTF-8 (#590)
+  * With older versions, DISPLAY statements output invalid UTF-8 data when the arguments are sub items of group fields.
+  * With older versions, initilizing data with VALUE clauses fails in some cases.
+
 ## [1.1.7] - 2025-02-28
 
 ### Add
