@@ -2452,6 +2452,7 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
           joutput_data(x);
           joutput(".fillBytes(%d, %d);\n", buffchar, f->size);
         } else {
+#if !I18N_UTF8
           if (f->size >= 8) {
             buffchar = *(buff + f->size - 1);
             int n = 0;
@@ -2471,6 +2472,7 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
               return;
             }
           }
+#endif
           joutput_data(x);
 #if I18N_UTF8
           joutput(".setByByteArrayAndPaddingSpaces (");
