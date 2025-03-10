@@ -546,11 +546,11 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     private int indexed_write_internal(boolean rewrite, int opt) {
-        return this.indexed_write_internal(rewrite, -1, opt);
+        return this.indexed_write_internal(rewrite, null, opt);
     }
 
     /** Equivalent to indexed_write_internal in libcob/fileio.c */
-    private int indexed_write_internal(boolean rewrite, int dupNo, int opt) {
+    private int indexed_write_internal(boolean rewrite, int[] dupNumbers, int opt) {
         IndexedFile p = this.filei;
 
         boolean closeCursor;
@@ -596,8 +596,11 @@ public class CobolIndexedFile extends CobolFile {
 
                 PreparedStatement insertStatement;
                 if (isDuplicateColumn(i)) {
-                    if (dupNo < 0) {
+                    int dupNo;
+                    if (dupNumbers == null) {
                         dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                    } else {
+                        dupNo = dupNumbers[i];
                     }
                     insertStatement =
                             p.connection.prepareStatement(
@@ -686,6 +689,30 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
+    private static void showTable(IndexedFile p, int index) {
+        String query =
+                String.format(
+                        "select key, value, dupNo from %s " + "order by key, dupNo",
+                        getTableName(index));
+        System.out.println("[dbg] ---------");
+        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
+            ResultSet rs = selectStatement.executeQuery();
+            while (rs.next()) {
+                byte[] keyBytes = rs.getBytes(1);
+                byte[] primaryKeyBytes = rs.getBytes(2);
+                int dupNo = rs.getInt(3);
+                System.out.println(
+                        String.format(
+                                "[dbg] key: %s, value: %s, dupNo: %d",
+                                new String(keyBytes), new String(primaryKeyBytes), dupNo));
+            }
+        } catch (SQLException e) {
+            System.out.println("[dbg] read tables error");
+        } finally {
+            System.out.println("[dbg] ---------");
+        }
+    }
+
     @Override
     /** Equivalent to indexed_rewrite in libcob/fileio.c */
     public int rewrite_(int opt) {
@@ -699,19 +726,37 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         p.key = DBT_SET(this.keys[0].getField());
+        int[] dupNumbers = new int[this.nkeys];
 
-        int ret = this.indexed_delete_internal(true);
+        // System.out.println("[dbg] before delete, table 0 =============");
+        // showTable(p, 0);
+        // System.out.println("[dbg] before delete, table 1 =============");
+        // showTable(p, 1);
+        int ret = this.indexed_delete_internal(true, dupNumbers);
+        // System.out.println("[dbg] after delete, table 0 =============");
+        // showTable(p, 0);
+        // System.out.println("[dbg] after delete, table 1 =============");
+        // showTable(p, 1);
 
         if (ret != COB_STATUS_00_SUCCESS) {
             p.write_cursor_open = false;
             return ret;
         }
 
-        return this.indexed_write_internal(true, opt);
+        int retCode = this.indexed_write_internal(true, dupNumbers, opt);
+        // System.out.println("[dbg] after write, table 0 =============");
+        // showTable(p, 0);
+        // System.out.println("[dbg] after write, table 1 =============");
+        // showTable(p, 1);
+        return retCode;
+    }
+
+    private int indexed_delete_internal(boolean rewrite) {
+        return this.indexed_delete_internal(rewrite, null);
     }
 
     /** Equivalent to indexed_delete_internal in libcob/fileio.c */
-    private int indexed_delete_internal(boolean rewrite) {
+    private int indexed_delete_internal(boolean rewrite, int[] dupNumbers) {
         IndexedFile p = this.filei;
         boolean closeCursor;
 
@@ -737,6 +782,25 @@ public class CobolIndexedFile extends CobolFile {
 
         // delete data from sub tables
         for (int i = 1; i < this.nkeys; ++i) {
+            // save the duplicate number of the record to be deleted
+            if (isDuplicateColumn(i)) {
+                try (PreparedStatement statement =
+                        p.connection.prepareStatement(
+                                String.format(
+                                        "select dupNo from %s where value = ?", getTableName(i)))) {
+                    statement.setBytes(1, p.key);
+                    ResultSet rs = statement.executeQuery();
+                    if (rs.next()) {
+                        int dupNo = rs.getInt(1);
+                        if (dupNumbers != null) {
+                            dupNumbers[i] = dupNo;
+                        }
+                    }
+                } catch (SQLException e) {
+                    return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
+                }
+            }
+            // delete the record
             try (PreparedStatement statement =
                     p.connection.prepareStatement(
                             String.format("delete from %s where value = ?", getTableName(i)))) {
