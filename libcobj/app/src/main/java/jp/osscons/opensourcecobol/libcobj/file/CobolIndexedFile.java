@@ -545,8 +545,12 @@ public class CobolIndexedFile extends CobolFile {
         return returnCode;
     }
 
-    /** Equivalent to indexed_write_internal in libcob/fileio.c */
     private int indexed_write_internal(boolean rewrite, int opt) {
+        return this.indexed_write_internal(rewrite, -1, opt);
+    }
+
+    /** Equivalent to indexed_write_internal in libcob/fileio.c */
+    private int indexed_write_internal(boolean rewrite, int dupNo, int opt) {
         IndexedFile p = this.filei;
 
         boolean closeCursor;
@@ -592,7 +596,9 @@ public class CobolIndexedFile extends CobolFile {
 
                 PreparedStatement insertStatement;
                 if (isDuplicateColumn(i)) {
-                    int dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                    if (dupNo < 0) {
+                        dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                    }
                     insertStatement =
                             p.connection.prepareStatement(
                                     String.format(
