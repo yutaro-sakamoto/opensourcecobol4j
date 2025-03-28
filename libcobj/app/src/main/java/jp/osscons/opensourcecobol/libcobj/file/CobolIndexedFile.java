@@ -41,6 +41,7 @@ public class CobolIndexedFile extends CobolFile {
     private boolean indexedFirstRead = true;
     private boolean callStart = false;
     private boolean commitOnModification = true;
+    private int fetchKeyIndex = -1;
 
     /** TODO: 準備中 */
     public static final int COB_EQ = 1;
@@ -295,6 +296,7 @@ public class CobolIndexedFile extends CobolFile {
         this.indexedFirstRead = true;
         this.callStart = false;
 
+        this.fetchKeyIndex = -1;
         return 0;
     }
 
@@ -345,6 +347,7 @@ public class CobolIndexedFile extends CobolFile {
         } catch (SQLException e) {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
+        this.fetchKeyIndex = -1;
         return COB_STATUS_00_SUCCESS;
     }
 
@@ -366,6 +369,7 @@ public class CobolIndexedFile extends CobolFile {
                 break;
             }
         }
+        this.fetchKeyIndex = p.key_index;
 
         p.key = DBT_SET(key);
 
@@ -545,8 +549,12 @@ public class CobolIndexedFile extends CobolFile {
         return returnCode;
     }
 
-    /** Equivalent to indexed_write_internal in libcob/fileio.c */
     private int indexed_write_internal(boolean rewrite, int opt) {
+        return this.indexed_write_internal(rewrite, null, opt);
+    }
+
+    /** Equivalent to indexed_write_internal in libcob/fileio.c */
+    private int indexed_write_internal(boolean rewrite, int[] dupNumbers, int opt) {
         IndexedFile p = this.filei;
 
         boolean closeCursor;
@@ -592,7 +600,12 @@ public class CobolIndexedFile extends CobolFile {
 
                 PreparedStatement insertStatement;
                 if (isDuplicateColumn(i)) {
-                    int dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                    int dupNo;
+                    if (dupNumbers == null || dupNumbers[i] < 0 || i != this.fetchKeyIndex) {
+                        dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                    } else {
+                        dupNo = dupNumbers[i];
+                    }
                     insertStatement =
                             p.connection.prepareStatement(
                                     String.format(
@@ -693,19 +706,25 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         p.key = DBT_SET(this.keys[0].getField());
+        int[] dupNumbers = new int[this.nkeys];
+        java.util.Arrays.fill(dupNumbers, -1);
 
-        int ret = this.indexed_delete_internal(true);
+        int ret = this.indexed_delete_internal(true, dupNumbers);
 
         if (ret != COB_STATUS_00_SUCCESS) {
             p.write_cursor_open = false;
             return ret;
         }
 
-        return this.indexed_write_internal(true, opt);
+        return this.indexed_write_internal(true, dupNumbers, opt);
+    }
+
+    private int indexed_delete_internal(boolean rewrite) {
+        return this.indexed_delete_internal(rewrite, null);
     }
 
     /** Equivalent to indexed_delete_internal in libcob/fileio.c */
-    private int indexed_delete_internal(boolean rewrite) {
+    private int indexed_delete_internal(boolean rewrite, int[] dupNumbers) {
         IndexedFile p = this.filei;
         boolean closeCursor;
 
@@ -731,6 +750,25 @@ public class CobolIndexedFile extends CobolFile {
 
         // delete data from sub tables
         for (int i = 1; i < this.nkeys; ++i) {
+            // save the duplicate number of the record to be deleted
+            if (isDuplicateColumn(i)) {
+                try (PreparedStatement statement =
+                        p.connection.prepareStatement(
+                                String.format(
+                                        "select dupNo from %s where value = ?", getTableName(i)))) {
+                    statement.setBytes(1, p.key);
+                    ResultSet rs = statement.executeQuery();
+                    if (rs.next()) {
+                        int dupNo = rs.getInt(1);
+                        if (dupNumbers != null) {
+                            dupNumbers[i] = dupNo;
+                        }
+                    }
+                } catch (SQLException e) {
+                    return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
+                }
+            }
+            // delete the record
             try (PreparedStatement statement =
                     p.connection.prepareStatement(
                             String.format("delete from %s where value = ?", getTableName(i)))) {
