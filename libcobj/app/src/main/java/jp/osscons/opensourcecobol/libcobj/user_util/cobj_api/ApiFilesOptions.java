@@ -46,7 +46,7 @@ class ApiFilesOptions {
                             System.exit(0);
                             break;
                         case "v":
-                            System.out.println("1.1.7-hotfix1");
+                            System.out.println("1.1.8");
                             System.exit(0);
                             break;
                         case "java-package":
