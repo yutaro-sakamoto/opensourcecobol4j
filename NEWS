@@ -4,10 +4,9 @@ NEWS - user visible changes				-*- outline -*-
 
 * opensource COBOL 4J 1.1.8
 
-** New Features
+** Bug Fixes
 
-  (1) Display error messages if COMP-1 and COMP-2 are used.
-  (2) Fix a bug of duplicate record keys of indexed files.
+  (1) Fix a bug of duplicate record keys of indexed files.
 
 -----------------------------------------------------------------------
 
