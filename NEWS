@@ -2,6 +2,14 @@ NEWS - user visible changes				-*- outline -*-
 
 -----------------------------------------------------------------------
 
+* opensource COBOL 4J 1.1.8
+
+** Bug Fixes
+
+  (1) Fix a bug of duplicate record keys of indexed files.
+
+-----------------------------------------------------------------------
+
 * opensource COBOL 4J 1.1.7-hotfix1
 
 ** New Features
