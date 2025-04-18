@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 * Fix code generations for some WRITE statements.
   * Older versions of the compiler converts some WRITE statements into invalid Java code.
-* Fix the compiler to accept source code containing UTF-8 hankaku-kana characters correctly.
+* Fix the compiler to handle source code with UTF-8 encoded half-width Katakana characters correctly.
 
 ## [1.1.8] - 2025-03-31
 
