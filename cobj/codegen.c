@@ -1389,14 +1389,24 @@ static void joutput_integer(cb_tree x) {
       }
       if (f->size == 2 || f->size == 4 || f->size == 8) {
         if (f->flag_binary_swap) {
+          if (!integer_reference_flag) {
+            switch (f->size) {
+            case 2:
+              joutput("(short)(");
+              break;
+            case 4:
+              joutput("(int)(");
+              break;
+            }
+          }
           joutput_data(x);
           if (!integer_reference_flag) {
             switch (f->size) {
             case 2:
-              joutput(".bswap_16()");
+              joutput(".bswap_16())");
               break;
             case 4:
-              joutput(".bswap_32()");
+              joutput(".bswap_32())");
               break;
             case 8:
               joutput(".bswap_64()");
