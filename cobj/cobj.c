@@ -705,6 +705,27 @@ int utf8_hankaku_kana(const unsigned char *p) {
   }
   return 0;
 }
+
+int utf8_calc_sjis_column(const unsigned char *p, int column) {
+  const unsigned char *start = p;
+  int char_size = 0;
+  int i = 0;
+
+  while (i < column && *p != '\0') {
+    char_size = COB_U8BYTE_1(*p);
+    if (char_size == 1) {
+      i++;
+      p++;
+    } else if (char_size == 3 && utf8_hankaku_kana(p)) {
+      i++;
+      p += char_size;
+    } else {
+      i += 2;
+      p += char_size;
+    }
+  }
+  return p - start;
+}
 #endif /*I18N_UTF8*/
 
 /*
