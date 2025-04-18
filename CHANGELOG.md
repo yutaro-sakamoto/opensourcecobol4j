@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.8-hotfix1] - 2025-03-31
+
+### Fix
+
+* Fix code generations for some WRITE statements.
+  * Older versions of the compiler converts some WRITE statements into invalid Java code.
+* Fix the compiler to accept source code containing UTF-8 hankaku-kana characters correctly.
+
 ## [1.1.8] - 2025-03-31
 
 ### Fix
