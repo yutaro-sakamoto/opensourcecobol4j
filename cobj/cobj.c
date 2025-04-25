@@ -848,7 +848,7 @@ static void cobc_print_version(void) {
 #endif /*I18N_UTF8*/
   puts("----");
   printf("cobj (%s) %s\n", PACKAGE_NAME, PACKAGE_VERSION);
-  puts("Copyright (C) 2021-2023 TOKYO SYSTEM HOUSE CO.,LTD.");
+  puts("Copyright (C) 2021-2025 TOKYO SYSTEM HOUSE CO.,LTD.");
   printf("Built    %s\n", cb_oc_build_stamp);
   puts("----");
   puts("cobc (opensource COBOL) 1.5.2.0");
