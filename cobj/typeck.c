@@ -3100,39 +3100,40 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
     for (psyst = (const struct system_table *)&system_tab[0]; psyst->syst_name;
          psyst++) {
       const char *data = (const char *)CB_LITERAL(prog)->data;
+      // error if the subroutine is not implemented
       if (!strcmp(data, (const char *)psyst->syst_name)) {
         int i = psyst - &system_tab[0];
         switch (i) {
-        case 2:
-        case 3:
-        case 4:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-        case 10:
-        case 11:
-        case 12:
-        case 13:
-        case 14:
-        case 15:
-        case 20:
-        case 22:
-        case 23:
-        case 26:
-        case 28:
-        case 29:
-        case 30:
-        case 31:
-        case 32:
-        case 33:
-        case 35:
-        case 36:
-        case 37:
-        case 38:
-        case 39:
-        case 40:
-        case 41:
+        case 2:  // CBL_CHANGE_DIR
+        case 3:  // CBL_CHECK_FILE_EXIST
+        case 4:  // CBL_CLOSE_FILE
+        case 6:  // CBL_CREATE_DIR
+        case 7:  // CBL_CREATE_FILE
+        case 8:  // CBL_DELETE_DIR
+        case 9:  // CBL_DELETE_FILE
+        case 10: // CBL_EQ
+        case 11: // CBL_ERROR_PROC
+        case 12: // CBL_EXIT_PROC
+        case 13: // CBL_FLUSH_FILE
+        case 14: // CBL_GET_CURRENT_DIR
+        case 15: // CBL_IMP
+        case 20: // CBL_OPEN_FILE
+        case 22: // CBL_READ_FILE
+        case 23: // CBL_RENAME_FILE
+        case 26: // CBL_WRITE_FILE
+        case 28: // CBL_OC_KEISEN
+        case 29: // CBL_OC_ATTRIBUTE
+        case 30: // C$CHDIR
+        case 31: // C$COPY
+        case 32: // C$DELETE
+        case 33: // C$FILEINFO
+        case 35: // C$GETPID
+        case 36: // C$JUSTIFY
+        case 37: // C$CALLEDBY
+        case 38: // C$MAKEDIR
+        case 39: // C$NARG
+        case 40: // C$SLEEP
+        case 41: // C$PARAMSIZE
           cb_error(_("%s not implemented"), data);
         }
         if (psyst->syst_params > cb_list_length(cb_using)) {
