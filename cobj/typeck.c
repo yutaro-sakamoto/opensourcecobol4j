@@ -3099,13 +3099,48 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
     const struct system_table *psyst;
     for (psyst = (const struct system_table *)&system_tab[0]; psyst->syst_name;
          psyst++) {
-      if (!strcmp((const char *)CB_LITERAL(prog)->data,
-                  (const char *)psyst->syst_name)) {
+      const char *data = (const char *)CB_LITERAL(prog)->data;
+      if (!strcmp(data, (const char *)psyst->syst_name)) {
+        int i = psyst - &system_tab[0];
+        switch (i) {
+        case 2:
+        case 3:
+        case 4:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 20:
+        case 22:
+        case 23:
+        case 26:
+        case 28:
+        case 29:
+        case 30:
+        case 31:
+        case 32:
+        case 33:
+        case 35:
+        case 36:
+        case 37:
+        case 38:
+        case 39:
+        case 40:
+        case 41:
+          cb_error(_("%s not implemented"), data);
+        }
         if (psyst->syst_params > cb_list_length(cb_using)) {
           cb_error(_("Wrong number of CALL parameters for '%s'"),
                    (char *)psyst->syst_name);
           return;
         }
+
         is_sys_call = 1;
         break;
       }
