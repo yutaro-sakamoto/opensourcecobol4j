@@ -3107,11 +3107,11 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
         case 2:  // CBL_CHANGE_DIR
         case 3:  // CBL_CHECK_FILE_EXIST
         case 4:  // CBL_CLOSE_FILE
+        case 5:  // CBL_COPY_FILE
         case 6:  // CBL_CREATE_DIR
         case 7:  // CBL_CREATE_FILE
         case 8:  // CBL_DELETE_DIR
         case 9:  // CBL_DELETE_FILE
-        case 10: // CBL_EQ
         case 11: // CBL_ERROR_PROC
         case 12: // CBL_EXIT_PROC
         case 13: // CBL_FLUSH_FILE
@@ -3129,12 +3129,12 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
         case 33: // C$FILEINFO
         case 35: // C$GETPID
         case 36: // C$JUSTIFY
-        case 37: // C$CALLEDBY
         case 38: // C$MAKEDIR
         case 39: // C$NARG
         case 40: // C$SLEEP
         case 41: // C$PARAMSIZE
           cb_error(_("%s not implemented"), data);
+          return;
         }
         if (psyst->syst_params > cb_list_length(cb_using)) {
           cb_error(_("Wrong number of CALL parameters for '%s'"),
