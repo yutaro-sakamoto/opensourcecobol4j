@@ -222,6 +222,56 @@ enum cb_usage {
 
 enum cb_operand_type { CB_SENDING_OPERAND, CB_RECEIVING_OPERAND };
 
+enum cb_system_routine {
+  SYSTEM,
+  CBL_AND,
+  CBL_CHANGE_DIR,
+  CBL_CHECK_FILE_EXIST,
+  CBL_CLOSE_FILE,
+  CBL_COPY_FILE,
+  CBL_CREATE_DIR,
+  CBL_CREATE_FILE,
+  CBL_DELETE_DIR,
+  CBL_DELETE_FILE,
+  CBL_EQ,
+  CBL_ERROR_PROC,
+  CBL_EXIT_PROC,
+  CBL_FLUSH_FILE,
+  CBL_GET_CURRENT_DIR,
+  CBL_IMP,
+  CBL_NIMP,
+  CBL_NOR,
+  CBL_NOT,
+  CBL_OC_NANOSLEEP,
+  CBL_OPEN_FILE,
+  CBL_OR,
+  CBL_READ_FILE,
+  CBL_RENAME_FILE,
+  CBL_TOLOWER,
+  CBL_TOUPPER,
+  CBL_WRITE_FILE,
+  CBL_XOR,
+  CBL_OC_KEISEN,
+  CBL_OC_ATTRIBUTE,
+  C$CHDIR,
+  C$COPY,
+  C$DELETE,
+  C$FILEINFO,
+  C$LIST_DIRECTORY,
+  C$GETPID,
+  C$JUSTIFY,
+  C$CALLEDBY,
+  C$MAKEDIR,
+  C$NARG,
+  C$SLEEP,
+  C$PARAMSIZE,
+  C$TOUPPER,
+  C$TOLOWER,
+  CBL_X91,
+  CBL_XF4,
+  CBL_XF5
+};
+
 /*
  * Tree
  */
@@ -516,7 +566,7 @@ struct cb_field {
     cb_tree key; /* KEY */
     cb_tree ref; /* reference used in SEARCH ALL */
     cb_tree val; /* value to be compared in SEARCH ALL */
-  } *keys;
+  } * keys;
   int nkeys;              /* the number of keys */
   int param_num;          /* CHAINING param number */
   struct cb_picture *pic; /* PICTURE */

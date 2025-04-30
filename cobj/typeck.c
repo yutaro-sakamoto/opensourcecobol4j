@@ -3103,35 +3103,35 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
       if (!strcmp(data, (const char *)psyst->syst_name)) {
         // error if the subroutine is not implemented
         switch (psyst - &system_tab[0]) {
-        case 2:  // CBL_CHANGE_DIR
-        case 3:  // CBL_CHECK_FILE_EXIST
-        case 4:  // CBL_CLOSE_FILE
-        case 5:  // CBL_COPY_FILE
-        case 6:  // CBL_CREATE_DIR
-        case 7:  // CBL_CREATE_FILE
-        case 8:  // CBL_DELETE_DIR
-        case 9:  // CBL_DELETE_FILE
-        case 11: // CBL_ERROR_PROC
-        case 12: // CBL_EXIT_PROC
-        case 13: // CBL_FLUSH_FILE
-        case 14: // CBL_GET_CURRENT_DIR
-        case 15: // CBL_IMP
-        case 20: // CBL_OPEN_FILE
-        case 22: // CBL_READ_FILE
-        case 23: // CBL_RENAME_FILE
-        case 26: // CBL_WRITE_FILE
-        case 28: // CBL_OC_KEISEN
-        case 29: // CBL_OC_ATTRIBUTE
-        case 30: // C$CHDIR
-        case 31: // C$COPY
-        case 32: // C$DELETE
-        case 33: // C$FILEINFO
-        case 35: // C$GETPID
-        case 36: // C$JUSTIFY
-        case 38: // C$MAKEDIR
-        case 39: // C$NARG
-        case 40: // C$SLEEP
-        case 41: // C$PARAMSIZE
+          case CBL_CHANGE_DIR:
+          case CBL_CHECK_FILE_EXIST:
+          case CBL_CLOSE_FILE:
+          case CBL_COPY_FILE:
+          case CBL_CREATE_DIR:
+          case CBL_CREATE_FILE:
+          case CBL_DELETE_DIR:
+          case CBL_DELETE_FILE:
+          case CBL_ERROR_PROC:
+          case CBL_EXIT_PROC:
+          case CBL_FLUSH_FILE:
+          case CBL_GET_CURRENT_DIR:
+          case CBL_IMP:
+          case CBL_OPEN_FILE:
+          case CBL_READ_FILE:
+          case CBL_RENAME_FILE:
+          case CBL_WRITE_FILE:
+          case CBL_OC_KEISEN:
+          case CBL_OC_ATTRIBUTE:
+          case C$CHDIR:
+          case C$COPY:
+          case C$DELETE:
+          case C$FILEINFO:
+          case C$GETPID:
+          case C$JUSTIFY:
+          case C$MAKEDIR:
+          case C$NARG:
+          case C$SLEEP: 
+          case C$PARAMSIZE:
           cb_error(_("%s not implemented"), data);
           return;
         }
