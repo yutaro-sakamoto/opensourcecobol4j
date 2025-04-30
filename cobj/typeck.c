@@ -3100,10 +3100,9 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
     for (psyst = (const struct system_table *)&system_tab[0]; psyst->syst_name;
          psyst++) {
       const char *data = (const char *)CB_LITERAL(prog)->data;
-      // error if the subroutine is not implemented
       if (!strcmp(data, (const char *)psyst->syst_name)) {
-        int i = psyst - &system_tab[0];
-        switch (i) {
+        // error if the subroutine is not implemented
+        switch (psyst - &system_tab[0]) {
         case 2:  // CBL_CHANGE_DIR
         case 3:  // CBL_CHECK_FILE_EXIST
         case 4:  // CBL_CLOSE_FILE
