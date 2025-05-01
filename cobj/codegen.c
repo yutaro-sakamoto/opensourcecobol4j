@@ -152,7 +152,7 @@ static cb_tree call_parameters = NULL;
 
 static const struct system_table system_tab[] = {
 #undef COB_SYSTEM_GEN
-#define COB_SYSTEM_GEN(x, y, z) {x, #z},
+#define COB_SYSTEM_GEN(x, y, z, w) {x, #z},
 #include <system.def>
     {NULL, NULL}};
 

@@ -93,7 +93,7 @@ static char expr_prio[256];
 
 static const struct system_table system_tab[] = {
 #undef COB_SYSTEM_GEN
-#define COB_SYSTEM_GEN(x, y, z) {x, y},
+#define COB_SYSTEM_GEN(x, y, z, w) {x, y},
 #include <system.def>
     {NULL, 0}};
 
