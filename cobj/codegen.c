@@ -840,13 +840,7 @@ static void joutput_base(struct cb_field *f) {
   // EDIT
   /* Base name */
   if (top->flag_external) {
-    strcpy(name, top->name);
-    char *nmp;
-    for (nmp = name; *nmp; nmp++) {
-      if (*nmp == '-') {
-        *nmp = '_';
-      }
-    }
+    strcpy_identifier_cobol_to_java(name, top->name);
   } else {
     register_data_storage_list(f, top);
   }
@@ -2249,9 +2243,7 @@ static void joutput_initialize_fp(cb_tree x, struct cb_field *f) {
 }
 
 static void joutput_initialize_external(cb_tree x, struct cb_field *f) {
-  unsigned char *p;
   cb_tree file;
-  char name[COB_MINI_BUFF];
 
   joutput_prefix();
   joutput_data(x);
@@ -2260,22 +2252,10 @@ static void joutput_initialize_external(cb_tree x, struct cb_field *f) {
             f->size);
   } else if (f->storage == CB_STORAGE_FILE) {
     file = CB_TREE(f->file);
-    strcpy(name, CB_FILE(file)->record->name);
-    for (p = (unsigned char *)name; *p; p++) {
-      if (*p == '-') {
-        *p = '_';
-      }
-    }
-    joutput(" = CobolExternal.getStorageAddress (\"%s\", %d);\n", name,
-            f->size);
+    joutput(" = CobolExternal.getStorageAddress (\"%s\", %d);\n",
+            CB_FILE(file)->record->name, f->size);
   } else {
-    strcpy(name, f->name);
-    for (p = (unsigned char *)name; *p; p++) {
-      if (islower(*p)) {
-        *p = (unsigned char)toupper(*p);
-      }
-    }
-    joutput(" = CobolExternal.getStorageAddress (\"%s\", %d);\n", name,
+    joutput(" = CobolExternal.getStorageAddress (\"%s\", %d);\n", f->name,
             f->size);
   }
 }
@@ -4401,13 +4381,11 @@ static void joutput_internal_function(struct cb_program *prog,
   cb_tree l;
   struct cb_field *f;
   struct cb_file *fl;
-  char *p;
   int i;
   // int			n;
   int parmnum = 0;
   // int			seen = 0;
   // int			anyseen;
-  char name[COB_MINI_BUFF];
 
   /* Program function */
   // output ("static int\n%s_ (const int entry", prog->program_id);
@@ -4654,15 +4632,11 @@ static void joutput_internal_function(struct cb_program *prog,
     for (l = prog->file_list; l; l = CB_CHAIN(l)) {
       f = CB_FILE(CB_VALUE(l))->record;
       if (f->flag_external) {
-        strcpy(name, f->name);
-        for (p = name; *p; p++) {
-          if (*p == '-') {
-            *p = '_';
-          }
-        }
-        joutput_line("%s%s = CobolExternal.getStorageAddress (\"%s\", %d);",
-                     CB_PREFIX_BASE, name, name,
-                     CB_FILE(CB_VALUE(l))->record_max);
+        joutput_prefix();
+        joutput_base(f);
+        joutput(" = CobolExternal.getStorageAddress (\"%s\", %d);", f->name,
+                CB_FILE(CB_VALUE(l))->record_max);
+        joutput_newline();
       }
     }
     joutput_initial_values(prog->working_storage);
@@ -4752,15 +4726,10 @@ static void joutput_internal_function(struct cb_program *prog,
     for (l = prog->file_list; l; l = CB_CHAIN(l)) {
       f = CB_FILE(CB_VALUE(l))->record;
       if (f->flag_external) {
-        strcpy(name, f->name);
-        for (p = name; *p; p++) {
-          if (*p == '-') {
-            *p = '_';
-          }
-        }
-        joutput_line("%s%s = CobolExternal.getStorageAddress (\"%s\", %d);",
-                     CB_PREFIX_BASE, name, name,
-                     CB_FILE(CB_VALUE(l))->record_max);
+        joutput_prefix();
+        joutput_base(f);
+        joutput_line(" = CobolExternal.getStorageAddress (\"%s\", %d);",
+                     f->name, CB_FILE(CB_VALUE(l))->record_max);
       }
     }
     joutput_initial_values(prog->working_storage);
@@ -5492,8 +5461,6 @@ static void joutput_declare_member_variables(struct cb_program *prog,
   struct base_list *blp;
   const char *prevprog;
   struct cb_field *f;
-  char *p;
-  char name[COB_MINI_BUFF];
 
   /* CobolDecimal型変数の宣言 */
   if (prog->decimal_index_max) {
@@ -5611,27 +5578,21 @@ static void joutput_declare_member_variables(struct cb_program *prog,
   /* External items */
   for (f = prog->working_storage; f; f = f->sister) {
     if (f->flag_external) {
-      strcpy(name, f->name);
-      for (p = name; *p; p++) {
-        if (*p == '-') {
-          *p = '_';
-        }
-      }
-      joutput("private CobolDataStorage\t%s%s = null;", CB_PREFIX_BASE, name);
-      joutput("  /* %s */\n", f->name);
+      joutput_prefix();
+      joutput("private CobolDataStorage ");
+      joutput_base(f);
+      joutput(" = null;  /* %s */", f->name);
+      joutput_newline();
     }
   }
   for (l = prog->file_list; l; l = CB_CHAIN(l)) {
     f = CB_FILE(CB_VALUE(l))->record;
     if (f->flag_external) {
-      strcpy(name, f->name);
-      for (p = name; *p; p++) {
-        if (*p == '-') {
-          *p = '_';
-        }
-      }
-      joutput("private CobolDataStorage\t%s%s = null;", CB_PREFIX_BASE, name);
-      joutput("  /* %s */\n", f->name);
+      joutput_prefix();
+      joutput("private CobolDataStorage ");
+      joutput_base(f);
+      joutput(" = null;  /* %s */", f->name);
+      joutput_newline();
     }
   }
 
