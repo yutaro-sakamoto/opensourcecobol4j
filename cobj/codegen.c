@@ -839,9 +839,8 @@ static void joutput_base(struct cb_field *f) {
 
   // EDIT
   /* Base name */
-  if (top->flag_external) {
-    strcpy_identifier_cobol_to_java(name, top->name);
-  } else {
+  strcpy_identifier_cobol_to_java(name, top->name);
+  if (!top->flag_external) {
     register_data_storage_list(f, top);
   }
 
