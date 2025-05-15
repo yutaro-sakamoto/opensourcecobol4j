@@ -57,6 +57,7 @@ class IndexedFileUtilMain {
         options.addOption("k", "key", true, "Specify the key information of the indexed file.");
         options.addOption(
                 "d", "dup-key", true, "Specify the duplicate key information of the indexed file.");
+        options.addOption("o", "overwrite", false, "Overwrite the indexed file if it exists.");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
 
@@ -141,7 +142,7 @@ class IndexedFileUtilMain {
                 if (keyInfoList.isEmpty()) {
                     System.err.println("error: no key information is specified.");
                     System.exit(1);
-                } else if (keyInforList.get(0).duplicate) {
+                } else if (keyInfoList.get(0).duplicate) {
                     System.err.println(
                             "error: the first key (primary key) must not be a duplicate key.");
                     System.exit(1);
@@ -190,7 +191,19 @@ class IndexedFileUtilMain {
                     System.exit(1);
                 }
                 CobolIndexedFile cobolIndexedFile = (CobolIndexedFile) cobolFile.get();
-                cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
+
+                boolean enableOverwriteOption = cmd.hasOption("o");
+                boolean indexedFileAlreadyExists = new File(indexedFilePath).exists();
+
+                if (enableOverwriteOption || !indexedFileAlreadyExists) {
+                    cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
+                    if (CobolRuntimeException.code != 0) {
+                        System.err.println("error: failed to open the indexed file.");
+                        System.exit(1);
+                    }
+                    cobolIndexedFile.close(0, null);
+                }
+                System.exit(0);
             } catch (Exception e) {
                 System.err.println("error: " + e.getMessage());
                 System.exit(1);
