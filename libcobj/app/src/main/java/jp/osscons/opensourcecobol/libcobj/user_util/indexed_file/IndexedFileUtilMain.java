@@ -175,10 +175,6 @@ class IndexedFileUtilMain {
                                         keyInfo.offset, keyInfo.size, recordSize));
                     }
                 }
-                for (CobolFileKeyInfo keyInfo : keyInfoList) {
-                    // Convert to 0-based index
-                    keyInfo.offset--;
-                }
                 Optional<CobolFile> cobolFile =
                         createCobolFile(indexedFilePath, recordSize, keyInfoList);
                 if (!cobolFile.isPresent()) {
