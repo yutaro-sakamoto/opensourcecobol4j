@@ -130,10 +130,22 @@ class IndexedFileUtilMain {
                 System.err.println("error: no indexed file is specified.");
                 System.exit(1);
             }
+            if (!cmd.hasOption("r")) {
+                System.err.println("error: no record size is specified.");
+                System.exit(1);
+            }
             String indexedFilePath = unrecognizedArgs[1];
             List<CobolFileKeyInfo> keyInfoList;
             try {
                 keyInfoList = parseKeyOptions(cmd.getOptions());
+                if (keyInfoList.isEmpty()) {
+                    System.err.println("error: no key information is specified.");
+                    System.exit(1);
+                } else if (keyInforList.get(0).duplicate) {
+                    System.err.println(
+                            "error: the first key (primary key) must not be a duplicate key.");
+                    System.exit(1);
+                }
                 String recordSizeString = cmd.getOptionValue("r");
                 int recordSize = 0;
                 try {
@@ -146,6 +158,25 @@ class IndexedFileUtilMain {
                 if (recordSize <= 0) {
                     throw new IllegalArgumentException(
                             String.format("error: invalid record size: %d", recordSize));
+                }
+                for (CobolFileKeyInfo keyInfo : keyInfoList) {
+                    if (keyInfo.offset <= 0 || keyInfo.size <= 0) {
+                        throw new IllegalArgumentException(
+                                String.format(
+                                        "error: invalid key information: offset=%d, size=%d",
+                                        keyInfo.offset, keyInfo.size));
+                    }
+                    if (keyInfo.offset + keyInfo.size > recordSize + 1) {
+                        throw new IllegalArgumentException(
+                                String.format(
+                                        "error: invalid key information: offset=%d, size=%d, record"
+                                                + " size=%d",
+                                        keyInfo.offset, keyInfo.size, recordSize));
+                    }
+                }
+                for (CobolFileKeyInfo keyInfo : keyInfoList) {
+                    // Convert to 0-based index
+                    keyInfo.offset--;
                 }
                 Optional<CobolFile> cobolFile =
                         createCobolFile(
