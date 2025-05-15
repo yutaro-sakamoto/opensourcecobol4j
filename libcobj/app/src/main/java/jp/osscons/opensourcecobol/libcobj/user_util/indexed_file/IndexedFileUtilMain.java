@@ -450,13 +450,20 @@ class IndexedFileUtilMain {
         }
     }
 
+    private static Optional<CobolFile> createCobolFileFromIndexedFilePath(String indexedFilePath) {
+        return createCobolFile(indexedFilePath, Optional.empty(), Optional.empty());
+    }
+
     /**
      * Create a CobolFile instance from the path of the indexed file.
      *
      * @param indexedFilePath TODO: 準備中
      * @return CobolFile instance if success, otherwise empty.
      */
-    private static Optional<CobolFile> createCobolFileFromIndexedFilePath(String indexedFilePath) {
+    private static Optional<CobolFile> createCobolFile(
+            String indexedFilePath,
+            Optional<Integer> optionRecordSize,
+            Optional<ArrayList<CobolFileKey>> optionKeyList) {
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(true);
 
@@ -465,14 +472,19 @@ class IndexedFileUtilMain {
                                 "jdbc:sqlite:" + indexedFilePath, config.toProperties());
                 Statement stmt = conn.createStatement(); ) {
 
-            // Retrieve the record size
-            ResultSet rs =
-                    stmt.executeQuery(
-                            "select value from metadata_string_int where key = 'record_size'");
-            if (!rs.next()) {
-                return Optional.empty();
+            int recordSize;
+            if (optionRecordSize.isPresent()) {
+                recordSize = optionRecordSize.get();
+            } else {
+                // Retrieve the record size
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "select value from metadata_string_int where key = 'record_size'");
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                recordSize = rs.getInt("value");
             }
-            int recordSize = rs.getInt("value");
 
             // Create a record field
             byte[] recordByteArray = new byte[recordSize];
@@ -484,26 +496,32 @@ class IndexedFileUtilMain {
                             new CobolFieldAttribute(1, 0, 0, 0, null));
 
             // Retrive key information
-            List<CobolFileKey> keyList = new ArrayList<CobolFileKey>();
-            rs =
-                    stmt.executeQuery(
-                            "select idx, offset, size, duplicate from metadata_key order by idx");
-            while (rs.next()) {
-                int offset = rs.getInt("offset");
-                int size = rs.getInt("size");
-                boolean duplicate = rs.getBoolean("duplicate");
+            List<CobolFileKey> keyList;
+            if (optionKeyList.isPresent()) {
+                keyList = optionKeyList.get();
+            } else {
+                keyList = new ArrayList<>();
+                ResultSet rs =
+                        stmt.executeQuery(
+                                "select idx, offset, size, duplicate from metadata_key order by"
+                                        + " idx");
+                while (rs.next()) {
+                    int offset = rs.getInt("offset");
+                    int size = rs.getInt("size");
+                    boolean duplicate = rs.getBoolean("duplicate");
 
-                CobolFileKey cobolFileKey = new CobolFileKey();
-                cobolFileKey.setOffset(offset);
-                cobolFileKey.setFlag(duplicate ? 1 : 0);
-                AbstractCobolField keyField =
-                        CobolFieldFactory.makeCobolField(
-                                size,
-                                recordDataStorage.getSubDataStorage(offset),
-                                new CobolFieldAttribute(33, 0, 0, 0, null));
-                cobolFileKey.setField(keyField);
+                    CobolFileKey cobolFileKey = new CobolFileKey();
+                    cobolFileKey.setOffset(offset);
+                    cobolFileKey.setFlag(duplicate ? 1 : 0);
+                    AbstractCobolField keyField =
+                            CobolFieldFactory.makeCobolField(
+                                    size,
+                                    recordDataStorage.getSubDataStorage(offset),
+                                    new CobolFieldAttribute(33, 0, 0, 0, null));
+                    cobolFileKey.setField(keyField);
 
-                keyList.add(cobolFileKey);
+                    keyList.add(cobolFileKey);
+                }
             }
 
             // Construct a CobolFile instance
