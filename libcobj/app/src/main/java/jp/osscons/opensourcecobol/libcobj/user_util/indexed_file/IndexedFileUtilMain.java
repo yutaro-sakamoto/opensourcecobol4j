@@ -196,6 +196,11 @@ class IndexedFileUtilMain {
                 boolean indexedFileAlreadyExists = new File(indexedFilePath).exists();
 
                 if (enableOverwriteOption || !indexedFileAlreadyExists) {
+                    // Set the module
+                    CobolModule module =
+                            new CobolModule(
+                                    null, null, null, null, 0, '.', '$', ',', 1, 1, 1, 0, null);
+                    CobolModule.push(module);
                     cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
                     if (CobolRuntimeException.code != 0) {
                         System.err.println("error: failed to open the indexed file.");
@@ -273,6 +278,8 @@ class IndexedFileUtilMain {
                         + " index>,<size> --dup-key=<start index>,<size>");
         System.out.println("    Create a new indexed file.");
         System.out.println("    The record size and key information are specified by the options.");
+        System.out.println("    By default, this command does not overwrite the indexed file.");
+        System.out.println("    To overwrite the indexed file, use the --overwrite option.");
         System.out.println(
                 "    The first key is the primary key and the others are alternate keys.");
         System.out.println(
@@ -595,16 +602,26 @@ class IndexedFileUtilMain {
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(true);
 
-        try (Connection conn =
+        Connection conn = null;
+        Statement stmt = null;
+        if (!optionRecordSize.isPresent() || !optionKeyInfoList.isPresent()) {
+            try {
+                conn =
                         DriverManager.getConnection(
                                 "jdbc:sqlite:" + indexedFilePath, config.toProperties());
-                Statement stmt = conn.createStatement(); ) {
+                stmt = conn.createStatement();
+            } catch (SQLException e) {
+                System.err.println("[dbg] 1 error: " + e.getMessage());
+                return Optional.empty();
+            }
+        }
 
-            int recordSize;
-            if (optionRecordSize.isPresent()) {
-                recordSize = optionRecordSize.get();
-            } else {
-                // Retrieve the record size
+        int recordSize = 0;
+        if (optionRecordSize.isPresent()) {
+            recordSize = optionRecordSize.get();
+        } else {
+            // Retrieve the record size
+            try {
                 ResultSet rs =
                         stmt.executeQuery(
                                 "select value from metadata_string_int where key = 'record_size'");
@@ -612,26 +629,29 @@ class IndexedFileUtilMain {
                     return Optional.empty();
                 }
                 recordSize = rs.getInt("value");
+            } catch (SQLException e) {
+                System.err.println("[dbg] 2 error: " + e.getMessage());
+                return Optional.empty();
             }
+        }
 
-            // Create a record field
-            byte[] recordByteArray = new byte[recordSize];
-            CobolDataStorage recordDataStorage = new CobolDataStorage(recordByteArray);
-            AbstractCobolField recordField =
-                    CobolFieldFactory.makeCobolField(
-                            recordSize,
-                            recordDataStorage,
-                            new CobolFieldAttribute(1, 0, 0, 0, null));
+        // Create a record field
+        byte[] recordByteArray = new byte[recordSize];
+        CobolDataStorage recordDataStorage = new CobolDataStorage(recordByteArray);
+        AbstractCobolField recordField =
+                CobolFieldFactory.makeCobolField(
+                        recordSize, recordDataStorage, new CobolFieldAttribute(1, 0, 0, 0, null));
 
-            // Retrive key information
-            List<CobolFileKey> keyList = new ArrayList<>();
-            if (optionKeyInfoList.isPresent()) {
-                List<CobolFileKeyInfo> keys = optionKeyInfoList.get();
-                for (CobolFileKeyInfo key : keys) {
-                    addCobolFileKeyToList(
-                            keyList, recordDataStorage, key.offset, key.size, key.duplicate);
-                }
-            } else {
+        // Retrive key information
+        List<CobolFileKey> keyList = new ArrayList<>();
+        if (optionKeyInfoList.isPresent()) {
+            List<CobolFileKeyInfo> keys = optionKeyInfoList.get();
+            for (CobolFileKeyInfo key : keys) {
+                addCobolFileKeyToList(
+                        keyList, recordDataStorage, key.offset, key.size, key.duplicate);
+            }
+        } else {
+            try {
                 ResultSet rs =
                         stmt.executeQuery(
                                 "select idx, offset, size, duplicate from metadata_key order by"
@@ -642,50 +662,59 @@ class IndexedFileUtilMain {
                     boolean duplicate = rs.getBoolean("duplicate");
                     addCobolFileKeyToList(keyList, recordDataStorage, offset, size, duplicate);
                 }
+            } catch (SQLException e) {
+                System.err.println("[dbg] 3 error: " + e.getMessage());
+                return Optional.empty();
             }
-
-            // Construct a CobolFile instance
-            byte[] fileStatus = new byte[4];
-            byte[] indxedFilePathBytes = indexedFilePath.getBytes(AbstractCobolField.charSetSJIS);
-            AbstractCobolField assignField =
-                    CobolFieldFactory.makeCobolField(
-                            indxedFilePathBytes.length,
-                            new CobolDataStorage(indxedFilePathBytes),
-                            new CobolFieldAttribute(33, 0, 0, 0, null));
-            CobolFileKey[] keyArray = new CobolFileKey[keyList.size()];
-            keyList.toArray(keyArray);
-            CobolFile cobolFile =
-                    CobolFileFactory.makeCobolFileInstance(
-                            "f",
-                            fileStatus,
-                            assignField,
-                            recordField,
-                            null,
-                            recordSize,
-                            recordSize,
-                            keyArray.length,
-                            keyArray,
-                            (char) 3,
-                            (char) 1,
-                            (char) 0,
-                            (char) 0,
-                            false,
-                            (char) 0,
-                            (char) 0,
-                            false,
-                            false,
-                            false,
-                            (char) 0,
-                            false,
-                            (char) 2,
-                            false,
-                            false,
-                            (char) 0);
-            conn.close();
-            return Optional.of(cobolFile);
-        } catch (SQLException e) {
-            return Optional.empty();
         }
+
+        if (conn != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.err.println("[dbg] 4 error: " + e.getMessage());
+                return Optional.empty();
+            }
+        }
+
+        // Construct a CobolFile instance
+        byte[] fileStatus = new byte[4];
+        byte[] indxedFilePathBytes = indexedFilePath.getBytes(AbstractCobolField.charSetSJIS);
+        AbstractCobolField assignField =
+                CobolFieldFactory.makeCobolField(
+                        indxedFilePathBytes.length,
+                        new CobolDataStorage(indxedFilePathBytes),
+                        new CobolFieldAttribute(33, 0, 0, 0, null));
+        CobolFileKey[] keyArray = new CobolFileKey[keyList.size()];
+        keyList.toArray(keyArray);
+        CobolFile cobolFile =
+                CobolFileFactory.makeCobolFileInstance(
+                        "f",
+                        fileStatus,
+                        assignField,
+                        recordField,
+                        null,
+                        recordSize,
+                        recordSize,
+                        keyArray.length,
+                        keyArray,
+                        (char) 3,
+                        (char) 1,
+                        (char) 0,
+                        (char) 0,
+                        false,
+                        (char) 0,
+                        (char) 0,
+                        false,
+                        false,
+                        false,
+                        (char) 0,
+                        false,
+                        (char) 2,
+                        false,
+                        false,
+                        (char) 0);
+        return Optional.of(cobolFile);
     }
 
     private static void addCobolFileKeyToList(
