@@ -180,6 +180,17 @@ class IndexedFileUtilMain {
         System.out.println("cobj-idx info <indexed-file>");
         System.out.println("    Show information of the indexed file.");
         System.out.println();
+        System.out.println(
+                "cobj-idx create <indexed file> --record-size=<record size> --key=<start"
+                        + " index>,<size> --dup-key=<start index>,<size>");
+        System.out.println("    Create a new indexed file.");
+        System.out.println("    The record size and key information are specified by the options.");
+        System.out.println(
+                "    The first key is the primary key and the others are alternate keys.");
+        System.out.println(
+                "    The alternate key can be specified as a duplicate key by using the --dup-key"
+                        + " option.");
+        System.out.println();
         System.out.println("cobj-idx load <indexed file>");
         System.out.println("    Load the data from stdin into the indexed file.");
         System.out.println("    The default format of the input data is SEQUENTIAL of COBOL.");
