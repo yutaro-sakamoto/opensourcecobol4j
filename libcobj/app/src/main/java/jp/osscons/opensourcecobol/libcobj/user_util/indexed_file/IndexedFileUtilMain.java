@@ -27,6 +27,7 @@ import jp.osscons.opensourcecobol.libcobj.file.CobolIndexedFile;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.sqlite.SQLiteConfig;
@@ -52,6 +53,10 @@ class IndexedFileUtilMain {
         options.addOption("v", "version", false, "Print the version");
         options.addOption("n", "new", false, "Delete all data before loading");
         options.addOption("f", "format", true, "Specify the format of the input and output data");
+        options.addOption("r", "record-size", true, "Specify the record size of the indexed file.");
+        options.addOption("k", "key", true, "Specify the key information of the indexed file.");
+        options.addOption(
+                "d", "dup-key", true, "Specify the duplicate key information of the indexed file.");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
 
@@ -120,7 +125,46 @@ class IndexedFileUtilMain {
             String indexedFilePath = args[1];
             int exitCode = processInfoCommand(indexedFilePath);
             System.exit(exitCode);
-
+        } else if ("create".equals(subCommand)) {
+            if (unrecognizedArgs.length < 2) {
+                System.err.println("error: no indexed file is specified.");
+                System.exit(1);
+            }
+            String indexedFilePath = unrecognizedArgs[1];
+            List<CobolFileKeyInfo> keyInfoList;
+            try {
+                keyInfoList = parseKeyOptions(cmd.getOptions());
+                String recordSizeString = cmd.getOptionValue("r");
+                int recordSize = 0;
+                try {
+                    recordSize = Integer.parseInt(recordSizeString);
+                } catch (NumberFormatException e) {
+                    System.err.println(
+                            String.format("error: invalid record size: %s", recordSizeString));
+                    System.exit(1);
+                }
+                if (recordSize <= 0) {
+                    throw new IllegalArgumentException(
+                            String.format("error: invalid record size: %d", recordSize));
+                }
+                Optional<CobolFile> cobolFile =
+                        createCobolFile(
+                                indexedFilePath, Optional.of(recordSize), Optional.of(keyInfoList));
+                if (!cobolFile.isPresent()) {
+                    System.err.println(
+                            String.format(
+                                    "error: failed to create a cobol file from the indexed file:"
+                                            + " %s",
+                                    indexedFilePath));
+                    System.exit(1);
+                }
+                CobolIndexedFile cobolIndexedFile = (CobolIndexedFile) cobolFile.get();
+                cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
+            } catch (Exception e) {
+                System.err.println("error: " + e.getMessage());
+                System.exit(1);
+            }
+            System.exit(0);
         } else if ("load".equals(subCommand)) {
             if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 3) {
                 if (unrecognizedArgs.length < 2) {
@@ -232,6 +276,35 @@ class IndexedFileUtilMain {
         System.out.println();
         System.out.println("-v, --version");
         System.out.println("    Print the version of cobj-idx.");
+    }
+
+    /**
+     * Parse the key options and return a list of CobolFileKey.
+     *
+     * @param options TODO: 準備中
+     * @return TODO: 準備中
+     */
+    private static List<CobolFileKeyInfo> parseKeyOptions(Option[] options) throws Exception {
+        ArrayList<CobolFileKeyInfo> keyInfoList = new ArrayList<>();
+        for (Option option : options) {
+            if ("k".equals(option.getOpt()) || "d".equals(option.getOpt())) {
+                String[] keyInfo = option.getValue().split(",");
+                if (keyInfo.length != 2) {
+                    String keyType = "k".equals(option.getOpt()) ? "key" : "duplicate key";
+                    throw new IllegalArgumentException(
+                            String.format(
+                                    "error: invalid %s information: %s",
+                                    keyType, option.getValue()));
+                }
+                int offset = Integer.parseInt(keyInfo[0]);
+                int size = Integer.parseInt(keyInfo[1]);
+                boolean duplicate = "d".equals(option.getOpt());
+
+                CobolFileKeyInfo cobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
+                keyInfoList.add(cobolFileKeyInfo);
+            }
+        }
+        return keyInfoList;
     }
 
     /**
@@ -474,7 +547,7 @@ class IndexedFileUtilMain {
     private static Optional<CobolFile> createCobolFile(
             String indexedFilePath,
             Optional<Integer> optionRecordSize,
-            Optional<ArrayList<CobolFileKey>> optionKeyList) {
+            Optional<List<CobolFileKeyInfo>> optionKeyInfoList) {
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(true);
 
@@ -507,11 +580,14 @@ class IndexedFileUtilMain {
                             new CobolFieldAttribute(1, 0, 0, 0, null));
 
             // Retrive key information
-            List<CobolFileKey> keyList;
-            if (optionKeyList.isPresent()) {
-                keyList = optionKeyList.get();
+            List<CobolFileKey> keyList = new ArrayList<>();
+            if (optionKeyInfoList.isPresent()) {
+                List<CobolFileKeyInfo> keys = optionKeyInfoList.get();
+                for (CobolFileKeyInfo key : keys) {
+                    addCobolFileKeyToList(
+                            keyList, recordDataStorage, key.offset, key.size, key.duplicate);
+                }
             } else {
-                keyList = new ArrayList<>();
                 ResultSet rs =
                         stmt.executeQuery(
                                 "select idx, offset, size, duplicate from metadata_key order by"
@@ -520,18 +596,7 @@ class IndexedFileUtilMain {
                     int offset = rs.getInt("offset");
                     int size = rs.getInt("size");
                     boolean duplicate = rs.getBoolean("duplicate");
-
-                    CobolFileKey cobolFileKey = new CobolFileKey();
-                    cobolFileKey.setOffset(offset);
-                    cobolFileKey.setFlag(duplicate ? 1 : 0);
-                    AbstractCobolField keyField =
-                            CobolFieldFactory.makeCobolField(
-                                    size,
-                                    recordDataStorage.getSubDataStorage(offset),
-                                    new CobolFieldAttribute(33, 0, 0, 0, null));
-                    cobolFileKey.setField(keyField);
-
-                    keyList.add(cobolFileKey);
+                    addCobolFileKeyToList(keyList, recordDataStorage, offset, size, duplicate);
                 }
             }
 
@@ -577,5 +642,37 @@ class IndexedFileUtilMain {
         } catch (SQLException e) {
             return Optional.empty();
         }
+    }
+
+    private static void addCobolFileKeyToList(
+            List<CobolFileKey> keyList,
+            CobolDataStorage recordStorage,
+            int offset,
+            int size,
+            boolean duplicate) {
+
+        CobolFileKey cobolFileKey = new CobolFileKey();
+        cobolFileKey.setOffset(offset);
+        cobolFileKey.setFlag(duplicate ? 1 : 0);
+        AbstractCobolField keyField =
+                CobolFieldFactory.makeCobolField(
+                        size,
+                        recordStorage.getSubDataStorage(offset),
+                        new CobolFieldAttribute(33, 0, 0, 0, null));
+        cobolFileKey.setField(keyField);
+
+        keyList.add(cobolFileKey);
+    }
+}
+
+class CobolFileKeyInfo {
+    public int offset;
+    public int size;
+    public boolean duplicate;
+
+    public CobolFileKeyInfo(int offset, int size, boolean duplicate) {
+        this.offset = offset;
+        this.size = size;
+        this.duplicate = duplicate;
     }
 }
