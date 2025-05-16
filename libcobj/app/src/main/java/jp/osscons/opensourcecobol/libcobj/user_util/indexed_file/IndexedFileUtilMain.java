@@ -160,6 +160,7 @@ class IndexedFileUtilMain {
                     throw new IllegalArgumentException(
                             String.format("error: invalid record size: %d", recordSize));
                 }
+
                 for (CobolFileKeyInfo keyInfo : keyInfoList) {
                     if (keyInfo.offset <= 0 || keyInfo.size <= 0) {
                         throw new IllegalArgumentException(
@@ -173,6 +174,28 @@ class IndexedFileUtilMain {
                                         "error: invalid key information: offset=%d, size=%d, record"
                                                 + " size=%d",
                                         keyInfo.offset, keyInfo.size, recordSize));
+                    }
+                }
+
+                // Check if key ranges overlap
+                for (int i = 0; i < keyInfoList.size(); i++) {
+                    CobolFileKeyInfo key1Info = keyInfoList.get(i);
+                    int key1IndexInf = key1Info.offset;
+                    int key1IndexSup = key1Info.offset + key1Info.size - 1;
+                    for (int j = 0; j < i; j++) {
+                        CobolFileKeyInfo key2Info = keyInfoList.get(j);
+                        int key2IndexInf = key2Info.offset;
+                        int key2IndexSup = key2Info.offset + key2Info.size - 1;
+                        if (key1IndexSup >= key2IndexInf || key1IndexInf <= key2IndexSup) {
+                            System.err.println(
+                                    String.format(
+                                            "error: keys overlap: %d,%d and %d,%d",
+                                            key1Info.offset,
+                                            key1Info.size,
+                                            key2Info.offset,
+                                            key2Info.size));
+                            System.exit(1);
+                        }
                     }
                 }
                 Optional<CobolFile> cobolFile =
