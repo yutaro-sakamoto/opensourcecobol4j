@@ -571,7 +571,8 @@ class IndexedFileUtilMain {
         // Retrive key information
         List<CobolFileKey> keyList = new ArrayList<>();
         for (CobolFileKeyInfo key : keyInfoList) {
-            addCobolFileKeyToList(keyList, recordDataStorage, key.offset, key.size, key.duplicate);
+            addCobolFileKeyToList(
+                    keyList, recordDataStorage, key.offset - 1, key.size, key.duplicate);
         }
 
         // Return a CobolFile instance
@@ -594,12 +595,12 @@ class IndexedFileUtilMain {
             boolean duplicate) {
 
         CobolFileKey cobolFileKey = new CobolFileKey();
-        cobolFileKey.setOffset(offset - 1);
+        cobolFileKey.setOffset(offset);
         cobolFileKey.setFlag(duplicate ? 1 : 0);
         AbstractCobolField keyField =
                 CobolFieldFactory.makeCobolField(
                         size,
-                        recordStorage.getSubDataStorage(offset - 1),
+                        recordStorage.getSubDataStorage(offset),
                         new CobolFieldAttribute(33, 0, 0, 0, null));
         cobolFileKey.setField(keyField);
 
