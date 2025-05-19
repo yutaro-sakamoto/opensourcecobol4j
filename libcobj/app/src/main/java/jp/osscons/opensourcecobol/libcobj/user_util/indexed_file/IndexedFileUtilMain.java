@@ -369,8 +369,8 @@ class IndexedFileUtilMain {
                 int size = Integer.parseInt(keyInfo[1]);
                 boolean duplicate = "d".equals(option.getOpt());
 
-                CobolFileKeyInfo cobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
-                keyInfoList.add(cobolFileKeyInfo);
+                CobolFileKeyInfo CobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
+                keyInfoList.add(CobolFileKeyInfo);
             }
         }
         return keyInfoList;
@@ -739,17 +739,5 @@ class IndexedFileUtilMain {
                 false,
                 false,
                 (char) 0);
-    }
-}
-
-class CobolFileKeyInfo {
-    public int offset;
-    public int size;
-    public boolean duplicate;
-
-    public CobolFileKeyInfo(int offset, int size, boolean duplicate) {
-        this.offset = offset;
-        this.size = size;
-        this.duplicate = duplicate;
     }
 }
