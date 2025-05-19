@@ -127,105 +127,13 @@ class IndexedFileUtilMain {
             int exitCode = processInfoCommand(indexedFilePath);
             System.exit(exitCode);
         } else if ("create".equals(subCommand)) {
-            if (unrecognizedArgs.length < 2) {
-                System.err.println("error: no indexed file is specified.");
-                System.exit(1);
-            }
-            if (!cmd.hasOption("r")) {
-                System.err.println("error: no record size is specified.");
-                System.exit(1);
-            }
-            String indexedFilePath = unrecognizedArgs[1];
-            List<CobolFileKeyInfo> keyInfoList;
             try {
-                keyInfoList = parseKeyOptions(cmd.getOptions());
-                if (keyInfoList.isEmpty()) {
-                    System.err.println("error: no key information is specified.");
-                    System.exit(1);
-                } else if (keyInfoList.get(0).duplicate) {
-                    System.err.println(
-                            "error: the first key (primary key) must not be a duplicate key.");
-                    System.exit(1);
-                }
-                String recordSizeString = cmd.getOptionValue("r");
-                int recordSize = 0;
-                try {
-                    recordSize = Integer.parseInt(recordSizeString);
-                } catch (NumberFormatException e) {
-                    System.err.println(
-                            String.format("error: invalid record size: %s", recordSizeString));
-                    System.exit(1);
-                }
-                if (recordSize <= 0) {
-                    throw new IllegalArgumentException(
-                            String.format("error: invalid record size: %d", recordSize));
-                }
-
-                for (CobolFileKeyInfo keyInfo : keyInfoList) {
-                    if (keyInfo.offset <= 0 || keyInfo.size <= 0) {
-                        throw new IllegalArgumentException(
-                                String.format(
-                                        "error: invalid key information: offset=%d, size=%d",
-                                        keyInfo.offset, keyInfo.size));
-                    }
-                    if (keyInfo.offset + keyInfo.size > recordSize + 1) {
-                        throw new IllegalArgumentException(
-                                String.format(
-                                        "error: invalid key information: offset=%d, size=%d, record"
-                                                + " size=%d",
-                                        keyInfo.offset, keyInfo.size, recordSize));
-                    }
-                }
-
-                // Check if key ranges overlap
-                for (int i = 0; i < keyInfoList.size(); i++) {
-                    CobolFileKeyInfo key1Info = keyInfoList.get(i);
-                    int key1IndexInf = key1Info.offset;
-                    int key1IndexSup = key1Info.offset + key1Info.size - 1;
-                    for (int j = 0; j < i; j++) {
-                        CobolFileKeyInfo key2Info = keyInfoList.get(j);
-                        int key2IndexInf = key2Info.offset;
-                        int key2IndexSup = key2Info.offset + key2Info.size - 1;
-                        if (key1IndexSup >= key2IndexInf || key1IndexInf <= key2IndexSup) {
-                            System.err.println(
-                                    String.format(
-                                            "error: keys overlap: %d,%d and %d,%d",
-                                            key1Info.offset,
-                                            key1Info.size,
-                                            key2Info.offset,
-                                            key2Info.size));
-                            System.exit(1);
-                        }
-                    }
-                }
-                Optional<CobolFile> cobolFile =
-                        createCobolFile(indexedFilePath, recordSize, keyInfoList);
-                if (!cobolFile.isPresent()) {
-                    System.err.println(
-                            String.format(
-                                    "error: failed to create a cobol file from the indexed file:"
-                                            + " %s",
-                                    indexedFilePath));
-                    System.exit(1);
-                }
-                CobolIndexedFile cobolIndexedFile = (CobolIndexedFile) cobolFile.get();
-
-                boolean enableOverwriteOption = cmd.hasOption("o");
-                boolean indexedFileAlreadyExists = new File(indexedFilePath).exists();
-
-                if (enableOverwriteOption || !indexedFileAlreadyExists) {
-                    // Set the module
-                    CobolModule module =
-                            new CobolModule(
-                                    null, null, null, null, 0, '.', '$', ',', 1, 1, 1, 0, null);
-                    CobolModule.push(module);
-                    cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
-                    if (CobolRuntimeException.code != 0) {
-                        System.err.println("error: failed to open the indexed file.");
-                        System.exit(1);
-                    }
-                    cobolIndexedFile.close(0, null);
-                }
+                validateCreateCommandArgs(unrecognizedArgs, cmd);
+                String indexedFilePath = unrecognizedArgs[1];
+                int recordSize = parseRecordSize(cmd);
+                List<CobolFileKeyInfo> keyInfoList = parseKeyOptions(cmd.getOptions());
+                validateKeyInfoList(keyInfoList, recordSize);
+                processCreateIndexedFile(indexedFilePath, recordSize, keyInfoList, cmd);
                 System.exit(0);
             } catch (Exception e) {
                 System.err.println("error: " + e.getMessage());
@@ -369,8 +277,8 @@ class IndexedFileUtilMain {
                 int size = Integer.parseInt(keyInfo[1]);
                 boolean duplicate = "d".equals(option.getOpt());
 
-                CobolFileKeyInfo CobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
-                keyInfoList.add(CobolFileKeyInfo);
+                CobolFileKeyInfo cobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
+                keyInfoList.add(cobolFileKeyInfo);
             }
         }
         return keyInfoList;
@@ -739,5 +647,100 @@ class IndexedFileUtilMain {
                 false,
                 false,
                 (char) 0);
+    }
+
+    private static void validateCreateCommandArgs(String[] unrecognizedArgs, CommandLine cmd) {
+        if (unrecognizedArgs.length < 2) {
+            throw new IllegalArgumentException("no indexed file is specified.");
+        }
+        if (!cmd.hasOption("r")) {
+            throw new IllegalArgumentException("no record size is specified.");
+        }
+    }
+
+    private static int parseRecordSize(CommandLine cmd) {
+        String recordSizeString = cmd.getOptionValue("r");
+        int recordSize;
+        try {
+            recordSize = Integer.parseInt(recordSizeString);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    String.format("invalid record size: %s", recordSizeString), e);
+        }
+        if (recordSize <= 0) {
+            throw new IllegalArgumentException(
+                    String.format("invalid record size: %d", recordSize));
+        }
+        return recordSize;
+    }
+
+    private static void validateKeyInfoList(List<CobolFileKeyInfo> keyInfoList, int recordSize) {
+        if (keyInfoList.isEmpty()) {
+            throw new IllegalArgumentException("no key information is specified.");
+        } else if (keyInfoList.get(0).duplicate) {
+            throw new IllegalArgumentException(
+                    "the first key (primary key) must not be a duplicate key.");
+        }
+        for (CobolFileKeyInfo keyInfo : keyInfoList) {
+            if (keyInfo.offset <= 0 || keyInfo.size <= 0) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "invalid key information: offset=%d, size=%d",
+                                keyInfo.offset, keyInfo.size));
+            }
+            if (keyInfo.offset + keyInfo.size > recordSize + 1) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "invalid key information: offset=%d, size=%d, record size=%d",
+                                keyInfo.offset, keyInfo.size, recordSize));
+            }
+        }
+        // Check if key ranges overlap
+        for (int i = 0; i < keyInfoList.size(); i++) {
+            CobolFileKeyInfo key1Info = keyInfoList.get(i);
+            int key1IndexInf = key1Info.offset;
+            int key1IndexSup = key1Info.offset + key1Info.size - 1;
+            for (int j = 0; j < i; j++) {
+                CobolFileKeyInfo key2Info = keyInfoList.get(j);
+                int key2IndexInf = key2Info.offset;
+                int key2IndexSup = key2Info.offset + key2Info.size - 1;
+                if (!(key1IndexSup < key2IndexInf || key2IndexSup < key1IndexInf)) {
+                    throw new IllegalArgumentException(
+                            String.format(
+                                    "keys overlap: %d,%d and %d,%d",
+                                    key1Info.offset,
+                                    key1Info.size,
+                                    key2Info.offset,
+                                    key2Info.size));
+                }
+            }
+        }
+    }
+
+    private static void processCreateIndexedFile(
+            String indexedFilePath,
+            int recordSize,
+            List<CobolFileKeyInfo> keyInfoList,
+            CommandLine cmd) {
+        Optional<CobolFile> cobolFile = createCobolFile(indexedFilePath, recordSize, keyInfoList);
+        if (!cobolFile.isPresent()) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "failed to create a cobol file from the indexed file: %s",
+                            indexedFilePath));
+        }
+        CobolIndexedFile cobolIndexedFile = (CobolIndexedFile) cobolFile.get();
+        boolean enableOverwriteOption = cmd.hasOption("o");
+        boolean indexedFileAlreadyExists = new File(indexedFilePath).exists();
+        if (enableOverwriteOption || !indexedFileAlreadyExists) {
+            CobolModule module =
+                    new CobolModule(null, null, null, null, 0, '.', '$', ',', 1, 1, 1, 0, null);
+            CobolModule.push(module);
+            cobolIndexedFile.open(CobolFile.COB_OPEN_OUTPUT, 0, null);
+            if (CobolRuntimeException.code != 0) {
+                throw new IllegalArgumentException("failed to open the indexed file.");
+            }
+            cobolIndexedFile.close(0, null);
+        }
     }
 }
