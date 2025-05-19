@@ -159,3 +159,59 @@ AT_CHECK([${COBJ_IDX} create overlap.idx --record-size=30 --key=1,5 --key=3,5], 
 ])
 
 AT_CLEANUP
+
+AT_SETUP([create: load and unload after creation])
+
+# 正常系: INDEXEDファイル作成
+AT_CHECK([${COBJ_IDX} create loadtest.idx --record-size=30 --key=1,5], [0], [], [])
+
+# load用にテストデータを準備
+AT_DATA([load_data.txt],
+[abcde12345test data record 1**
+fghij67890test data record 2**
+])
+
+# 作成したファイルにデータをロード (LINE_SEQUENTIAL形式)
+AT_CHECK([${COBJ_IDX} load loadtest.idx load_data.txt --format=txt], [0], [], [])
+
+# アンロードしてデータを確認
+AT_CHECK([${COBJ_IDX} unload loadtest.idx --format=txt], [0],
+[abcde12345test data record 1**
+fghij67890test data record 2**
+])
+
+# バイナリ形式でもロード・アンロードをテスト
+AT_DATA([binary_data.bin],
+[key0112345binary format 1key0267890binary format 2
+])
+
+# 新しいファイルを作成
+AT_CHECK([${COBJ_IDX} create bintest.idx --record-size=25 --key=1,5], [0], [], [])
+
+# バイナリデータをロード
+AT_CHECK([${COBJ_IDX} load bintest.idx binary_data.bin], [0], [], [])
+
+# アンロードしてデータを確認
+AT_CHECK([${COBJ_IDX} unload bintest.idx], [0],
+[key0112345binary format 1key0267890binary format 2
+])
+
+# 複数キーを持つファイルでもテスト
+AT_CHECK([${COBJ_IDX} create multiloadtest.idx --record-size=30 --key=1,5 --key=10,5 --dup-key=20,5])
+
+AT_DATA([multikey_data.txt],
+[abcde12345hello67890key3@@@@@@
+fghij54321world12345key4@@@@@@
+klmno12345test 67890key5@@@@@@
+])
+
+AT_CHECK([${COBJ_IDX} load multiloadtest.idx multikey_data.txt --format=txt], [0], [], [])
+
+# アンロードしてデータを確認
+AT_CHECK([${COBJ_IDX} unload multiloadtest.idx --format=txt], [0],
+[abcde12345hello67890key3@@@@@@
+fghij54321world12345key4@@@@@@
+klmno12345test 67890key5@@@@@@
+])
+
+AT_CLEANUP
