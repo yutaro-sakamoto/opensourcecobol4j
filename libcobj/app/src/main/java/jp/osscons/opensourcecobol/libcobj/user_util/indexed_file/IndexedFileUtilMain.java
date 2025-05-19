@@ -211,6 +211,14 @@ class IndexedFileUtilMain {
         System.out.println(
                 "    The alternate key can be specified as a duplicate key by using the --dup-key"
                         + " option.");
+        System.out.println(
+                "    Example) cobj-idx create test.idx --record-size=100 --key=1,10 --key=20,5"
+                        + " --dup-key=30,3");
+        System.out.println("             File name: test.idx");
+        System.out.println("             Record size: 100");
+        System.out.println("             Primary key: 1-10");
+        System.out.println("             Alternate key (No Duplicates): 20-24");
+        System.out.println("             Alternate key (Duplicates): 30-32");
         System.out.println();
         System.out.println("cobj-idx load <indexed file>");
         System.out.println("    Load the data from stdin into the indexed file.");
