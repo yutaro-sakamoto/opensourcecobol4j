@@ -270,8 +270,7 @@ class IndexedFileUtilMain {
                     String keyType = "k".equals(option.getOpt()) ? "key" : "duplicate key";
                     throw new IllegalArgumentException(
                             String.format(
-                                    "error: invalid %s information: %s",
-                                    keyType, option.getValue()));
+                                    "invalid %s information: %s", keyType, option.getValue()));
                 }
                 int offset = Integer.parseInt(keyInfo[0]);
                 int size = Integer.parseInt(keyInfo[1]);
@@ -595,12 +594,12 @@ class IndexedFileUtilMain {
             boolean duplicate) {
 
         CobolFileKey cobolFileKey = new CobolFileKey();
-        cobolFileKey.setOffset(offset);
+        cobolFileKey.setOffset(offset - 1);
         cobolFileKey.setFlag(duplicate ? 1 : 0);
         AbstractCobolField keyField =
                 CobolFieldFactory.makeCobolField(
                         size,
-                        recordStorage.getSubDataStorage(offset),
+                        recordStorage.getSubDataStorage(offset - 1),
                         new CobolFieldAttribute(33, 0, 0, 0, null));
         cobolFileKey.setField(keyField);
 
@@ -682,13 +681,9 @@ class IndexedFileUtilMain {
                     "the first key (primary key) must not be a duplicate key.");
         }
         for (CobolFileKeyInfo keyInfo : keyInfoList) {
-            if (keyInfo.offset <= 0 || keyInfo.size <= 0) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "invalid key information: offset=%d, size=%d",
-                                keyInfo.offset, keyInfo.size));
-            }
-            if (keyInfo.offset + keyInfo.size > recordSize + 1) {
+            if (keyInfo.offset <= 0
+                    || keyInfo.size <= 0
+                    || keyInfo.offset + keyInfo.size > recordSize + 1) {
                 throw new IllegalArgumentException(
                         String.format(
                                 "invalid key information: offset=%d, size=%d, record size=%d",
@@ -741,6 +736,11 @@ class IndexedFileUtilMain {
                 throw new IllegalArgumentException("failed to open the indexed file.");
             }
             cobolIndexedFile.close(0, null);
+        } else {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "%s is already exists. Use -o or --overwrite option to overwrite it.",
+                            indexedFilePath));
         }
     }
 }
