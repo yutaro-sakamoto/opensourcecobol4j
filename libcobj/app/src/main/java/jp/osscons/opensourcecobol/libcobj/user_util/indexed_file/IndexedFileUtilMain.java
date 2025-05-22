@@ -53,7 +53,7 @@ class IndexedFileUtilMain {
         options.addOption("v", "version", false, "Print the version");
         options.addOption("n", "new", false, "Delete all data before loading");
         options.addOption("f", "format", true, "Specify the format of the input and output data");
-        options.addOption("r", "record-size", true, "Specify the record size of the indexed file.");
+        options.addOption("s", "size", true, "Specify the record size of the indexed file.");
         options.addOption("k", "key", true, "Specify the key information of the indexed file.");
         options.addOption(
                 "d", "dup-key", true, "Specify the duplicate key information of the indexed file.");
@@ -200,7 +200,7 @@ class IndexedFileUtilMain {
         System.out.println("    Show information of the indexed file.");
         System.out.println();
         System.out.println(
-                "cobj-idx create <indexed file> --record-size=<record size> --key=<start"
+                "cobj-idx create <indexed file> --size=<record size> --key=<start"
                         + " index>,<size> --dup-key=<start index>,<size>");
         System.out.println("    Create a new indexed file.");
         System.out.println("    The record size and key information are specified by the options.");
@@ -212,7 +212,7 @@ class IndexedFileUtilMain {
                 "    The alternate key can be specified as a duplicate key by using the --dup-key"
                         + " option.");
         System.out.println(
-                "    Example) cobj-idx create test.idx --record-size=100 --key=1,10 --key=20,5"
+                "    Example) cobj-idx create test.idx --size=100 --key=1,10 --key=20,5"
                         + " --dup-key=30,3");
         System.out.println("             File name: test.idx");
         System.out.println("             Record size: 100");
