@@ -803,7 +803,7 @@ class IndexedFileUtilMain {
         } else {
             throw new IllegalArgumentException(
                     String.format(
-                            "%s is already exists. Use -o or --overwrite option to overwrite it.",
+                            "%s already exists. Use -o or --overwrite option to overwrite it.",
                             indexedFilePath));
         }
     }
