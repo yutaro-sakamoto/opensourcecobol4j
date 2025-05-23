@@ -254,10 +254,10 @@ class IndexedFileUtilMain {
     }
 
     /**
-     * Parse the key options and return a list of CobolFileKey.
+     * Parse the key options and return a list of CobolFileKeyInfo.
      *
-     * @param options TODO: 準備中
-     * @return TODO: 準備中
+     * @param cmd the CommandLine object containing the parsed command line arguments
+     * @return a list of CobolFileKeyInfo objects parsed from the key options in the provided CommandLine argument
      */
     private static List<CobolFileKeyInfo> parseKeyOptions(CommandLine cmd) throws Exception {
         if (cmd.hasOption("k")) {
