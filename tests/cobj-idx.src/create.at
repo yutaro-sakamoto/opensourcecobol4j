@@ -142,12 +142,36 @@ AT_CHECK([${COBJ_IDX} create outrange.idx --size=10 --key=5,10], [1], [],
 
 # Error case: Offset is less than or equal to 0
 AT_CHECK([${COBJ_IDX} create badoffset.idx --size=30 --key=0,5], [1], [],
-[error: invalid key information: 0,5
+[error: key offsets must be greater than 0: 0,5
 ])
 
 # Error case: Size is less than or equal to 0
 AT_CHECK([${COBJ_IDX} create badsize.idx --size=30 --key=1,0], [1], [],
-[error: invalid key information: 1,0
+[error: key sizes must be greater than 0: 1,0
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=0,2:15,4:d20,5], [1], [],
+[error: key offsets must be greater than 0: 0,2:15,4:d20,5
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=10,2:0,4:d20,5], [1], [],
+[error: key offsets must be greater than 0: 10,2:0,4:d20,5
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=10,2:15,4:d0,5], [1], [],
+[error: key offsets must be greater than 0: 10,2:15,4:d0,5
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=10,0:15,4:d20,5], [1], [],
+[error: key sizes must be greater than 0: 10,0:15,4:d20,5
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=10,2:15,0:d20,5], [1], [],
+[error: key sizes must be greater than 0: 10,2:15,0:d20,5
+])
+
+AT_CHECK([${COBJ_IDX} create test.idx --size=100 --key=10,2:15,4:d20,0], [1], [],
+[error: key sizes must be greater than 0: 10,2:15,4:d20,0
 ])
 
 AT_CLEANUP

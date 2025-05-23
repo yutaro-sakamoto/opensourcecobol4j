@@ -277,6 +277,40 @@ class IndexedFileUtilMain {
                     throw new IllegalArgumentException(
                             "the first key (primary key) must not be a duplicate key.");
                 }
+
+                Pattern patternContains0 = Pattern.compile("[0-9]+,[0-9]+(:d?[0-9]+,[0-9]+)*");
+                matcher = patternContains0.matcher(keyOption);
+                if (matcher.matches()) {
+                    String[] keys = keyOption.split(":");
+                    for (int i = 0; i < keys.length; i++) {
+                        String key = keys[i];
+                        String[] keyInfo = key.split(",");
+                        String offsetString = keyInfo[0];
+                        if (offsetString.startsWith("d")) {
+                            offsetString = offsetString.substring(1);
+                        }
+
+                        if ("0".equals(offsetString)) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "key offsets must be greater than 0: %s", keyOption));
+                        } else if (offsetString.startsWith("0")) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "key offsets must not start with 0: %s", keyOption));
+                        }
+                        String sizeString = keyInfo[1];
+                        if ("0".equals(sizeString)) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "key sizes must be greater than 0: %s", keyOption));
+                        } else if (sizeString.startsWith("0")) {
+                            throw new IllegalArgumentException(
+                                    String.format(
+                                            "key sizes must not start with 0: %s", keyOption));
+                        }
+                    }
+                }
                 throw new IllegalArgumentException(
                         String.format("invalid key information: %s", keyOption));
             }
