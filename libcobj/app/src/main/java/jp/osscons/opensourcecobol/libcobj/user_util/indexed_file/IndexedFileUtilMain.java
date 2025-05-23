@@ -270,6 +270,13 @@ class IndexedFileUtilMain {
             Matcher matcher = pattern.matcher(keyOption);
 
             if (!matcher.matches()) {
+                Pattern patternPrimaryKeyDup =
+                        Pattern.compile("d[1-9][0-9]*,[1-9][0-9]*(:d?[1-9][0-9]*,[1-9][0-9]*)*");
+                Matcher matcherPrimaryKeyDup = patternPrimaryKeyDup.matcher(keyOption);
+                if (matcherPrimaryKeyDup.matches()) {
+                    throw new IllegalArgumentException(
+                            "the first key (primary key) must not be a duplicate key.");
+                }
                 throw new IllegalArgumentException(
                         String.format("invalid key information: %s", keyOption));
             }
