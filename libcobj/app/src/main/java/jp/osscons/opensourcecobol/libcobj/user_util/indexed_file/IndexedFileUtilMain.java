@@ -138,7 +138,6 @@ class IndexedFileUtilMain {
                 System.err.println("error: " + e.getMessage());
                 System.exit(1);
             }
-            System.exit(0);
         } else if ("load".equals(subCommand)) {
             if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 3) {
                 if (unrecognizedArgs.length < 2) {
