@@ -13,6 +13,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
@@ -27,7 +29,6 @@ import jp.osscons.opensourcecobol.libcobj.file.CobolIndexedFile;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.sqlite.SQLiteConfig;
@@ -55,8 +56,6 @@ class IndexedFileUtilMain {
         options.addOption("f", "format", true, "Specify the format of the input and output data");
         options.addOption("s", "size", true, "Specify the record size of the indexed file.");
         options.addOption("k", "key", true, "Specify the key information of the indexed file.");
-        options.addOption(
-                "d", "dup-key", true, "Specify the duplicate key information of the indexed file.");
         options.addOption("o", "overwrite", false, "Overwrite the indexed file if it exists.");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -131,7 +130,7 @@ class IndexedFileUtilMain {
                 validateCreateCommandArgs(unrecognizedArgs, cmd);
                 String indexedFilePath = unrecognizedArgs[1];
                 int recordSize = parseRecordSize(cmd);
-                List<CobolFileKeyInfo> keyInfoList = parseKeyOptions(cmd.getOptions());
+                List<CobolFileKeyInfo> keyInfoList = parseKeyOptions(cmd);
                 validateKeyInfoList(keyInfoList, recordSize);
                 processCreateIndexedFile(indexedFilePath, recordSize, keyInfoList, cmd);
                 System.exit(0);
@@ -200,25 +199,17 @@ class IndexedFileUtilMain {
         System.out.println("    Show information of the indexed file.");
         System.out.println();
         System.out.println(
-                "cobj-idx create <indexed file> --size=<record size> --key=<start"
-                        + " index>,<size> --dup-key=<start index>,<size>");
+                "cobj-idx create <indexed file> --size=<record size> --key=<key information>");
         System.out.println("    Create a new indexed file.");
         System.out.println("    The record size and key information are specified by the options.");
         System.out.println("    By default, this command does not overwrite the indexed file.");
         System.out.println("    To overwrite the indexed file, use the --overwrite option.");
-        System.out.println(
-                "    The first key is the primary key and the others are alternate keys.");
-        System.out.println(
-                "    The alternate key can be specified as a duplicate key by using the --dup-key"
-                        + " option.");
-        System.out.println(
-                "    Example) cobj-idx create test.idx --size=100 --key=1,10 --key=20,5"
-                        + " --dup-key=30,3");
+        System.out.println("    Example) cobj-idx create test.idx --size=100 --key=2,2:5,4:d15,5");
         System.out.println("             File name: test.idx");
         System.out.println("             Record size: 100");
-        System.out.println("             Primary key: 1-10");
-        System.out.println("             Alternate key (No Duplicates): 20-24");
-        System.out.println("             Alternate key (Duplicates): 30-32");
+        System.out.println("             Primary key: 2-3");
+        System.out.println("             Alternate key (No Duplicates):5-8");
+        System.out.println("             Alternate key (Duplicates): 15-19");
         System.out.println();
         System.out.println("cobj-idx load <indexed file>");
         System.out.println("    Load the data from stdin into the indexed file.");
@@ -269,26 +260,50 @@ class IndexedFileUtilMain {
      * @param options TODO: 準備中
      * @return TODO: 準備中
      */
-    private static List<CobolFileKeyInfo> parseKeyOptions(Option[] options) throws Exception {
-        ArrayList<CobolFileKeyInfo> keyInfoList = new ArrayList<>();
-        for (Option option : options) {
-            if ("k".equals(option.getOpt()) || "d".equals(option.getOpt())) {
-                String[] keyInfo = option.getValue().split(",");
-                if (keyInfo.length != 2) {
-                    String keyType = "k".equals(option.getOpt()) ? "key" : "duplicate key";
-                    throw new IllegalArgumentException(
-                            String.format(
-                                    "invalid %s information: %s", keyType, option.getValue()));
-                }
-                int offset = Integer.parseInt(keyInfo[0]);
-                int size = Integer.parseInt(keyInfo[1]);
-                boolean duplicate = "d".equals(option.getOpt());
+    private static List<CobolFileKeyInfo> parseKeyOptions(CommandLine cmd) throws Exception {
+        if (cmd.hasOption("k")) {
+            ArrayList<CobolFileKeyInfo> keyInfoList = new ArrayList<>();
 
-                CobolFileKeyInfo cobolFileKeyInfo = new CobolFileKeyInfo(offset, size, duplicate);
-                keyInfoList.add(cobolFileKeyInfo);
+            String keyOption = cmd.getOptionValue("k");
+            Pattern pattern =
+                    Pattern.compile("[1-9][0-9]*,[1-9][0-9]*(:d?[1-9][0-9]*,[1-9][0-9]*)*");
+            Matcher matcher = pattern.matcher(keyOption);
+
+            if (!matcher.matches()) {
+                throw new IllegalArgumentException(
+                        String.format("invalid key information: %s", keyOption));
             }
+            String[] keys = keyOption.split(":");
+            for (int i = 0; i < keys.length; i++) {
+                String key = keys[i];
+                boolean isFirstKey = (i == 0);
+                String[] keyInfo = key.split(",");
+                if (keyInfo.length != 2) {
+                    throw new IllegalArgumentException(
+                            String.format("invalid key information: %s", keyOption));
+                }
+                String offsetString = keyInfo[0];
+                boolean duplicate = false;
+                if (keyInfo[0].startsWith("d")) {
+                    if (isFirstKey) {
+                        throw new IllegalArgumentException(
+                                String.format(
+                                        "the first key (primary key) must not be a duplicate"
+                                                + " key."));
+                    }
+                    offsetString = keyInfo[0].substring(1);
+                    duplicate = true;
+                }
+                int offset = Integer.parseInt(offsetString);
+                int size = Integer.parseInt(keyInfo[1]);
+
+                CobolFileKeyInfo keyInfoObj = new CobolFileKeyInfo(offset, size, duplicate);
+                keyInfoList.add(keyInfoObj);
+            }
+            return keyInfoList;
+        } else {
+            throw new IllegalArgumentException("no key information is specified.");
         }
-        return keyInfoList;
     }
 
     /**
@@ -661,13 +676,13 @@ class IndexedFileUtilMain {
         if (unrecognizedArgs.length < 2) {
             throw new IllegalArgumentException("no indexed file is specified.");
         }
-        if (!cmd.hasOption("r")) {
+        if (!cmd.hasOption("s")) {
             throw new IllegalArgumentException("no record size is specified.");
         }
     }
 
     private static int parseRecordSize(CommandLine cmd) {
-        String recordSizeString = cmd.getOptionValue("r");
+        String recordSizeString = cmd.getOptionValue("s");
         int recordSize;
         try {
             recordSize = Integer.parseInt(recordSizeString);
