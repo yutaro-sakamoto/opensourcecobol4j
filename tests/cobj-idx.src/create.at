@@ -39,13 +39,13 @@ AT_SETUP([create: overwrite existing file])
 # Create an existing file first
 AT_CHECK([${COBJ_IDX} create overwrite.idx --size=10 --key=1,3])
 
-# Try to overwrite without --overwrite option
+# Try to overwrite without --new option
 AT_CHECK([${COBJ_IDX} create overwrite.idx --size=20 --key=1,5], [1], [],
-[error: overwrite.idx already exists. Use -o or --overwrite option to overwrite it.
+[error: overwrite.idx already exists. Use -n or --new option to overwrite it.
 ])
 
-# Overwrite with --overwrite option
-AT_CHECK([${COBJ_IDX} create overwrite.idx --size=20 --key=1,5 --overwrite])
+# Overwrite with --new option
+AT_CHECK([${COBJ_IDX} create overwrite.idx --size=20 --key=1,5 --new])
 
 # Confirm that the file was overwritten
 AT_CHECK([${COBJ_IDX} info overwrite.idx], [0],

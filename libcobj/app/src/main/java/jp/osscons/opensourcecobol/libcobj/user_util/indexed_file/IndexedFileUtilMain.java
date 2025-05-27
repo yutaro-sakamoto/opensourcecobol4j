@@ -56,7 +56,6 @@ class IndexedFileUtilMain {
         options.addOption("f", "format", true, "Specify the format of the input and output data");
         options.addOption("s", "size", true, "Specify the record size of the indexed file.");
         options.addOption("k", "key", true, "Specify the key information of the indexed file.");
-        options.addOption("o", "overwrite", false, "Overwrite the indexed file if it exists.");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
 
@@ -202,7 +201,7 @@ class IndexedFileUtilMain {
         System.out.println("    Create a new indexed file.");
         System.out.println("    The record size and key information are specified by the options.");
         System.out.println("    By default, this command does not overwrite the indexed file.");
-        System.out.println("    To overwrite the indexed file, use the --overwrite option.");
+        System.out.println("    To overwrite the indexed file, use the --new option.");
         System.out.println("    Example) cobj-idx create test.idx --size=100 --key=2,2:5,4:d15,5");
         System.out.println("             File name: test.idx");
         System.out.println("             Record size: 100");
@@ -788,7 +787,7 @@ class IndexedFileUtilMain {
                             indexedFilePath));
         }
         CobolIndexedFile cobolIndexedFile = (CobolIndexedFile) cobolFile.get();
-        boolean enableOverwriteOption = cmd.hasOption("o");
+        boolean enableOverwriteOption = cmd.hasOption("n");
         boolean indexedFileAlreadyExists = new File(indexedFilePath).exists();
         if (enableOverwriteOption || !indexedFileAlreadyExists) {
             CobolModule module =
@@ -802,7 +801,7 @@ class IndexedFileUtilMain {
         } else {
             throw new IllegalArgumentException(
                     String.format(
-                            "%s already exists. Use -o or --overwrite option to overwrite it.",
+                            "%s already exists. Use -n or --new option to overwrite it.",
                             indexedFilePath));
         }
     }
