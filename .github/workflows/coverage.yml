@@ -1,0 +1,65 @@
+name: Coverage
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CLASSPATH: ":/usr/lib/opensourcecobol4j/libcobj.jar"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps: 
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies on Ubuntu 24.04
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential gettext autoconf bison flex
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v4
+      
+      - name: Install opensource COBOL 4J
+        run: |
+          ./configure --prefix=/usr/ CFLAGS='-fprofile-arcs -ftest-coverage'
+          make
+          sudo make install
+
+      - name: Run NIST test
+        working-directory: tests/cobol85
+        run: make test
+
+      - name: Run other tests
+        working-directory: tests
+        run: |
+          ./command-line-options
+          ./data-rep
+          ./i18n_sjis
+          ./jp-compat
+          ./run
+          ./syntax
+          ./cobj-idx
+          ./misc
+
+      - name: Generate a coverage report
+        working-directory: cobj
+        run: |
+          gcov -l ./*.gcda
+          gcovr -r . --html -o report.html
+          mkdir coverage-report
+          cp ./*.gcno ./*.gcda ./*.gcov report.html coverage-report
+
+      - name: Archive a coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: cobj/coverage-report/
