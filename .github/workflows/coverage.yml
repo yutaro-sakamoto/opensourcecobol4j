@@ -43,7 +43,7 @@ jobs:
         run: |
           tests=("command-line-options" "data-rep" "i18n_sjis" "jp-compat" "run" "syntax" "cobj-idx" "misc")
           for test in "${tests[@]}"; do
-            ./$test || true
+            ./"$test" || true
           done
 
       - name: Generate a coverage report
