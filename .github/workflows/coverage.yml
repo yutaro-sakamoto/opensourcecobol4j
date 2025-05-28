@@ -55,10 +55,13 @@ jobs:
         working-directory: cobj
         run: |
           gcov -l ./*.gcda
-          gcovr -r . --html-details --html-self-contained --html -o report.html --branches
+          gcovr -r . \
+            -e cobj-parser -e cobj-scanner -e cobj-pplex -e cobj-ppparse \
+            -e parser.c -e parser.y -e scanner.l -e scanner.c -e pplex.l -e pplex.c -e ppparse.y -e ppparse.c \
+            -e flag-help.def -e warning-help.def -e warning.def \
+            --html-details --html-self-contained --html -o report.html --txt-metric=branch
           mkdir -p coverage-report
-          cp ./*.gcno ./*.gcda ./*.gcov ./*.html coverage-report
-
+          cp ./*.html coverage-report
 
       - name: Archive a coverage report
         uses: actions/upload-artifact@v4
