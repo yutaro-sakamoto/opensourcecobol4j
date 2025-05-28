@@ -41,14 +41,10 @@ jobs:
       - name: Run other tests
         working-directory: tests
         run: |
-          ./command-line-options || true
-          ./data-rep || true
-          ./i18n_sjis || true
-          ./jp-compat || true
-          ./run || true
-          ./syntax || true
-          ./cobj-idx || true
-          ./misc || true
+          tests=("command-line-options" "data-rep" "i18n_sjis" "jp-compat" "run" "syntax" "cobj-idx" "misc")
+          for test in "${tests[@]}"; do
+            ./$test || true
+          done
 
       - name: Generate a coverage report
         working-directory: cobj
