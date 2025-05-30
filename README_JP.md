@@ -126,7 +126,7 @@ Windows版のopensource COBOL 4JはVisual Studioに含まれるCLコンパイラ
 opensource COBOL 4JのDockerコンテナを利用できます。
 
 ```bash
-docker pull opensourcecobol/opensourcecobol4j:20250418
+docker pull opensourcecobol/opensourcecobol4j:20250530
 ```
 
 以下のコマンドを実行して、"Hello World"のCOBOLプログラムを実行します。
