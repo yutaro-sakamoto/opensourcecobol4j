@@ -2,6 +2,21 @@ NEWS - user visible changes				-*- outline -*-
 
 -----------------------------------------------------------------------
 
+** New Features
+
+(1) Add a sub command create for cobj-idx.
+  * `cobj-idx create` creates a new indexed file.
+  
+** Fix
+
+(1) Handle non-ASCII characters in EXTERNAL items and EXTERNAL file names correctly.
+(2) Show error messages if unimplemented subroutines are used.
+(3) Fix non-ASCII characters in external items and external file descriptors
+  * The older version does not convert `－` in EXTERNAL items and EXTERNAL file names into another valid character in Java.
+  * The older version converts `ＢＣ` in EXTERNAL file names into invalid characters.
+
+-----------------------------------------------------------------------
+
 * opensource COBOL 4J 1.1.8-hotfix1
 
 ** Bug Fixes
