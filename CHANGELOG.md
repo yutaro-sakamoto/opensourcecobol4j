@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Add
 
-* Add a sub command create of cobj-idx.
+* Add a sub command create for cobj-idx.
   * `cobj-idx create` creates a new indexed file.
   
 ### Fix
@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 * Fix non-ASCII characters in external items and external file descriptors
   * The older version does not convert `－` in EXTERNAL items and EXTERNAL file names into another valid character in Java.
   * The older version converts `ＢＣ` in EXTERNAL file names into invalid characters.
-  
+
 ## [1.1.8-hotfix1] - 2025-04-18
 
 ### Fix
