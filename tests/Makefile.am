@@ -198,6 +198,7 @@ command_line_options_DEPENDENCIES = \
 
 cobj_idx_DEPENDENCIES = \
 	cobj-idx.at \
+	cobj-idx.src/create.at \
 	cobj-idx.src/info.at \
 	cobj-idx.src/load.at \
 	cobj-idx.src/unload.at \

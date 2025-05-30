@@ -3,11 +3,11 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.diffplug.spotless") version "7.0.3"
+    id("com.diffplug.spotless") version "7.0.4"
     id("java")
     id("maven-publish")
     pmd
-    id("com.github.spotbugs") version "6.1.11"
+    id("com.github.spotbugs") version "6.1.13"
 }
 
 repositories {
@@ -36,7 +36,7 @@ dependencies {
     implementation("commons-cli:commons-cli:1.9.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    implementation("org.json:json:20250107")
+    implementation("org.json:json:20250517")
     spotbugs("com.github.spotbugs:spotbugs:4.8.6")
 
     implementation("org.slf4j:slf4j-api:2.0.17")

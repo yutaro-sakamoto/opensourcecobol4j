@@ -42,7 +42,7 @@ jobs:
 
   coverage:
     needs: check-workflows
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/develop'
     uses: ./.github/workflows/coverage.yml
 
   run-test-other:
