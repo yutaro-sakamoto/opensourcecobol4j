@@ -194,9 +194,6 @@ char *cb_single_jar_name = NULL;
 int cb_flag_info_json = 0;
 char *cb_info_json_dir = NULL;
 
-char edit_code_command[512];
-char edit_code_command_is_set = 0;
-
 #define PROGRAM_ID_LIST_MAX_LEN 1024
 char *program_id_list[PROGRAM_ID_LIST_MAX_LEN];
 
@@ -314,7 +311,6 @@ static const struct option long_options[] = {
     {"reference_check", no_argument, NULL, 'K'},
     {"constant", optional_argument, NULL, '3'},
     {"fdefaultbyte", required_argument, NULL, OPTION_ID_DEFAULT_BYTE},
-    {"edit-code-command", optional_argument, NULL, '['},
 #undef CB_FLAG
 #define CB_FLAG(var, name, doc)                                                \
   {"f" name, no_argument, &var, 1}, {"fno-" name, no_argument, &var, 0},
@@ -1205,10 +1201,6 @@ static int process_command_line(const int argc, char *argv[]) {
       if (!cb_depend_file) {
         perror(optarg);
       }
-      break;
-    case '[':
-      strcpy(edit_code_command, optarg);
-      edit_code_command_is_set = 1;
       break;
 
     case 'I':
