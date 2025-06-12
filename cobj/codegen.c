@@ -187,7 +187,6 @@ static char *convert_byte_value_format(char value);
 static void append_label_id_map(struct cb_label *label);
 static void create_label_id_map(struct cb_program *prog);
 static void destroy_label_id_map(void);
-static void joutput_edit_code_command(const char *target);
 
 static void joutput_label_variable(struct cb_label *label);
 static void joutput_label_variable_name(char *s, int key,
@@ -673,35 +672,6 @@ static void joutput_local(const char *fmt, ...) {
     vfprintf(joutput_target, fmt, ap);
     va_end(ap);
   }
-}
-
-static void joutput_edit_code_command(const char *target) {
-  if (!edit_code_command_is_set) {
-    return;
-  }
-
-  char command[BUF_SIZE];
-  char buf[BUF_SIZE];
-  sprintf(command, "%s --target=%s", edit_code_command, target);
-
-#ifdef _WIN32
-  FILE *fp = _popen(command, "r");
-#else
-  FILE *fp = popen(command, "r");
-#endif
-  if (fp == NULL) {
-    return;
-  }
-  memset(buf, 0, BUF_SIZE);
-
-  while (fgets(buf, BUF_SIZE, fp) != NULL) {
-    joutput("%s", buf);
-  }
-#ifdef _WIN32
-  _pclose(fp);
-#else
-  pclose(fp);
-#endif
 }
 
 /*
@@ -6082,9 +6052,6 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   if (cb_java_package_name) {
     joutput_line("package %s;\n", cb_java_package_name);
   }
-  if (edit_code_command_is_set) {
-    joutput_edit_code_command("file-header");
-  }
 
   joutput_line("import java.io.UnsupportedEncodingException;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.*;");
@@ -6113,17 +6080,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     }
   }*/
 
-  if (edit_code_command_is_set) {
-    joutput_edit_code_command("main-class-annotation");
-  }
-  if (edit_code_command_is_set) {
-    joutput("public class %s implements CobolRunnable, ", prog->program_id);
-    joutput_edit_code_command("main-class-implements");
-    joutput(" {\n");
-  } else {
-    joutput_line("public class %s implements CobolRunnable {",
-                 prog->program_id);
-  }
+  joutput_line("public class %s implements CobolRunnable {", prog->program_id);
   joutput_indent_level += 2;
   joutput("\n");
 
@@ -6135,9 +6092,6 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   // output_storage ("union cob_call_union\tcob_unifunc;\n\n");
   joutput_line("private CobolRunnable cob_unifunc;\n");
 
-  if (edit_code_command_is_set) {
-    joutput_edit_code_command("main-class-contents");
-  }
   joutput("\n");
 
   joutput_line("@Override");
