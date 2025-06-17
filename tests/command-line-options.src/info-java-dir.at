@@ -79,6 +79,10 @@ AT_CHECK([cat bbb/info_callee.json], [0],
     {
       "variable_name": "P2",
       "java_type": "int"
+    },
+    {
+      "variable_name": "P3",
+      "java_type": "double"
     }
   @:>@
 }
