@@ -3130,7 +3130,6 @@ void cb_emit_call(cb_tree prog, cb_tree cb_using, cb_tree returning,
         case C$JUSTIFY:
         case C$MAKEDIR:
         case C$NARG:
-        case C$SLEEP:
         case C$PARAMSIZE:
           cb_error(_("%s not implemented"), data);
           return;
