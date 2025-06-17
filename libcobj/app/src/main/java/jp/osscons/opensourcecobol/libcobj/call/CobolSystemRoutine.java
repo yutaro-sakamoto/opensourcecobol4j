@@ -141,6 +141,7 @@ public class CobolSystemRoutine {
      *
      * @param data C$SLEEPの引数として指定されたCOBOL変数のバイト列。
      */
+    @SuppressWarnings("PMD.AvoidDollarSigns")
     public static int C$SLEEP(CobolDataStorage data) {
         CobolUtil.COB_CHK_PARMS("C$SLEEP", 3);
         List<AbstractCobolField> params = CobolModule.getCurrentModule().cob_procedure_parameters;
