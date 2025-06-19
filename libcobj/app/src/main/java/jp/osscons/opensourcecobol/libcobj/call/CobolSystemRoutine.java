@@ -145,7 +145,7 @@ public class CobolSystemRoutine {
     public static int C$SLEEP(CobolDataStorage data) {
         CobolUtil.COB_CHK_PARMS("C$SLEEP", 3);
         List<AbstractCobolField> params = CobolModule.getCurrentModule().cob_procedure_parameters;
-        if (params.isEmpty() || params.get(0) == null) {
+        if (!params.isEmpty() && params.get(0) != null) {
             int n = params.get(0).getInt();
             if (n > 0 && n < 3600 * 24 * 7) {
                 try {
