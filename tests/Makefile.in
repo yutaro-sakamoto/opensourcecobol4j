@@ -612,7 +612,8 @@ run_DEPENDENCIES = \
 	run.src/subscripts.at \
 	run.src/extensions.at \
 	run.src/return-code.at \
-	run.src/functions.at
+	run.src/functions.at \
+	run.src/system-routines.at
 
 data_rep_DEPENDENCIES = \
 	data-rep.at \
