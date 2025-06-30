@@ -4,6 +4,18 @@ NEWS - user visible changes				-*- outline -*-
 
 ** New Features
 
+(1) Add a manual for the compiler configuration file (#665)
+(2) Add a built-in subroutine
+  * C$SLEEP (#669)
+  
+** Miscellaneous
+
+(1) Improve the test coverage slightly (#667, #664)
+
+-----------------------------------------------------------------------
+
+** New Features
+
 (1) Add a sub command create for cobj-idx.
   * `cobj-idx create` creates a new indexed file.
   
