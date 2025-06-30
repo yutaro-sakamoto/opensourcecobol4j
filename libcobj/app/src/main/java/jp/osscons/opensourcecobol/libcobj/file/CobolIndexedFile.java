@@ -211,7 +211,7 @@ public class CobolIndexedFile extends CobolFile {
         IndexedFile p = new IndexedFile();
 
         SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(mode == COB_OPEN_INPUT);
+        // config.setReadOnly(mode == COB_OPEN_INPUT);
 
         if (mode == COB_OPEN_OUTPUT) {
             Path path = Paths.get(filename);
@@ -229,6 +229,7 @@ public class CobolIndexedFile extends CobolFile {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
             // p.connection.setAutoCommit(false);
+            // p.connection.commit();
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
@@ -242,29 +243,21 @@ public class CobolIndexedFile extends CobolFile {
 
         try {
             Statement statement = p.connection.createStatement();
-            statement.execute("begin exclusive transaction");
-            ResultSet rs =
-                    statement.executeQuery(
-                            "select * from sqlite_master where type = 'table' and name ="
-                                    + " 'lock_table_open'");
-            boolean lockTableExists = rs.next();
-            rs.close();
+            // statement.execute("begin exclusive transaction");
             if (mode == COB_OPEN_OUTPUT) {
-                if (lockTableExists) {
-                    statement.execute("end transaction");
-                    p.connection.close();
-                    p.connection = null;
-                    return COB_STATUS_51_RECORD_LOCKED;
-                } else {
-                    // Create a lock table if it does not exist
-                    statement.execute(
-                            "create table lock_table_open ("
-                                    + "lock_id text primary key,"
-                                    + "open_mode text not null)");
-                }
+                // Create a lock table if it does not exist
+                statement.execute(
+                        "create table if not exists lock_table_open ("
+                                + "lock_id text primary key,"
+                                + "open_mode text not null)");
             } else {
+                ResultSet rs =
+                        statement.executeQuery(
+                                "select * from sqlite_master where type = 'table' and name ="
+                                        + " 'lock_table_open'");
+                boolean lockTableExists = rs.next();
                 if (!lockTableExists) {
-                    statement.execute("end transaction");
+                    // statement.execute("end transaction");
                     p.connection.close();
                     p.connection = null;
                     return COB_STATUS_30_PERMANENT_ERROR;
@@ -274,8 +267,10 @@ public class CobolIndexedFile extends CobolFile {
                 ResultSet otherLocks =
                         statement.executeQuery("select lock_id from lock_table_open");
                 boolean lockExists = otherLocks.next();
+                System.out.println("[dbg] lock exists");
                 if (lockExists) {
-                    statement.execute("end transaction");
+                    System.out.println("[dbg] lock_id: " + otherLocks.getString("lock_id"));
+                    // statement.execute("end transaction");
                     p.connection.close();
                     p.connection = null;
                     return COB_STATUS_51_RECORD_LOCKED;
@@ -286,7 +281,7 @@ public class CobolIndexedFile extends CobolFile {
                                 "select lock_id from lock_table_open where open_mode = 'OUTPUT'");
                 boolean lockOutputExists = otherOutputLocks.next();
                 if (lockOutputExists) {
-                    statement.execute("end transaction");
+                    // statement.execute("end transaction");
                     p.connection.close();
                     p.connection = null;
                     return COB_STATUS_51_RECORD_LOCKED;
@@ -301,9 +296,12 @@ public class CobolIndexedFile extends CobolFile {
             insertLockStmt.setString(2, openModeString(mode));
             insertLockStmt.execute();
             insertLockStmt.close();
-            statement.execute("end transaction");
             statement.close();
+            p.connection.commit();
+            System.out.println("[dbg]commit!");
+            // statement.execute("end transaction");
         } catch (SQLException e) {
+            e.printStackTrace();
             // If the file does not exist, it is created in the next step.
             if (e.getErrorCode() != SQLiteErrorCode.SQLITE_ERROR.code) {
                 return COB_STATUS_30_PERMANENT_ERROR;
