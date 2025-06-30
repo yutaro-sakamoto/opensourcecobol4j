@@ -305,10 +305,16 @@ public class CobolIndexedFile extends CobolFile {
             statement.close();
         } catch (SQLException e) {
             // If the file does not exist, it is created in the next step.
-            e.printStackTrace();
             if (e.getErrorCode() != SQLiteErrorCode.SQLITE_ERROR.code) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
+        }
+
+        try {
+            p.connection.setAutoCommit(false);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return COB_STATUS_30_PERMANENT_ERROR;
         }
 
         p.filenamelen = filename.length();
@@ -365,6 +371,7 @@ public class CobolIndexedFile extends CobolFile {
                     p.connection.commit();
                 }
             } catch (SQLException e) {
+                e.printStackTrace();
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         }
@@ -384,6 +391,7 @@ public class CobolIndexedFile extends CobolFile {
         this.callStart = false;
 
         this.fetchKeyIndex = -1;
+
         return 0;
     }
 
@@ -427,6 +435,7 @@ public class CobolIndexedFile extends CobolFile {
     public int close_(int opt) {
         IndexedFile p = this.filei;
         try {
+            p.connection.setAutoCommit(true);
             Statement statement = p.connection.createStatement();
             statement.execute("begin exclusive transaction");
             PreparedStatement ps =
