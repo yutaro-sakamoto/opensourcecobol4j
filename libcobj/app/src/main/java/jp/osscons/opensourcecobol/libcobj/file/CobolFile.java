@@ -1100,6 +1100,14 @@ public class CobolFile {
                 case COB_LINAGE_INVALID:
                     saveStatus(COB_STATUS_57_I_O_LINAGE, fnstatus);
                     return;
+                case COB_STATUS_51_RECORD_LOCKED:
+                    if (this.organization == COB_ORG_INDEXED) {
+                        saveStatus(COB_STATUS_51_RECORD_LOCKED, fnstatus);
+                        return;
+                    } else {
+                        saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
+                        return;
+                    }
                 default:
                     saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
                     return;

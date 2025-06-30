@@ -19,6 +19,7 @@
 package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -190,6 +191,21 @@ public class CobolIndexedFile extends CobolFile {
         return field.getDataStorage().getByteArray(0, field.getSize());
     }
 
+    private String openModeString(int mode) {
+        switch (mode) {
+            case COB_OPEN_INPUT:
+                return "INPUT";
+            case COB_OPEN_OUTPUT:
+                return "OUTPUT";
+            case COB_OPEN_EXTEND:
+                return "EXTEND";
+            case COB_OPEN_I_O:
+                return "I-O";
+            default:
+                return "unknown";
+        }
+    }
+
     @Override
     public int open_(String filename, int mode, int sharing) {
         IndexedFile p = new IndexedFile();
@@ -212,7 +228,7 @@ public class CobolIndexedFile extends CobolFile {
         try {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
-            p.connection.setAutoCommit(false);
+            // p.connection.setAutoCommit(false);
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
@@ -222,6 +238,77 @@ public class CobolIndexedFile extends CobolFile {
             }
         } catch (Exception e) {
             return COB_STATUS_30_PERMANENT_ERROR;
+        }
+
+        try {
+            Statement statement = p.connection.createStatement();
+            statement.execute("begin exclusive transaction");
+            ResultSet rs =
+                    statement.executeQuery(
+                            "select * from sqlite_master where type = 'table' and name ="
+                                    + " 'lock_table_open'");
+            boolean lockTableExists = rs.next();
+            rs.close();
+            if (mode == COB_OPEN_OUTPUT) {
+                if (lockTableExists) {
+                    statement.execute("end transaction");
+                    p.connection.close();
+                    p.connection = null;
+                    return COB_STATUS_51_RECORD_LOCKED;
+                } else {
+                    // Create a lock table if it does not exist
+                    statement.execute(
+                            "create table lock_table_open ("
+                                    + "lock_id text primary key,"
+                                    + "open_mode text not null)");
+                }
+            } else {
+                if (!lockTableExists) {
+                    statement.execute("end transaction");
+                    p.connection.close();
+                    p.connection = null;
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+            }
+            if (mode == COB_OPEN_OUTPUT) {
+                ResultSet otherLocks =
+                        statement.executeQuery("select lock_id from lock_table_open");
+                boolean lockExists = otherLocks.next();
+                if (lockExists) {
+                    statement.execute("end transaction");
+                    p.connection.close();
+                    p.connection = null;
+                    return COB_STATUS_51_RECORD_LOCKED;
+                }
+            } else {
+                ResultSet otherOutputLocks =
+                        statement.executeQuery(
+                                "select lock_id from lock_table_open where open_mode = 'OUTPUT'");
+                boolean lockOutputExists = otherOutputLocks.next();
+                if (lockOutputExists) {
+                    statement.execute("end transaction");
+                    p.connection.close();
+                    p.connection = null;
+                    return COB_STATUS_51_RECORD_LOCKED;
+                }
+            }
+            // Insert a lock entry for the current open mode
+            PreparedStatement insertLockStmt =
+                    p.connection.prepareStatement(
+                            "insert into lock_table_open (lock_id, open_mode) values (?, ?)");
+            String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+            insertLockStmt.setString(1, processId); // Use a fixed lock_id for simplicity
+            insertLockStmt.setString(2, openModeString(mode));
+            insertLockStmt.execute();
+            insertLockStmt.close();
+            statement.execute("end transaction");
+            statement.close();
+        } catch (SQLException e) {
+            // If the file does not exist, it is created in the next step.
+            e.printStackTrace();
+            if (e.getErrorCode() != SQLiteErrorCode.SQLITE_ERROR.code) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
         }
 
         p.filenamelen = filename.length();
@@ -339,7 +426,21 @@ public class CobolIndexedFile extends CobolFile {
     @Override
     public int close_(int opt) {
         IndexedFile p = this.filei;
-
+        try {
+            Statement statement = p.connection.createStatement();
+            statement.execute("begin exclusive transaction");
+            PreparedStatement ps =
+                    p.connection.prepareStatement("delete from lock_table_open where lock_id = ?");
+            String processId = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+            ps.setString(1, processId); // Use a fixed lock_id for simplicity
+            ps.execute();
+            ps.close();
+            statement.execute("end transaction");
+            statement.close();
+        } catch (SQLException e) {
+            // If the lock table does not exist, it is not an error
+            e.printStackTrace();
+        }
         this.closeCursor();
 
         try {
