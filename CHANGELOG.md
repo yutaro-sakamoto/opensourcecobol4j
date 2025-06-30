@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.10] - 2025-06-30
+
+### Add
+
+* Add a manual for the compiler configuration file (#665)
+* Add a built-in subroutine
+  * C$SLEEP (#669)
+  
+### Miscellaneous
+
+* Improve the test coverage slightly (#667, #664)
+
 ## [1.1.9] - 2025-05-30
 
 ### Add
