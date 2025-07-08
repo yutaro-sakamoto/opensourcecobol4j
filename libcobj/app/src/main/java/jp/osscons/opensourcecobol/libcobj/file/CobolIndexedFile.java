@@ -147,6 +147,7 @@ public class CobolIndexedFile extends CobolFile {
                 fileVersion);
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private static String proceeUuid() {
         if (CobolIndexedFile.storedProcessUuid == null) {
             CobolIndexedFile.storedProcessUuid = java.util.UUID.randomUUID().toString();
@@ -154,6 +155,7 @@ public class CobolIndexedFile extends CobolFile {
         return CobolIndexedFile.storedProcessUuid;
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private static String processId() {
         if (CobolIndexedFile.storedProcessId == null) {
             CobolIndexedFile.storedProcessId =
