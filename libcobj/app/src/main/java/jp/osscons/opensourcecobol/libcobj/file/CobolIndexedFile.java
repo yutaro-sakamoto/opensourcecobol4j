@@ -61,6 +61,9 @@ public class CobolIndexedFile extends CobolFile {
     /** TODO: 準備中 */
     public static final int COB_NE = 6;
 
+    private static String storedProcessUuid = null;
+    private static String storedProcessId = null;
+
     /**
      * TODO: 準備中
      *
@@ -142,6 +145,24 @@ public class CobolIndexedFile extends CobolFile {
                 flagNeedsNl,
                 flagNeedsTop,
                 fileVersion);
+    }
+
+    private static String proceeUuid() {
+        if (CobolIndexedFile.storedProcessUuid == null) {
+            CobolIndexedFile.storedProcessUuid = java.util.UUID.randomUUID().toString();
+        }
+        return CobolIndexedFile.storedProcessUuid;
+    }
+
+    private static String processId() {
+        if (CobolIndexedFile.storedProcessId == null) {
+            CobolIndexedFile.storedProcessId =
+                    String.valueOf(
+                            java.lang.management.ManagementFactory.getRuntimeMXBean()
+                                    .getName()
+                                    .split("@")[0]);
+        }
+        return CobolIndexedFile.storedProcessId;
     }
 
     private static String getIndexName(int index) {
