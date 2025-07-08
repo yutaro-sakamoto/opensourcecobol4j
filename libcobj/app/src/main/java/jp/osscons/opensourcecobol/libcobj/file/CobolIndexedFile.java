@@ -265,7 +265,7 @@ public class CobolIndexedFile extends CobolFile {
                 statement.execute(
                         "CREATE TABLE file_lock (locked_by text primary key,process_id"
                             + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
-                            + " CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O', 'EXTEND')),");
+                            + " CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O', 'EXTEND')))");
                 for (int i = 0; i < this.nkeys; ++i) {
                     String tableName = getTableName(i);
                     if (i == 0) {
@@ -305,6 +305,7 @@ public class CobolIndexedFile extends CobolFile {
                     p.connection.commit();
                 }
             } catch (SQLException e) {
+                e.printStackTrace();
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         }
