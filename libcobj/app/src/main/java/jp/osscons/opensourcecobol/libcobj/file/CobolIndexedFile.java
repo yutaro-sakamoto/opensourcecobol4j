@@ -219,6 +219,7 @@ public class CobolIndexedFile extends CobolFile {
 
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(mode == COB_OPEN_INPUT);
+        config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
 
         if (mode == COB_OPEN_OUTPUT) {
             Path path = Paths.get(filename);
@@ -258,10 +259,21 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
+        Statement statement;
+
+        // Set busy timeout
+        try {
+            statement = p.connection.createStatement();
+            statement.execute("PRAGMA busy_timeout = 5000");
+            p.connection.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+
         if (mode == COB_OPEN_OUTPUT
                 || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
             try {
-                Statement statement = p.connection.createStatement();
                 statement.execute(
                         "CREATE TABLE file_lock (locked_by text primary key,process_id"
                             + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
@@ -301,12 +313,19 @@ public class CobolIndexedFile extends CobolFile {
                     statement.close();
                 }
                 this.writeMetaData(p);
-                if (this.commitOnModification) {
-                    p.connection.commit();
-                }
+                p.connection.commit();
             } catch (SQLException e) {
-                e.printStackTrace();
-                return COB_STATUS_30_PERMANENT_ERROR;
+                try {
+                    p.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                if (e.getErrorCode() == SQLiteErrorCode.SQLITE_BUSY.code) {
+                    return COB_STATUS_61_FILE_SHARING;
+                } else {
+                    e.printStackTrace();
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
             }
         }
 
