@@ -259,11 +259,9 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
-        Statement statement;
-
         // Set busy timeout
         try {
-            statement = p.connection.createStatement();
+            Statement statement = p.connection.createStatement();
             statement.execute("PRAGMA busy_timeout = 5000");
             p.connection.commit();
         } catch (SQLException e) {
@@ -274,6 +272,7 @@ public class CobolIndexedFile extends CobolFile {
         if (mode == COB_OPEN_OUTPUT
                 || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
             try {
+                Statement statement = p.connection.createStatement();
                 statement.execute(
                         "CREATE TABLE file_lock (locked_by text primary key,process_id"
                             + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
