@@ -263,6 +263,7 @@ public class CobolIndexedFile extends CobolFile {
         try {
             Statement statement = p.connection.createStatement();
             statement.execute("PRAGMA busy_timeout = 5000");
+            statement.close();
             p.connection.commit();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -309,8 +310,8 @@ public class CobolIndexedFile extends CobolFile {
                     statement.execute(
                             String.format(
                                     "create index %s on %s(key)", getIndexName(i), tableName));
-                    statement.close();
                 }
+                statement.close();
                 this.writeMetaData(p);
                 p.connection.commit();
             } catch (SQLException e) {
