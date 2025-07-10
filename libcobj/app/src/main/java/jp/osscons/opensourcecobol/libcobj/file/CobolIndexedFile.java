@@ -222,6 +222,7 @@ public class CobolIndexedFile extends CobolFile {
             Statement st = p.connection.createStatement();
             st.execute("select 1");
             st.close();
+            p.connection.commit();
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
