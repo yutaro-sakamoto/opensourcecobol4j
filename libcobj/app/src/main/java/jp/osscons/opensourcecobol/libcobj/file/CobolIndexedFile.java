@@ -266,7 +266,6 @@ public class CobolIndexedFile extends CobolFile {
             statement.close();
             p.connection.commit();
         } catch (SQLException e) {
-            e.printStackTrace();
             return COB_STATUS_30_PERMANENT_ERROR;
         }
 
@@ -323,7 +322,6 @@ public class CobolIndexedFile extends CobolFile {
                 if (e.getErrorCode() == SQLiteErrorCode.SQLITE_BUSY.code) {
                     return COB_STATUS_61_FILE_SHARING;
                 } else {
-                    e.printStackTrace();
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
             }
