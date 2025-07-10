@@ -213,12 +213,17 @@ public class CobolIndexedFile extends CobolFile {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
             p.connection.setAutoCommit(false);
+
+            // Check if the file is accessible
+            Statement st = p.connection.createStatement();
+            st.execute("select 1");
+            st.close();
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
                 return COB_STATUS_61_FILE_SHARING;
             } else {
-                return ENOENT;
+                return COB_STATUS_30_PERMANENT_ERROR;
             }
         } catch (Exception e) {
             return COB_STATUS_30_PERMANENT_ERROR;
