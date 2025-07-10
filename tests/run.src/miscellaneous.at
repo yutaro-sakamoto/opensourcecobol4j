@@ -2096,7 +2096,10 @@ AT_CHECK([java prog], [1], [],
 
 AT_CLEANUP
 
-AT_SETUP([ACCEPT])
+AT_SETUP([Open an invalid formatted indexed file])
+
+AT_CHECK([echo invalid-data > invalid-formatted-file])
+
 AT_DATA([prog.cbl],
 [
        IDENTIFICATION DIVISION.
