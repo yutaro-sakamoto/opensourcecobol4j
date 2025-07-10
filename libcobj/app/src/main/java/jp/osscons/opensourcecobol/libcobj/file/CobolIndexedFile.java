@@ -219,9 +219,9 @@ public class CobolIndexedFile extends CobolFile {
             p.connection.setAutoCommit(false);
 
             // Check if the file is accessible
-            Statement st = p.connection.createStatement();
-            st.execute("select 1");
-            st.close();
+            try (Statement st = p.connection.createStatement()) {
+                st.execute("select 1");
+            }
             p.connection.commit();
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
