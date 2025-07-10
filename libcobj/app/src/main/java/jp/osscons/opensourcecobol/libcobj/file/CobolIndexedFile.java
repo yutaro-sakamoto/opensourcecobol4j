@@ -208,6 +208,10 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean fileExists = new java.io.File(filename).exists();
 
+        if (mode == COB_OPEN_INPUT && !fileExists) {
+            return ENOENT;
+        }
+
         p.connection = null;
         try {
             p.connection =
