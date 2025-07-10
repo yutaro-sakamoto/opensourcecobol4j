@@ -13,7 +13,8 @@ AT_DATA([load.cbl],
            alternate record key is alt-key-1
            alternate record key is alt-key-2
            alternate record key is alt-key-dup-1 with duplicates
-           alternate record key is alt-key-dup-2 with duplicates.
+           alternate record key is alt-key-dup-2 with duplicates
+           file status is file-status.
        data division.
        file section.
        fd f.
@@ -25,6 +26,7 @@ AT_DATA([load.cbl],
          03 alt-key-dup-2 pic x(5).
          03 rec-value pic x(5).
        working-storage section.
+       01 file-status pic xx.
        procedure division.
        main-proc.
            open input f.
@@ -981,6 +983,8 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
 [a0002b0002c0002d0002e000200002
@@ -989,6 +993,8 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 
 # test for input containing long records
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
@@ -999,6 +1005,8 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
 [a0002b0002c0002d0002e000200002
@@ -1007,6 +1015,8 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 
 # test for input violating the key duplication rule (primary key)
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
@@ -1017,6 +1027,8 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
 [a0002b0003c0003d0003e000300003
@@ -1025,6 +1037,8 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 
 # test for input violating the key duplication rule (alternate key)
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
@@ -1035,6 +1049,8 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
 [a0002b0002c0002d0002e000200002
@@ -1043,6 +1059,8 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+[])
 
 ####### test for the file 'dir-idx-file' with valid input #######
 # basic test
