@@ -285,6 +285,30 @@ public class CobolFile {
     /** TODO: 準備中 */
     protected static final int COB_STATUS_91_NOT_AVAILABLE = 91;
 
+    // ==============================================
+    // The following constants must not be equal
+    // to any of the above constants `COB_STATUS_*`
+
+    /** TODO: 準備中 */
+    protected static final int ENOENT = 1002;
+
+    /** TODO: 準備中 */
+    protected static final int EBADF = 1009;
+
+    /** TODO: 準備中 */
+    protected static final int EACCESS = 1013;
+
+    /** TODO: 準備中 */
+    protected static final int EISDIR = 1021;
+
+    /** TODO: 準備中 */
+    protected static final int EROFS = 1030;
+
+    /** TODO: 準備中 */
+    protected static final int EAGAIN = 1011;
+
+    // ==============================================
+
     /** TODO: 準備中 */
     protected static final int COB_LINAGE_INVALID = 16384;
 
@@ -305,24 +329,6 @@ public class CobolFile {
 
     /** TODO: 準備中 */
     protected static final int FNSTATUSSIZE = 3;
-
-    /** TODO: 準備中 */
-    protected static final int ENOENT = 2;
-
-    /** TODO: 準備中 */
-    protected static final int EBADF = 9;
-
-    /** TODO: 準備中 */
-    protected static final int EACCESS = 13;
-
-    /** TODO: 準備中 */
-    protected static final int EISDIR = 21;
-
-    /** TODO: 準備中 */
-    protected static final int EROFS = 30;
-
-    /** TODO: 準備中 */
-    protected static final int EAGAIN = 11;
 
     /** TODO: 準備中 */
     public static CobolFile errorFile;

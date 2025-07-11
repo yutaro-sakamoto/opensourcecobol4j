@@ -232,17 +232,27 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean fileExists = new java.io.File(filename).exists();
 
+        if (mode == COB_OPEN_INPUT && !fileExists) {
+            return ENOENT;
+        }
+
         p.connection = null;
         try {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
             p.connection.setAutoCommit(false);
+
+            // Check if the file is accessible
+            try (Statement st = p.connection.createStatement()) {
+                st.execute("select 1");
+            }
+            p.connection.commit();
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
                 return COB_STATUS_61_FILE_SHARING;
             } else {
-                return ENOENT;
+                return COB_STATUS_30_PERMANENT_ERROR;
             }
         } catch (Exception e) {
             return COB_STATUS_30_PERMANENT_ERROR;
