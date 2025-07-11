@@ -30,6 +30,9 @@ AT_DATA([load.cbl],
        procedure division.
        main-proc.
            open input f.
+           if file-status not = '00'
+             stop run
+           end-if.
            perform forever
              read f next
                at end
