@@ -213,6 +213,24 @@ public class CobolIndexedFile extends CobolFile {
         return field.getDataStorage().getByteArray(0, field.getSize());
     }
 
+    private boolean openModeOutput(String filename) {
+        IndexedFile p = new IndexedFile();
+        boolean fileExists = new java.io.File(filename).exists();
+
+        p.connection = getConnection(filename);
+        boolean fileCanBeOpened = p.connection != null;
+        if (fileCanBeOpened) {
+            boolean aquireFileLock = acquireFileLock(filename, COB_OPEN_OUTPUT);
+            if (aquireFileLock) {
+                if (COB_OPEN_OUTPUT == this.open_mode) {
+                    deleteAllRecords();
+                }
+            } else {
+
+            }
+        }
+    }
+
     @Override
     public int open_(String filename, int mode, int sharing) {
         IndexedFile p = new IndexedFile();
