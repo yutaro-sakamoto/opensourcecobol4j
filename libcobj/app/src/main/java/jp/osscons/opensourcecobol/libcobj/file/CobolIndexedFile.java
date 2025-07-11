@@ -281,8 +281,7 @@ public class CobolIndexedFile extends CobolFile {
 
         if (mode == COB_OPEN_OUTPUT
                 || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
-            try {
-                Statement statement = p.connection.createStatement();
+            try (Statement statement = p.connection.createStatement()) {
                 statement.execute(
                         "CREATE TABLE file_lock (locked_by text primary key,process_id"
                             + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
@@ -320,7 +319,6 @@ public class CobolIndexedFile extends CobolFile {
                             String.format(
                                     "create index %s on %s(key)", getIndexName(i), tableName));
                 }
-                statement.close();
                 this.writeMetaData(p);
                 p.connection.commit();
             } catch (SQLException e) {
