@@ -267,6 +267,8 @@ public class CobolIndexedFile extends CobolFile {
         // TODO implement
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(false);
+        // Set the transaction mode to exclusive
+        config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
 
         p.connection = null;
         try {
@@ -276,6 +278,8 @@ public class CobolIndexedFile extends CobolFile {
 
             // Check if the file is accessible
             try (Statement st = p.connection.createStatement()) {
+                // Wait for finishing other processes' transactions up to 5 seconds
+                st.execute("PRAGMA busy_timeout = 5000");
                 st.execute("select 1");
             }
             p.connection.commit();
