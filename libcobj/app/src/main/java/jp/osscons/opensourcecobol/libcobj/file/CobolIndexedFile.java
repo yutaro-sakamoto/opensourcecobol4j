@@ -18,10 +18,6 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -213,46 +209,64 @@ public class CobolIndexedFile extends CobolFile {
         return field.getDataStorage().getByteArray(0, field.getSize());
     }
 
-    private boolean openModeOutput(String filename) {
-        IndexedFile p = new IndexedFile();
-        boolean fileExists = new java.io.File(filename).exists();
-
-        p.connection = getConnection(filename);
-        boolean fileCanBeOpened = p.connection != null;
-        if (fileCanBeOpened) {
-            boolean aquireFileLock = acquireFileLock(filename, COB_OPEN_OUTPUT);
-            if (aquireFileLock) {
-                if (COB_OPEN_OUTPUT == this.open_mode) {
-                    deleteAllRecords();
-                }
-            } else {
-
-            }
-        }
-    }
-
     @Override
     public int open_(String filename, int mode, int sharing) {
         IndexedFile p = new IndexedFile();
+        this.filei = p;
 
-        SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(mode == COB_OPEN_INPUT);
-        config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
-
-        if (mode == COB_OPEN_OUTPUT) {
-            Path path = Paths.get(filename);
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                return COB_STATUS_30_PERMANENT_ERROR;
+        // If the file does not exist and the mode is COB_OPEN_INPUT, return ENOENT
+        if (mode == COB_OPEN_INPUT) {
+            boolean fileExists = new java.io.File(filename).exists();
+            if (!fileExists) {
+                return ENOENT;
             }
         }
 
-        boolean fileExists = new java.io.File(filename).exists();
+        // Establish a connection to the database
+        int getConnectionStatus = this.getConnection(filename);
 
-        if (mode == COB_OPEN_INPUT && !fileExists) {
-            return ENOENT;
+        // If the connection could not be established, return the error code
+        if (getConnectionStatus != COB_STATUS_00_SUCCESS) {
+            return getConnectionStatus;
         }
+
+        // Aquire a file lock
+        boolean aquireFileLock = this.acquireFileLock(filename, mode);
+        if (aquireFileLock) {
+            try {
+                if (mode == COB_OPEN_OUTPUT) {
+                    this.deleteAllTables();
+                }
+                this.createAllTablesIfNotExists();
+                if (mode == COB_OPEN_OUTPUT) {
+                    this.writeMetaData(p);
+                }
+                p.connection.commit();
+            } catch (SQLException e) {
+                try {
+                    p.connection.close();
+                } catch (SQLException closeEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            this.setInitialParameters(filename);
+            return COB_STATUS_00_SUCCESS;
+        } else {
+            try {
+                p.connection.close();
+            } catch (SQLException closeEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            return COB_STATUS_61_FILE_SHARING;
+        }
+    }
+
+    private int getConnection(String filename) {
+        IndexedFile p = this.filei;
+        // TODO implement
+        SQLiteConfig config = new SQLiteConfig();
+        config.setReadOnly(false);
 
         p.connection = null;
         try {
@@ -275,7 +289,72 @@ public class CobolIndexedFile extends CobolFile {
         } catch (Exception e) {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
+        return COB_STATUS_00_SUCCESS;
+    }
 
+    private boolean acquireFileLock(String filename, int mode) {
+        // TODO implement
+        return true;
+    }
+
+    private void deleteAllTables() throws SQLException {
+        IndexedFile p = this.filei;
+        try (Statement statement = p.connection.createStatement()) {
+            for (int i = 0; i < this.nkeys; ++i) {
+                statement.execute("drop table if exists " + getTableName(i));
+            }
+            statement.execute("drop table if exists file_lock");
+            statement.execute("drop table if exists metadata_string_int");
+            statement.execute("drop table if exists metadata_key");
+        }
+    }
+
+    private void createAllTablesIfNotExists() throws SQLException {
+        IndexedFile p = this.filei;
+        try (Statement statement = p.connection.createStatement()) {
+            statement.execute(
+                    "CREATE TABLE if not exists file_lock (locked_by text primary key,process_id"
+                            + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
+                            + " CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O', 'EXTEND')))");
+            for (int i = 0; i < this.nkeys; ++i) {
+                String tableName = getTableName(i);
+                if (i == 0) {
+                    statement.execute(
+                            String.format(
+                                    "create table if not exists %s (key blob not null primary key,"
+                                            + " value blob not null)",
+                                    tableName));
+                } else {
+                    if (this.keys[i].getFlag() == 0) {
+                        statement.execute(
+                                String.format(
+                                        "create table if not exists %s (key blob not null primary"
+                                            + " key, value blob not null, constraint %s foreign key"
+                                            + " (value) references %s (key))",
+                                        tableName, getConstraintName(i), getTableName(0)));
+                    } else {
+                        statement.execute(
+                                String.format(
+                                        "create table if not exists %s (key blob not null, value"
+                                            + " blob not null, dupNo integer not null, constraint"
+                                            + " %s foreign key (value) references %s (key))",
+                                        tableName, getConstraintName(i), getTableName(0)));
+                    }
+                    statement.execute(
+                            String.format(
+                                    "create index if not exists %s on %s(value)",
+                                    getSubIndexName(i), tableName));
+                }
+                statement.execute(
+                        String.format(
+                                "create index if not exists %s on %s(key)",
+                                getIndexName(i), tableName));
+            }
+        }
+    }
+
+    private void setInitialParameters(String filename) {
+        IndexedFile p = this.filei;
         p.filenamelen = filename.length();
         p.last_dupno = new int[this.nkeys];
         p.rewrite_sec_key = new int[this.nkeys];
@@ -287,74 +366,7 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
-        // Set busy timeout
-        try {
-            Statement statement = p.connection.createStatement();
-            statement.execute("PRAGMA busy_timeout = 5000");
-            statement.close();
-            p.connection.commit();
-        } catch (SQLException e) {
-            return COB_STATUS_30_PERMANENT_ERROR;
-        }
-
-        if (mode == COB_OPEN_OUTPUT
-                || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
-            try (Statement statement = p.connection.createStatement()) {
-                statement.execute(
-                        "CREATE TABLE file_lock (locked_by text primary key,process_id"
-                            + " text,locked_at timestamp,open_mode text CONSTRAINT check_open_mode"
-                            + " CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O', 'EXTEND')))");
-                for (int i = 0; i < this.nkeys; ++i) {
-                    String tableName = getTableName(i);
-                    if (i == 0) {
-                        statement.execute(
-                                String.format(
-                                        "create table %s (key blob not null primary key, value blob"
-                                                + " not null)",
-                                        tableName));
-                    } else {
-                        if (this.keys[i].getFlag() == 0) {
-                            statement.execute(
-                                    String.format(
-                                            "create table %s (key blob not null primary key, value"
-                                                    + " blob not null, constraint %s foreign key"
-                                                    + " (value) references %s (key))",
-                                            tableName, getConstraintName(i), getTableName(0)));
-                        } else {
-                            statement.execute(
-                                    String.format(
-                                            "create table %s (key blob not null, value blob not"
-                                                    + " null, dupNo integer not null, constraint %s"
-                                                    + " foreign key (value) references %s (key))",
-                                            tableName, getConstraintName(i), getTableName(0)));
-                        }
-                        statement.execute(
-                                String.format(
-                                        "create index %s on %s(value)",
-                                        getSubIndexName(i), tableName));
-                    }
-                    statement.execute(
-                            String.format(
-                                    "create index %s on %s(key)", getIndexName(i), tableName));
-                }
-                this.writeMetaData(p);
-                p.connection.commit();
-            } catch (SQLException e) {
-                try {
-                    p.connection.rollback();
-                } catch (SQLException rollbackEx) {
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
-                if (e.getErrorCode() == SQLiteErrorCode.SQLITE_BUSY.code) {
-                    return COB_STATUS_61_FILE_SHARING;
-                } else {
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
-            }
-        }
-
         p.temp_key = new CobolDataStorage(maxsize + 4);
-        this.filei = p;
         p.key_index = 0;
         p.last_key = null;
 
@@ -368,19 +380,161 @@ public class CobolIndexedFile extends CobolFile {
         this.callStart = false;
 
         this.fetchKeyIndex = -1;
-        return 0;
     }
+
+    // @Override
+    // public int open_(String filename, int mode, int sharing) {
+    //    IndexedFile p = new IndexedFile();
+    //    SQLiteConfig config = new SQLiteConfig();
+    //    config.setReadOnly(mode == COB_OPEN_INPUT);
+    //    config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
+
+    //    if (mode == COB_OPEN_OUTPUT) {
+    //        Path path = Paths.get(filename);
+    //        try {
+    //            Files.deleteIfExists(path);
+    //        } catch (IOException e) {
+    //            return COB_STATUS_30_PERMANENT_ERROR;
+    //        }
+    //    }
+
+    //    boolean fileExists = new java.io.File(filename).exists();
+
+    //    if (mode == COB_OPEN_INPUT && !fileExists) {
+    //        return ENOENT;
+    //    }
+
+    //    p.connection = null;
+    //    try {
+    //        p.connection =
+    //                DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
+    //        p.connection.setAutoCommit(false);
+
+    //        // Check if the file is accessible
+    //        try (Statement st = p.connection.createStatement()) {
+    //            st.execute("select 1");
+    //        }
+    //        p.connection.commit();
+    //    } catch (SQLException e) {
+    //        int errorCode = e.getErrorCode();
+    //        if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
+    //            return COB_STATUS_61_FILE_SHARING;
+    //        } else {
+    //            return COB_STATUS_30_PERMANENT_ERROR;
+    //        }
+    //    } catch (Exception e) {
+    //        return COB_STATUS_30_PERMANENT_ERROR;
+    //    }
+
+    //    p.filenamelen = filename.length();
+    //    p.last_dupno = new int[this.nkeys];
+    //    p.rewrite_sec_key = new int[this.nkeys];
+
+    //    int maxsize = 0;
+    //    for (int i = 0; i < this.nkeys; ++i) {
+    //        if (this.keys[i].getField().getSize() > maxsize) {
+    //            maxsize = this.keys[i].getField().getSize();
+    //        }
+    //    }
+
+    //    // Set busy timeout
+    //    try {
+    //        Statement statement = p.connection.createStatement();
+    //        statement.execute("PRAGMA busy_timeout = 5000");
+    //        statement.close();
+    //        p.connection.commit();
+    //    } catch (SQLException e) {
+    //        return COB_STATUS_30_PERMANENT_ERROR;
+    //    }
+
+    //    if (mode == COB_OPEN_OUTPUT
+    //            || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
+    //        try (Statement statement = p.connection.createStatement()) {
+    //            statement.execute(
+    //                    "CREATE TABLE file_lock (locked_by text primary key,process_id"
+    //                        + " text,locked_at timestamp,open_mode text CONSTRAINT
+    // check_open_mode"
+    //                        + " CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O', 'EXTEND')))");
+    //            for (int i = 0; i < this.nkeys; ++i) {
+    //                String tableName = getTableName(i);
+    //                if (i == 0) {
+    //                    statement.execute(
+    //                            String.format(
+    //                                    "create table %s (key blob not null primary key, value
+    // blob"
+    //                                            + " not null)",
+    //                                    tableName));
+    //                } else {
+    //                    if (this.keys[i].getFlag() == 0) {
+    //                        statement.execute(
+    //                                String.format(
+    //                                        "create table %s (key blob not null primary key,
+    // value"
+    //                                                + " blob not null, constraint %s foreign key"
+    //                                                + " (value) references %s (key))",
+    //                                        tableName, getConstraintName(i), getTableName(0)));
+    //                    } else {
+    //                        statement.execute(
+    //                                String.format(
+    //                                        "create table %s (key blob not null, value blob not"
+    //                                                + " null, dupNo integer not null, constraint
+    // %s"
+    //                                                + " foreign key (value) references %s (key))",
+    //                                        tableName, getConstraintName(i), getTableName(0)));
+    //                    }
+    //                    statement.execute(
+    //                            String.format(
+    //                                    "create index %s on %s(value)",
+    //                                    getSubIndexName(i), tableName));
+    //                }
+    //                statement.execute(
+    //                        String.format(
+    //                                "create index %s on %s(key)", getIndexName(i), tableName));
+    //            }
+    //            this.writeMetaData(p);
+    //            p.connection.commit();
+    //        } catch (SQLException e) {
+    //            try {
+    //                p.connection.rollback();
+    //            } catch (SQLException rollbackEx) {
+    //                return COB_STATUS_30_PERMANENT_ERROR;
+    //            }
+    //            if (e.getErrorCode() == SQLiteErrorCode.SQLITE_BUSY.code) {
+    //                return COB_STATUS_61_FILE_SHARING;
+    //            } else {
+    //                return COB_STATUS_30_PERMANENT_ERROR;
+    //            }
+    //        }
+    //    }
+
+    //    p.temp_key = new CobolDataStorage(maxsize + 4);
+    //    this.filei = p;
+    //    p.key_index = 0;
+    //    p.last_key = null;
+
+    //    p.filename = filename;
+    //    p.write_cursor_open = false;
+    //    p.record_locked = false;
+
+    //    p.key = DBT_SET(this.keys[0].getField());
+    //    this.updateWhileReading = false;
+    //    this.indexedFirstRead = true;
+    //    this.callStart = false;
+
+    //    this.fetchKeyIndex = -1;
+    //    return 0;
+    // }
 
     // Write a metadata to the database
     private void writeMetaData(IndexedFile p) throws SQLException {
         Statement statement = p.connection.createStatement();
         // Create a table to store metadata
         statement.execute(
-                "create table metadata_string_int (key text not null primary key, value integer not"
-                        + " null)");
+                "create table if not exists metadata_string_int (key text not null primary key,"
+                        + " value integer not null)");
         statement.execute(
-                "create table metadata_key (idx integer not null primary key, offset integer not"
-                        + " null, size integer not null, duplicate boolean)");
+                "create table if not exists metadata_key (idx integer not null primary key, offset"
+                        + " integer not null, size integer not null, duplicate boolean)");
         statement.close();
 
         // Store the size of a record
