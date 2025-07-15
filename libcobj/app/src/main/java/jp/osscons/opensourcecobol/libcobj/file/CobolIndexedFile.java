@@ -270,6 +270,7 @@ public class CobolIndexedFile extends CobolFile {
         try {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
+            p.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             p.connection.setAutoCommit(false);
 
             // Check if the file is accessible
