@@ -213,11 +213,9 @@ public class CobolIndexedFile extends CobolFile {
         this.filei = p;
 
         // If the file does not exist and the mode is COB_OPEN_INPUT, return ENOENT
-        if (mode == COB_OPEN_INPUT) {
-            boolean fileExists = new java.io.File(filename).exists();
-            if (!fileExists) {
-                return ENOENT;
-            }
+        boolean fileExists = new java.io.File(filename).exists();
+        if (mode == COB_OPEN_INPUT && !fileExists) {
+            return ENOENT;
         }
 
         // Establish a connection to the database
@@ -230,7 +228,7 @@ public class CobolIndexedFile extends CobolFile {
 
         try {
             // Aquire a file lock
-            boolean succeedToFileLock = this.aquireFileLock(filename, mode);
+            boolean succeedToFileLock = this.aquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
@@ -309,8 +307,9 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
-    private boolean aquireFileLock(String filename, int mode) throws SQLException {
-        if (!checkFileIsLocked(filename, mode)) {
+    private boolean aquireFileLock(String filename, int mode, boolean fileExists)
+            throws SQLException {
+        if (!checkFileIsLocked(filename, mode, fileExists)) {
             return false; // File is already locked
         }
 
@@ -344,10 +343,12 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
-    private boolean checkFileIsLocked(String filename, int mode) throws SQLException {
+    private boolean checkFileIsLocked(String filename, int mode, boolean fileExists)
+            throws SQLException {
         IndexedFile p = this.filei;
         try (Statement statement = p.connection.createStatement()) {
-            if (mode == COB_OPEN_OUTPUT) {
+            if (mode == COB_OPEN_OUTPUT
+                    || (!fileExists && (mode == COB_OPEN_EXTEND || mode == COB_OPEN_I_O))) {
                 String query =
                         "select exists(select 1 from sqlite_master where type = 'table' and name ="
                                 + " 'file_lock')";
