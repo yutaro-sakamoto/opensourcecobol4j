@@ -403,8 +403,13 @@ public class CobolIndexedFile extends CobolFile {
                 if (i == 0) {
                     statement.execute(
                             String.format(
-                                    "create table if not exists %s (key blob not null primary key,"
-                                            + " value blob not null)",
+                                    "create table if not exists %s ("
+                                            + "key blob not null primary key,"
+                                            + "value blob not null,"
+                                            + "locked_by text,"
+                                            + "process_id text,"
+                                            + "locked_at timestamp"
+                                            + ")",
                                     tableName));
                 } else {
                     if (this.keys[i].getFlag() == 0) {
@@ -750,9 +755,14 @@ public class CobolIndexedFile extends CobolFile {
         p.data = DBT_SET(this.record);
         try (PreparedStatement insertStatement =
                 p.connection.prepareStatement(
-                        String.format("insert into %s values (?, ?)", getTableName(0)))) {
+                        String.format(
+                                "insert into (key, value, locked_by, process_id, locked_at) "
+                                        + "%s values (?, ?, ?, ?, datetime('now'))",
+                                getTableName(0)))) {
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
+            insertStatement.setString(3, this.getProceeUuid());
+            insertStatement.setString(4, this.getProcessId());
             insertStatement.execute();
             if (this.commitOnModification) {
                 p.connection.commit();
