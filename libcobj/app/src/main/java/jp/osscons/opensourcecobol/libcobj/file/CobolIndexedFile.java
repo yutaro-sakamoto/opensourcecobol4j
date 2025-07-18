@@ -227,7 +227,7 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         try {
-            // Aquire a file lock
+            // Acquire a file lock
             boolean succeedToFileLock = this.aquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
                 if (mode == COB_OPEN_OUTPUT) {
