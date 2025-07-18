@@ -263,8 +263,6 @@ public class CobolIndexedFile extends CobolFile {
         // Establishes a connection to the SQLite database using the provided filename.
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(false);
-        // Set the transaction mode to exclusive
-        // config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
 
         p.connection = null;
         try {
