@@ -228,7 +228,7 @@ public class CobolIndexedFile extends CobolFile {
 
         try {
             // Acquire a file lock
-            boolean succeedToFileLock = this.aquireFileLock(filename, mode, fileExists);
+            boolean succeedToFileLock = this.acquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
@@ -306,7 +306,7 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
-    private boolean aquireFileLock(String filename, int mode, boolean fileExists)
+    private boolean acquireFileLock(String filename, int mode, boolean fileExists)
             throws SQLException {
         if (!checkFileIsLocked(filename, mode, fileExists)) {
             return false; // File is already locked
