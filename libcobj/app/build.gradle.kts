@@ -3,11 +3,11 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.diffplug.spotless") version "7.0.4"
+    id("com.diffplug.spotless") version "7.1.0"
     id("java")
     id("maven-publish")
     pmd
-    id("com.github.spotbugs") version "6.2.1"
+    id("com.github.spotbugs") version "6.2.2"
 }
 
 repositories {
