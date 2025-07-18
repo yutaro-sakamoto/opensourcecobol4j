@@ -143,7 +143,7 @@ public class CobolIndexedFile extends CobolFile {
                 fileVersion);
     }
 
-    private static String getProceeUuid() {
+    private static String getProcessUuid() {
         if (CobolIndexedFile.storedProcessUuid == null) {
             CobolIndexedFile.storedProcessUuid = java.util.UUID.randomUUID().toString();
         }
@@ -322,7 +322,7 @@ public class CobolIndexedFile extends CobolFile {
         String insertSql =
                 "insert into file_lock (locked_by, process_id, locked_at, open_mode) values (?, ?,"
                         + " datetime('now'), ?)";
-        String processUuid = this.getProceeUuid();
+        String processUuid = this.getProcessUuid();
         String processId = this.getProcessId();
 
         try (PreparedStatement statement = p.connection.prepareStatement(insertSql)) {
@@ -509,7 +509,7 @@ public class CobolIndexedFile extends CobolFile {
                 // Close the file lock
                 String deleteSql = "delete from file_lock where locked_by = ? and process_id = ?";
                 try (PreparedStatement deleteStatement = p.connection.prepareStatement(deleteSql)) {
-                    deleteStatement.setString(1, this.getProceeUuid());
+                    deleteStatement.setString(1, this.getProcessUuid());
                     deleteStatement.setString(2, this.getProcessId());
                     deleteStatement.executeUpdate();
                 }
