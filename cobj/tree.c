@@ -1725,6 +1725,7 @@ struct cb_file *build_file(cb_tree name) {
   p->access_mode = COB_ACCESS_SEQUENTIAL;
   p->handler = CB_LABEL(cb_standard_error_handler);
   p->handler_prog = current_program;
+  p->lock_mode = cb_default_select_lock_mode;
   if (external_flg == 1) {
     p->external_assign = 1;
   }

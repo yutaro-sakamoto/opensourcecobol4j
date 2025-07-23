@@ -383,4 +383,5 @@ extern int cb_verify(const enum cb_support tag, const char *feature);
 extern int cb_flag_info_json;
 extern char *cb_info_json_dir;
 
+extern int cb_default_select_lock_mode;
 #endif /* CB_COBC_H */
