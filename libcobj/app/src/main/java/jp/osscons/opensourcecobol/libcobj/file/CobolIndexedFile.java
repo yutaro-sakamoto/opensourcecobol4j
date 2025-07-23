@@ -756,8 +756,8 @@ public class CobolIndexedFile extends CobolFile {
         try (PreparedStatement insertStatement =
                 p.connection.prepareStatement(
                         String.format(
-                                "insert into (key, value, locked_by, process_id, locked_at) "
-                                        + "%s values (?, ?, ?, ?, datetime('now'))",
+                                "insert into %s (key, value, locked_by, process_id, locked_at) "
+                                        + "values (?, ?, ?, ?, datetime('now'))",
                                 getTableName(0)))) {
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
