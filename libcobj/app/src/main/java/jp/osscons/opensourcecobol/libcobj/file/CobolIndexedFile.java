@@ -38,6 +38,7 @@ public class CobolIndexedFile extends CobolFile {
     private boolean callStart = false;
     private boolean commitOnModification = true;
     private int fetchKeyIndex = -1;
+    private byte[] previousLockedRecordKey = null;
 
     /** TODO: 準備中 */
     public static final int COB_EQ = 1;
@@ -143,7 +144,7 @@ public class CobolIndexedFile extends CobolFile {
                 fileVersion);
     }
 
-    private static String getProceeUuid() {
+    private static String getProcessUuid() {
         if (CobolIndexedFile.storedProcessUuid == null) {
             CobolIndexedFile.storedProcessUuid = java.util.UUID.randomUUID().toString();
         }
@@ -324,7 +325,7 @@ public class CobolIndexedFile extends CobolFile {
         String insertSql =
                 "insert into file_lock (locked_by, process_id, locked_at, open_mode) values (?, ?,"
                         + " datetime('now'), ?)";
-        String processUuid = this.getProceeUuid();
+        String processUuid = this.getProcessUuid();
         String processId = this.getProcessId();
 
         try (PreparedStatement statement = p.connection.prepareStatement(insertSql)) {
@@ -516,7 +517,7 @@ public class CobolIndexedFile extends CobolFile {
                 // Close the file lock
                 String deleteSql = "delete from file_lock where locked_by = ? and process_id = ?";
                 try (PreparedStatement deleteStatement = p.connection.prepareStatement(deleteSql)) {
-                    deleteStatement.setString(1, this.getProceeUuid());
+                    deleteStatement.setString(1, this.getProcessUuid());
                     deleteStatement.setString(2, this.getProcessId());
                     deleteStatement.executeUpdate();
                 }
@@ -582,8 +583,69 @@ public class CobolIndexedFile extends CobolFile {
         return ret;
     }
 
-    @Override
-    public int read_(AbstractCobolField key, int readOpts) {
+    private boolean shouldLockRecord(int readOpts) {
+        if (this.open_mode != COB_OPEN_I_O) {
+            return false;
+        }
+        if ((readOpts & CobolFile.COB_READ_LOCK) != 0) {
+            return true;
+        } else if ((readOpts & CobolFile.COB_READ_NO_LOCK) != 0) {
+            return false;
+        } else {
+            return this.lock_mode != CobolFile.COB_LOCK_MANUAL;
+        }
+    }
+
+    private boolean checkOtherProcessLockedRecord(AbstractCobolField key) throws SQLException {
+        IndexedFile p = this.filei;
+        String query =
+                String.format(
+                        "select exists(select 1 from %s where key = ? and locked_by != ?)",
+                        getTableName(0));
+        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
+            selectStatement.setBytes(1, DBT_SET(key));
+            selectStatement.setString(2, this.getProcessUuid());
+            ResultSet rs = selectStatement.executeQuery();
+            return rs.next() && rs.getInt(1) == 1;
+        }
+    }
+
+    private boolean lockRecord(AbstractCobolField key) throws SQLException {
+        IndexedFile p = this.filei;
+        String updateSql =
+                String.format(
+                        "update %s set locked_by = ?, process_id = ?, locked_at = datetime('now')"
+                                + " where key = ?",
+                        getTableName(0));
+        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
+            updateStatement.setString(1, this.getProcessUuid());
+            updateStatement.setString(2, this.getProcessId());
+            updateStatement.setBytes(3, DBT_SET(key));
+            int updatedRecordcount = updateStatement.executeUpdate();
+            return updatedRecordcount == 1;
+        }
+    }
+
+    private void unlockPreviousRecord(AbstractCobolField key) throws SQLException {
+        byte[] currentKey = DBT_SET(key);
+        if (previousLockedRecordKey == null) {
+            previousLockedRecordKey = currentKey;
+            return;
+        }
+        IndexedFile p = this.filei;
+        String updateSql =
+                String.format(
+                        "update %s set locked_by = null, process_id = null, locked_at = null where"
+                                + " key = ?",
+                        getTableName(0));
+        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
+            updateStatement.setBytes(1, currentKey);
+            updateStatement.executeUpdate();
+        }
+        previousLockedRecordKey = currentKey;
+    }
+
+    private int read_internal(AbstractCobolField key, int readOpts) {
         IndexedFile p = this.filei;
         boolean testLock = false;
         this.callStart = false;
@@ -595,6 +657,42 @@ public class CobolIndexedFile extends CobolFile {
         this.record.setSize(p.data.length);
         this.record.getDataStorage().memcpy(p.data, p.data.length);
 
+        return COB_STATUS_00_SUCCESS;
+    }
+
+    @Override
+    public int read_(AbstractCobolField key, int readOpts) {
+        IndexedFile p = this.filei;
+        int retCode = read_internal(key, readOpts);
+        if (retCode != COB_STATUS_00_SUCCESS) {
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            return retCode;
+        }
+        if (shouldLockRecord(readOpts)) {
+            try {
+                if (checkOtherProcessLockedRecord(key)) {
+                    p.connection.rollback();
+                    return COB_STATUS_51_RECORD_LOCKED;
+                }
+                if (!lockRecord(key)) {
+                    p.connection.rollback();
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                unlockPreviousRecord(key);
+                p.connection.commit();
+            } catch (SQLException e) {
+                try {
+                    p.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        }
         return COB_STATUS_00_SUCCESS;
     }
 
