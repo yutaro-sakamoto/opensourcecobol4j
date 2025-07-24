@@ -46,9 +46,9 @@ dnf install -y java-21-amazon-corretto-devel gcc make bison flex automake autoco
 
 ### opensource COBOL 4Jのインストール
 ```
-curl -L -o opensourcecobol4j-v1.1.10.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.10.tar.gz
-tar zxvf opensourcecobol4j-v1.1.10.tar.gz
-cd opensourcecobol4j-1.1.10
+curl -L -o opensourcecobol4j-v1.1.11.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.11.tar.gz
+tar zxvf opensourcecobol4j-v1.1.11.tar.gz
+cd opensourcecobol4j-1.1.11
 ./configure --prefix=/usr/
 make
 sudo make install
@@ -57,9 +57,9 @@ sudo make install
 UTF-8のCOBOLソースコード対応版コンパイラをインストールする場合は、下記のコマンドを実行する。
 
 ```
-curl -L -o opensourcecobol4j-v1.1.10.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.10.tar.gz
-tar zxvf opensourcecobol4j-v1.1.10.tar.gz
-cd opensourcecobol4j-1.1.10
+curl -L -o opensourcecobol4j-v1.1.11.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v1.1.11.tar.gz
+tar zxvf opensourcecobol4j-v1.1.11.tar.gz
+cd opensourcecobol4j-1.1.11
 ./configure --prefix=/usr/ --enable-utf8
 touch cobj/*.m4
 make
