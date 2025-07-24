@@ -673,16 +673,17 @@ public class CobolIndexedFile extends CobolFile {
             return retCode;
         }
         if (shouldLockRecord(readOpts)) {
+            AbstractCobolField primaryKey = this.keys[0].getField();
             try {
-                if (checkOtherProcessLockedRecord(key)) {
+                if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
                     return COB_STATUS_51_RECORD_LOCKED;
                 }
-                if (!lockRecord(key)) {
+                if (!lockRecord(primaryKey)) {
                     p.connection.rollback();
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
-                unlockPreviousRecord(key);
+                unlockPreviousRecord(primaryKey);
                 p.connection.commit();
             } catch (SQLException e) {
                 try {
