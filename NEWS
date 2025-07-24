@@ -2,6 +2,13 @@ NEWS - user visible changes				-*- outline -*-
 
 -----------------------------------------------------------------------
 
+** Bug Fixes
+
+(1) Fix OPEN operation for INDEXED files. (#676)
+  * The runtime library now correctly sets the file status to 30 when attempting to open INDEXED files with invalid or corrupted file formats.
+
+-----------------------------------------------------------------------
+
 ** New Features
 
 (1) Add a manual for the compiler configuration file (#665)

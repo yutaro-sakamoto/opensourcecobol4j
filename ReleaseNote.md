@@ -1,9 +1,5 @@
-### Add
+### Fix
 
-* Add a manual for the compiler configuration file (#665)
-* Add a built-in subroutine
-  * C$SLEEP (#669)
-  
-### Miscellaneous
+* Fix OPEN operation for INDEXED files. (#676)
+  * The runtime library now correctly sets the file status to 30 when attempting to open INDEXED files with invalid or corrupted file formats.
 
-* Improve the test coverage slightly (#667, #664)
