@@ -694,8 +694,7 @@ public class CobolIndexedFile extends CobolFile {
         return COB_STATUS_00_SUCCESS;
     }
 
-    @Override
-    public int readNext(int readOpts) {
+    private int readNext_internal(int readOpts) {
         IndexedFile p = this.filei;
         if (this.callStart) {
             this.callStart = false;
@@ -776,6 +775,43 @@ public class CobolIndexedFile extends CobolFile {
         this.record.getDataStorage().memcpy(p.data, p.data.length);
 
         this.indexedFirstRead = false;
+        return COB_STATUS_00_SUCCESS;
+    }
+
+    @Override
+    public int readNext(int readOpts) {
+        IndexedFile p = this.filei;
+        int retCode = readNext_internal(readOpts);
+        if (retCode != COB_STATUS_00_SUCCESS) {
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            return retCode;
+        }
+        if (shouldLockRecord(readOpts)) {
+            byte[] primaryKey = DBT_SET(this.keys[0].getField());
+            try {
+                if (checkOtherProcessLockedRecord(primaryKey)) {
+                    p.connection.rollback();
+                    return COB_STATUS_51_RECORD_LOCKED;
+                }
+                if (!lockRecord(primaryKey)) {
+                    p.connection.rollback();
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                unlockPreviousRecord(primaryKey);
+                p.connection.commit();
+            } catch (SQLException e) {
+                try {
+                    p.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        }
         return COB_STATUS_00_SUCCESS;
     }
 
