@@ -513,11 +513,23 @@ public class CobolIndexedFile extends CobolFile {
         try {
             try (Statement statement = p.connection.createStatement()) {
                 // Close the file lock
-                String deleteSql = "delete from file_lock where locked_by = ? and process_id = ?";
-                try (PreparedStatement deleteStatement = p.connection.prepareStatement(deleteSql)) {
-                    deleteStatement.setString(1, this.getProcessUuid());
-                    deleteStatement.setString(2, this.getProcessId());
-                    deleteStatement.executeUpdate();
+                String deleteFileLockSql =
+                        "delete from file_lock where locked_by = ? and process_id = ?";
+                try (PreparedStatement deleteFileLockStatement =
+                        p.connection.prepareStatement(deleteFileLockSql)) {
+                    deleteFileLockStatement.setString(1, this.getProcessUuid());
+                    deleteFileLockStatement.setString(2, this.getProcessId());
+                    deleteFileLockStatement.executeUpdate();
+                }
+                String unlockRecordsSql =
+                        String.format(
+                                "update %s set locked_by = null, process_id = null, locked_at ="
+                                        + " null where locked_by = ?",
+                                getTableName(0));
+                try (PreparedStatement unlockRecordsStatement =
+                        p.connection.prepareStatement(unlockRecordsSql)) {
+                    unlockRecordsStatement.setString(1, this.getProcessUuid());
+                    unlockRecordsStatement.executeUpdate();
                 }
             }
             p.connection.commit();
