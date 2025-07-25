@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.11] - 2025-07-25
+
+### Fix
+
+* Fix OPEN operation for indexed files. (#676)
+  * The runtime library now correctly sets the file status to 30 when attempting to open indexed files with invalid or corrupted file formats.
+
 ## [1.1.10] - 2025-06-30
 
 ### Add
