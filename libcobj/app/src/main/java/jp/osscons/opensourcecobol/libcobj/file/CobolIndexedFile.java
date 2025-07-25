@@ -594,21 +594,21 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
-    private boolean checkOtherProcessLockedRecord(AbstractCobolField key) throws SQLException {
+    private boolean checkOtherProcessLockedRecord(byte[] key) throws SQLException {
         IndexedFile p = this.filei;
         String query =
                 String.format(
                         "select exists(select 1 from %s where key = ? and locked_by != ?)",
                         getTableName(0));
         try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
-            selectStatement.setBytes(1, DBT_SET(key));
+            selectStatement.setBytes(1, key);
             selectStatement.setString(2, this.getProcessUuid());
             ResultSet rs = selectStatement.executeQuery();
             return rs.next() && rs.getInt(1) == 1;
         }
     }
 
-    private boolean lockRecord(AbstractCobolField key) throws SQLException {
+    private boolean lockRecord(byte[] key) throws SQLException {
         IndexedFile p = this.filei;
         String updateSql =
                 String.format(
@@ -618,16 +618,15 @@ public class CobolIndexedFile extends CobolFile {
         try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
             updateStatement.setString(1, this.getProcessUuid());
             updateStatement.setString(2, this.getProcessId());
-            updateStatement.setBytes(3, DBT_SET(key));
+            updateStatement.setBytes(3, key);
             int updatedRecordcount = updateStatement.executeUpdate();
             return updatedRecordcount == 1;
         }
     }
 
-    private void unlockPreviousRecord(AbstractCobolField key) throws SQLException {
-        byte[] currentKey = DBT_SET(key);
+    private void unlockPreviousRecord(byte[] key) throws SQLException {
         if (previousLockedRecordKey == null) {
-            previousLockedRecordKey = currentKey;
+            previousLockedRecordKey = key;
             return;
         }
         IndexedFile p = this.filei;
@@ -637,10 +636,10 @@ public class CobolIndexedFile extends CobolFile {
                                 + " key = ?",
                         getTableName(0));
         try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
-            updateStatement.setBytes(1, currentKey);
+            updateStatement.setBytes(1, key);
             updateStatement.executeUpdate();
         }
-        previousLockedRecordKey = currentKey;
+        previousLockedRecordKey = key;
     }
 
     private int read_internal(AbstractCobolField key, int readOpts) {
@@ -671,7 +670,7 @@ public class CobolIndexedFile extends CobolFile {
             return retCode;
         }
         if (shouldLockRecord(readOpts)) {
-            AbstractCobolField primaryKey = this.keys[0].getField();
+            byte[] primaryKey = DBT_SET(this.keys[0].getField());
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
