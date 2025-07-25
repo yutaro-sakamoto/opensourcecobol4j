@@ -228,8 +228,8 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         try {
-            // Aquire a file lock
-            boolean succeedToFileLock = this.aquireFileLock(filename, mode, fileExists);
+            // Acquire a file lock
+            boolean succeedToFileLock = this.acquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
@@ -261,11 +261,9 @@ public class CobolIndexedFile extends CobolFile {
 
     private int getConnection(String filename) {
         IndexedFile p = this.filei;
-        // TODO implement
+        // Establishes a connection to the SQLite database using the provided filename.
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(false);
-        // Set the transaction mode to exclusive
-        // config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE);
 
         p.connection = null;
         try {
@@ -309,7 +307,7 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
-    private boolean aquireFileLock(String filename, int mode, boolean fileExists)
+    private boolean acquireFileLock(String filename, int mode, boolean fileExists)
             throws SQLException {
         if (!checkFileIsLocked(filename, mode, fileExists)) {
             return false; // File is already locked
