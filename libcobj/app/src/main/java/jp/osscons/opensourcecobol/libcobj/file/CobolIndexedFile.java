@@ -904,9 +904,6 @@ public class CobolIndexedFile extends CobolFile {
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
-            if (this.commitOnModification) {
-                p.connection.commit();
-            }
         } catch (SQLException e) {
             return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
         }
@@ -946,12 +943,17 @@ public class CobolIndexedFile extends CobolFile {
                 }
                 insertStatement.execute();
                 insertStatement.close();
-                if (this.commitOnModification) {
-                    p.connection.commit();
-                }
             } catch (SQLException e) {
                 return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
             }
+        }
+
+        try {
+            if (this.commitOnModification) {
+                p.connection.commit();
+            }
+        } catch (SQLException e) {
+            return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
         }
 
         this.updateWhileReading = true;
