@@ -979,7 +979,15 @@ public class CobolIndexedFile extends CobolFile {
         byte[] keyBytes = p.key;
         p.last_key.memcpy(keyBytes, keyBytes.length);
 
-        return indexed_write_internal(false, opt);
+        int ret = indexed_write_internal(false, opt);
+        if (ret != COB_STATUS_00_SUCCESS) {
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return ret;
+            }
+        }
+        return ret;
     }
 
     /** Equivalent to check_alt_keys in libcob/fileio.c */
@@ -1035,14 +1043,29 @@ public class CobolIndexedFile extends CobolFile {
         int[] dupNumbers = new int[this.nkeys];
         java.util.Arrays.fill(dupNumbers, -1);
 
-        int ret = this.indexed_delete_internal(true, dupNumbers);
+        int deleteRet = this.indexed_delete_internal(true, dupNumbers);
 
-        if (ret != COB_STATUS_00_SUCCESS) {
+        if (deleteRet != COB_STATUS_00_SUCCESS) {
             p.write_cursor_open = false;
-            return ret;
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return deleteRet;
+            }
+            return deleteRet;
         }
 
-        return this.indexed_write_internal(true, dupNumbers, opt);
+        int writeRet = this.indexed_write_internal(true, dupNumbers, opt);
+        if (writeRet != COB_STATUS_00_SUCCESS) {
+            p.write_cursor_open = false;
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return writeRet;
+            }
+            return writeRet;
+        }
+        return writeRet;
     }
 
     private int indexed_delete_internal(boolean rewrite) {
@@ -1120,7 +1143,16 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int delete_() {
-        return this.indexed_delete_internal(false);
+        int ret = this.indexed_delete_internal(false);
+        if (ret != COB_STATUS_00_SUCCESS) {
+            IndexedFile p = this.filei;
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                return ret;
+            }
+        }
+        return ret;
     }
 
     @Override
