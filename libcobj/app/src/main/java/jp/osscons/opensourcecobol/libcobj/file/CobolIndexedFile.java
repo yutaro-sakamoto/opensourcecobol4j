@@ -1103,7 +1103,7 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
-        if (this.commitOnModification) {
+        if (!rewrite) {
             try {
                 p.connection.commit();
             } catch (SQLException e) {
