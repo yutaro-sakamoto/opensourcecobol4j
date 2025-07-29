@@ -152,7 +152,7 @@ int cb_default_select_lock_mode = COB_LOCK_MANUAL;
 #define OPTION_ID_SINGLE_JAR (1025)
 #define OPTION_ID_JAR (1026)
 #define OPTION_ID_INFO_JSON (1027)
-#define OPTION_ID_DEFAULT_SELECT_LOCK_MODE (1028)
+#define OPTION_ID_LOCK_MODE_AUTOMATIC (1028)
 
 int external_flg = 0;
 int errorcount = 0;
@@ -315,8 +315,7 @@ static const struct option long_options[] = {
     {"reference_check", no_argument, NULL, 'K'},
     {"constant", optional_argument, NULL, '3'},
     {"fdefaultbyte", required_argument, NULL, OPTION_ID_DEFAULT_BYTE},
-    {"default_select_lock_mode", required_argument, NULL,
-     OPTION_ID_DEFAULT_SELECT_LOCK_MODE},
+    {"lock-mode-automatic", no_argument, NULL, OPTION_ID_LOCK_MODE_AUTOMATIC},
 #undef CB_FLAG
 #define CB_FLAG(var, name, doc)                                                \
   {"f" name, no_argument, &var, 1}, {"fno-" name, no_argument, &var, 0},
@@ -907,8 +906,8 @@ static void cobc_print_usage(void) {
          "representing a character"));
   puts(_("                                    * octodecimal 00..0377 "
          "representing a character"));
-  puts(_("  -default_select_lock_mode=<mode>  Set the default select lock "
-         "mode. Possible values are MANUAL or AUTOMATIC."));
+  puts(_("  -lock-mode-automatic              Set the default lock mode of "
+         "select clauses to AUTOMATIC"));
   puts(_("  -info-json-dir=<dir>              Specify the directory path of "
          "JSON files that hold information of COBOL programs"));
   puts(_("  -java-package(=<package name>)    Specify the package name of the "
@@ -1164,24 +1163,8 @@ static int process_command_line(const int argc, char *argv[]) {
       fflush(stderr);
       break;
 
-    case OPTION_ID_DEFAULT_SELECT_LOCK_MODE:
-      if (optarg) {
-        if (strcasecmp(optarg, "automatic") == 0) {
-          cb_default_select_lock_mode = COB_LOCK_AUTOMATIC;
-        } else if (strcasecmp(optarg, "manual") == 0) {
-          cb_default_select_lock_mode = COB_LOCK_MANUAL;
-        } else {
-          fprintf(stderr,
-                  "Warning - %s is an invalid select lock mode of "
-                  "-default-select-lock-mode\n",
-                  optarg);
-          fflush(stderr);
-        }
-        break;
-      }
-      fprintf(stderr, "Warning - an invalid select lock mode of "
-                      "-default-select-lock-mode\n");
-      fflush(stderr);
+    case OPTION_ID_LOCK_MODE_AUTOMATIC:
+      cb_default_select_lock_mode = COB_LOCK_AUTOMATIC;
       break;
 
     case '3': /* --constant */
