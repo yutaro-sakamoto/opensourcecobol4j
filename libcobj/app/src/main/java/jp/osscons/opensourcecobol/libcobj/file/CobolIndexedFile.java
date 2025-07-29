@@ -948,14 +948,6 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
-        try {
-            if (this.commitOnModification) {
-                p.connection.commit();
-            }
-        } catch (SQLException e) {
-            return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
-        }
-
         this.updateWhileReading = true;
 
         return returnWith(p, closeCursor, 0, COB_STATUS_00_SUCCESS);
@@ -980,7 +972,15 @@ public class CobolIndexedFile extends CobolFile {
         p.last_key.memcpy(keyBytes, keyBytes.length);
 
         int ret = indexed_write_internal(false, opt);
-        if (ret != COB_STATUS_00_SUCCESS) {
+        if (ret == COB_STATUS_00_SUCCESS) {
+            try {
+                if (this.commitOnModification) {
+                    p.connection.commit();
+                }
+            } catch (SQLException e) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } else {
             try {
                 p.connection.rollback();
             } catch (SQLException rollbackEx) {
@@ -1056,7 +1056,14 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         int writeRet = this.indexed_write_internal(true, dupNumbers, opt);
-        if (writeRet != COB_STATUS_00_SUCCESS) {
+        if (writeRet == COB_STATUS_00_SUCCESS) {
+            try {
+                p.connection.commit();
+            } catch (SQLException e) {
+                p.write_cursor_open = false;
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } else {
             p.write_cursor_open = false;
             try {
                 p.connection.rollback();
@@ -1128,14 +1135,6 @@ public class CobolIndexedFile extends CobolFile {
             }
         }
 
-        if (!rewrite) {
-            try {
-                p.connection.commit();
-            } catch (SQLException e) {
-                return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
-            }
-        }
-
         this.updateWhileReading = true;
 
         return COB_STATUS_00_SUCCESS;
@@ -1144,8 +1143,15 @@ public class CobolIndexedFile extends CobolFile {
     @Override
     public int delete_() {
         int ret = this.indexed_delete_internal(false);
-        if (ret != COB_STATUS_00_SUCCESS) {
-            IndexedFile p = this.filei;
+
+        IndexedFile p = this.filei;
+        if (ret == COB_STATUS_00_SUCCESS) {
+            try {
+                p.connection.commit();
+            } catch (SQLException e) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } else {
             try {
                 p.connection.rollback();
             } catch (SQLException rollbackEx) {
