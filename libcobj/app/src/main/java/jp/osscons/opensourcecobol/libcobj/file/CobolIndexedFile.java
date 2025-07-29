@@ -1043,6 +1043,29 @@ public class CobolIndexedFile extends CobolFile {
             return COB_STATUS_21_KEY_INVALID;
         }
 
+        byte[] currentKey = DBT_SET(this.keys[0].getField());
+        try {
+            if (checkOtherProcessLockedRecord(currentKey)) {
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+                return COB_STATUS_51_RECORD_LOCKED;
+            }
+            if (!lockRecord(currentKey)) {
+                p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } catch (SQLException e) {
+            try {
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+            } catch (SQLException rollbackEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+
         p.key = DBT_SET(this.keys[0].getField());
         int[] dupNumbers = new int[this.nkeys];
         java.util.Arrays.fill(dupNumbers, -1);
@@ -1053,6 +1076,8 @@ public class CobolIndexedFile extends CobolFile {
             p.write_cursor_open = false;
             try {
                 p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
                 return deleteRet;
             }
@@ -1062,6 +1087,7 @@ public class CobolIndexedFile extends CobolFile {
         int writeRet = this.indexed_write_internal(true, dupNumbers, opt);
         if (writeRet == COB_STATUS_00_SUCCESS) {
             try {
+                unlockPreviousRecord(currentKey);
                 p.connection.commit();
             } catch (SQLException e) {
                 p.write_cursor_open = false;
@@ -1071,10 +1097,11 @@ public class CobolIndexedFile extends CobolFile {
             p.write_cursor_open = false;
             try {
                 p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
-                return writeRet;
+                return COB_STATUS_30_PERMANENT_ERROR;
             }
-            return writeRet;
         }
         return writeRet;
     }
