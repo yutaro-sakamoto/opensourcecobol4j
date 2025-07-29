@@ -1173,11 +1173,35 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int delete_() {
+        IndexedFile p = this.filei;
+        byte[] currentKey = DBT_SET(this.keys[0].getField());
+        try {
+            if (checkOtherProcessLockedRecord(currentKey)) {
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+                return COB_STATUS_51_RECORD_LOCKED;
+            }
+            if (!lockRecord(currentKey)) {
+                p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } catch (SQLException e) {
+            try {
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
+            } catch (SQLException rollbackEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+
         int ret = this.indexed_delete_internal(false);
 
-        IndexedFile p = this.filei;
         if (ret == COB_STATUS_00_SUCCESS) {
             try {
+                unlockPreviousRecord(currentKey);
                 p.connection.commit();
             } catch (SQLException e) {
                 return COB_STATUS_30_PERMANENT_ERROR;
@@ -1185,6 +1209,8 @@ public class CobolIndexedFile extends CobolFile {
         } else {
             try {
                 p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
                 return ret;
             }
