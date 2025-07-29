@@ -972,8 +972,10 @@ public class CobolIndexedFile extends CobolFile {
         p.last_key.memcpy(keyBytes, keyBytes.length);
 
         int ret = indexed_write_internal(false, opt);
+        byte[] currentKey = DBT_SET(this.keys[0].getField());
         if (ret == COB_STATUS_00_SUCCESS) {
             try {
+                unlockPreviousRecord(currentKey);
                 if (this.commitOnModification) {
                     p.connection.commit();
                 }
@@ -983,6 +985,8 @@ public class CobolIndexedFile extends CobolFile {
         } else {
             try {
                 p.connection.rollback();
+                unlockPreviousRecord(currentKey);
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
                 return ret;
             }
