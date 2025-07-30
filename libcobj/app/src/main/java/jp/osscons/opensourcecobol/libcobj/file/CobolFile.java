@@ -346,10 +346,10 @@ public class CobolFile {
     protected static final int COB_LOCK_MANUAL = 2;
 
     /** TODO: 準備中 */
-    protected static final int COB_LOCK_AUTOMATIC = 3;
+    protected static final int COB_LOCK_AUTOMATIC = 4;
 
     /** TODO: 準備中 */
-    protected static final int COB_LOCK_MULTIPLE = 1;
+    protected static final int COB_LOCK_MULTIPLE = 8;
 
     /** TODO: 準備中 */
     protected static final int COB_LOCK_MASK = 0x7;
