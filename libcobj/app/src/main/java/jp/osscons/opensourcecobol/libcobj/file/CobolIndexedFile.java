@@ -855,8 +855,9 @@ public class CobolIndexedFile extends CobolFile {
                     conn.prepareStatement(
                             String.format(
                                     "select ifnull(max(dupNo), -1) from %s", getTableName(index)));
-            ResultSet rs = selectStatement.executeQuery();
-            return rs.getInt(1) + 1;
+            try (ResultSet rs = selectStatement.executeQuery()) {
+                return rs.getInt(1) + 1;
+            }
         } catch (SQLException e) {
             return 0;
         }
