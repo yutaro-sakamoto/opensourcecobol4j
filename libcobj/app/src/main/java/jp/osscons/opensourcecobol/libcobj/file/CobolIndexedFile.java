@@ -352,15 +352,16 @@ public class CobolIndexedFile extends CobolFile {
                 String query =
                         "select exists(select 1 from sqlite_master where type = 'table' and name ="
                                 + " 'file_lock')";
-                ResultSet rs = statement.executeQuery(query);
-                // If the file_lock table does not exist, create it and return true
-                if (!rs.next() || rs.getInt(1) == 0) {
-                    statement.execute(
-                            "CREATE TABLE if not exists file_lock (locked_by text primary key,"
-                                + " process_id text, locked_at timestamp, open_mode text CONSTRAINT"
-                                + " check_open_mode CHECK (open_mode IN ('INPUT', 'OUTPUT', 'I-O',"
-                                + " 'EXTEND')))");
-                    return true;
+                try (ResultSet rs = statement.executeQuery(query)) {
+                    // If the file_lock table does not exist, create it and return true
+                    if (!rs.next() || rs.getInt(1) == 0) {
+                        statement.execute(
+                                "CREATE TABLE if not exists file_lock (locked_by text primary key,"
+                                    + " process_id text, locked_at timestamp, open_mode text"
+                                    + " CONSTRAINT check_open_mode CHECK (open_mode IN ('INPUT',"
+                                    + " 'OUTPUT', 'I-O', 'EXTEND')))");
+                        return true;
+                    }
                 }
             }
 
@@ -370,11 +371,12 @@ public class CobolIndexedFile extends CobolFile {
             } else {
                 query = "select exists(select 1 from file_lock where open_mode = 'OUTPUT')";
             }
-            ResultSet rs = statement.executeQuery(query);
-            // If the file is already locked, return false
-            if (rs.next() && rs.getInt(1) == 1) {
-                p.connection.rollback();
-                return false;
+            try (ResultSet rs = statement.executeQuery(query)) {
+                // If the file is already locked, return false
+                if (rs.next() && rs.getInt(1) == 1) {
+                    p.connection.rollback();
+                    return false;
+                }
             }
             return true;
         } catch (SQLException e) {
@@ -613,8 +615,9 @@ public class CobolIndexedFile extends CobolFile {
         try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
             selectStatement.setBytes(1, key);
             selectStatement.setString(2, this.getProcessUuid());
-            ResultSet rs = selectStatement.executeQuery();
-            return rs.next() && rs.getInt(1) == 1;
+            try (ResultSet rs = selectStatement.executeQuery()) {
+                return rs.next() && rs.getInt(1) == 1;
+            }
         }
     }
 
@@ -838,8 +841,9 @@ public class CobolIndexedFile extends CobolFile {
         try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
             selectStatement.setBytes(1, key);
             selectStatement.setFetchSize(0);
-            ResultSet rs = selectStatement.executeQuery();
-            return rs.next();
+            try (ResultSet rs = selectStatement.executeQuery()) {
+                return rs.next();
+            }
         } catch (SQLException e) {
             return false;
         }
@@ -1025,8 +1029,9 @@ public class CobolIndexedFile extends CobolFile {
             selectStatement.setBytes(1, key);
             selectStatement.setBytes(2, primaryKey);
             selectStatement.setFetchSize(0);
-            ResultSet rs = selectStatement.executeQuery();
-            return rs.next();
+            try (ResultSet rs = selectStatement.executeQuery()) {
+                return rs.next();
+            }
         } catch (SQLException e) {
             return false;
         }
@@ -1145,11 +1150,12 @@ public class CobolIndexedFile extends CobolFile {
                                 String.format(
                                         "select dupNo from %s where value = ?", getTableName(i)))) {
                     statement.setBytes(1, p.key);
-                    ResultSet rs = statement.executeQuery();
-                    if (rs.next()) {
-                        int dupNo = rs.getInt(1);
-                        if (dupNumbers != null) {
-                            dupNumbers[i] = dupNo;
+                    try (ResultSet rs = statement.executeQuery()) {
+                        if (rs.next()) {
+                            int dupNo = rs.getInt(1);
+                            if (dupNumbers != null) {
+                                dupNumbers[i] = dupNo;
+                            }
                         }
                     }
                 } catch (SQLException e) {
