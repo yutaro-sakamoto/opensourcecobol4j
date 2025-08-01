@@ -32,7 +32,7 @@ import org.sqlite.SQLiteErrorCode;
 
 /** TODO: 準備中 */
 public class CobolIndexedFile extends CobolFile {
-    private Optional<IndexedCursor> cursor;
+    private Optional<NewIndexedCursor> cursor;
     private boolean updateWhileReading = false;
     private boolean indexedFirstRead = true;
     private boolean callStart = false;
@@ -566,12 +566,12 @@ public class CobolIndexedFile extends CobolFile {
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
 
         this.cursor =
-                IndexedCursor.createCursor(p.connection, p.key, p.key_index, isDuplicate, cond);
+                NewIndexedCursor.createCursor(p.connection, p.key, p.key_index, isDuplicate, cond);
         if (!this.cursor.isPresent()) {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
 
-        IndexedCursor cursor = this.cursor.get();
+        NewIndexedCursor cursor = this.cursor.get();
         Optional<FetchResult> optionalResult = cursor.next();
         if (optionalResult.isPresent()) {
             FetchResult result = optionalResult.get();
@@ -714,7 +714,7 @@ public class CobolIndexedFile extends CobolFile {
             this.indexedFirstRead = false;
             this.record.setSize(p.data.length);
             if (this.cursor.isPresent()) {
-                IndexedCursor cursor = this.cursor.get();
+                NewIndexedCursor cursor = this.cursor.get();
                 if ((readOpts & CobolFile.COB_READ_PREVIOUS) != 0
                         && cursor.getComparator() == COB_LE
                         && this.record.getDataStorage().memcmp(p.data, p.data.length) != 0) {
@@ -729,7 +729,7 @@ public class CobolIndexedFile extends CobolFile {
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
         if (this.indexedFirstRead || this.flag_begin_of_file) {
             this.cursor =
-                    IndexedCursor.createCursor(
+                    NewIndexedCursor.createCursor(
                             p.connection, p.key, p.key_index, isDuplicate, COB_GE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_10_END_OF_FILE;
@@ -737,7 +737,7 @@ public class CobolIndexedFile extends CobolFile {
             this.cursor.get().moveToFirst();
         } else if (this.flag_end_of_file) {
             this.cursor =
-                    IndexedCursor.createCursor(
+                    NewIndexedCursor.createCursor(
                             p.connection, p.key, p.key_index, isDuplicate, COB_LE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
@@ -748,8 +748,8 @@ public class CobolIndexedFile extends CobolFile {
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
-            IndexedCursor oldCursor = this.cursor.get();
-            Optional<IndexedCursor> newCursor = oldCursor.reloadCursor();
+            NewIndexedCursor oldCursor = this.cursor.get();
+            Optional<NewIndexedCursor> newCursor = oldCursor.reloadCursor();
             if (!newCursor.isPresent()) {
                 this.cursor = Optional.of(oldCursor);
             } else {
@@ -762,7 +762,7 @@ public class CobolIndexedFile extends CobolFile {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
 
-        IndexedCursor cursor = this.cursor.get();
+        NewIndexedCursor cursor = this.cursor.get();
 
         final CursorReadOption cursorOpt;
         if ((readOpts & COB_READ_PREVIOUS) != 0) {
@@ -1045,7 +1045,7 @@ public class CobolIndexedFile extends CobolFile {
         p.write_cursor_open = true;
 
         if (this.access_mode == COB_ACCESS_SEQUENTIAL
-                && !IndexedCursor.matchKeyHead(p.key, DBT_SET(this.keys[0].getField()))) {
+                && !NewIndexedCursor.matchKeyHead(p.key, DBT_SET(this.keys[0].getField()))) {
             return COB_STATUS_21_KEY_INVALID;
         }
 

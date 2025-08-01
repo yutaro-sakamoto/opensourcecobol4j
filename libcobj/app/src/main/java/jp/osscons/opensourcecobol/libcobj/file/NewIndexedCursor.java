@@ -1,7 +1,16 @@
 package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Optional;
+
+enum CursorPosition {
+    BEFORE_FIRST,
+    AFTER_LAST,
+    IN_TABLE,
+}
 
 final class NewIndexedCursor {
     private final Connection conn;
@@ -10,6 +19,11 @@ final class NewIndexedCursor {
     private final boolean isDuplicate;
     private int comparator;
 
+    // variables for cursor state
+    private boolean firstFetch;
+    private CursorPosition position;
+    private Optional<FetchResult> previousFetchResult;
+
     private NewIndexedCursor(
             Connection conn, byte[] key, int tableIndex, boolean isDuplicate, int comparator) {
         this.conn = conn;
@@ -17,6 +31,10 @@ final class NewIndexedCursor {
         this.tableIndex = tableIndex;
         this.isDuplicate = isDuplicate;
         this.comparator = comparator;
+
+        this.firstFetch = true;
+        this.position = CursorPosition.IN_TABLE;
+        this.previousFetchResult = Optional.empty();
     }
 
     static Optional<NewIndexedCursor> createCursor(
@@ -44,6 +62,14 @@ final class NewIndexedCursor {
         return;
     }
 
+    void setComparator(int comparator) {
+        this.comparator = comparator;
+    }
+
+    int getComparator() {
+        return this.comparator;
+    }
+
     Optional<FetchResult> read(CursorReadOption opt) {
         if (opt == CursorReadOption.NEXT) {
             return this.next();
@@ -54,8 +80,247 @@ final class NewIndexedCursor {
         }
     }
 
+    private static String getCompOperator(int comparator, boolean forward) {
+        if (comparator == CobolIndexedFile.COB_EQ
+                || comparator == CobolIndexedFile.COB_GE
+                || comparator == CobolIndexedFile.COB_LT) {
+            return forward ? ">=" : "<";
+        } else if (comparator == CobolIndexedFile.COB_GT || comparator == CobolIndexedFile.COB_LE) {
+            return forward ? ">" : "<=";
+        } else {
+            return null;
+        }
+    }
+
+    Optional<FetchResult> fetchFirstRecord() {
+        this.previousFetchResult = Optional.empty();
+        this.position = CursorPosition.IN_TABLE;
+
+        final boolean isPrimaryTable = this.tableIndex == 0;
+        final String primaryTable = CobolIndexedFile.getTableName(0);
+        final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
+
+        String query;
+        if (isPrimaryTable) {
+            query = String.format("select key, value from %s order by key limit 1", primaryTable);
+        } else if (this.isDuplicate) {
+            query =
+                    String.format(
+                            "select key, value from %s order by key, dupNo limit 1", subTable);
+        } else {
+            query = String.format("select key, value from %s order by key limit 1", subTable);
+        }
+        try (Statement stmt = this.conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                byte[] key = rs.getBytes("key");
+                byte[] value = rs.getBytes("value");
+                if (isDuplicate) {
+                    int dupNo = rs.getInt("dupNo");
+                    return Optional.of(new FetchResult(key, value, dupNo));
+                } else {
+                    return Optional.of(new FetchResult(key, value, 0));
+                }
+            } else {
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    Optional<FetchResult> forwardNextRecord() {
+        this.previousFetchResult = Optional.empty();
+        this.position = CursorPosition.IN_TABLE;
+
+        final boolean isPrimaryTable = this.tableIndex == 0;
+        final String primaryTable = CobolIndexedFile.getTableName(0);
+        final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
+        final String compOperator = this.getCompOperator(this.comparator, true);
+
+        String query;
+        if (isPrimaryTable) {
+            query =
+                    String.format(
+                            "select key, value from %s where key %s ? order by key limit 1",
+                            primaryTable, compOperator);
+        } else if (this.isDuplicate) {
+            query =
+                    String.format(
+                            "select %s.key, %s.value, %s.dupNo from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
+                                    + "order by %s.key",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            compOperator,
+                            subTable,
+                            compOperator,
+                            subTable);
+        } else {
+            query =
+                    String.format(
+                            "select %s.key, %s.value from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where %s.key %s ? "
+                                    + "order by %s.key",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            compOperator,
+                            subTable);
+        }
+        byte[] key;
+        if (this.previousFetchResult.isPresent()) {
+            key = this.previousFetchResult.get().key;
+        } else {
+            key = this.key;
+        }
+        try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
+            stmt.setBytes(1, key);
+            if (this.isDuplicate) {
+                int dupNo =
+                        this.previousFetchResult.isPresent()
+                                ? this.previousFetchResult.get().dupNo
+                                : 0;
+                stmt.setInt(2, dupNo);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    byte[] fetchedKey = rs.getBytes("key");
+                    byte[] value = rs.getBytes("value");
+                    if (isDuplicate) {
+                        int dupNo = rs.getInt("dupNo");
+                        return Optional.of(new FetchResult(fetchedKey, value, dupNo));
+                    } else {
+                        return Optional.of(new FetchResult(fetchedKey, value, 0));
+                    }
+                } else {
+                    this.position = CursorPosition.AFTER_LAST;
+                    return Optional.empty();
+                }
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    Optional<FetchResult> fetchRecord() {
+        this.previousFetchResult = Optional.empty();
+        this.position = CursorPosition.IN_TABLE;
+
+        final boolean isPrimaryTable = this.tableIndex == 0;
+        final String primaryTable = CobolIndexedFile.getTableName(0);
+        final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
+        final String compOperator = this.getCompOperator(this.comparator, true);
+
+        String query;
+        if (isPrimaryTable) {
+            query =
+                    String.format(
+                            "select key, value from %s where key %s ? order by key limit 1",
+                            primaryTable, compOperator);
+        } else if (this.isDuplicate) {
+            query =
+                    String.format(
+                            "select %s.key, %s.value, %s.dupNo from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
+                                    + "order by %s.key",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            compOperator,
+                            subTable,
+                            compOperator,
+                            subTable);
+        } else {
+            query =
+                    String.format(
+                            "select %s.key, %s.value from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where %s.key %s ? "
+                                    + "order by %s.key %s",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            compOperator,
+                            subTable);
+        }
+        byte[] key;
+        if (this.previousFetchResult.isPresent()) {
+            key = this.previousFetchResult.get().key;
+        } else {
+            key = this.key;
+        }
+        try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
+            stmt.setBytes(1, key);
+            if (this.isDuplicate) {
+                stmt.setInt(2, 0); // Assuming dupNo starts from 0
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    byte[] fetchedKey = rs.getBytes("key");
+                    byte[] value = rs.getBytes("value");
+                    if (isDuplicate) {
+                        int dupNo = rs.getInt("dupNo");
+                        return Optional.of(new FetchResult(fetchedKey, value, dupNo));
+                    } else {
+                        return Optional.of(new FetchResult(fetchedKey, value));
+                    }
+                } else {
+                    this.position = CursorPosition.AFTER_LAST;
+                    return Optional.empty();
+                }
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
     Optional<FetchResult> next() {
-        return Optional.empty();
+        if (this.position == CursorPosition.AFTER_LAST) {
+            return Optional.empty();
+        }
+
+        Optional<FetchResult> result;
+        if (this.firstFetch) {
+            if (this.position == CursorPosition.BEFORE_FIRST) {
+                result = fetchFirstRecord();
+            } else {
+                result = fetchRecord();
+            }
+        } else {
+            result = forwardNextRecord();
+        }
+
+        if (result.isPresent()) {
+            this.firstFetch = false;
+            this.position = CursorPosition.IN_TABLE;
+        }
+        this.previousFetchResult = result;
+        return result;
     }
 
     Optional<FetchResult> prev() {
@@ -63,10 +328,14 @@ final class NewIndexedCursor {
     }
 
     boolean moveToFirst() {
+        this.firstFetch = true;
+        this.position = CursorPosition.BEFORE_FIRST;
         return true;
     }
 
     boolean moveToLast() {
+        this.firstFetch = true;
+        this.position = CursorPosition.AFTER_LAST;
         return true;
     }
 }
