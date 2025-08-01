@@ -384,7 +384,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key %s",
+                                    + "order by %s.key",
                             subTable,
                             primaryTable,
                             subTable,
