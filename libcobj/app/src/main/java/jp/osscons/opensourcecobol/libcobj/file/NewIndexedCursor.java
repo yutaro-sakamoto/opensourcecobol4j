@@ -129,6 +129,46 @@ final class NewIndexedCursor {
         }
     }
 
+    Optional<FetchResult> fetchLastRecord() {
+        this.previousFetchResult = Optional.empty();
+        this.position = CursorPosition.IN_TABLE;
+
+        final boolean isPrimaryTable = this.tableIndex == 0;
+        final String primaryTable = CobolIndexedFile.getTableName(0);
+        final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
+
+        String query;
+        if (isPrimaryTable) {
+            query =
+                    String.format(
+                            "select key, value from %s order desc by key limit 1", primaryTable);
+        } else if (this.isDuplicate) {
+            query =
+                    String.format(
+                            "select key, value from %s order by key desc, dupNo desc limit 1",
+                            subTable);
+        } else {
+            query = String.format("select key, value from %s order by key desc limit 1", subTable);
+        }
+        try (Statement stmt = this.conn.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
+            if (rs.next()) {
+                byte[] key = rs.getBytes("key");
+                byte[] value = rs.getBytes("value");
+                if (isDuplicate) {
+                    int dupNo = rs.getInt("dupNo");
+                    return Optional.of(new FetchResult(key, value, dupNo));
+                } else {
+                    return Optional.of(new FetchResult(key, value, 0));
+                }
+            } else {
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
     Optional<FetchResult> forwardNextRecord() {
         this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
@@ -137,6 +177,93 @@ final class NewIndexedCursor {
         final String primaryTable = CobolIndexedFile.getTableName(0);
         final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
         final String compOperator = this.getCompOperator(this.comparator, true);
+
+        String query;
+        if (isPrimaryTable) {
+            query =
+                    String.format(
+                            "select key, value from %s where key %s ? order by key limit 1",
+                            primaryTable, compOperator);
+        } else if (this.isDuplicate) {
+            query =
+                    String.format(
+                            "select %s.key, %s.value, %s.dupNo from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
+                                    + "order by %s.key",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            subTable,
+                            compOperator,
+                            subTable,
+                            compOperator,
+                            subTable);
+        } else {
+            query =
+                    String.format(
+                            "select %s.key, %s.value from "
+                                    + "%s join %s on %s.value = %s.key "
+                                    + "where %s.key %s ? "
+                                    + "order by %s.key",
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            primaryTable,
+                            subTable,
+                            compOperator,
+                            subTable);
+        }
+        byte[] key;
+        if (this.previousFetchResult.isPresent()) {
+            key = this.previousFetchResult.get().key;
+        } else {
+            key = this.key;
+        }
+        try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
+            stmt.setBytes(1, key);
+            if (this.isDuplicate) {
+                int dupNo =
+                        this.previousFetchResult.isPresent()
+                                ? this.previousFetchResult.get().dupNo
+                                : 0;
+                stmt.setInt(2, dupNo);
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    byte[] fetchedKey = rs.getBytes("key");
+                    byte[] value = rs.getBytes("value");
+                    if (isDuplicate) {
+                        int dupNo = rs.getInt("dupNo");
+                        return Optional.of(new FetchResult(fetchedKey, value, dupNo));
+                    } else {
+                        return Optional.of(new FetchResult(fetchedKey, value, 0));
+                    }
+                } else {
+                    this.position = CursorPosition.AFTER_LAST;
+                    return Optional.empty();
+                }
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    Optional<FetchResult> forwardPrevRecord() {
+        this.previousFetchResult = Optional.empty();
+        this.position = CursorPosition.IN_TABLE;
+
+        final boolean isPrimaryTable = this.tableIndex == 0;
+        final String primaryTable = CobolIndexedFile.getTableName(0);
+        final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
+        final String compOperator = this.getCompOperator(this.comparator, false);
 
         String query;
         if (isPrimaryTable) {
@@ -324,7 +451,27 @@ final class NewIndexedCursor {
     }
 
     Optional<FetchResult> prev() {
-        return Optional.empty();
+        if (this.position == CursorPosition.BEFORE_FIRST) {
+            return Optional.empty();
+        }
+
+        Optional<FetchResult> result;
+        if (this.firstFetch) {
+            if (this.position == CursorPosition.AFTER_LAST) {
+                result = fetchLastRecord();
+            } else {
+                result = fetchRecord();
+            }
+        } else {
+            result = forwardPrevRecord();
+        }
+
+        if (result.isPresent()) {
+            this.firstFetch = false;
+            this.position = CursorPosition.IN_TABLE;
+        }
+        this.previousFetchResult = result;
+        return result;
     }
 
     boolean moveToFirst() {
