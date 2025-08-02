@@ -709,9 +709,24 @@ public class CobolIndexedFile extends CobolFile {
 
     private int readNext_internal(int readOpts) {
         IndexedFile p = this.filei;
+        // Immediately after START is called
         if (this.callStart) {
             this.callStart = false;
             this.indexedFirstRead = false;
+            // If this statement is READ NEXT RECORD and
+            // the START statement was like `START ~~ KEY IS <=`
+            if ((readOpts & CobolFile.COB_READ_NEXT) != 0
+                    && cursor.get().getComparator() == COB_LE) {
+                AbstractCobolField specifiedKey = this.keys[p.key_index].getField();
+                int specifiedKeySize = specifiedKey.getSize();
+                int readKeySize = p.key.length;
+                int length = Math.min(specifiedKeySize, readKeySize);
+                // The key fetched by START is not the same as the specified key
+                if (specifiedKey.getDataStorage().memcmp(p.key, length) != 0) {
+                    // READ the next record
+                    return readNext_internal(readOpts);
+                }
+            }
             this.record.setSize(p.data.length);
             this.record.getDataStorage().memcpy(p.data, p.data.length);
             return COB_STATUS_00_SUCCESS;
