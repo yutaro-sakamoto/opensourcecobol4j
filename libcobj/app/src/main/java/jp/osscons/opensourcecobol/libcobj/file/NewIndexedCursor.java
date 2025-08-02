@@ -82,7 +82,8 @@ final class NewIndexedCursor {
 
     private static String getCompOperator(int comparator) {
         if (comparator == CobolIndexedFile.COB_EQ) {
-            return "=";
+            // for partial key match, we use ">=" instead of "="
+            return ">=";
         } else if (comparator == CobolIndexedFile.COB_GE) {
             return ">=";
         } else if (comparator == CobolIndexedFile.COB_LE) {
@@ -419,6 +420,9 @@ final class NewIndexedCursor {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     byte[] fetchedKey = rs.getBytes("key");
+                    if (this.comparator == CobolIndexedFile.COB_EQ && !matchKeyHead(this.key, fetchedKey)) {
+                        return Optional.empty();
+                    }
                     byte[] value = rs.getBytes("value");
                     if (isDuplicate) {
                         int dupNo = rs.getInt("dupNo");
