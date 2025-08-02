@@ -377,7 +377,7 @@ final class NewIndexedCursor {
                     String.format(
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
-                                    + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
+                                    + "where %s.key %s ? "
                                     + "order by %s.key, %s.dupNo limit 1",
                             subTable,
                             primaryTable,
@@ -386,9 +386,6 @@ final class NewIndexedCursor {
                             primaryTable,
                             subTable,
                             primaryTable,
-                            subTable,
-                            subTable,
-                            compOperator,
                             subTable,
                             compOperator,
                             subTable,
@@ -419,10 +416,6 @@ final class NewIndexedCursor {
 
         try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
             stmt.setBytes(1, key);
-            if (this.isDuplicate) {
-                stmt.setInt(2, 0); // Assuming dupNo starts from 0
-                stmt.setBytes(3, key);
-            }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     byte[] fetchedKey = rs.getBytes("key");
