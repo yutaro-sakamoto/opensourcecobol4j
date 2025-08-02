@@ -198,7 +198,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key, %s.dupNo limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -211,6 +211,7 @@ final class NewIndexedCursor {
                             compOperator,
                             subTable,
                             compOperator,
+                            subTable,
                             subTable);
         } else {
             query =
@@ -218,7 +219,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -238,6 +239,7 @@ final class NewIndexedCursor {
                                 ? this.previousFetchResult.get().dupNo
                                 : 0;
                 stmt.setInt(2, dupNo);
+                stmt.setBytes(3, key);
             }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -288,7 +290,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
-                                    + "order by %s.key desc",
+                                    + "order by %s.key desc, %s.dupNo desc limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -301,6 +303,7 @@ final class NewIndexedCursor {
                             compOperator,
                             subTable,
                             compOperator,
+                            subTable,
                             subTable);
         } else {
             query =
@@ -308,7 +311,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key desc",
+                                    + "order by %s.key desc limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -328,6 +331,7 @@ final class NewIndexedCursor {
                                 ? this.previousFetchResult.get().dupNo
                                 : 0;
                 stmt.setInt(2, dupNo);
+                stmt.setBytes(3, key);
             }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -370,7 +374,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key, %s.dupNo limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -383,6 +387,7 @@ final class NewIndexedCursor {
                             compOperator,
                             subTable,
                             compOperator,
+                            subTable,
                             subTable);
         } else {
             query =
@@ -390,7 +395,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key limit 1",
                             subTable,
                             primaryTable,
                             subTable,
@@ -411,6 +416,7 @@ final class NewIndexedCursor {
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
                 stmt.setInt(2, 0); // Assuming dupNo starts from 0
+                stmt.setBytes(3, key);
             }
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
