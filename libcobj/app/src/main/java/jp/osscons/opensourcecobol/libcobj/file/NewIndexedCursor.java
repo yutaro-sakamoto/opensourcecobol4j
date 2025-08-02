@@ -371,7 +371,7 @@ final class NewIndexedCursor {
         if (isPrimaryTable) {
             query =
                     String.format(
-                            "select key, value from %s where key %s ? order by key limit 1",
+                            "select key, value from %s where key %s ? order by key",
                             primaryTable, compOperator);
         } else if (this.isDuplicate) {
             query =
@@ -379,7 +379,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key, %s.dupNo limit 1",
+                                    + "order by %s.key, %s.dupNo",
                             subTable,
                             primaryTable,
                             subTable,
@@ -397,7 +397,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key limit 1",
+                                    + "order by %s.key",
                             subTable,
                             primaryTable,
                             subTable,
@@ -422,6 +422,14 @@ final class NewIndexedCursor {
                     byte[] fetchedKey = rs.getBytes("key");
                     if (this.comparator == CobolIndexedFile.COB_EQ && !matchKeyHead(this.key, fetchedKey)) {
                         return Optional.empty();
+                    } else if (this.comparator == CobolIndexedFile.COB_GT) {
+                        // exclude records that partially match the key 
+                        while (matchKeyHead(this.key, fetchedKey)) {
+                            if(!rs.next()) {
+                                return Optional.empty();
+                            }
+                            fetchedKey = rs.getBytes("key");
+                        }
                     }
                     byte[] value = rs.getBytes("value");
                     if (isDuplicate) {
