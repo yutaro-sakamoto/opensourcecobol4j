@@ -59,7 +59,6 @@ final class NewIndexedCursor {
     }
 
     void close() {
-        return;
     }
 
     void setComparator(int comparator) {
