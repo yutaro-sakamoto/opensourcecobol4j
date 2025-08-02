@@ -713,15 +713,6 @@ public class CobolIndexedFile extends CobolFile {
             this.callStart = false;
             this.indexedFirstRead = false;
             this.record.setSize(p.data.length);
-            if (this.cursor.isPresent()) {
-                NewIndexedCursor cursor = this.cursor.get();
-                if ((readOpts & CobolFile.COB_READ_PREVIOUS) != 0
-                        && cursor.getComparator() == COB_LE
-                        && this.record.getDataStorage().memcmp(p.data, p.data.length) != 0) {
-                    this.callStart = false;
-                    return this.readNext(readOpts);
-                }
-            }
             this.record.getDataStorage().memcpy(p.data, p.data.length);
             return COB_STATUS_00_SUCCESS;
         }

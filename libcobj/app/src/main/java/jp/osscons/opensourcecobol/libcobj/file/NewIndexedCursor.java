@@ -358,6 +358,14 @@ final class NewIndexedCursor {
         }
     }
 
+    private String getSortOrderForStartStatement(int comparator) {
+        if (comparator == CobolIndexedFile.COB_LT || comparator == CobolIndexedFile.COB_LE) {
+            return "desc";
+        } else {
+            return "asc";
+        }
+    }
+
     Optional<FetchResult> fetchRecord() {
         this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
@@ -366,20 +374,21 @@ final class NewIndexedCursor {
         final String primaryTable = CobolIndexedFile.getTableName(0);
         final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
         final String compOperator = this.getCompOperator(this.comparator);
+        final String sortOrder = getSortOrderForStartStatement(this.comparator);
 
         String query;
         if (isPrimaryTable) {
             query =
                     String.format(
-                            "select key, value from %s where key %s ? order by key",
-                            primaryTable, compOperator);
+                            "select key, value from %s where key %s ? order by key %s",
+                            primaryTable, compOperator, sortOrder);
         } else if (this.isDuplicate) {
             query =
                     String.format(
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key, %s.dupNo",
+                                    + "order by %s.key %s, %s.dupNo %s",
                             subTable,
                             primaryTable,
                             subTable,
@@ -390,14 +399,16 @@ final class NewIndexedCursor {
                             subTable,
                             compOperator,
                             subTable,
-                            subTable);
+                            sortOrder,
+                            subTable,
+                            sortOrder);
         } else {
             query =
                     String.format(
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key %s",
                             subTable,
                             primaryTable,
                             subTable,
@@ -406,7 +417,8 @@ final class NewIndexedCursor {
                             primaryTable,
                             subTable,
                             compOperator,
-                            subTable);
+                            subTable,
+                            sortOrder);
         }
         byte[] key;
         if (this.previousFetchResult.isPresent()) {
@@ -420,12 +432,13 @@ final class NewIndexedCursor {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     byte[] fetchedKey = rs.getBytes("key");
-                    if (this.comparator == CobolIndexedFile.COB_EQ && !matchKeyHead(this.key, fetchedKey)) {
+                    if (this.comparator == CobolIndexedFile.COB_EQ
+                            && !matchKeyHead(this.key, fetchedKey)) {
                         return Optional.empty();
                     } else if (this.comparator == CobolIndexedFile.COB_GT) {
-                        // exclude records that partially match the key 
+                        // exclude records that partially match the key
                         while (matchKeyHead(this.key, fetchedKey)) {
-                            if(!rs.next()) {
+                            if (!rs.next()) {
                                 return Optional.empty();
                             }
                             fetchedKey = rs.getBytes("key");
