@@ -80,13 +80,17 @@ final class NewIndexedCursor {
         }
     }
 
-    private static String getCompOperator(int comparator, boolean forward) {
-        if (comparator == CobolIndexedFile.COB_EQ
-                || comparator == CobolIndexedFile.COB_GE
-                || comparator == CobolIndexedFile.COB_LT) {
-            return forward ? ">=" : "<";
-        } else if (comparator == CobolIndexedFile.COB_GT || comparator == CobolIndexedFile.COB_LE) {
-            return forward ? ">" : "<=";
+    private static String getCompOperator(int comparator) {
+        if (comparator == CobolIndexedFile.COB_EQ) {
+            return "=";
+        } else if (comparator == CobolIndexedFile.COB_GE) {
+            return ">=";
+        } else if (comparator == CobolIndexedFile.COB_LE) {
+            return "<=";
+        } else if (comparator == CobolIndexedFile.COB_GT) {
+            return ">";
+        } else if (comparator == CobolIndexedFile.COB_LT) {
+            return "<";
         } else {
             return null;
         }
@@ -360,7 +364,7 @@ final class NewIndexedCursor {
         final boolean isPrimaryTable = this.tableIndex == 0;
         final String primaryTable = CobolIndexedFile.getTableName(0);
         final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
-        final String compOperator = this.getCompOperator(this.comparator, true);
+        final String compOperator = this.getCompOperator(this.comparator);
 
         String query;
         if (isPrimaryTable) {
@@ -412,6 +416,7 @@ final class NewIndexedCursor {
         } else {
             key = this.key;
         }
+
         try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
