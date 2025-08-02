@@ -170,13 +170,21 @@ final class NewIndexedCursor {
     }
 
     Optional<FetchResult> forwardNextRecord() {
-        this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
 
         final boolean isPrimaryTable = this.tableIndex == 0;
         final String primaryTable = CobolIndexedFile.getTableName(0);
         final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
-        final String compOperator = this.getCompOperator(this.comparator, true);
+
+        final String compOperator;
+        byte[] key;
+        if (this.previousFetchResult.isPresent()) {
+            compOperator = ">";
+            key = this.previousFetchResult.get().key;
+        } else {
+            compOperator = ">=";
+            key = this.key;
+        }
 
         String query;
         if (isPrimaryTable) {
@@ -221,12 +229,7 @@ final class NewIndexedCursor {
                             compOperator,
                             subTable);
         }
-        byte[] key;
-        if (this.previousFetchResult.isPresent()) {
-            key = this.previousFetchResult.get().key;
-        } else {
-            key = this.key;
-        }
+
         try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
@@ -256,20 +259,28 @@ final class NewIndexedCursor {
         }
     }
 
-    Optional<FetchResult> forwardPrevRecord() {
-        this.previousFetchResult = Optional.empty();
+    Optional<FetchResult> backwardPrevRecord() {
         this.position = CursorPosition.IN_TABLE;
 
         final boolean isPrimaryTable = this.tableIndex == 0;
         final String primaryTable = CobolIndexedFile.getTableName(0);
         final String subTable = CobolIndexedFile.getTableName(this.tableIndex);
-        final String compOperator = this.getCompOperator(this.comparator, false);
+
+        final String compOperator;
+        byte[] key;
+        if (this.previousFetchResult.isPresent()) {
+            compOperator = "<";
+            key = this.previousFetchResult.get().key;
+        } else {
+            compOperator = "<=";
+            key = this.key;
+        }
 
         String query;
         if (isPrimaryTable) {
             query =
                     String.format(
-                            "select key, value from %s where key %s ? order by key limit 1",
+                            "select key, value from %s where key %s ? order by key desc limit 1",
                             primaryTable, compOperator);
         } else if (this.isDuplicate) {
             query =
@@ -277,7 +288,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value, %s.dupNo from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where (%s.key == ? and %s.dupNo %s ?) or %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key desc",
                             subTable,
                             primaryTable,
                             subTable,
@@ -297,7 +308,7 @@ final class NewIndexedCursor {
                             "select %s.key, %s.value from "
                                     + "%s join %s on %s.value = %s.key "
                                     + "where %s.key %s ? "
-                                    + "order by %s.key",
+                                    + "order by %s.key desc",
                             subTable,
                             primaryTable,
                             subTable,
@@ -308,12 +319,7 @@ final class NewIndexedCursor {
                             compOperator,
                             subTable);
         }
-        byte[] key;
-        if (this.previousFetchResult.isPresent()) {
-            key = this.previousFetchResult.get().key;
-        } else {
-            key = this.key;
-        }
+
         try (PreparedStatement stmt = this.conn.prepareStatement(query)) {
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
@@ -441,7 +447,6 @@ final class NewIndexedCursor {
         } else {
             result = forwardNextRecord();
         }
-
         if (result.isPresent()) {
             this.firstFetch = false;
             this.position = CursorPosition.IN_TABLE;
@@ -463,7 +468,7 @@ final class NewIndexedCursor {
                 result = fetchRecord();
             }
         } else {
-            result = forwardPrevRecord();
+            result = backwardPrevRecord();
         }
 
         if (result.isPresent()) {
