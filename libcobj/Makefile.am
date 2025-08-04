@@ -49,7 +49,6 @@ SRC_FILES = \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/CobolLineSequentialFile.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/CobolSort.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/IndexedCursor.java \
-	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/NewIndexedCursor.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/Linage.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/CobolFileFactory.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/file/CobolIndexedFile.java \
