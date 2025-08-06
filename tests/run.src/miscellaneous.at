@@ -2404,3 +2404,305 @@ run_test 15 EXTEND EXTEND 00
 
 AT_CHECK([bash run.sh])
 AT_CLEANUP
+
+AT_SETUP([File locking of indexed files])
+AT_DATA([a.sh], [
+javac wait.java setValue.java
+
+OPERATION_READ="READ F."
+OPERATION_READ_WITH_LOCK="READ F WITH LOCK."
+OPERATION_READ_WITH_NO_LOCK="READ F WITH NO LOCK."
+OPERATION_START="START F KEY IS = REC."
+OPERATION_READ_NEXT_RECORD="START F KEY IS = REC. READ F NEXT RECORD."
+OPERATION_READ_NEXT_RECORD_WITH_LOCK="START F KEY IS = REC. READ F NEXT RECORD WITH LOCK."
+OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK="START F KEY IS = REC. READ F NEXT RECORD WITH NO LOCK."
+OPERATION_WRITE="WRITE REC."
+OPERATION_REWRITE="REWRITE REC."
+OPERATION_DELETE="DELETE F."
+
+function run_test() {
+    if test "$1" == "" -o "$2" == "" -o "$3" == "" -o "$4" == "" -o "$5" == ""; then
+        echo empty strings are in arguments
+        echo "\$1: $1"
+        echo "\$2: $2"
+        echo "\$3: $3"
+        echo "\$4: $4"
+        echo "\$5: $5"
+        return 1
+    fi
+    OPERATION1=$1
+    OPERATION2=$2
+    PROG1_STATUS=$3
+    PROG2_STATUS=$4
+    PROG2_MESSAGE=$5
+    cat prog.template.cbl |
+    sed -e "s/@OPERATION@/$OPERATION1/" \
+    > prog.cbl
+
+    cat prog2.template.cbl |
+    sed -e "s/@OPERATION@/$OPERATION2/" \
+    > prog2.cbl
+
+    cobj prog.cbl prog2.cbl
+
+    rm -f playground-record-lock-*
+
+    java prog > prog.log &
+    PID1=$!
+    java prog2 > prog2.log &
+    PID2=$!
+
+    wait $PID1 $PID2
+
+    echo "$PROG1_STATUS" > prog.expected.log
+
+    echo "$PROG2_STATUS" > prog2.expected.log
+    echo "$PROG2_MESSAGE" >> prog2.expected.log
+
+    if ! diff prog.log prog.expected.log || ! diff prog2.log prog2.expected.log; then
+        echo "$OPERATION1, $OPERATION2, $PROG1_STATUS, $PROG2_STATUS, $PROG2_MESSAGE"
+        echo prog.log ===
+        cat prog.log
+        echo prog.expected.log ===
+        cat prog.expected.log
+        echo prog2.log ===
+        cat prog2.log
+        echo prog2.expected.log ===
+        cat prog2.expected.log
+    fi
+}
+
+run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_REWRITE" "00" "51" "not changed"
+run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_DELETE" "00" "51" "not changed"
+run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_NO_LOCK" "00" "00" "changed"
+#run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_LOCK" "00" "51" "changed"   
+])
+
+AT_DATA([wait.java],[
+import java.io.UnsupportedEncodingException;
+import jp.osscons.opensourcecobol.libcobj.*;
+import jp.osscons.opensourcecobol.libcobj.common.*;
+import jp.osscons.opensourcecobol.libcobj.data.*;
+import jp.osscons.opensourcecobol.libcobj.exceptions.*;
+import jp.osscons.opensourcecobol.libcobj.termio.*;
+import jp.osscons.opensourcecobol.libcobj.call.*;
+import jp.osscons.opensourcecobol.libcobj.file.*;
+import jp.osscons.opensourcecobol.libcobj.ui.*;
+import java.util.Optional;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.FileNotFoundException;
+
+public class wait implements CobolRunnable {
+  private static Map<String, BufferedReader> namedPipeReaders = new HashMap<>();
+  @Override
+  public int run(CobolDataStorage... argStorages) {
+    AbstractCobolField namedPipeField = CobolModule.getCurrentModule().cob_procedure_parameters.get(0);
+    AbstractCobolField valueField = CobolModule.getCurrentModule().cob_procedure_parameters.get(1);
+    String namedPipe = namedPipeField.getString().trim();
+    String value = valueField.getString().trim();
+
+    while(true) {
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(namedPipe)))) {
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.equals(value)) {
+                    return 0;
+                } else {
+                    Thread.sleep(200);
+                    continue;
+                }
+            }
+        } catch (FileNotFoundException e) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException ie) {
+                ie.printStackTrace();
+                Thread.currentThread().interrupt();
+                return -1;
+            }
+            continue;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            return -1;
+        }
+    }
+  }
+
+  @Override
+  public void cancel() {
+    return;
+  }
+
+  @Override
+  public boolean isActive() {
+    return false;
+  }
+}   
+])
+
+AT_DATA([setValue.java],[
+import java.io.UnsupportedEncodingException;
+import jp.osscons.opensourcecobol.libcobj.*;
+import jp.osscons.opensourcecobol.libcobj.common.*;
+import jp.osscons.opensourcecobol.libcobj.data.*;
+import jp.osscons.opensourcecobol.libcobj.exceptions.*;
+import jp.osscons.opensourcecobol.libcobj.termio.*;
+import jp.osscons.opensourcecobol.libcobj.call.*;
+import jp.osscons.opensourcecobol.libcobj.file.*;
+import jp.osscons.opensourcecobol.libcobj.ui.*;
+import java.util.Optional;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.io.FileNotFoundException;
+
+public class setValue implements CobolRunnable {
+  private static Map<String, BufferedWriter> namedPipeWriters = new HashMap<>();
+  @Override
+  public int run(CobolDataStorage... argStorages) {
+    AbstractCobolField NamedPipeField = CobolModule.getCurrentModule().cob_procedure_parameters.get(0);
+    AbstractCobolField valueField = CobolModule.getCurrentModule().cob_procedure_parameters.get(1);
+    String namedPipe = NamedPipeField.getString().trim();
+    String value = valueField.getString().trim();
+
+    try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(namedPipe)))){
+        writer.write(value);
+        writer.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+        return -1;
+    }
+
+    return 0;
+  }
+
+  @Override
+  public void cancel() {
+    return;
+  }
+
+  @Override
+  public boolean isActive() {
+    return false;
+  }
+}
+])
+
+AT_DATA([prog.template.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT F ASSIGN TO "f.dat"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS REC-KEY
+               ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
+               FILE STATUS IS FILE-STATUS.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  f.
+       01  REC.
+           05 REC-KEY      PIC X(5).
+           05 REC-KEY2     PIC X(5).
+           05 REC-DATA     PIC X(5).
+
+       WORKING-STORAGE SECTION.
+       01 FILE-STATUS      PIC XX.
+       01 DUMMY PIC X(10) VALUE "DUMMY DATA".
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+           OPEN OUTPUT f.
+           MOVE "AAAA1" TO REC-KEY.
+           MOVE "BBBB1" TO REC-KEY2.
+           MOVE "CCCC1" TO REC-DATA.
+           WRITE REC.
+           CLOSE f.
+
+           OPEN I-O f.
+
+           MOVE "AAAA1" TO REC-KEY.
+           @OPERATION@
+
+           DISPLAY FILE-STATUS.
+       
+           CALL "setValue" USING
+               "playground-record-lock-01"
+               "AAAA1 record is locked".
+           CALL "wait" USING
+               "playground-record-lock-02"
+               "end of prog2".
+           CLOSE f.
+])
+
+AT_DATA([prog2.template.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog2.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT F ASSIGN TO "f.dat"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS REC-KEY
+               ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
+               FILE STATUS IS FILE-STATUS.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  f.
+       01  REC.
+           05 REC-KEY      PIC X(5).
+           05 REC-KEY2     PIC X(5).
+           05 REC-DATA     PIC X(5).
+
+       WORKING-STORAGE SECTION.
+       01 FILE-STATUS      PIC XX.
+       01 REC-BACKUP PIC X(15).
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+           CALL "wait" USING
+               "playground-record-lock-01"
+               "AAAA1 record is locked".
+
+           OPEN I-O f.
+
+           INITIALIZE REC.
+           MOVE "AAAA1_____*****" TO REC-KEY.
+           MOVE REC TO REC-BACKUP.
+
+           @OPERATION@
+
+           DISPLAY FILE-STATUS.
+           IF REC = REC-BACKUP
+              DISPLAY "not changed"
+           ELSE
+              DISPLAY "changed"
+           END-IF.
+
+           CLOSE f.
+
+           CALL "setValue" USING
+             "playground-record-lock-02"
+             "end of prog2".
+])
+
+AT_CHECK([bash a.sh])
+AT_CLEANUP
