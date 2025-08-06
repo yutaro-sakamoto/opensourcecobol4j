@@ -703,6 +703,17 @@ public class CobolIndexedFile extends CobolFile {
                 }
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
+        } else {
+            try {
+                p.connection.commit();
+            } catch (SQLException e) {
+                try {
+                    p.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
         }
         return COB_STATUS_00_SUCCESS;
     }
@@ -821,6 +832,17 @@ public class CobolIndexedFile extends CobolFile {
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
                 unlockPreviousRecord(primaryKey);
+                p.connection.commit();
+            } catch (SQLException e) {
+                try {
+                    p.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        } else {
+            try {
                 p.connection.commit();
             } catch (SQLException e) {
                 try {
