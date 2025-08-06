@@ -512,6 +512,8 @@ public class CobolIndexedFile extends CobolFile {
 
         this.closeCursor();
 
+        previousLockedRecordKey = null;
+
         try {
             try (Statement statement = p.connection.createStatement()) {
                 // Close the file lock
