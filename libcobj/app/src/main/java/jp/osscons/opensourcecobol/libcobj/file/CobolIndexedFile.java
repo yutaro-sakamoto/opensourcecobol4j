@@ -639,6 +639,24 @@ public class CobolIndexedFile extends CobolFile {
         }
     }
 
+    private void unlockPreviousRecord() throws SQLException {
+        if (previousLockedRecordKey == null) {
+            previousLockedRecordKey = null;
+            return;
+        }
+        IndexedFile p = this.filei;
+        String updateSql =
+                String.format(
+                        "update %s set locked_by = null, process_id = null, locked_at = null where"
+                                + " key = ?",
+                        getTableName(0));
+        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
+            updateStatement.setBytes(1, previousLockedRecordKey);
+            updateStatement.executeUpdate();
+        }
+        previousLockedRecordKey = null;
+    }
+
     private void unlockPreviousRecord(byte[] key) throws SQLException {
         if (previousLockedRecordKey == null) {
             previousLockedRecordKey = key;
@@ -678,14 +696,15 @@ public class CobolIndexedFile extends CobolFile {
         int retCode = read_internal(key, readOpts);
         if (retCode != COB_STATUS_00_SUCCESS) {
             try {
-                p.connection.rollback();
+                unlockPreviousRecord();
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
             return retCode;
         }
+        byte[] primaryKey = DBT_SET(this.keys[0].getField());
         if (shouldLockRecord(readOpts)) {
-            byte[] primaryKey = DBT_SET(this.keys[0].getField());
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
@@ -707,6 +726,7 @@ public class CobolIndexedFile extends CobolFile {
             }
         } else {
             try {
+                unlockPreviousRecord(primaryKey);
                 p.connection.commit();
             } catch (SQLException e) {
                 try {
@@ -816,14 +836,15 @@ public class CobolIndexedFile extends CobolFile {
         int retCode = readNext_internal(readOpts);
         if (retCode != COB_STATUS_00_SUCCESS) {
             try {
-                p.connection.rollback();
+                unlockPreviousRecord();
+                p.connection.commit();
             } catch (SQLException rollbackEx) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
             return retCode;
         }
+        byte[] primaryKey = DBT_SET(this.keys[0].getField());
         if (shouldLockRecord(readOpts)) {
-            byte[] primaryKey = DBT_SET(this.keys[0].getField());
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
@@ -845,6 +866,7 @@ public class CobolIndexedFile extends CobolFile {
             }
         } else {
             try {
+                unlockPreviousRecord(primaryKey);
                 p.connection.commit();
             } catch (SQLException e) {
                 try {
