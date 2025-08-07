@@ -676,16 +676,12 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     private int read_internal(AbstractCobolField key, int readOpts) {
-        IndexedFile p = this.filei;
         boolean testLock = false;
         this.callStart = false;
         int ret = this.indexed_start_internal(COB_EQ, key, readOpts, testLock);
         if (ret != COB_STATUS_00_SUCCESS) {
             return ret;
         }
-
-        this.record.setSize(p.data.length);
-        this.record.getDataStorage().memcpy(p.data, p.data.length);
 
         return COB_STATUS_00_SUCCESS;
     }
@@ -737,6 +733,9 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         }
+
+        this.record.setSize(p.data.length);
+        this.record.getDataStorage().memcpy(p.data, p.data.length);
         return COB_STATUS_00_SUCCESS;
     }
 
@@ -760,8 +759,6 @@ public class CobolIndexedFile extends CobolFile {
                     return readNext_internal(readOpts);
                 }
             }
-            this.record.setSize(p.data.length);
-            this.record.getDataStorage().memcpy(p.data, p.data.length);
             return COB_STATUS_00_SUCCESS;
         }
 
@@ -823,9 +820,6 @@ public class CobolIndexedFile extends CobolFile {
         p.key = result.key;
         p.data = result.value;
 
-        this.record.setSize(p.data.length);
-        this.record.getDataStorage().memcpy(p.data, p.data.length);
-
         this.indexedFirstRead = false;
         return COB_STATUS_00_SUCCESS;
     }
@@ -877,6 +871,8 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         }
+        this.record.setSize(p.data.length);
+        this.record.getDataStorage().memcpy(p.data, p.data.length);
         return COB_STATUS_00_SUCCESS;
     }
 
