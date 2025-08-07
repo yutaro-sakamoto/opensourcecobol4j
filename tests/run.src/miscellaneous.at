@@ -2405,7 +2405,7 @@ run_test 15 EXTEND EXTEND 00
 AT_CHECK([bash run.sh])
 AT_CLEANUP
 
-AT_SETUP([File locking of indexed files])
+AT_SETUP([Record locking of indexed files])
 AT_DATA([a.sh], [
 javac wait.java setValue.java
 
@@ -2419,6 +2419,85 @@ OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK="START F KEY IS = REC. READ F NEXT RECOR
 OPERATION_WRITE="WRITE REC."
 OPERATION_REWRITE="REWRITE REC."
 OPERATION_DELETE="DELETE F."
+
+OPERATIONS=(
+    "OPERATION_READ"
+    "OPERATION_READ_WITH_LOCK"
+    "OPERATION_READ_WITH_NO_LOCK"
+    "OPERATION_START"
+    "OPERATION_READ_NEXT_RECORD"
+    "OPERATION_READ_NEXT_RECORD_WITH_LOCK"
+    "OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK"
+    "OPERATION_WRITE"
+    "OPERATION_REWRITE"
+    "OPERATION_DELETE"
+)
+
+
+declare -A PROGRAM_ID_TABLE1
+
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ"@:>@="id_read1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ_WITH_LOCK"@:>@="id_read_with_lock1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ_WITH_NO_LOCK"@:>@="id_read_with_no_lock1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_START"@:>@="id_start"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ_NEXT_RECORD"@:>@="id_read_next_rec1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ_NEXT_RECORD_WITH_LOCK"@:>@="id_read_next_rec_with_lock1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK"@:>@="id_read_next_rec_with_no_lock1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_WRITE"@:>@="id_write1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_REWRITE"@:>@="id_rewrite1"
+PROGRAM_ID_TABLE1@<:@"$OPERATION_DELETE"@:>@="id_delete1"
+
+declare -A PROGRAM_ID_TABLE2
+
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ"@:>@="id_read2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ_WITH_LOCK"@:>@="id_read_with_lock2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ_WITH_NO_LOCK"@:>@="id_read_with_no_lock2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_START"@:>@="id_start"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ_NEXT_RECORD"@:>@="id_read_next_rec2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ_NEXT_RECORD_WITH_LOCK"@:>@="id_read_next_rec_with_lock2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK"@:>@="id_read_next_rec_with_no_lock2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_WRITE"@:>@="id_write2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_REWRITE"@:>@="id_rewrite2"
+PROGRAM_ID_TABLE2@<:@"$OPERATION_DELETE"@:>@="id_delete2"
+
+
+PROGRAM1_OPERATIONS=(
+    "$OPERATION_READ"
+    "$OPERATION_READ_WITH_LOCK"
+    "$OPERATION_READ_WITH_NO_LOCK"
+    "$OPERATION_READ_NEXT_RECORD"
+    "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"
+    "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK"
+)
+
+PROGRAM2_OPERATIONS=(
+    "$OPERATION_READ"
+    "$OPERATION_READ_WITH_LOCK"
+    "$OPERATION_READ_WITH_NO_LOCK"
+    "$OPERATION_READ_NEXT_RECORD"
+    "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"
+    "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK"
+    "$OPERATION_START"
+    "$OPERATION_WRITE"
+    "$OPERATION_REWRITE"
+    "$OPERATION_DELETE"
+)
+
+for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
+    cat prog1.template.cbl |
+    sed -e "s/@OPERATION@/${operation}/" |\
+    sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
+    > prog1.cbl
+    cobj prog1.cbl
+done
+
+for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
+    cat prog2.template.cbl |
+    sed -e "s/@OPERATION@/${operation}/" |\
+    sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE2@<:@${operation}@:>@}/" \
+    > prog2.cbl
+    cobj prog2.cbl
+done
 
 function run_test() {
     if test "$1" == "" -o "$2" == "" -o "$3" == "" -o "$4" == "" -o "$5" == ""; then
@@ -2435,36 +2514,27 @@ function run_test() {
     PROG1_STATUS=$3
     PROG2_STATUS=$4
     PROG2_MESSAGE=$5
-    cat prog.template.cbl |
-    sed -e "s/@OPERATION@/$OPERATION1/" \
-    > prog.cbl
-
-    cat prog2.template.cbl |
-    sed -e "s/@OPERATION@/$OPERATION2/" \
-    > prog2.cbl
-
-    cobj prog.cbl prog2.cbl
 
     rm -f playground-record-lock-*
 
-    java prog > prog.log &
+    java ${PROGRAM_ID_TABLE1@<:@$OPERATION1@:>@} > prog1.log &
     PID1=$!
-    java prog2 > prog2.log &
+    java ${PROGRAM_ID_TABLE2@<:@$OPERATION2@:>@} > prog2.log &
     PID2=$!
 
     wait $PID1 $PID2
 
-    echo "$PROG1_STATUS" > prog.expected.log
+    echo "$PROG1_STATUS" > prog1.expected.log
 
     echo "$PROG2_STATUS" > prog2.expected.log
     echo "$PROG2_MESSAGE" >> prog2.expected.log
 
-    if ! diff prog.log prog.expected.log || ! diff prog2.log prog2.expected.log; then
+    if ! diff prog1.log prog1.expected.log || ! diff prog2.log prog2.expected.log; then
         echo "$OPERATION1, $OPERATION2, $PROG1_STATUS, $PROG2_STATUS, $PROG2_MESSAGE"
-        echo prog.log ===
-        cat prog.log
-        echo prog.expected.log ===
-        cat prog.expected.log
+        echo prog1.log ===
+        cat prog1.log
+        echo prog1.expected.log ===
+        cat prog1.expected.log
         echo prog2.log ===
         cat prog2.log
         echo prog2.expected.log ===
@@ -2475,7 +2545,7 @@ function run_test() {
 run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_REWRITE" "00" "51" "not changed"
 run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_DELETE" "00" "51" "not changed"
 run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_NO_LOCK" "00" "00" "changed"
-#run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_LOCK" "00" "51" "changed"   
+#run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_LOCK" "00" "51" "changed"
 ])
 
 AT_DATA([wait.java],[
@@ -2601,9 +2671,9 @@ public class setValue implements CobolRunnable {
 }
 ])
 
-AT_DATA([prog.template.cbl], [
+AT_DATA([prog1.template.cbl], [
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. prog.
+       PROGRAM-ID. @PROGRAM_ID@.
 
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
@@ -2612,6 +2682,7 @@ AT_DATA([prog.template.cbl], [
                ORGANIZATION IS INDEXED
                ACCESS MODE IS RANDOM
                RECORD KEY IS REC-KEY
+      *        LOCK MODE IS AUTOMATIC
                ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
                FILE STATUS IS FILE-STATUS.
 
@@ -2649,11 +2720,12 @@ AT_DATA([prog.template.cbl], [
                "playground-record-lock-02"
                "end of prog2".
            CLOSE f.
+
 ])
 
 AT_DATA([prog2.template.cbl], [
        IDENTIFICATION DIVISION.
-       PROGRAM-ID. prog2.
+       PROGRAM-ID. @PROGRAM_ID@.
 
        ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
