@@ -592,6 +592,12 @@ public class CobolIndexedFile extends CobolFile {
         if (ret == COB_STATUS_00_SUCCESS) {
             this.callStart = true;
         }
+        try {
+            IndexedFile p = this.filei;
+            p.connection.commit();
+        } catch (SQLException rollbackEx) {
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
         return ret;
     }
 
