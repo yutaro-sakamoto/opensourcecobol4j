@@ -146,7 +146,7 @@ run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD"              "00" "00" 
 run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewrited"
+run_test "$OPERATION_READ" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
 run_test "$OPERATION_READ" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
 
 run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ"                          "00" "00" "changed"     "record not changed"
@@ -168,7 +168,7 @@ run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD"           
 run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewrited"
+run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
 run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
 
 run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ"                          "00" "00" "changed"     "record not changed"
@@ -179,7 +179,7 @@ run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD"            
 run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewrited"
+run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
 run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
 
 run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ"                          "00" "00" "changed"     "record not changed"
@@ -201,7 +201,7 @@ run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD
 run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed"     "record not changed"
 run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewrited"
+run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
 run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
 ])
 
@@ -269,7 +269,7 @@ AT_DATA([prog1.template.cbl], [
            END-IF.
 
            IF REC = "AAAA1_____*****"
-             DISPLAY "record rewrited"
+             DISPLAY "record rewritten"
              GO TO FINISH
            END-IF.
 

@@ -295,7 +295,7 @@ AT_DATA([prog1.template.cbl], [
            END-IF.
 
            IF REC = "AAAA1_____*****"
-             DISPLAY "record rewrited"
+             DISPLAY "record rewritten"
              GO TO FINISH
            END-IF.
 
