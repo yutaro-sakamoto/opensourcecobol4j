@@ -154,6 +154,23 @@ class IndexedFileUtilMain {
                 System.exit(1);
             }
             System.exit(0);
+        } else if ("unlock".equals(subCommand)) {
+            if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 2) {
+                if (unrecognizedArgs.length < 2) {
+                    System.err.println("error: no indexed file is specified.");
+                } else {
+                    System.err.println("error: too many indexed files are specified.");
+                }
+                System.exit(1);
+            }
+            String indexedFilePath = unrecognizedArgs[1];
+            try {
+                unlockIndexedFile(indexedFilePath);
+            } catch (Exception e) {
+                System.err.println("error: " + e.getMessage());
+                System.exit(1);
+            }
+            System.exit(0);
         } else if ("load".equals(subCommand)) {
             if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 3) {
                 if (unrecognizedArgs.length < 2) {
@@ -247,6 +264,9 @@ class IndexedFileUtilMain {
         System.out.println(
                 "    Migrate the indexed file whose version is older than 1.1.12 to the latest"
                         + " version.");
+        System.out.println();
+        System.out.println("cobj-idx unlock <indexed file>");
+        System.out.println("    Unlock all locks of the indexed file" + " version.");
         System.out.println();
         System.out.println("Options:");
         System.out.println();
@@ -471,6 +491,18 @@ class IndexedFileUtilMain {
             if (!lockedAtColumnExists) {
                 st.executeUpdate("ALTER TABLE table0 ADD COLUMN locked_at timestamp");
             }
+        } catch (SQLException e) {
+            throw new Exception(
+                    String.format("failed to connect to the indexed file: %s", indexedFilePath), e);
+        }
+    }
+
+    private static void unlockIndexedFile(String indexedFilePath) throws Exception {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + indexedFilePath);
+                Statement st = conn.createStatement()) {
+            st.executeUpdate("DELETE FROM file_lock");
+            st.executeUpdate(
+                    "UPDATE table0 SET locked_by = NULL, process_id = NULL, locked_at = NULL");
         } catch (SQLException e) {
             throw new Exception(
                     String.format("failed to connect to the indexed file: %s", indexedFilePath), e);
