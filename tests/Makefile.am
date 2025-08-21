@@ -204,6 +204,7 @@ cobj_idx_DEPENDENCIES = \
 	cobj-idx.src/info.at \
 	cobj-idx.src/load.at \
 	cobj-idx.src/unload.at \
+	cobj-idx.src/migrate.at \
 	cobj-idx.src/misc.at
 
 indexed_lock_DEPENDENCIES = \
