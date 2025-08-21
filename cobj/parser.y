@@ -5382,9 +5382,7 @@ read_statement:
 		     CB_FILE(cb_ref ($3))->organization != COB_ORG_INDEXED)) {
 			current_statement->handler_id = COB_EC_I_O_PERMANENT_ERROR;
 		}
-		if ($7 && (CB_FILE(cb_ref ($3))->lock_mode & COB_LOCK_AUTOMATIC)) {
-			cb_error (_("LOCK clause invalid with file LOCK AUTOMATIC"));
-		} else if ($8 &&
+		if ($8 &&
 		      (CB_FILE(cb_ref ($3))->organization != COB_ORG_RELATIVE &&
 		       CB_FILE(cb_ref ($3))->organization != COB_ORG_INDEXED)) {
 			cb_error (_("KEY clause invalid with this file type"));

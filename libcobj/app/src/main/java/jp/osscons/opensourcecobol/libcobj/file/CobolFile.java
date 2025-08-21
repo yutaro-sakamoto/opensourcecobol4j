@@ -346,10 +346,10 @@ public class CobolFile {
     protected static final int COB_LOCK_MANUAL = 2;
 
     /** TODO: 準備中 */
-    protected static final int COB_LOCK_AUTOMATIC = 3;
+    protected static final int COB_LOCK_AUTOMATIC = 4;
 
     /** TODO: 準備中 */
-    protected static final int COB_LOCK_MULTIPLE = 1;
+    protected static final int COB_LOCK_MULTIPLE = 8;
 
     /** TODO: 準備中 */
     protected static final int COB_LOCK_MASK = 0x7;
@@ -1426,17 +1426,6 @@ public class CobolFile {
         }
 
         if (this.organization == COB_ORG_INDEXED) {
-            if (this.open_mode != COB_OPEN_I_O || (this.lock_mode & COB_LOCK_EXCLUSIVE) != 0) {
-                readOpts &= ~COB_READ_LOCK;
-            } else if ((this.lock_mode & COB_LOCK_AUTOMATIC) != 0
-                    && (readOpts & COB_READ_NO_LOCK) == 0) {
-                readOpts |= COB_READ_LOCK;
-            }
-        } else {
-            readOpts &= ~COB_READ_LOCK;
-        }
-
-        if (this.organization == COB_ORG_INDEXED /* && bdb_env != null */) {
             if (this.open_mode != COB_OPEN_I_O || (this.lock_mode & COB_LOCK_EXCLUSIVE) != 0) {
                 readOpts &= ~COB_READ_LOCK;
             } else if ((this.lock_mode & COB_LOCK_AUTOMATIC) != 0

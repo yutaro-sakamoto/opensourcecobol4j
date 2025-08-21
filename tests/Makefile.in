@@ -570,6 +570,7 @@ SUBDIRS = cobol85
 @I18N_UTF8_FALSE@	jp-compat \
 @I18N_UTF8_FALSE@	command-line-options \
 @I18N_UTF8_FALSE@	cobj-idx \
+@I18N_UTF8_FALSE@	indexed-lock \
 @I18N_UTF8_FALSE@	misc
 
 @I18N_UTF8_TRUE@TESTS = syntax \
@@ -581,6 +582,7 @@ SUBDIRS = cobol85
 @I18N_UTF8_TRUE@	jp-compat \
 @I18N_UTF8_TRUE@	command-line-options \
 @I18N_UTF8_TRUE@	cobj-idx \
+@I18N_UTF8_TRUE@	indexed-lock \
 @I18N_UTF8_TRUE@	misc
 
 syntax_DEPENDENCIES = \
@@ -742,6 +744,19 @@ cobj_idx_DEPENDENCIES = \
 	cobj-idx.src/load.at \
 	cobj-idx.src/unload.at \
 	cobj-idx.src/misc.at
+
+indexed_lock_DEPENDENCIES = \
+	indexed-lock.at \
+	indexed-lock.src/file-lock.at \
+	indexed-lock.src/access-same-record.at \
+	indexed-lock.src/access-different-record.at \
+	indexed-lock.src/input-mode.at \
+	indexed-lock.src/same-process.at \
+	indexed-lock.src/open-start-write-rewrite.at \
+	indexed-lock.src/release-lock.at \
+	indexed-lock.src/open-input.at \
+	indexed-lock.src/lock-mode-clause.at \
+	indexed-lock.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -1141,6 +1156,13 @@ cobj-idx.log: cobj-idx
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+indexed-lock.log: indexed-lock
+	@p='indexed-lock'; \
+	b='indexed-lock'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 misc.log: misc
 	@p='misc'; \
 	b='misc'; \
@@ -1382,6 +1404,7 @@ $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
+$(srcdir)/indexed-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

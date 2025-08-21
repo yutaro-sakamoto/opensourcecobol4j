@@ -41,7 +41,7 @@ jobs:
       - name: Run other tests
         working-directory: tests
         run: |
-          tests=("command-line-options" "data-rep" "i18n_sjis" "jp-compat" "run" "syntax" "cobj-idx" "misc")
+          tests=("command-line-options" "data-rep" "i18n_sjis" "jp-compat" "run" "syntax" "cobj-idx" "indexed-lock" "misc")
           for test in "${tests[@]}"; do
             ./"$test" || true
           done
