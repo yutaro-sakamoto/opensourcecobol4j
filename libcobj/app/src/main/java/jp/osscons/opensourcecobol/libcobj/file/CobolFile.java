@@ -1106,6 +1106,9 @@ public class CobolFile {
                 case COB_STATUS_91_NOT_AVAILABLE:
                     saveStatus(COB_STATUS_91_NOT_AVAILABLE, fnstatus);
                     return;
+                case COB_STATUS_92_VERSION_INCOMPATIBLE:
+                    saveStatus(COB_STATUS_92_VERSION_INCOMPATIBLE, fnstatus);
+                    return;
                 case COB_LINAGE_INVALID:
                     saveStatus(COB_STATUS_57_I_O_LINAGE, fnstatus);
                     return;
@@ -2068,6 +2071,9 @@ public class CobolFile {
                         return;
                     case COB_STATUS_91_NOT_AVAILABLE:
                         saveStatus(COB_STATUS_91_NOT_AVAILABLE, fnstatus);
+                        return;
+                    case COB_STATUS_92_VERSION_INCOMPATIBLE:
+                        saveStatus(COB_STATUS_92_VERSION_INCOMPATIBLE, fnstatus);
                         return;
                     case COB_LINAGE_INVALID:
                         saveStatus(COB_STATUS_57_I_O_LINAGE, fnstatus);

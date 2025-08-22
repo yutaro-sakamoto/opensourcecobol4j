@@ -227,7 +227,7 @@ public class CobolIndexedFile extends CobolFile {
             return getConnectionStatus;
         }
 
-        if(mode != COB_OPEN_OUTPUT && fileExists) {
+        if(fileExists) {
             int code = this.checkVersionOld();
             if(code != COB_STATUS_00_SUCCESS) {
                 return code;
@@ -305,8 +305,13 @@ public class CobolIndexedFile extends CobolFile {
             String fileLockTableExistsSql =
                     "select exists(select 1 from sqlite_master where type = 'table' and name = 'file_lock')";
             ResultSet fileLockTableExistsResultSet = st.executeQuery(fileLockTableExistsSql);
-            if(!fileLockTableExistsResultSet.next()) {
-                return COB_STATUS_92_VERSION_INCOMPATIBLE;
+            if (fileLockTableExistsResultSet.next()) {
+                boolean fileLockTableExists = fileLockTableExistsResultSet.getInt(1) == 1;
+                if(!fileLockTableExists) {
+                    return COB_STATUS_92_VERSION_INCOMPATIBLE;
+                }
+            } else {
+                return COB_STATUS_92_VERSION_INCOMPATIBLE; // file_lock table does not exist
             }
 
             boolean lockedByColumnExists = false;
