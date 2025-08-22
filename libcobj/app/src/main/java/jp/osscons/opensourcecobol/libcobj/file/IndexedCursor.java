@@ -192,7 +192,7 @@ final class IndexedCursor {
         if (isPrimaryTable) {
             query =
                     String.format(
-                            "select key, value from %s order desc by key limit 1", primaryTable);
+                            "select key, value from %s order by key desc limit 1", primaryTable);
         } else if (this.isDuplicate) {
             query =
                     String.format(
