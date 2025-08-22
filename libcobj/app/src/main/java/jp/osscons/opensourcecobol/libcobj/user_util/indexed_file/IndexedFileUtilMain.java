@@ -266,7 +266,7 @@ class IndexedFileUtilMain {
                         + " version.");
         System.out.println();
         System.out.println("cobj-idx unlock <indexed file>");
-        System.out.println("    Unlock all locks of the indexed file" + " version.");
+        System.out.println("    Unlock all locks of the indexed file.");
         System.out.println();
         System.out.println("Options:");
         System.out.println();

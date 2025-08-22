@@ -166,7 +166,7 @@ AT_CHECK([java create_and_exit])
 # Unlock the file
 AT_CHECK([${COBJ_IDX} unlock indexed_file.dat])
 # Check the record lock is released
-AT_CHECK([java check_file_lock], [0],
+AT_CHECK([java check_record_lock], [0],
 [00
 ])
 
