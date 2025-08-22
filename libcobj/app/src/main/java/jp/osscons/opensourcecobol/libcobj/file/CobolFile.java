@@ -285,6 +285,9 @@ public class CobolFile {
     /** TODO: 準備中 */
     protected static final int COB_STATUS_91_NOT_AVAILABLE = 91;
 
+    /** TODO: 準備中 */
+    protected static final int COB_STATUS_92_VERSION_INCOMPATIBLE = 92;
+
     // ==============================================
     // The following constants must not be equal
     // to any of the above constants `COB_STATUS_*`

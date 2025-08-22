@@ -227,6 +227,13 @@ public class CobolIndexedFile extends CobolFile {
             return getConnectionStatus;
         }
 
+        if(mode != COB_OPEN_OUTPUT && fileExists) {
+            int code = this.checkVersionOld();
+            if(code != COB_STATUS_00_SUCCESS) {
+                return code;
+            }
+        }
+
         try {
             // Acquire a file lock
             boolean succeedToFileLock = this.acquireFileLock(filename, mode, fileExists);
@@ -290,6 +297,40 @@ public class CobolIndexedFile extends CobolFile {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         return COB_STATUS_00_SUCCESS;
+    }
+
+    private int checkVersionOld() {
+        IndexedFile p = this.filei;
+        try (Statement st = p.connection.createStatement()) {
+            String fileLockTableExistsSql =
+                    "select exists(select 1 from sqlite_master where type = 'table' and name = 'file_lock')";
+            ResultSet fileLockTableExistsResultSet = st.executeQuery(fileLockTableExistsSql);
+            if(!fileLockTableExistsResultSet.next()) {
+                return COB_STATUS_92_VERSION_INCOMPATIBLE;
+            }
+
+            boolean lockedByColumnExists = false;
+            boolean processIdColumnExists = false;
+            boolean lockedAtColumnExists = false;
+            try (ResultSet rs = st.executeQuery("PRAGMA table_info('table0')")) {
+                while (rs.next()) {
+                    String columnName = rs.getString("name");
+                    if ("locked_by".equals(columnName)) {
+                        lockedByColumnExists = true;
+                    } else if ("process_id".equals(columnName)) {
+                        processIdColumnExists = true;
+                    } else if ("locked_at".equals(columnName)) {
+                        lockedAtColumnExists = true;
+                    }
+                    if (lockedByColumnExists && processIdColumnExists && lockedAtColumnExists) {
+                        return COB_STATUS_00_SUCCESS; // All required columns exist
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+        return COB_STATUS_92_VERSION_INCOMPATIBLE;
     }
 
     private String getOpenModeString(int mode) {
