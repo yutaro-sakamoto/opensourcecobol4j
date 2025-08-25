@@ -1080,6 +1080,12 @@ public class CobolIndexedFile extends CobolFile {
         } else if (this.access_mode == COB_ACCESS_SEQUENTIAL) {
             byte[] keyBytes = p.key;
             if (p.last_key.memcmp(keyBytes, keyBytes.length) > 0) {
+                try {
+                    unlockPreviousRecord();
+                    p.connection.commit();
+                } catch (SQLException e) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
                 return COB_STATUS_21_KEY_INVALID;
             }
         }
