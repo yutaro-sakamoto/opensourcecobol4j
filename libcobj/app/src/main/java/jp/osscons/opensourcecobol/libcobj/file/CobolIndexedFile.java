@@ -759,10 +759,14 @@ public class CobolIndexedFile extends CobolFile {
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
+                    unlockPreviousRecord();
+                    p.connection.commit();
                     return COB_STATUS_51_RECORD_LOCKED;
                 }
                 if (!lockRecord(primaryKey)) {
                     p.connection.rollback();
+                    unlockPreviousRecord();
+                    p.connection.commit();
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
                 unlockPreviousRecord(primaryKey);
@@ -897,10 +901,14 @@ public class CobolIndexedFile extends CobolFile {
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
                     p.connection.rollback();
+                    unlockPreviousRecord();
+                    p.connection.commit();
                     return COB_STATUS_51_RECORD_LOCKED;
                 }
                 if (!lockRecord(primaryKey)) {
                     p.connection.rollback();
+                    unlockPreviousRecord();
+                    p.connection.commit();
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
                 unlockPreviousRecord(primaryKey);
