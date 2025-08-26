@@ -1162,6 +1162,12 @@ public class CobolIndexedFile extends CobolFile {
 
         if (this.access_mode == COB_ACCESS_SEQUENTIAL
                 && !IndexedCursor.matchKeyHead(p.key, DBT_SET(this.keys[0].getField()))) {
+            try {
+                unlockPreviousRecord();
+                p.connection.commit();
+            } catch (SQLException e) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
             return COB_STATUS_21_KEY_INVALID;
         }
 

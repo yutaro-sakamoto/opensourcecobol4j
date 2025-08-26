@@ -461,3 +461,136 @@ AT_CHECK([cat p2.log], [0],
 ])
 
 AT_CLEANUP
+
+AT_SETUP([unlock (REWRITE)])
+AT_DATA([p1.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. p1.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT F ASSIGN TO "f.dat"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS SEQUENTIAL
+               RECORD KEY IS REC-KEY
+      *        LOCK MODE IS AUTOMATIC
+               ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
+               FILE STATUS IS FILE-STATUS.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  f.
+       01  REC.
+           05 REC-KEY      PIC X(5).
+           05 REC-KEY2     PIC X(5).
+           05 REC-DATA     PIC X(5).
+
+       WORKING-STORAGE SECTION.
+       01 FILE-STATUS      PIC XX.
+       01 DUMMY PIC X(10) VALUE "DUMMY DATA".
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+           OPEN OUTPUT f.
+           MOVE "AAAA1" TO REC-KEY.
+           MOVE "BBBB1" TO REC-KEY2.
+           MOVE "CCCC1" TO REC-DATA.
+           WRITE REC.
+           MOVE "AAAA2" TO REC-KEY.
+           MOVE "BBBB2" TO REC-KEY2.
+           MOVE "CCCC2" TO REC-DATA.
+           WRITE REC.
+           CLOSE f.
+
+           OPEN I-O f.
+           MOVE "AAAA1" TO REC-KEY.
+           START f KEY IS = REC-KEY.
+           READ F WITH LOCK.
+           MOVE "AAAA2" TO REC-KEY.
+           REWRITE REC.
+           DISPLAY FILE-STATUS.
+
+       
+          CALL "setValue" USING
+              "playground-record-lock-01"
+              "AAAA1 record is released".
+          CALL "wait" USING
+              "playground-record-lock-02"
+              "end of p2".
+
+           CLOSE f.
+])
+
+AT_DATA([p2.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. p2.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT F ASSIGN TO "f.dat"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS REC-KEY
+               ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
+               FILE STATUS IS FILE-STATUS.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD  f.
+       01  REC.
+           05 REC-KEY      PIC X(5).
+           05 REC-KEY2     PIC X(5).
+           05 REC-DATA     PIC X(5).
+
+       WORKING-STORAGE SECTION.
+       01 FILE-STATUS      PIC XX.
+       01 REC-EMPTY PIC X(15) VALUE "AAAA1          ".
+       01 REC-BACKUP PIC X(15).
+       01 DUMMY PIC X(15).
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+          CALL "wait" USING
+              "playground-record-lock-01"
+              "AAAA1 record is released".
+
+           OPEN I-O f.
+
+           INITIALIZE REC.
+
+           MOVE "AAAA1" TO REC-KEY.
+           READ F WITH LOCK.
+           DISPLAY FILE-STATUS.
+
+           CALL "setValue" USING
+            "playground-record-lock-02"
+            "end of p2".
+
+           CLOSE f.
+])
+
+AT_DATA([run.sh], [
+    java -Xlog:perf+memops=off p1 > p1.log &
+    PID1=$!
+    java -Xlog:perf+memops=off p2 > p2.log &
+    PID2=$!
+    wait $PID1 $PID2
+])
+
+AT_CHECK([cp ../../indexed-lock.src/module-sync/wait.java .])
+AT_CHECK([cp ../../indexed-lock.src/module-sync/setValue.java .])
+AT_CHECK([cobj p1.cbl p2.cbl])
+AT_CHECK([javac wait.java setValue.java])
+
+# run a test
+AT_CHECK([bash run.sh])
+
+AT_CHECK([cat p1.log], [0],
+[21
+])
+
+AT_CHECK([cat p2.log], [0],
+[00
+])
+
+AT_CLEANUP
