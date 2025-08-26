@@ -711,6 +711,16 @@ public class CobolIndexedFile extends CobolFile {
         previousLockedRecordKey = null;
     }
 
+    @Override
+    protected boolean postProcess() {
+        try {
+            unlockPreviousRecord();
+        } catch (SQLException e) {
+            return false;
+        }
+        return true;
+    }
+
     private void unlockPreviousRecord(byte[] key) throws SQLException {
         if (previousLockedRecordKey == null) {
             previousLockedRecordKey = key;
