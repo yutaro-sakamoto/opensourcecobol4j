@@ -285,7 +285,10 @@ public class CobolFile {
     /** TODO: 準備中 */
     protected static final int COB_STATUS_91_NOT_AVAILABLE = 91;
 
-    /** TODO: 準備中 */
+    /**
+     * File status 92: Version incompatibility.
+     * Indicates that the file operation failed due to a version mismatch between the file and the program.
+     */
     protected static final int COB_STATUS_92_VERSION_INCOMPATIBLE = 92;
 
     // ==============================================
