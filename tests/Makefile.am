@@ -217,6 +217,7 @@ indexed_lock_DEPENDENCIES = \
 	indexed-lock.src/release-lock.at \
 	indexed-lock.src/open-input.at \
 	indexed-lock.src/lock-mode-clause.at \
+	indexed-lock.src/old-file.at \
 	indexed-lock.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
