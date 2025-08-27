@@ -138,7 +138,7 @@ class IndexedFileUtilMain {
                 System.exit(1);
             }
         } else if ("migrate".equals(subCommand)) {
-            if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 2) {
+            if (unrecognizedArgs.length != 2) {
                 if (unrecognizedArgs.length < 2) {
                     System.err.println("error: no indexed file is specified.");
                 } else {
@@ -155,7 +155,7 @@ class IndexedFileUtilMain {
             }
             System.exit(0);
         } else if ("unlock".equals(subCommand)) {
-            if (unrecognizedArgs.length < 2 || unrecognizedArgs.length > 2) {
+            if (unrecognizedArgs.length != 2) {
                 if (unrecognizedArgs.length < 2) {
                     System.err.println("error: no indexed file is specified.");
                 } else {
