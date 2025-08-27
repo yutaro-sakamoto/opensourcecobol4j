@@ -909,7 +909,7 @@ public class CobolFile {
 
     /**
      * This method is mainly for unlocking the indexed files.
-     * 
+     *
      * @return true if post-processing is successful, false otherwise.
      */
     protected boolean postProcess() {
@@ -919,10 +919,10 @@ public class CobolFile {
     private void runPostProcess(AbstractCobolField fnstatus) {
         postProcess();
         // TODO: Implement error handling
-        //boolean postProcessSucceeded = postProcess();
-        //if(!postProcessSucceeded) {
+        // boolean postProcessSucceeded = postProcess();
+        // if(!postProcessSucceeded) {
         //    this.saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
-        //}
+        // }
     }
 
     /**
