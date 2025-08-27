@@ -907,6 +907,7 @@ public class CobolFile {
         return sb.toString();
     }
 
+    /**
      * This method is mainly for unlocking the indexed files.
      * 
      * @return true if post-processing is successful, false otherwise.
