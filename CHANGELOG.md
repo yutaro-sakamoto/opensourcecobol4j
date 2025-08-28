@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+
+## [1.1.12] - 2025-08-28
+
+### Add
+
+* Implemented new file locking and record locking for INDEXED files.
+* Add a new sub command `migrate` for `cobj-idx`.
+  * With this command, you can convert an old version of an INDEXED file to a new version compatible with the latest opensource COBOL 4J.
+* Add a new sub command `unlock` for `cobj-idx`.
+  * With this command, you can unlock all record locks and file locks on an INDEXED file.
+* Add documentation of locking for INDEXED files.
+
 ## [1.1.11] - 2025-07-25
 
 ### Fix
