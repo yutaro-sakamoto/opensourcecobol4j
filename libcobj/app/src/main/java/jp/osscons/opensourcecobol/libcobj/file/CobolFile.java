@@ -908,6 +908,24 @@ public class CobolFile {
     }
 
     /**
+     * This method is mainly for unlocking the indexed files.
+     *
+     * @return true if post-processing is successful, false otherwise.
+     */
+    protected boolean postProcess() {
+        return true;
+    }
+
+    private void runPostProcess(AbstractCobolField fnstatus) {
+        postProcess();
+        // TODO: Implement error handling
+        // boolean postProcessSucceeded = postProcess();
+        // if(!postProcessSucceeded) {
+        //    this.saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
+        // }
+    }
+
+    /**
      * TODO: 準備中
      *
      * @param mode TODO: 準備中
@@ -1408,10 +1426,12 @@ public class CobolFile {
         if (this.flag_nonexistent) {
             if (this.flag_first_read == 0) {
                 saveStatus(COB_STATUS_23_KEY_NOT_EXISTS, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
             this.flag_first_read = 0;
             saveStatus(COB_STATUS_10_END_OF_FILE, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
 
@@ -1419,10 +1439,12 @@ public class CobolFile {
         if (key == null) {
             if (this.flag_end_of_file && (readOpts & COB_READ_PREVIOUS) == 0) {
                 saveStatus(COB_STATUS_46_READ_ERROR, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
             if (this.flag_begin_of_file && (readOpts & COB_READ_PREVIOUS) != 0) {
                 saveStatus(COB_STATUS_46_READ_ERROR, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
         }
@@ -1431,6 +1453,7 @@ public class CobolFile {
                 || this.open_mode == COB_OPEN_OUTPUT
                 || this.open_mode == COB_OPEN_EXTEND) {
             saveStatus(COB_STATUS_47_INPUT_DENIED, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
 
@@ -1558,6 +1581,7 @@ public class CobolFile {
                     || this.open_mode == COB_OPEN_INPUT
                     || this.open_mode == COB_OPEN_I_O) {
                 saveStatus(COB_STATUS_48_OUTPUT_DENIED, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
         } else {
@@ -1565,6 +1589,7 @@ public class CobolFile {
                     || this.open_mode == COB_OPEN_INPUT
                     || this.open_mode == COB_OPEN_EXTEND) {
                 saveStatus(COB_STATUS_48_OUTPUT_DENIED, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
         }
@@ -1578,6 +1603,7 @@ public class CobolFile {
 
         if (this.record.getSize() < this.record_min || this.record_max < this.record.getSize()) {
             saveStatus(COB_STATUS_44_RECORD_OVERFLOW, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
 
@@ -1657,20 +1683,24 @@ public class CobolFile {
 
         if (this.open_mode == COB_OPEN_CLOSED || this.open_mode != COB_OPEN_I_O) {
             saveStatus(COB_STATUS_49_I_O_DENIED, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
         if (this.access_mode == COB_ACCESS_SEQUENTIAL && !readDone) {
             saveStatus(COB_STATUS_43_READ_NOT_DONE, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
         if (this.organization == COB_ORG_SEQUENTIAL) {
             if (this.record.getSize() != rec.getSize()) {
                 saveStatus(COB_STATUS_44_RECORD_OVERFLOW, fnstatus);
+                runPostProcess(fnstatus);
                 return;
             }
             if (this.record_size != null) {
                 if (this.record.getSize() != this.record_size.getInt()) {
                     saveStatus(COB_STATUS_44_RECORD_OVERFLOW, fnstatus);
+                    runPostProcess(fnstatus);
                     return;
                 }
             }
@@ -1721,11 +1751,13 @@ public class CobolFile {
 
         if (this.open_mode == COB_OPEN_CLOSED || this.open_mode != COB_OPEN_I_O) {
             saveStatus(COB_STATUS_49_I_O_DENIED, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
 
         if (this.access_mode == COB_ACCESS_SEQUENTIAL && !readDone) {
             saveStatus(COB_STATUS_43_READ_NOT_DONE, fnstatus);
+            runPostProcess(fnstatus);
             return;
         }
 
