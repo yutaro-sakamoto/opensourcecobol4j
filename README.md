@@ -137,7 +137,7 @@ https://www.oracle.com/java/technologies/downloads/?er=221886#java8-windows
 The docker container for opensource COBOL 4J is available.
 
 ```bash
-docker pull opensourcecobol/opensourcecobol4j:20250725
+docker pull opensourcecobol/opensourcecobol4j:20250828
 ```
 
 Execute the following commands in order to run the "Hello World" COBOL program.
