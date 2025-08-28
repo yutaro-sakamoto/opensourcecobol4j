@@ -1,6 +1,20 @@
 NEWS - user visible changes				-*- outline -*-
 
+* opensource COBOL 4J 1.1.12
+
+** New Features
+
+(1) Implemented new file locking and record locking for INDEXED files.
+(2) Add a new sub command `migrate` for `cobj-idx`.
+  * With this command, you can convert an old version of an INDEXED file to a new version compatible with the latest opensource COBOL 4J.
+(3) Add a new sub command `unlock` for `cobj-idx`.
+  * With this command, you can unlock all record locks and file locks on an INDEXED file.
+(4) Add documentation of locking for INDEXED files.
+
+
 -----------------------------------------------------------------------
+
+* opensource COBOL 4J 1.1.11
 
 ** Bug Fixes
 
@@ -8,6 +22,8 @@ NEWS - user visible changes				-*- outline -*-
   * The runtime library now correctly sets the file status to 30 when attempting to open indexed files with invalid or corrupted file formats.
 
 -----------------------------------------------------------------------
+
+* opensource COBOL 4J 1.1.10
 
 ** New Features
 
@@ -20,6 +36,8 @@ NEWS - user visible changes				-*- outline -*-
 (1) Improve the test coverage slightly (#667, #664)
 
 -----------------------------------------------------------------------
+
+* opensource COBOL 4J 1.1.9
 
 ** New Features
 
