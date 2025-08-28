@@ -218,10 +218,21 @@ cobj-idx - A utility tool to handle an indexed file of opensource COBOL 4J
 Usage:
 cobj-idx <sub command> [options] <indexed file>
 
-Sub commands:
 
 cobj-idx info <indexed-file>
     Show information of the indexed file.
+
+cobj-idx create <indexed file> --size=<record size> --key=<key information>
+    Create a new indexed file.
+    The record size and key information are specified by the options.
+    By default, this command does not overwrite the indexed file.
+    To overwrite the indexed file, use the --new option.
+    Example) cobj-idx create test.idx --size=100 --key=2,2:5,4:d15,5
+             File name: test.idx
+             Record size: 100
+             Primary key: 2-3
+             Alternate key (No Duplicates):5-8
+             Alternate key (Duplicates): 15-19
 
 cobj-idx load <indexed file>
     Load the data from stdin into the indexed file.
@@ -256,6 +267,7 @@ Options:
 
 -v, --version
     Print the version of cobj-idx.
+
 ```
 
 ## cobj-api
