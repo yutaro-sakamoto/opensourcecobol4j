@@ -24,6 +24,7 @@ tasks {
     }
     compileJava {
         options.encoding = "UTF-8"
+        options.compilerArgs.addAll(listOf("-Xlint:deprecation"))
     }
     compileTestJava {
         options.encoding = "UTF-8"
@@ -45,7 +46,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(8))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
