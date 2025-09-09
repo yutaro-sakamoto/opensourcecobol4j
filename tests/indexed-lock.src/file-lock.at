@@ -226,3 +226,318 @@ run_test 15 EXTEND EXTEND 00
 
 AT_CHECK([bash run.sh])
 AT_CLEANUP
+
+AT_SETUP([File locking of SEQUENTIAL, LINE SEQUENTIAL and RELATIVE files])
+AT_DATA([prog1-template.cbl],[
+       identification division.
+       program-id.
+       prog1_@@id@@.
+       environment division.
+       input-output section.
+
+       file-control.
+           select f
+               assign to "file.dat"
+               organization is @@file_organization@@
+               file status is f-status.
+
+           select shared-file1
+               assign to "shared1.dat"
+               organization is sequential 
+               file status is shared-file1-status.
+
+           select shared-file2
+               assign to "shared2.dat"
+               organization is sequential 
+               file status is shared-file2-status.
+
+       data division.
+       file section.
+       fd  f.
+       01  f-record.
+           05  rec-key pic x(5).
+           05  rec-value pic x(5).
+       fd  shared-file1.
+       01 shared-record1 pic x(10).
+       fd  shared-file2.
+       01 shared-record2 pic x(10).
+       working-storage section.
+       01  f-status pic 99.
+       01  shared-file1-status pic 99.
+       01  shared-file2-status pic 99.
+       procedure division.
+       main-procedure.
+
+      * create the target file.
+       open output f.
+       close f.
+
+      * open the target file before the other process does.
+       open @@open_mode@@ f.
+
+      * Notify the other process that
+      * this process opened the target file.
+       open output shared-file1.
+       close shared-file1.
+
+      * Wait for the other process to finish.
+      *call "C$SLEEP" using 1.
+       perform forever
+           open input shared-file2
+           if shared-file2-status = 0
+               exit perform
+           end-if
+           close shared-file2
+      *    call "C$SLEEP" using 1
+       end-perform.
+       close shared-file2.
+
+      * Close the target file after the other process has finished.
+       close f.
+])
+
+AT_DATA([prog2-template.cbl],[
+       identification division.
+       program-id.
+       prog2_@@id@@.
+       environment division.
+       input-output section.
+
+       file-control.
+           select f
+               assign to "file.dat"
+               organization is @@file_organization@@
+               file status is f-status.
+
+           select shared-file1
+               assign to "shared1.dat"
+               organization is sequential
+               file status is shared-file1-status.
+
+           select shared-file2
+               assign to "shared2.dat"
+               organization is sequential
+               file status is shared-file2-status.
+
+       data division.
+       file section.
+       fd  f.
+       01  f-record.
+           05  rec-key pic x(5).
+           05  rec-value pic x(5).
+       fd  shared-file1.
+       01 shared-record1 pic x(10).
+       fd  shared-file2.
+       01 shared-record2 pic x(10).
+       working-storage section.
+       01  f-status pic 99.
+       01  shared-file1-status pic 99.
+       01  shared-file2-status pic 99.
+       procedure division.
+       main-procedure.
+
+      * Wait for the other process to open the indexed file.
+      *call "C$SLEEP" using 1.
+       perform forever
+           open input shared-file1
+           if shared-file1-status = 0
+               close shared-file1
+               exit perform
+           end-if
+           close shared-file1
+      *    call "C$SLEEP" using 1
+       end-perform.
+
+      * Open the target file that another process has already opened.
+       open @@open_mode@@ f.
+       display f-status.
+       close f.
+
+      * Notify the other process that
+      * this process finished.
+       open output shared-file2.
+       close shared-file2.
+])
+
+AT_DATA([run.sh], [
+#!/bin/bash
+
+set -e
+
+COMPILER="cobj"
+RUNNER="java -Xlog:perf+memops=off"
+
+rm -f file.dat shared1.dat shared2.dat
+
+function compile_all() {
+    for ORGANIZATION in "sequential" "line sequential" "relative"; do
+        for OPEN_MODE_1 in "INPUT" "OUTPUT" "I-O" "EXTEND"; do
+            for OPEN_MODE_2 in "INPUT" "OUTPUT" "I-O" "EXTEND"; do
+                ID=$(echo "${ORGANIZATION:0:1}_${OPEN_MODE_1}_${OPEN_MODE_2}" | sed 's/-/_/g')
+                PROGRAM_ID_1="prog1_${ID}"
+                PROGRAM_ID_2="prog2_${ID}"
+                PROGRAM1_FILE="${PROGRAM_ID_1}.cbl"
+                PROGRAM2_FILE="${PROGRAM_ID_2}.cbl"
+
+                cat prog1-template.cbl |
+                sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_1}/g" \
+                > "${PROGRAM1_FILE}"
+                cat prog2-template.cbl |
+                sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_2}/g" \
+                > "${PROGRAM2_FILE}"
+
+                "${COMPILER}" "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
+            done
+        done
+    done
+}
+
+function run_test() {
+    ORGANIZATION="$1"
+    OPEN_MODE_1="$2"
+    OPEN_MODE_2="$3"
+
+    ID=$(echo "${ORGANIZATION:0:1}_${OPEN_MODE_1}_${OPEN_MODE_2}" | sed 's/-/_/g')
+    PROGRAM_ID_1="prog1_${ID}"
+    PROGRAM_ID_2="prog2_${ID}"
+    PROGRAM1_FILE="${PROGRAM_ID_1}.cbl"
+    PROGRAM2_FILE="${PROGRAM_ID_2}.cbl"
+    PROGRAM1_LOG="${PROGRAM_ID_1}.log"
+    PROGRAM2_LOG="${PROGRAM_ID_2}.log"
+
+    rm -f file.dat shared1.dat shared2.dat
+
+    cat prog1-template.cbl |
+    sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_1}/g" \
+    > "${PROGRAM1_FILE}"
+    cat prog2-template.cbl |
+    sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_2}/g" \
+    > "${PROGRAM2_FILE}"
+
+    "${COMPILER}" "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
+
+    ${RUNNER} "${PROGRAM_ID_1}"&
+    PID1=$!
+    ${RUNNER} "${PROGRAM_ID_2}" > "${PROGRAM2_LOG}" &
+    PID2=$!
+    wait $PID1 $PID2
+
+    echo "${ORGANIZATION} - ${OPEN_MODE_1} & ${OPEN_MODE_2} - $(cat "${PROGRAM2_LOG}")"
+}
+
+# First, compile all combinations
+compile_all
+
+# Then, run a specific test case
+run_test "sequential" "INPUT" "INPUT"
+run_test "sequential" "INPUT" "OUTPUT"
+run_test "sequential" "INPUT" "I-O"
+run_test "sequential" "INPUT" "EXTEND"
+
+run_test "sequential" "OUTPUT" "INPUT"
+run_test "sequential" "OUTPUT" "OUTPUT"
+run_test "sequential" "OUTPUT" "I-O"
+run_test "sequential" "OUTPUT" "EXTEND"
+
+run_test "sequential" "I-O" "INPUT"
+run_test "sequential" "I-O" "OUTPUT"
+run_test "sequential" "I-O" "I-O"
+run_test "sequential" "I-O" "EXTEND"
+
+run_test "sequential" "EXTEND" "INPUT"
+run_test "sequential" "EXTEND" "OUTPUT"
+run_test "sequential" "EXTEND" "I-O"
+run_test "sequential" "EXTEND" "EXTEND"
+
+run_test "line sequential" "INPUT" "INPUT"
+run_test "line sequential" "INPUT" "OUTPUT"
+run_test "line sequential" "INPUT" "I-O"
+run_test "line sequential" "INPUT" "EXTEND"
+
+run_test "line sequential" "OUTPUT" "INPUT"
+run_test "line sequential" "OUTPUT" "OUTPUT"
+run_test "line sequential" "OUTPUT" "I-O"
+run_test "line sequential" "OUTPUT" "EXTEND"
+
+run_test "line sequential" "I-O" "INPUT"
+run_test "line sequential" "I-O" "OUTPUT"
+run_test "line sequential" "I-O" "I-O"
+run_test "line sequential" "I-O" "EXTEND"
+
+run_test "line sequential" "EXTEND" "INPUT"
+run_test "line sequential" "EXTEND" "OUTPUT"
+run_test "line sequential" "EXTEND" "I-O"
+run_test "line sequential" "EXTEND" "EXTEND"
+
+run_test "relative" "INPUT" "INPUT"
+run_test "relative" "INPUT" "OUTPUT"
+run_test "relative" "INPUT" "I-O"
+run_test "relative" "INPUT" "EXTEND"
+
+run_test "relative" "OUTPUT" "INPUT"
+run_test "relative" "OUTPUT" "OUTPUT"
+run_test "relative" "OUTPUT" "I-O"
+run_test "relative" "OUTPUT" "EXTEND"
+
+run_test "relative" "I-O" "INPUT"
+run_test "relative" "I-O" "OUTPUT"
+run_test "relative" "I-O" "I-O"
+run_test "relative" "I-O" "EXTEND"
+
+run_test "relative" "EXTEND" "INPUT"
+run_test "relative" "EXTEND" "OUTPUT"
+run_test "relative" "EXTEND" "I-O"
+run_test "relative" "EXTEND" "EXTEND"
+])
+
+AT_CHECK([bash run.sh], [0],
+[sequential - INPUT & INPUT - 00
+sequential - INPUT & OUTPUT - 61
+sequential - INPUT & I-O - 61
+sequential - INPUT & EXTEND - 61
+sequential - OUTPUT & INPUT - 61
+sequential - OUTPUT & OUTPUT - 61
+sequential - OUTPUT & I-O - 61
+sequential - OUTPUT & EXTEND - 61
+sequential - I-O & INPUT - 61
+sequential - I-O & OUTPUT - 61
+sequential - I-O & I-O - 61
+sequential - I-O & EXTEND - 61
+sequential - EXTEND & INPUT - 61
+sequential - EXTEND & OUTPUT - 61
+sequential - EXTEND & I-O - 61
+sequential - EXTEND & EXTEND - 61
+line sequential - INPUT & INPUT - 00
+line sequential - INPUT & OUTPUT - 61
+line sequential - INPUT & I-O - 61
+line sequential - INPUT & EXTEND - 61
+line sequential - OUTPUT & INPUT - 61
+line sequential - OUTPUT & OUTPUT - 61
+line sequential - OUTPUT & I-O - 61
+line sequential - OUTPUT & EXTEND - 61
+line sequential - I-O & INPUT - 61
+line sequential - I-O & OUTPUT - 61
+line sequential - I-O & I-O - 61
+line sequential - I-O & EXTEND - 61
+line sequential - EXTEND & INPUT - 61
+line sequential - EXTEND & OUTPUT - 61
+line sequential - EXTEND & I-O - 61
+line sequential - EXTEND & EXTEND - 61
+relative - INPUT & INPUT - 00
+relative - INPUT & OUTPUT - 61
+relative - INPUT & I-O - 61
+relative - INPUT & EXTEND - 61
+relative - OUTPUT & INPUT - 61
+relative - OUTPUT & OUTPUT - 61
+relative - OUTPUT & I-O - 61
+relative - OUTPUT & EXTEND - 61
+relative - I-O & INPUT - 61
+relative - I-O & OUTPUT - 61
+relative - I-O & I-O - 61
+relative - I-O & EXTEND - 61
+relative - EXTEND & INPUT - 61
+relative - EXTEND & OUTPUT - 61
+relative - EXTEND & I-O - 61
+relative - EXTEND & EXTEND - 61
+])
+AT_CLEANUP
