@@ -1,6 +1,6 @@
-AT_INIT([indexed-lock])
+AT_INIT([file-lock])
 
-m4_include([file-lock.at])
+m4_include([lock-file.at])
 m4_include([access-same-record.at])
 m4_include([access-different-record.at])
 m4_include([input-mode.at])

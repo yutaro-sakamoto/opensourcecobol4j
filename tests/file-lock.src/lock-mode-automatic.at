@@ -1,4 +1,4 @@
-AT_SETUP([LOCK MODE IS MANUAL/AUTOMATIC])
+AT_SETUP([-lock-mode-automatic])
 AT_DATA([a.sh], [
 javac wait.java setValue.java
 
@@ -85,10 +85,9 @@ PROGRAM2_OPERATIONS=(
 for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
     cat prog1.template.cbl |
     sed -e "s/@OPERATION@/${operation}/" |\
-    sed -e "s/@LOCK-MODE@/MANUAL/" |\
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
     > prog1.cbl
-    cobj prog1.cbl
+    cobj prog1.cbl -lock-mode-automatic
 done
 
 for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
@@ -145,82 +144,6 @@ function run_test() {
         cat prog2.expected.log
     fi
 }
-
-run_test "$OPERATION_READ" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_READ_WITH_LOCK"                "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
-run_test "$OPERATION_READ" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
-
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_LOCK"                "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_REWRITE"                       "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_LOCK" "$OPERATION_DELETE"                        "00" "51" "not changed" "record not changed"
-
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_WITH_LOCK"                "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
-run_test "$OPERATION_READ_WITH_NO_LOCK" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
-
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_WITH_LOCK"                "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
-run_test "$OPERATION_READ_NEXT_RECORD" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
-
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ_WITH_LOCK"                "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_REWRITE"                       "00" "51" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_LOCK" "$OPERATION_DELETE"                        "00" "51" "not changed" "record not changed"
-
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_WITH_LOCK"                "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_WITH_NO_LOCK"             "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_START"                         "00" "00" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD"              "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_LOCK"    "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "00" "00" "changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_WRITE"                         "00" "22" "not changed" "record not changed"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_REWRITE"                       "00" "00" "not changed" "record rewritten"
-run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_DELETE"                        "00" "00" "not changed" "record deleted"
-
-# Compile programs with automatic locking
-for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
-    cat prog1.template.cbl |
-    sed -e "s/@OPERATION@/${operation}/" |\
-    sed -e "s/@LOCK-MODE@/AUTOMATIC/" |\
-    sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
-    > prog1.cbl
-    cobj prog1.cbl
-done
 
 run_test "$OPERATION_READ" "$OPERATION_READ"                          "00" "00" "changed" "record not changed"
 run_test "$OPERATION_READ" "$OPERATION_READ_WITH_LOCK"                "00" "51" "not changed" "record not changed"
@@ -290,8 +213,8 @@ run_test "$OPERATION_READ_NEXT_RECORD_WITH_NO_LOCK" "$OPERATION_DELETE"         
 ])
 
 
-AT_CHECK([cp ../../indexed-lock.src/module-sync/wait.java .])
-AT_CHECK([cp ../../indexed-lock.src/module-sync/setValue.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
 
 AT_DATA([prog1.template.cbl], [
        IDENTIFICATION DIVISION.
@@ -304,7 +227,6 @@ AT_DATA([prog1.template.cbl], [
                ORGANIZATION IS INDEXED
                ACCESS MODE IS DYNAMIC
                RECORD KEY IS REC-KEY
-               LOCK MODE IS @LOCK-MODE@
                ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
                FILE STATUS IS FILE-STATUS.
 
@@ -381,7 +303,6 @@ AT_DATA([prog2.template.cbl], [
                ACCESS MODE IS DYNAMIC
                RECORD KEY IS REC-KEY
                ALTERNATE RECORD KEY IS REC-KEY2 WITH DUPLICATES
-               LOCK MODE IS MANUAL
                FILE STATUS IS FILE-STATUS.
 
        DATA DIVISION.

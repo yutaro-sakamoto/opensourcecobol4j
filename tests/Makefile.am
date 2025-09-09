@@ -30,7 +30,7 @@ TESTS = syntax \
 	jp-compat \
 	command-line-options \
 	cobj-idx \
-	indexed-lock \
+	file-lock \
 	misc
 else
 TESTS = syntax \
@@ -42,7 +42,7 @@ TESTS = syntax \
 	jp-compat \
 	command-line-options \
 	cobj-idx \
-	indexed-lock \
+	file-lock \
 	misc
 endif
 
@@ -209,18 +209,18 @@ cobj_idx_DEPENDENCIES = \
 	cobj-idx.src/misc.at
 
 indexed_lock_DEPENDENCIES = \
-	indexed-lock.at \
-	indexed-lock.src/file-lock.at \
-	indexed-lock.src/access-same-record.at \
-	indexed-lock.src/access-different-record.at \
-	indexed-lock.src/input-mode.at \
-	indexed-lock.src/same-process.at \
-	indexed-lock.src/open-start-write-rewrite.at \
-	indexed-lock.src/release-lock.at \
-	indexed-lock.src/open-input.at \
-	indexed-lock.src/lock-mode-clause.at \
-	indexed-lock.src/old-file.at \
-	indexed-lock.src/lock-mode-automatic.at
+	file-lock.at \
+	file-lock.src/lock-file.at \
+	file-lock.src/access-same-record.at \
+	file-lock.src/access-different-record.at \
+	file-lock.src/input-mode.at \
+	file-lock.src/same-process.at \
+	file-lock.src/open-start-write-rewrite.at \
+	file-lock.src/release-lock.at \
+	file-lock.src/open-input.at \
+	file-lock.src/lock-mode-clause.at \
+	file-lock.src/old-file.at \
+	file-lock.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -305,5 +305,5 @@ $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
-$(srcdir)/indexed-lock: $(indexed_lock_DEPENDENCIES)
+$(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
