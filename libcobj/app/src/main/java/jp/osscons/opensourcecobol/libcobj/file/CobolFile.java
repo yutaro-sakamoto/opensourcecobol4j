@@ -1210,13 +1210,13 @@ public class CobolFile {
         FileLock fl = null;
         if (!filename.startsWith("/dev/")) {
             try {
-                boolean lockFlag;
+                boolean isSharedLock;
                 if (sharing != 0 || mode == COB_OPEN_OUTPUT) {
-                    lockFlag = false;
+                    isSharedLock = false;
                 } else {
-                    lockFlag = true;
+                    isSharedLock = true;
                 }
-                fl = fp.tryLock(0L, Long.MAX_VALUE, lockFlag);
+                fl = fp.tryLock(0L, Long.MAX_VALUE, isSharedLock);
             } catch (NonWritableChannelException e) {
                 fp.close();
                 return EBADF;

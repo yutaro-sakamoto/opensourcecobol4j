@@ -174,8 +174,8 @@ run_test  "$OPERATION_CLOSE"                         "$OPERATION_REWRITE" "00" "
 ])
 
 
-AT_CHECK([cp ../../indexed-lock.src/module-sync/wait.java .])
-AT_CHECK([cp ../../indexed-lock.src/module-sync/setValue.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
 
 AT_DATA([prog1.template.cbl], [
        IDENTIFICATION DIVISION.
@@ -442,8 +442,8 @@ AT_DATA([run.sh], [
     wait $PID1 $PID2
 ])
 
-AT_CHECK([cp ../../indexed-lock.src/module-sync/wait.java .])
-AT_CHECK([cp ../../indexed-lock.src/module-sync/setValue.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
 AT_CHECK([cobj p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
@@ -577,8 +577,8 @@ AT_DATA([run.sh], [
     wait $PID1 $PID2
 ])
 
-AT_CHECK([cp ../../indexed-lock.src/module-sync/wait.java .])
-AT_CHECK([cp ../../indexed-lock.src/module-sync/setValue.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
+AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
 AT_CHECK([cobj p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
