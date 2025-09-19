@@ -135,7 +135,7 @@ public class CobolSequentialFile extends CobolFile {
                 }
             }
             int size = ByteBuffer.wrap(sbuff).getInt();
-            this.record.setSize(size);
+            this.record.setSize(Math.min(size, this.record_max));
         }
 
         try {
