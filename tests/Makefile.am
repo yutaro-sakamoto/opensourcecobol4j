@@ -262,7 +262,7 @@ misc_DEPENDENCIES = \
 	misc.src/display-numeric-NUMERIC-class.at \
 	misc.src/display-inspect-sign.at \
 	misc.src/comp1-comp2.at \
-	misc.src/variable-length-file.at	
+	misc.src/variable-length-file.at
 
 EXTRA_DIST = $(srcdir)/package.m4 \
 	$(TESTS) \
