@@ -192,7 +192,7 @@ public class CobolRelativeFile extends CobolFile {
             }
         }
 
-        if(mode == COB_OPEN_OUTPUT) {
+        if (mode == COB_OPEN_OUTPUT) {
             this.fp.setLength(0);
             this.fp.seek(0);
         }
