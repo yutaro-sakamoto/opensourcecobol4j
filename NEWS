@@ -1,7 +1,8 @@
 NEWS - user visible changes				-*- outline -*-
 
+-----------------------------------------------------------------------
 
-* opensource COBOL 4J 1.1.12
+* opensource COBOL 4J 1.1.13
 
 ** Bug Fixes
 
@@ -11,6 +12,8 @@ NEWS - user visible changes				-*- outline -*-
 ** Miscellaneous
 
 (1) `cobj-idx unlock` and `cobj-idx migrate` can handle multiple files at once.
+
+-----------------------------------------------------------------------
 
 * opensource COBOL 4J 1.1.12
 
