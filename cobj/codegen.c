@@ -5544,19 +5544,12 @@ static void joutput_declare_member_variables(struct cb_program *prog,
         prevprog = blp->curr_prog;
         joutput_prefix();
         joutput("/* PROGRAM-ID : %s */\n", prevprog);
-        joutput_prefix();
-        if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
-          joutput("public CobolDataStorage %s;", base_name);
-        } else {
-          joutput("private CobolDataStorage %s;", base_name);
-        }
+      }
+      joutput_prefix();
+      if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
+        joutput("public CobolDataStorage %s;", base_name);
       } else {
-        joutput_prefix();
-        if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
-          joutput("public CobolDataStorage %s;", base_name);
-        } else {
-          joutput("private CobolDataStorage %s;", base_name);
-        }
+        joutput("private CobolDataStorage %s;", base_name);
       }
       free(base_name);
       joutput("\t/* %s */\n", blp->f->name);
