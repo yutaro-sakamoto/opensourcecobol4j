@@ -5545,10 +5545,18 @@ static void joutput_declare_member_variables(struct cb_program *prog,
         joutput_prefix();
         joutput("/* PROGRAM-ID : %s */\n", prevprog);
         joutput_prefix();
-        joutput("private CobolDataStorage %s;", base_name, blp->f->memory_size);
+        if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
+          joutput("public CobolDataStorage %s;", base_name);
+        } else {
+          joutput("private CobolDataStorage %s;", base_name);
+        }
       } else {
         joutput_prefix();
-        joutput("private CobolDataStorage %s;", base_name, blp->f->memory_size);
+        if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
+          joutput("public CobolDataStorage %s;", base_name);
+        } else {
+          joutput("private CobolDataStorage %s;", base_name);
+        }
       }
       free(base_name);
       joutput("\t/* %s */\n", blp->f->name);
@@ -6237,8 +6245,18 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   //}
 
   joutput_line("CobolDecimal.cobInitNumeric();");
-  joutput_line("new %s().%s_(0);", prog->program_id, prog->program_id);
+  if (cb_enable_program_status_register) {
+    joutput_line("%s $module$ = new %s();", prog->program_id, prog->program_id);
+    joutput_line("$module$.%s_(0);", prog->program_id);
+  } else {
+    joutput_line("new %s().%s_(0);", prog->program_id, prog->program_id);
+  }
   joutput_line("CobolStopRunException.stopRun();");
+
+  if (cb_enable_program_status_register) {
+    joutput_line("System.exit($module$.b_RETURN_CODE.intValue());");
+  }
+
   joutput_indent_level -= 2;
   joutput_line("}\n");
 
