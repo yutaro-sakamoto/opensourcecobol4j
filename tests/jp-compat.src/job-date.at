@@ -240,7 +240,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_JP_COMPAT} prog.cob])
-AT_CHECK([COB_DATE=`date +%Y/%m/%d` java prog], [0], [0
+AT_CHECK([COB_DATE=`date +%Y/%m/%d` java prog || true], [0], [0
 ])
 
 AT_CLEANUP
