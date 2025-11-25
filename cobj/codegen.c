@@ -5068,9 +5068,6 @@ static void joutput_init_method(struct cb_program *prog) {
         prevprog = blp->curr_prog;
         joutput_prefix();
         joutput("/* PROGRAM-ID : %s */\n", prevprog);
-        joutput_prefix();
-        joutput("%s = new CobolDataStorage(%d);", base_name,
-                blp->f->memory_size);
       }
 
       if (blp->f->flag_external) {
