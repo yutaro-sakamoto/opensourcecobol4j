@@ -3211,7 +3211,8 @@ static void joutput_goto_1(cb_tree x) {
   joutput_prefix();
   joutput("if(true) return Optional.of(contList[");
   joutput_label_variable(CB_LABEL(cb_ref(x)));
-  joutput_line("]);\n");
+  joutput("]);");
+  joutput_newline();
 }
 
 static void joutput_goto(struct cb_goto *p) {
