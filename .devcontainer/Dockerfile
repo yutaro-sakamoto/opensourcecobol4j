@@ -1,4 +1,4 @@
-FROM almalinux:9
+FROM almalinux:9-minimal
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
@@ -6,10 +6,10 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV CLASSPATH=:/usr/lib/opensourcecobol4j/libcobj.jar
 
 # hadolint ignore=DL3041
-RUN dnf update -y \
-    && dnf install -y --setopt=install_weak_deps=False \
+RUN microdnf update -y \
+    && microdnf install -y --setopt=install_weak_deps=False \
         epel-release \
-    && dnf install -y --setopt=install_weak_deps=False \
+    && microdnf install -y --setopt=install_weak_deps=False \
         gcc \
         make \
         bison \
@@ -24,7 +24,7 @@ RUN dnf update -y \
         libtool \
         gettext-devel \
         unzip \
-    && dnf clean all \
+    && microdnf clean all \
     && rm -rf /var/cache/dnf
 
 RUN echo 'export CLASSPATH=:/usr/lib/opensourcecobol4j/libcobj.jar' >> ~/.bashrc
