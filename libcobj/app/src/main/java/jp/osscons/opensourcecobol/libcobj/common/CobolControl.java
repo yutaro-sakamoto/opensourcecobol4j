@@ -19,7 +19,6 @@
 package jp.osscons.opensourcecobol.libcobj.common;
 
 import java.util.Optional;
-import jp.osscons.opensourcecobol.libcobj.exceptions.CobolGoBackException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
@@ -38,11 +37,10 @@ public abstract class CobolControl {
      *
      * @return TODO: 準備中
      * @throws CobolRuntimeException TODO: 準備中
-     * @throws CobolGoBackException TODO: 準備中
      * @throws CobolStopRunException TODO: 準備中
      */
     public abstract Optional<CobolControl> run()
-            throws CobolRuntimeException, CobolGoBackException, CobolStopRunException;
+            throws CobolRuntimeException, CobolStopRunException;
 
     /** TODO: 準備中 */
     public int contId = -1;
@@ -76,7 +74,7 @@ public abstract class CobolControl {
         return new CobolControl() {
             @Override
             public Optional<CobolControl> run()
-                    throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+                    throws CobolRuntimeException, CobolStopRunException {
                 return Optional.empty();
             }
         };
@@ -92,7 +90,7 @@ public abstract class CobolControl {
         return new CobolControl() {
             @Override
             public Optional<CobolControl> run()
-                    throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+                    throws CobolRuntimeException, CobolStopRunException {
                 return cont.run();
             }
         };
@@ -110,7 +108,7 @@ public abstract class CobolControl {
         return new CobolControl() {
             @Override
             public Optional<CobolControl> run()
-                    throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
+                    throws CobolRuntimeException, CobolStopRunException {
                 Optional<CobolControl> nextCont = Optional.of(contList[begin]);
                 LabelType endType = contList[end].type;
                 int executedProgramId;
