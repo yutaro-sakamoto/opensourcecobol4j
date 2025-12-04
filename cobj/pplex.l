@@ -529,7 +529,7 @@ switch_to_buffer (const int line, const char *file, YY_BUFFER_STATE buffer)
 	char	*p;
 
 	cb_source_line = line;
-	cb_source_file = strdup (file);
+	cb_source_file = strdup (file); // abcde: 警告メッセージに表示されるファイル名がここでセットされる
 	for (p = cb_source_file; *p; p++) {
 		if (*p == '\\') {
 			*p = '/';
@@ -612,9 +612,9 @@ ppcopy (const char *name, const char *lib, struct cb_joining_ext *joining_ext, s
 		plexbuff2 = cobc_malloc (COB_SMALL_BUFF);
 	}
 	for (el = cb_extension_list; el; el = el->next) {
-		snprintf (plexbuff2, COB_SMALL_MAX, "%s%s", s, el->text);
+		snprintf (plexbuff2, COB_SMALL_MAX, "%s%s", s, el->text); // abcde: 拡張子リストから拡張子を付けたファイル名を作成（例: sub1 + .CBL = sub1.CBL）
 		if (stat (plexbuff2, &st) == 0) {
-			return ppopen (plexbuff2, joining_ext, replace_list);
+			return ppopen (plexbuff2, joining_ext, replace_list); // abcde: この拡張子付きファイル名がppopen→switch_to_buffer→cb_source_fileに渡される
 		}
 	}
 	if (*s != '/') {
