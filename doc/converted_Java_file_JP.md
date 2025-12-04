@@ -16,9 +16,9 @@ COBOLで定義された変数は、AbstractCobolFieldクラスのインスタン
 ```mermaid
 classDiagram
     class AbstractCobolField {
-        - int size
-        - CobolDataStorage data
-        - CobolFieldAttribute attr
+        # int size
+        # CobolDataStorage data
+        # CobolFieldAttribute attr
     }
 ```
 
