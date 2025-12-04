@@ -5265,8 +5265,6 @@ static void joutput_init_method(struct cb_program *prog) {
   }
 
   joutput_indent_level -= 2;
-  joutput_line("} catch(NullPointerException e) {");
-  joutput_line("  System.out.println(\"Error - NullpointerException\");");
   joutput_line("} catch(IndexOutOfBoundsException e) {");
   joutput_line("  System.out.println(\"Error - IndexOutOfBoundsException\");");
   joutput_line("}");
@@ -6088,7 +6086,6 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("import jp.osscons.opensourcecobol.libcobj.file.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.ui.*;");
   joutput_line("import java.util.Optional;");
-  joutput_line("import java.lang.NullPointerException;");
   joutput_line("import java.lang.IndexOutOfBoundsException;");
   joutput("\n");
 
