@@ -3,5 +3,19 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
-    "postCreateCommand": ".devcontainer/boot.sh && source ~/.bashrc"
+    "postCreateCommand": ".devcontainer/boot.sh && source ~/.bashrc",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "bitlang.cobol",
+                "ms-vscode.cpptools",
+                "vscjava.vscode-java-pack",
+                "redhat.java",
+                "vscjava.vscode-java-debug",
+                "vscjava.vscode-java-test",
+                "vscjava.vscode-maven",
+                "daohong-emilio.yash"
+            ]
+        }
+    }
 }
