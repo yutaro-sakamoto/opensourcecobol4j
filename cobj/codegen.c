@@ -5045,8 +5045,6 @@ static void joutput_init_method(struct cb_program *prog) {
   joutput_line("public void init() ");
   joutput_line("{");
   joutput_indent_level += 2;
-  joutput_line("try {");
-  joutput_indent_level += 2;
 
   if (prog->decimal_index_max) {
     joutput_line("/* Decimal structures */\n");
@@ -5264,10 +5262,6 @@ static void joutput_init_method(struct cb_program *prog) {
                  CB_PREFIX_FIELD, CB_PREFIX_ATTR, index);
   }
 
-  joutput_indent_level -= 2;
-  joutput_line("} catch(IndexOutOfBoundsException e) {");
-  joutput_line("  System.out.println(\"Error - IndexOutOfBoundsException\");");
-  joutput_line("}");
   joutput_indent_level -= 2;
   joutput_line("}\n");
 
@@ -6086,7 +6080,6 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("import jp.osscons.opensourcecobol.libcobj.file.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.ui.*;");
   joutput_line("import java.util.Optional;");
-  joutput_line("import java.lang.IndexOutOfBoundsException;");
   joutput("\n");
 
   /*if (!cb_flag_no_cobol_comment) {
