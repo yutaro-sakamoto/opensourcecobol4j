@@ -4622,6 +4622,7 @@ static void joutput_internal_function(struct cb_program *prog,
 
   joutput_line("/* Push module stack */");
   joutput_line("CobolModule.push (module);");
+  joutput_line("CobolResolve.pushCallStackList (\"%s\");", prog->program_id);
   joutput_newline();
 
   /* Initialization */
@@ -4891,6 +4892,7 @@ static void joutput_internal_function(struct cb_program *prog,
   //	output_newline ();
   // }
   joutput_line("/* Pop module stack */");
+  joutput_line("CobolResolve.popCallStackList();");
   joutput_line("CobolModule.pop();");
   joutput_newline();
   if (cb_flag_traceall) {
