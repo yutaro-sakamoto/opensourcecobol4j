@@ -10,10 +10,6 @@
                 "bitlang.cobol",
                 "ms-vscode.cpptools",
                 "vscjava.vscode-java-pack",
-                "redhat.java",
-                "vscjava.vscode-java-debug",
-                "vscjava.vscode-java-test",
-                "vscjava.vscode-maven",
                 "daohong-emilio.yash"
             ]
         }
