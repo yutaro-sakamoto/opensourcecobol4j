@@ -424,9 +424,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_ONLY} prog.cob], [1], ,
-[prog.cob:6: Error: 'L1' ambiguous; need qualification
-prog.cob:7: Error: 'L1' in 'MAIN SECTION' defined here
-prog.cob:8: Error: 'L1' in 'MAIN SECTION' defined here
+[prog.cob: In paragraph 'L1':
+prog.cob:8: Error: Redefinition of 'L1'
+prog.cob:7: Error: 'L1' previously defined here
 ])
 
 AT_CLEANUP
@@ -510,15 +510,31 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([${COMPILE_ONLY} prog.cob], [0], ,
-[])
+AT_CHECK([${COMPILE_ONLY} prog.cob], [1], ,
+[prog.cob: In paragraph 'L':
+prog.cob:6: Error: Redefinition of 'L'
+prog.cob:5: Error: 'L' previously defined here
+])
 
-## Change when we DON'T allow this
-## AT_CHECK([${COMPILE_ONLY} prog.cob], [1], ,
-## [prog.cob: In paragraph 'L':
-## prog.cob:6: Error: redefinition of 'L'
-## prog.cob:5: Error: 'L' previously defined here
-## ])
+AT_CLEANUP
+
+AT_SETUP([Redefinition of paragraph names with -fsyntax-only])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       PROCEDURE        DIVISION.
+       MAIN-1.
+           DISPLAY "hello".
+       MAIN-1.
+           DISPLAY "world".
+])
+
+AT_CHECK([${COMPILE_ONLY} -fsyntax-only prog.cob], [1], ,
+[prog.cob: In paragraph 'MAIN-1':
+prog.cob:7: Error: Redefinition of 'MAIN-1'
+prog.cob:5: Error: 'MAIN-1' previously defined here
+])
 
 AT_CLEANUP
 

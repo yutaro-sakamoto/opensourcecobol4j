@@ -473,20 +473,36 @@ void cb_define_switch_name(cb_tree name, cb_tree sname, const cb_tree flag,
 }
 
 cb_tree cb_build_section_name(cb_tree name, int sect_or_para) {
+  cb_tree l;
 
   if (name == cb_error_node) {
     return cb_error_node;
   }
 
   if (CB_REFERENCE(name)->word->count > 0) {
-    cb_tree x = CB_VALUE(CB_REFERENCE(name)->word->items);
-    /* Used as a non-label name or used as a section name.
-       Duplicate paragraphs are allowed if not referenced;
-       Checked in typeck.c */
-    if (!CB_LABEL_P(x) || sect_or_para == 0 ||
-        (CB_LABEL_P(x) && CB_LABEL(x)->is_section)) {
-      redefinition_error(name);
-      return cb_error_node;
+    for (l = CB_REFERENCE(name)->word->items; l; l = CB_CHAIN(l)) {
+      cb_tree x = CB_VALUE(l);
+      if (!CB_LABEL_P(x)) {
+        /* Conflict with a non-label name (e.g., variable) */
+        redefinition_error(name);
+        return cb_error_node;
+      }
+      if (sect_or_para == 0) {
+        /* Section redefinition is not allowed */
+        redefinition_error(name);
+        return cb_error_node;
+      }
+      if (CB_LABEL(x)->is_section) {
+        /* Paragraph cannot have the same name as a section */
+        redefinition_error(name);
+        return cb_error_node;
+      }
+      /* Check if both are paragraphs in the same section */
+      if (CB_LABEL(x)->section == current_section) {
+        /* Duplicate paragraph in the same section */
+        redefinition_error(name);
+        return cb_error_node;
+      }
     }
   }
 
