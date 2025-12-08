@@ -167,3 +167,7 @@ jobs:
   static-analysis:
     needs: check-workflows
     uses: ./.github/workflows/static-analysis.yml
+
+  check-dev-container:
+    needs: check-workflows
+    uses: ./.github/workflows/check-dev-container.yml
