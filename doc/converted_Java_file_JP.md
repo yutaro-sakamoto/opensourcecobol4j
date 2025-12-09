@@ -11,13 +11,14 @@ COBOLで定義された変数は、AbstractCobolFieldクラスのインスタン
 **PICTURE句に応じて、各変数はAbstractCobolFieldクラスの派生クラスへと変換される。**
 例えば、`PIC 9(5)`の変数はCobolNumericFieldクラスのインスタンスへ変換され、`PIC X(3)`の変数はCobolAlphanumericFieldに変換される。
 
-また、AbstractCobolFieldは実際のデータをバイト配列として保持するCobolDataStorageクラスと、その他の情報を格納するCobolFieldAttributeクラスを持つ。
+また、AbstractCobolFieldはメモリ上のデータサイズを示すint型の変数、実際のデータをバイト配列として保持するCobolDataStorageクラス、その他の情報を格納するCobolFieldAttributeクラスを持つ。
 
 ```mermaid
 classDiagram
     class AbstractCobolField {
-        - CobolDataStorage data
-        - CobolFieldAttribute attr
+        # int size
+        # CobolDataStorage data
+        # CobolFieldAttribute attr
     }
 ```
 

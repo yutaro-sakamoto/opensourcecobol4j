@@ -126,20 +126,6 @@ public abstract class AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
-     *
-     * @return TODO: 準備中
-     */
-    public CobolDataStorage getFieldData() {
-        if (this.attribute.isFlagSignSeparate() && this.attribute.isFlagSignLeading()) {
-            return new CobolDataStorage(
-                    this.dataStorage.getRefOfData(), this.dataStorage.getIndex() + 1);
-        } else {
-            return this.dataStorage;
-        }
-    }
-
-    /**
      * バイト配列の中で(符号データではなく)数値データの格納されている最小の添え字を返す
      *
      * @return SIGN LEADINGかつSIGN SEPARATEな変数なら1,それ以外は0
@@ -946,15 +932,6 @@ public abstract class AbstractCobolField {
             }
         }
         return 0;
-    }
-
-    /**
-     * TODO: 準備中
-     *
-     * @return TODO: 準備中
-     */
-    public BigDecimal getBigDecimal() {
-        return BigDecimal.ZERO;
     }
 
     /**

@@ -1,0 +1,34 @@
+name: Check Dev Container
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: .devcontainer/Dockerfile
+
+  build:
+    runs-on: ubuntu-latest
+    needs: hadolint
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and run dev container task
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            ./configure
+            make
+            make install
+            cobj --version
+          push: never
