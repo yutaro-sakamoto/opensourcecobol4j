@@ -3767,7 +3767,7 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     joutput_indent_level += 2;
     joutput_line(
         "public Optional<CobolControl> run() throws CobolRuntimeException, "
-        "CobolGoBackException, CobolStopRunException {");
+        "CobolStopRunException {");
     joutput_indent_level += 2;
 
     if (cb_flag_trace) {
@@ -4824,8 +4824,6 @@ static void joutput_internal_function(struct cb_program *prog,
   /* PROCEDURE DIVISION */
   joutput_line("/* PROCEDURE DIVISION */");
   joutput_line("try{");
-  joutput_line("  CobolStopRunException.dummy();");
-  joutput_line("  CobolGoBackException.dummy();");
   joutput_indent_level += 2;
 
   // EDIT
@@ -4864,8 +4862,6 @@ static void joutput_internal_function(struct cb_program *prog,
   }
 
   joutput_indent_level -= 2;
-  joutput_line("} catch(CobolGoBackException e) {");
-  joutput_line("  return e.getReturnCode();");
   joutput_line("} catch(CobolStopRunException e) {");
   joutput_line("  CobolStopRunException.stopRun();");
   joutput_line("  System.exit(e.getReturnCode());");
@@ -5849,7 +5845,7 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_indent_level += 2;
   joutput_line(
       "public Optional<CobolControl> run() throws CobolRuntimeException, "
-      "CobolGoBackException, CobolStopRunException {");
+      "CobolStopRunException {");
   joutput_indent_level += 2;
   cb_tree l;
   flag_execution_begin = EXECUTION_NORMAL;
@@ -5950,7 +5946,7 @@ static void joutput_execution_list(struct cb_program *prog) {
 
 static void joutput_execution_entry_func() {
   joutput_line("public void execEntry(int start) throws CobolRuntimeException, "
-               "CobolGoBackException, CobolStopRunException {");
+               "CobolStopRunException {");
   joutput_indent_level += 2;
   joutput_line(
       "Optional<CobolControl> nextLabel = Optional.of(contList[start]);");
