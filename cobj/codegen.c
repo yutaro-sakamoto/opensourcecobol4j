@@ -4824,7 +4824,7 @@ static void joutput_internal_function(struct cb_program *prog,
   /* PROCEDURE DIVISION */
   joutput_line("/* PROCEDURE DIVISION */");
   joutput_line("try{");
-  joutput_line("  CobolStopRunException.dummy();");
+  //joutput_line("  CobolStopRunException.dummy();");
   joutput_indent_level += 2;
 
   // EDIT
@@ -6704,3 +6704,4 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("}");
   fclose(joutput_target);
 }
+
