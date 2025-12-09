@@ -75,18 +75,6 @@ public final class CobolStopRunException extends Exception {
     }
 
     /**
-     * javaコンパイラは、try節の中にthrowが発生しないと判断するとコンパイルエラーになる。 Javaコード生成時にこの問題を回避するため、このメソッドが挿入される。 throws
-     * CobolRunExceptionが指定されているが、このメソッドは決して例外をスローせず、その他の処理も実行しない。
-     *
-     * @throws CobolStopRunException TODO: 準備中
-     */
-    public static void dummy() throws CobolStopRunException {
-        if (false) {
-            throw new CobolStopRunException(0);
-        }
-    }
-
-    /**
      * デフォルトの終了処理を実行してから、CobolStopRunExceptionをスローする。
      * デフォルトの終了処理では、COBOLプログラムによってオープンされたファイルのクローズが行われる。
      *
