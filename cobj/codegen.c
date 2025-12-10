@@ -5375,8 +5375,11 @@ static void joutput_init_method(struct cb_program *prog) {
     for (j = attr_cache; j; j = j->next) {
       joutput_prefix();
       joutput("%s%d = ", CB_PREFIX_ATTR, j->id);
-      joutput("new CobolFieldAttribute (%s, /* digits = */%d, /* scale = */%d, "
-              "%s, ",
+      joutput("new CobolFieldAttribute (");
+      joutput_newline();
+      joutput_indent_level += 2;
+      joutput_prefix();
+      joutput("%s, /* digits = */%d, /* scale = */%d, %s, ",
               get_type_constant_name(j->type), j->digits, j->scale,
               get_flags_constant_name(j->flags));
       if (j->pic) {
@@ -5395,6 +5398,7 @@ static void joutput_init_method(struct cb_program *prog) {
         joutput("null");
       }
       joutput(");\n");
+      joutput_indent_level -= 2;
     }
   }
 
