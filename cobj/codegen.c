@@ -5068,6 +5068,69 @@ static const char *get_type_constant_name(int type) {
 }
 
 /**
+ * flagsの値をCobolFieldAttributeのフラグ定数名の組み合わせに変換する
+ */
+static const char *get_flags_constant_name(int flags) {
+  static char buffer[512];
+  buffer[0] = '\0';
+
+  if (flags == 0) {
+    return "0";
+  }
+
+  int first = 1;
+
+  if (flags & 0x01) {
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_HAVE_SIGN");
+    first = 0;
+  }
+  if (flags & 0x02) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE");
+    first = 0;
+  }
+  if (flags & 0x04) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_LEADING");
+    first = 0;
+  }
+  if (flags & 0x08) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_BLANK_ZERO");
+    first = 0;
+  }
+  if (flags & 0x10) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_JUSTIFIED");
+    first = 0;
+  }
+  if (flags & 0x20) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_BINARY_SWAP");
+    first = 0;
+  }
+  if (flags & 0x40) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_REAL_BINARY");
+    first = 0;
+  }
+  if (flags & 0x80) {
+    if (!first)
+      strcat(buffer, " | ");
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_IS_POINTER");
+    first = 0;
+  }
+
+  return buffer;
+}
+
+/**
  * メンバ変数の初期化を行うメソッドinitを出力する
  */
 static void joutput_init_method(struct cb_program *prog) {
@@ -5311,8 +5374,9 @@ static void joutput_init_method(struct cb_program *prog) {
     for (j = attr_cache; j; j = j->next) {
       joutput_prefix();
       joutput("%s%d = ", CB_PREFIX_ATTR, j->id);
-      joutput("new CobolFieldAttribute (%s, %d, %d, %d, ",
-              get_type_constant_name(j->type), j->digits, j->scale, j->flags);
+      joutput("new CobolFieldAttribute (%s, %d, %d, %s, ",
+              get_type_constant_name(j->type), j->digits, j->scale,
+              get_flags_constant_name(j->flags));
       if (j->pic) {
         joutput("\"");
         unsigned char *s;
