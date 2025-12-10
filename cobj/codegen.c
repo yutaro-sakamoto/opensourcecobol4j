@@ -5028,6 +5028,46 @@ static void *list_cache_sort(void *inlist,
 }
 
 /**
+ * typeの値をCobolFieldAttributeの定数名に変換する
+ */
+static const char *get_type_constant_name(int type) {
+  switch (type) {
+  case 0x00:
+    return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
+  case 0x01:
+    return "CobolFieldAttribute.COB_TYPE_GROUP";
+  case 0x02:
+    return "CobolFieldAttribute.COB_TYPE_BOOLEAN";
+  case 0x10:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY";
+  case 0x11:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY";
+  case 0x12:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED";
+  case 0x13:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_FLOAT";
+  case 0x14:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE";
+  case 0x24:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_EDITED";
+  case 0x21:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC";
+  case 0x22:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_ALL";
+  case 0x23:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_EDITED";
+  case 0x40:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL";
+  case 0x41:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL_EDITED";
+  case 0x42:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL_ALL";
+  default:
+    return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
+  }
+}
+
+/**
  * メンバ変数の初期化を行うメソッドinitを出力する
  */
 static void joutput_init_method(struct cb_program *prog) {
@@ -5271,8 +5311,8 @@ static void joutput_init_method(struct cb_program *prog) {
     for (j = attr_cache; j; j = j->next) {
       joutput_prefix();
       joutput("%s%d = ", CB_PREFIX_ATTR, j->id);
-      joutput("new CobolFieldAttribute (%d, %d, %d, %d, ", j->type, j->digits,
-              j->scale, j->flags);
+      joutput("new CobolFieldAttribute (%s, %d, %d, %d, ",
+              get_type_constant_name(j->type), j->digits, j->scale, j->flags);
       if (j->pic) {
         joutput("\"");
         unsigned char *s;
