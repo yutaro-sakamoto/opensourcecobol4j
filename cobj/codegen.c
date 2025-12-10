@@ -5032,35 +5032,35 @@ static void *list_cache_sort(void *inlist,
  */
 static const char *get_type_constant_name(int type) {
   switch (type) {
-  case 0x00:
+  case COB_TYPE_UNKNOWN:
     return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
-  case 0x01:
+  case COB_TYPE_GROUP:
     return "CobolFieldAttribute.COB_TYPE_GROUP";
-  case 0x02:
+  case COB_TYPE_BOOLEAN:
     return "CobolFieldAttribute.COB_TYPE_BOOLEAN";
-  case 0x10:
+  case COB_TYPE_NUMERIC_DISPLAY:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY";
-  case 0x11:
+  case COB_TYPE_NUMERIC_BINARY:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY";
-  case 0x12:
+  case COB_TYPE_NUMERIC_PACKED:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED";
-  case 0x13:
+  case COB_TYPE_NUMERIC_FLOAT:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_FLOAT";
-  case 0x14:
+  case COB_TYPE_NUMERIC_DOUBLE:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE";
-  case 0x24:
+  case COB_TYPE_NUMERIC_EDITED:
     return "CobolFieldAttribute.COB_TYPE_NUMERIC_EDITED";
-  case 0x21:
+  case COB_TYPE_ALPHANUMERIC:
     return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC";
-  case 0x22:
+  case COB_TYPE_ALPHANUMERIC_ALL:
     return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_ALL";
-  case 0x23:
+  case COB_TYPE_ALPHANUMERIC_EDITED:
     return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_EDITED";
-  case 0x40:
+  case COB_TYPE_NATIONAL:
     return "CobolFieldAttribute.COB_TYPE_NATIONAL";
-  case 0x41:
+  case COB_TYPE_NATIONAL_EDITED:
     return "CobolFieldAttribute.COB_TYPE_NATIONAL_EDITED";
-  case 0x42:
+  case COB_TYPE_NATIONAL_ALL:
     return "CobolFieldAttribute.COB_TYPE_NATIONAL_ALL";
   default:
     return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
@@ -5081,47 +5081,47 @@ static const char *get_flags_constant_name(int flags) {
 
   int first = 1;
 
-  if (flags & 0x01) {
+  if (flags & COB_FLAG_HAVE_SIGN) {
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_HAVE_SIGN");
     first = 0;
   }
-  if (flags & 0x02) {
+  if (flags & COB_FLAG_SIGN_SEPARATE) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE");
     first = 0;
   }
-  if (flags & 0x04) {
+  if (flags & COB_FLAG_SIGN_LEADING) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_LEADING");
     first = 0;
   }
-  if (flags & 0x08) {
+  if (flags & COB_FLAG_BLANK_ZERO) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_BLANK_ZERO");
     first = 0;
   }
-  if (flags & 0x10) {
+  if (flags & COB_FLAG_JUSTIFIED) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_JUSTIFIED");
     first = 0;
   }
-  if (flags & 0x20) {
+  if (flags & COB_FLAG_BINARY_SWAP) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_BINARY_SWAP");
     first = 0;
   }
-  if (flags & 0x40) {
+  if (flags & COB_FLAG_REAL_BINARY) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_REAL_BINARY");
     first = 0;
   }
-  if (flags & 0x80) {
+  if (flags & COB_FLAG_IS_POINTER) {
     if (!first)
       strcat(buffer, " | ");
     strcat(buffer, "CobolFieldAttribute.COB_FLAG_IS_POINTER");
