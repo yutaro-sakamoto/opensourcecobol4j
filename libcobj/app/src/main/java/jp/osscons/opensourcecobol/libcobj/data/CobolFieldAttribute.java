@@ -74,6 +74,9 @@ public class CobolFieldAttribute {
     /* field flags */
 
     /** TODO: 準備中 */
+    public static final int COB_FLAG_NOT_SPECIFIED = 0x00;
+
+    /** TODO: 準備中 */
     public static final int COB_FLAG_HAVE_SIGN = 0x01;
 
     /** TODO: 準備中 */

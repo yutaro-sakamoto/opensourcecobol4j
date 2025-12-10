@@ -5075,7 +5075,8 @@ static const char *get_flags_constant_name(int flags) {
   buffer[0] = '\0';
 
   if (flags == 0) {
-    return "0";
+    strcat(buffer, "CobolFieldAttribute.COB_FLAG_NOT_SPECIFIED");
+    return buffer;
   }
 
   int first = 1;
