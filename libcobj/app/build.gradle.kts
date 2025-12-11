@@ -2,6 +2,12 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 val enableStaticAnalysis = JavaVersion.current() >= JavaVersion.VERSION_17
 
+
+if (enableStaticAnalysis) {
+    println("Static analysis tools are enabled.")
+} else {
+    println("Static analysis tools are disabled. Java 17 or higher is required.")
+}
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
