@@ -5028,6 +5028,92 @@ static void *list_cache_sort(void *inlist,
 }
 
 /**
+ * typeの値をCobolFieldAttributeの定数名に変換する
+ */
+static const char *get_type_constant_name(int type) {
+  switch (type) {
+  case COB_TYPE_UNKNOWN:
+    return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
+  case COB_TYPE_GROUP:
+    return "CobolFieldAttribute.COB_TYPE_GROUP";
+  case COB_TYPE_BOOLEAN:
+    return "CobolFieldAttribute.COB_TYPE_BOOLEAN";
+  case COB_TYPE_NUMERIC_DISPLAY:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY";
+  case COB_TYPE_NUMERIC_BINARY:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY";
+  case COB_TYPE_NUMERIC_PACKED:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED";
+  case COB_TYPE_NUMERIC_FLOAT:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_FLOAT";
+  case COB_TYPE_NUMERIC_DOUBLE:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE";
+  case COB_TYPE_NUMERIC_EDITED:
+    return "CobolFieldAttribute.COB_TYPE_NUMERIC_EDITED";
+  case COB_TYPE_ALPHANUMERIC:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC";
+  case COB_TYPE_ALPHANUMERIC_ALL:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_ALL";
+  case COB_TYPE_ALPHANUMERIC_EDITED:
+    return "CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_EDITED";
+  case COB_TYPE_NATIONAL:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL";
+  case COB_TYPE_NATIONAL_EDITED:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL_EDITED";
+  case COB_TYPE_NATIONAL_ALL:
+    return "CobolFieldAttribute.COB_TYPE_NATIONAL_ALL";
+  default:
+    return "CobolFieldAttribute.COB_TYPE_UNKNOWN";
+  }
+}
+
+/**
+ * flagsの値をCobolFieldAttributeのフラグ定数名の組み合わせとして出力する
+ * additional_indent: 2番目以降のフラグの前に付ける追加インデントのスペース数
+ */
+static void joutput_flags(int flags) {
+  if (flags == 0) {
+    joutput("CobolFieldAttribute.COB_FLAG_NOT_SPECIFIED");
+    return;
+  }
+
+  int first = 1;
+  int indent_increased = 0;
+
+  if (flags & COB_FLAG_HAVE_SIGN) {
+    joutput("CobolFieldAttribute.COB_FLAG_HAVE_SIGN");
+    first = 0;
+  }
+
+#define HANDLE_FLAG(flag)                                                      \
+  if (flags & flag) {                                                          \
+    if (!first) {                                                              \
+      joutput_newline();                                                       \
+      if (!indent_increased) {                                                 \
+        joutput_indent_level += 2;                                             \
+        indent_increased = 1;                                                  \
+      }                                                                        \
+      joutput_prefix();                                                        \
+      joutput("| ");                                                           \
+    }                                                                          \
+    joutput("CobolFieldAttribute." #flag);                                     \
+    first = 0;                                                                 \
+  }
+
+  HANDLE_FLAG(COB_FLAG_SIGN_SEPARATE)
+  HANDLE_FLAG(COB_FLAG_SIGN_LEADING)
+  HANDLE_FLAG(COB_FLAG_BLANK_ZERO)
+  HANDLE_FLAG(COB_FLAG_JUSTIFIED)
+  HANDLE_FLAG(COB_FLAG_BINARY_SWAP)
+  HANDLE_FLAG(COB_FLAG_REAL_BINARY)
+  HANDLE_FLAG(COB_FLAG_IS_POINTER)
+
+  if (indent_increased) {
+    joutput_indent_level -= 2;
+  }
+}
+
+/**
  * メンバ変数の初期化を行うメソッドinitを出力する
  */
 static void joutput_init_method(struct cb_program *prog) {
@@ -5270,9 +5356,29 @@ static void joutput_init_method(struct cb_program *prog) {
     attr_cache = attr_list_reverse(attr_cache);
     for (j = attr_cache; j; j = j->next) {
       joutput_prefix();
-      joutput("%s%d = ", CB_PREFIX_ATTR, j->id);
-      joutput("new CobolFieldAttribute (%d, %d, %d, %d, ", j->type, j->digits,
-              j->scale, j->flags);
+      joutput("%s%d = new CobolFieldAttribute(", CB_PREFIX_ATTR, j->id);
+      joutput_newline();
+      joutput_indent_level += 2;
+      // type
+      joutput_prefix();
+      joutput("%s,", get_type_constant_name(j->type));
+      joutput_newline();
+      // digits
+      joutput_prefix();
+      joutput("/* digits= */ %d,", j->digits);
+      joutput_newline();
+      // scale
+      joutput_prefix();
+      joutput("/* scale= */ %d,", j->scale);
+      joutput_newline();
+      // flags
+      joutput_prefix();
+      joutput_flags(j->flags);
+      joutput(",");
+      joutput_newline();
+      // pic
+      joutput_prefix();
+      joutput("/* pic= */ ");
       if (j->pic) {
         joutput("\"");
         unsigned char *s;
@@ -5288,7 +5394,9 @@ static void joutput_init_method(struct cb_program *prog) {
       } else {
         joutput("null");
       }
-      joutput(");\n");
+      joutput(");");
+      joutput_newline();
+      joutput_indent_level -= 2;
     }
   }
 
