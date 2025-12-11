@@ -1,11 +1,11 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-val enableStaticAnalysis = JavaVersion.current() >= JavaVersion.VERSION_21
+val enableStaticAnalysis = JavaVersion.current() >= JavaVersion.VERSION_17
 
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.diffplug.spotless") version "7.2.1" apply false
+    id("com.diffplug.spotless") version "8.0.0" apply false
     id("java")
     id("maven-publish")
     id("com.github.spotbugs") version "6.4.5" apply false
