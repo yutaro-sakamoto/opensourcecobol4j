@@ -5068,81 +5068,49 @@ static const char *get_type_constant_name(int type) {
 }
 
 /**
- * flagsの値をCobolFieldAttributeのフラグ定数名の組み合わせに変換する
- * indent_spaces: 2番目以降のフラグの前に付けるインデントのスペース数
- *                0の場合は従来通り" | "で区切る
+ * flagsの値をCobolFieldAttributeのフラグ定数名の組み合わせとして出力する
+ * additional_indent: 2番目以降のフラグの前に付ける追加インデントのスペース数
  */
-static const char *get_flags_constant_name(int flags, int indent_spaces) {
-  static char buffer[1024];
-  buffer[0] = '\0';
-
+static void joutput_flags(int flags) {
   if (flags == 0) {
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_NOT_SPECIFIED");
-    return buffer;
+    joutput("CobolFieldAttribute.COB_FLAG_NOT_SPECIFIED");
+    return;
   }
 
   int first = 1;
-  char separator[64];
-  if (indent_spaces > 0) {
-    separator[0] = '\n';
-    for (int i = 0; i < indent_spaces; i++) {
-      separator[i + 1] = ' ';
-    }
-    separator[indent_spaces + 1] = '|';
-    separator[indent_spaces + 2] = ' ';
-    separator[indent_spaces + 3] = '\0';
-  } else {
-    strcpy(separator, " | ");
-  }
+  int indent_increased = 0;
 
   if (flags & COB_FLAG_HAVE_SIGN) {
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_HAVE_SIGN");
-    first = 0;
-  }
-  if (flags & COB_FLAG_SIGN_SEPARATE) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE");
-    first = 0;
-  }
-  if (flags & COB_FLAG_SIGN_LEADING) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_SIGN_LEADING");
-    first = 0;
-  }
-  if (flags & COB_FLAG_BLANK_ZERO) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_BLANK_ZERO");
-    first = 0;
-  }
-  if (flags & COB_FLAG_JUSTIFIED) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_JUSTIFIED");
-    first = 0;
-  }
-  if (flags & COB_FLAG_BINARY_SWAP) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_BINARY_SWAP");
-    first = 0;
-  }
-  if (flags & COB_FLAG_REAL_BINARY) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_REAL_BINARY");
-    first = 0;
-  }
-  if (flags & COB_FLAG_IS_POINTER) {
-    if (!first)
-      strcat(buffer, separator);
-    strcat(buffer, "CobolFieldAttribute.COB_FLAG_IS_POINTER");
+    joutput("CobolFieldAttribute.COB_FLAG_HAVE_SIGN");
     first = 0;
   }
 
-  return buffer;
+#define HANDLE_FLAG(flag)                                                      \
+  if (flags & flag) {                                                          \
+    if (!first) {                                                              \
+      joutput_newline();                                                       \
+      if (!indent_increased) {                                                 \
+        joutput_indent_level += 2;                                             \
+        indent_increased = 1;                                                  \
+      }                                                                        \
+      joutput_prefix();                                                        \
+      joutput("| ");                                                           \
+    }                                                                          \
+    joutput("CobolFieldAttribute." #flag);                                     \
+    first = 0;                                                                 \
+  }
+
+  HANDLE_FLAG(COB_FLAG_SIGN_SEPARATE)
+  HANDLE_FLAG(COB_FLAG_SIGN_LEADING)
+  HANDLE_FLAG(COB_FLAG_BLANK_ZERO)
+  HANDLE_FLAG(COB_FLAG_JUSTIFIED)
+  HANDLE_FLAG(COB_FLAG_BINARY_SWAP)
+  HANDLE_FLAG(COB_FLAG_REAL_BINARY)
+  HANDLE_FLAG(COB_FLAG_IS_POINTER)
+
+  if (indent_increased) {
+    joutput_indent_level -= 2;
+  }
 }
 
 /**
@@ -5405,8 +5373,8 @@ static void joutput_init_method(struct cb_program *prog) {
       joutput_newline();
       // flags
       joutput_prefix();
-      joutput("%s,",
-              get_flags_constant_name(j->flags, joutput_indent_level + 2));
+      joutput_flags(j->flags);
+      joutput(",");
       joutput_newline();
       // pic
       joutput_prefix();
