@@ -26,11 +26,10 @@ jobs:
           dnf install -y epel-release
           dnf install -y gcc make bison flex automake autoconf diffutils gettext java-21-openjdk-devel git-clang-format cppcheck
 
-      - name: Install opensource COBOL 4J
+      - name: Build opensource COBOL 4J
         run: |
           ./configure --prefix=/usr/
           make
-          make install
 
       - name: Check format with google-java-format and clang-format
         run: |
@@ -39,12 +38,12 @@ jobs:
       - name: Run SpotBugs
         working-directory: libcobj
         run: |
-          ./gradlew spotbugsMain
+          ./gradlew spotbugsMain -PstaticAnalysis
 
       - name: Run PMD
         working-directory: libcobj
         run: |
-          ./gradlew pmdMain
+          ./gradlew pmdMain -PstaticAnalysis
 
       - name: Run cppcheck
         working-directory: cobj

@@ -3,11 +3,20 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
-    id("com.diffplug.spotless") version "7.2.1"
     id("java")
     id("maven-publish")
-    pmd
-    id("com.github.spotbugs") version "6.4.5"
+    // 静的解析ツールは apply false で宣言のみ行い、条件付きで適用する
+    id("com.diffplug.spotless") version "7.2.1" apply false
+    id("com.github.spotbugs") version "6.4.5" apply false
+}
+
+// コマンドラインで -PstaticAnalysis を指定した場合のみ静的解析ツールを有効化
+val enableStaticAnalysis: Boolean = project.hasProperty("staticAnalysis")
+
+if (enableStaticAnalysis) {
+    apply(plugin = "com.diffplug.spotless")
+    apply(plugin = "pmd")  // PMDはコアプラグインなので plugins ブロックでは宣言不要
+    apply(plugin = "com.github.spotbugs")
 }
 
 repositories {
@@ -37,10 +46,16 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     implementation("org.json:json:20250517")
-    spotbugs("com.github.spotbugs:spotbugs:4.8.6")
 
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-simple:2.0.17")
+}
+
+// spotbugsの依存関係はプラグインが適用された後に追加
+if (enableStaticAnalysis) {
+    dependencies {
+        "spotbugs"("com.github.spotbugs:spotbugs:4.8.6")
+    }
 }
 
 java {
@@ -48,20 +63,22 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-pmd {
-    isConsoleOutput = true
-    ruleSets = listOf()
-    ruleSetFiles = files("${rootDir}/config/pmdRuleSet.xml")
-}
+if (enableStaticAnalysis) {
+    configure<org.gradle.api.plugins.quality.PmdExtension> {
+        isConsoleOutput = true
+        ruleSets = listOf()
+        ruleSetFiles = files("${rootDir}/config/pmdRuleSet.xml")
+    }
 
-spotbugs {
-    excludeFilter.set(project.file("${rootDir}/config/spotbugsFilter.xml"))
-}
+    configure<com.github.spotbugs.snom.SpotBugsExtension> {
+        excludeFilter.set(project.file("${rootDir}/config/spotbugsFilter.xml"))
+    }
 
-spotless {
-  java {
-    googleJavaFormat("1.17.0").aosp().reflowLongStrings().skipJavadocFormatting()
-  }
+    configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+        java {
+            googleJavaFormat("1.17.0").aosp().reflowLongStrings().skipJavadocFormatting()
+        }
+    }
 }
 
 publishing {
@@ -108,4 +125,3 @@ tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
-
