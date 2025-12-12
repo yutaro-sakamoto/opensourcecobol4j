@@ -6,7 +6,7 @@ plugins {
     id("java")
     id("maven-publish")
     // 静的解析ツールは apply false で宣言のみ行い、条件付きで適用する
-    id("com.diffplug.spotless") version "7.2.1" apply false
+    id("com.diffplug.spotless") version "8.0.0" apply false
     id("com.github.spotbugs") version "6.4.5" apply false
 }
 
@@ -54,7 +54,7 @@ dependencies {
 // spotbugsの依存関係はプラグインが適用された後に追加
 if (enableStaticAnalysis) {
     dependencies {
-        "spotbugs"("com.github.spotbugs:spotbugs:4.8.6")
+        "spotbugs"("com.github.spotbugs:spotbugs:4.9.8")
     }
 }
 
