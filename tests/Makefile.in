@@ -571,6 +571,7 @@ SUBDIRS = cobol85
 @I18N_UTF8_FALSE@	command-line-options \
 @I18N_UTF8_FALSE@	cobj-idx \
 @I18N_UTF8_FALSE@	file-lock \
+@I18N_UTF8_FALSE@	file-lock2 \
 @I18N_UTF8_FALSE@	misc
 
 @I18N_UTF8_TRUE@TESTS = syntax \
@@ -583,6 +584,7 @@ SUBDIRS = cobol85
 @I18N_UTF8_TRUE@	command-line-options \
 @I18N_UTF8_TRUE@	cobj-idx \
 @I18N_UTF8_TRUE@	file-lock \
+@I18N_UTF8_TRUE@	file-lock2 \
 @I18N_UTF8_TRUE@	misc
 
 syntax_DEPENDENCIES = \
@@ -754,12 +756,14 @@ indexed_lock_DEPENDENCIES = \
 	file-lock.src/access-different-record.at \
 	file-lock.src/input-mode.at \
 	file-lock.src/same-process.at \
-	file-lock.src/open-start-write-rewrite.at \
-	file-lock.src/release-lock.at \
-	file-lock.src/open-input.at \
-	file-lock.src/lock-mode-clause.at \
-	file-lock.src/old-file.at \
-	file-lock.src/lock-mode-automatic.at
+	file-lock.src/open-start-write-rewrite.at
+
+indexed_lock2_DEPENDENCIES = \
+	file-lock2.src/release-lock.at \
+	file-lock2.src/open-input.at \
+	file-lock2.src/lock-mode-clause.at \
+	file-lock2.src/old-file.at \
+	file-lock2.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -1168,6 +1172,13 @@ file-lock.log: file-lock
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+file-lock2.log: file-lock2
+	@p='file-lock2'; \
+	b='file-lock2'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 misc.log: misc
 	@p='misc'; \
 	b='misc'; \
@@ -1410,6 +1421,7 @@ $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
+$(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

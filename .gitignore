@@ -55,6 +55,7 @@ tests/cobj-idx
 tests/misc
 tests/run
 tests/file-lock
+tests/file-lock2
 tests/*.log
 tests/syntax
 tests/cobol85/*/*.class

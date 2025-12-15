@@ -31,6 +31,7 @@ TESTS = syntax \
 	command-line-options \
 	cobj-idx \
 	file-lock \
+	file-lock2 \
 	misc
 else
 TESTS = syntax \
@@ -43,6 +44,7 @@ TESTS = syntax \
 	command-line-options \
 	cobj-idx \
 	file-lock \
+	file-lock2 \
 	misc
 endif
 
@@ -215,12 +217,14 @@ indexed_lock_DEPENDENCIES = \
 	file-lock.src/access-different-record.at \
 	file-lock.src/input-mode.at \
 	file-lock.src/same-process.at \
-	file-lock.src/open-start-write-rewrite.at \
-	file-lock.src/release-lock.at \
-	file-lock.src/open-input.at \
-	file-lock.src/lock-mode-clause.at \
-	file-lock.src/old-file.at \
-	file-lock.src/lock-mode-automatic.at
+	file-lock.src/open-start-write-rewrite.at
+
+indexed_lock2_DEPENDENCIES = \
+	file-lock2.src/release-lock.at \
+	file-lock2.src/open-input.at \
+	file-lock2.src/lock-mode-clause.at \
+	file-lock2.src/old-file.at \
+	file-lock2.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -308,4 +312,5 @@ $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
+$(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
