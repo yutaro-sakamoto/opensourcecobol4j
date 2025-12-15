@@ -214,12 +214,12 @@ indexed_lock_DEPENDENCIES = \
 	file-lock.at \
 	file-lock.src/lock-file.at \
 	file-lock.src/access-same-record.at \
-	file-lock.src/access-different-record.at \
-	file-lock.src/input-mode.at \
-	file-lock.src/same-process.at \
-	file-lock.src/open-start-write-rewrite.at
+	file-lock.src/access-different-record.at
 
 indexed_lock2_DEPENDENCIES = \
+	file-lock2.src/input-mode.at
+	file-lock2.src/same-process.at \
+	file-lock2.src/open-start-write-rewrite.at \
 	file-lock2.src/release-lock.at \
 	file-lock2.src/open-input.at \
 	file-lock2.src/lock-mode-clause.at \
