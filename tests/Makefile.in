@@ -756,7 +756,15 @@ indexed_lock_DEPENDENCIES = \
 	file-lock.src/access-different-record.at
 
 indexed_lock2_DEPENDENCIES = \
-	file-lock2.src/input-mode.at
+	file-lock2.at \
+	file-lock2.src/input-mode.at \
+	file-lock2.src/same-process.at \
+	file-lock2.src/open-start-write-rewrite.at \
+	file-lock2.src/release-lock.at \
+	file-lock2.src/open-input.at \
+	file-lock2.src/lock-mode-clause.at \
+	file-lock2.src/old-file.at \
+	file-lock2.src/lock-mode-automatic.at
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -1383,13 +1391,6 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-	file-lock2.src/same-process.at \
-	file-lock2.src/open-start-write-rewrite.at \
-	file-lock2.src/release-lock.at \
-	file-lock2.src/open-input.at \
-	file-lock2.src/lock-mode-clause.at \
-	file-lock2.src/old-file.at \
-	file-lock2.src/lock-mode-automatic.at
 
 all: $(TESTS)
 

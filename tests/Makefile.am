@@ -217,7 +217,8 @@ indexed_lock_DEPENDENCIES = \
 	file-lock.src/access-different-record.at
 
 indexed_lock2_DEPENDENCIES = \
-	file-lock2.src/input-mode.at
+	file-lock2.at \
+	file-lock2.src/input-mode.at \
 	file-lock2.src/same-process.at \
 	file-lock2.src/open-start-write-rewrite.at \
 	file-lock2.src/release-lock.at \
