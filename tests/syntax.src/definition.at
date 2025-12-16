@@ -511,14 +511,9 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_ONLY} prog.cob], [0], ,
-[])
-
-## Change when we DON'T allow this
-## AT_CHECK([${COMPILE_ONLY} prog.cob], [1], ,
-## [prog.cob: In paragraph 'L':
-## prog.cob:6: Error: redefinition of 'L'
-## prog.cob:5: Error: 'L' previously defined here
-## ])
+[prog.cbl:6: Error: Duplicate paragraph 'L' in the default section
+prog.cbl:5: Error: 'L' previously defined here
+])
 
 AT_CLEANUP
 
