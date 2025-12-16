@@ -1512,10 +1512,14 @@ int cb_validate_labels(struct cb_program *prog) {
       }
 
       if (strcmp((const char *)label1->name, (const char *)label2->name) == 0) {
-        cb_error_x(x2, _("Duplicate paragraph '%s' in section '%s'"),
-                   label2->name,
-                   label2->section ? label2->section->name
-                                   : (const unsigned char *)"MAIN SECTION");
+        if (!label2->section || !label2->section->name ||
+            strcmp((char *)label2->section->name, "MAIN SECTION") == 0) {
+          cb_error_x(x2, _("Duplicate paragraph '%s' in the default section"),
+                     label2->name);
+        } else {
+          cb_error_x(x2, _("Duplicate paragraph '%s' in section '%s'"),
+                     label2->name, label2->section->name);
+        }
         cb_error_x(x1, _("'%s' previously defined here"), label1->name);
         duplicate_count++;
       }
