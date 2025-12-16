@@ -103,6 +103,7 @@ static struct attr_list {
   int scale;
   int flags;
   int lenstr;
+  char *suffix;
 } *attr_cache = NULL;
 
 static struct literal_list {
@@ -149,6 +150,10 @@ enum joutput_stmt_type {
   JOUTPUT_STMT_DEFAULT,
   JOUTPUT_STMT_TRIM,
 };
+
+/* Forward declarations */
+static char *build_attr_suffix(int type, int flags);
+static const char *lookup_attr_suffix(int id);
 
 static cb_tree call_parameters = NULL;
 
@@ -1057,6 +1062,7 @@ static int lookup_attr(int type, int digits, int scale, int flags,
   l->flags = flags;
   l->pic = pic;
   l->lenstr = lenstr;
+  l->suffix = build_attr_suffix(type, flags);
   l->next = attr_cache;
   attr_cache = l;
 
@@ -1159,7 +1165,7 @@ static void joutput_attr(cb_tree x) {
     fprintf(stderr, "Unexpected tree tag %d\n", CB_TREE_TAG(x));
     ABORT();
   }
-  joutput("%s%d", CB_PREFIX_ATTR, id);
+  joutput("%s%d%s", CB_PREFIX_ATTR, id, lookup_attr_suffix(id));
 }
 
 /**
@@ -5068,6 +5074,96 @@ static const char *get_type_constant_name(int type) {
 }
 
 /**
+ * typeの値を変数名用の短縮名に変換する
+ */
+static const char *get_type_short_name(int type) {
+  switch (type) {
+  case COB_TYPE_UNKNOWN:
+    return "Unknown";
+  case COB_TYPE_GROUP:
+    return "Group";
+  case COB_TYPE_BOOLEAN:
+    return "Boolean";
+  case COB_TYPE_NUMERIC_DISPLAY:
+    return "NumericDisplay";
+  case COB_TYPE_NUMERIC_BINARY:
+    return "NumericBinary";
+  case COB_TYPE_NUMERIC_PACKED:
+    return "NumericPacked";
+  case COB_TYPE_NUMERIC_FLOAT:
+    return "NumericFloat";
+  case COB_TYPE_NUMERIC_DOUBLE:
+    return "NumericDouble";
+  case COB_TYPE_NUMERIC_EDITED:
+    return "NumericEdited";
+  case COB_TYPE_ALPHANUMERIC:
+    return "Alphanumeric";
+  case COB_TYPE_ALPHANUMERIC_ALL:
+    return "AlphanumericAll";
+  case COB_TYPE_ALPHANUMERIC_EDITED:
+    return "AlphanumericEdited";
+  case COB_TYPE_NATIONAL:
+    return "National";
+  case COB_TYPE_NATIONAL_EDITED:
+    return "NationalEdited";
+  case COB_TYPE_NATIONAL_ALL:
+    return "NationalAll";
+  default:
+    return "Unknown";
+  }
+}
+
+/**
+ * typeとflagsから変数名のサフィックスを生成する
+ */
+static char *build_attr_suffix(int type, int flags) {
+  char buf[256];
+  char *p = buf;
+
+  p += sprintf(p, "_%s", get_type_short_name(type));
+
+  if (flags & COB_FLAG_HAVE_SIGN) {
+    p += sprintf(p, "_HaveSign");
+  }
+  if (flags & COB_FLAG_SIGN_SEPARATE) {
+    p += sprintf(p, "_SignSeparate");
+  }
+  if (flags & COB_FLAG_SIGN_LEADING) {
+    p += sprintf(p, "_SignLeading");
+  }
+  if (flags & COB_FLAG_BLANK_ZERO) {
+    p += sprintf(p, "_BlankZero");
+  }
+  if (flags & COB_FLAG_JUSTIFIED) {
+    p += sprintf(p, "_Justified");
+  }
+  if (flags & COB_FLAG_BINARY_SWAP) {
+    p += sprintf(p, "_BinarySwap");
+  }
+  if (flags & COB_FLAG_REAL_BINARY) {
+    p += sprintf(p, "_RealBinary");
+  }
+  if (flags & COB_FLAG_IS_POINTER) {
+    p += sprintf(p, "_IsPointer");
+  }
+
+  return strdup(buf);
+}
+
+/**
+ * idからattr_listのサフィックスを検索する
+ */
+static const char *lookup_attr_suffix(int id) {
+  struct attr_list *l;
+  for (l = attr_cache; l; l = l->next) {
+    if (l->id == id) {
+      return l->suffix ? l->suffix : "";
+    }
+  }
+  return "";
+}
+
+/**
  * flagsの値をCobolFieldAttributeのフラグ定数名の組み合わせとして出力する
  * additional_indent: 2番目以降のフラグの前に付ける追加インデントのスペース数
  */
@@ -5340,8 +5436,9 @@ static void joutput_init_method(struct cb_program *prog) {
   if (gen_native) {
     int index = lookup_attr(COB_TYPE_ALPHANUMERIC, 0, 0, 0, NULL, 0);
     joutput_line("%snative = CobolFieldFactory.makeCobolField(256, new "
-                 "CobolDataStorage(cob_native), %s%d);\n",
-                 CB_PREFIX_FIELD, CB_PREFIX_ATTR, index);
+                 "CobolDataStorage(cob_native), %s%d%s);\n",
+                 CB_PREFIX_FIELD, CB_PREFIX_ATTR, index,
+                 lookup_attr_suffix(index));
   }
 
   joutput_indent_level -= 2;
@@ -5356,7 +5453,8 @@ static void joutput_init_method(struct cb_program *prog) {
     attr_cache = attr_list_reverse(attr_cache);
     for (j = attr_cache; j; j = j->next) {
       joutput_prefix();
-      joutput("%s%d = new CobolFieldAttribute(", CB_PREFIX_ATTR, j->id);
+      joutput("%s%d%s = new CobolFieldAttribute(", CB_PREFIX_ATTR, j->id,
+              j->suffix);
       joutput_newline();
       joutput_indent_level += 2;
       // type
@@ -5471,9 +5569,9 @@ static void joutput_alphabet_name_initialization(struct cb_alphabet_name *p) {
   joutput("%s%s = new CobolDataStorage(%s_byte_array_%s);", CB_PREFIX_SEQUENCE,
           p->cname, CB_PREFIX_SEQUENCE, p->cname);
   i = lookup_attr(COB_TYPE_ALPHANUMERIC, 0, 0, 0, NULL, 0);
-  joutput("%s%s = CobolFieldFactory.makeCobolField(256, %s%s, %s%d);\n",
+  joutput("%s%s = CobolFieldFactory.makeCobolField(256, %s%s, %s%d%s);\n",
           CB_PREFIX_FIELD, p->cname, CB_PREFIX_SEQUENCE, p->cname,
-          CB_PREFIX_ATTR, i);
+          CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
   joutput("\n");
 }
 
@@ -5728,7 +5826,8 @@ static void joutput_declare_member_variables(struct cb_program *prog,
     joutput_line("/* Attributes */\n");
     attr_cache = attr_list_reverse(attr_cache);
     for (j = attr_cache; j; j = j->next) {
-      joutput_line("private CobolFieldAttribute %s%d;", CB_PREFIX_ATTR, j->id);
+      joutput_line("private CobolFieldAttribute %s%d%s;", CB_PREFIX_ATTR, j->id,
+                   j->suffix);
     }
     joutput("\n");
   }
@@ -6631,8 +6730,8 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     joutput("  ");
     joutput("private static AbstractCobolField %sebcdic = "
             "CobolFieldFactori.makeField(256, new "
-            "CobolDataStorage(cob_ebcdic), %s%d);\n",
-            CB_PREFIX_FIELD, CB_PREFIX_ATTR, i);
+            "CobolDataStorage(cob_ebcdic), %s%d%s);\n",
+            CB_PREFIX_FIELD, CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
     joutput("\n");
   }
   if (gen_ebcdic_ascii) {
@@ -6711,8 +6810,8 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     joutput("  ");
     joutput("private static AbstractCobolField %sebcdic_ascii = "
             "CobolFieldFactory.makeField(256, new "
-            "CobolDataStorage(cob_ebcdic_ascii), %s%d);\n",
-            CB_PREFIX_FIELD, CB_PREFIX_ATTR, i);
+            "CobolDataStorage(cob_ebcdic_ascii), %s%d%s);\n",
+            CB_PREFIX_FIELD, CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
     joutput("\n");
   }
   if (gen_native) {
