@@ -1483,6 +1483,47 @@ void cb_validate_program_body(struct cb_program *prog) {
   }
 }
 
+int cb_validate_labels(struct cb_program *prog) {
+  cb_tree l1, l2;
+  int duplicate_count = 0;
+
+  for (l1 = prog->exec_list; l1; l1 = CB_CHAIN(l1)) {
+    cb_tree x1 = CB_VALUE(l1);
+    if (CB_TREE_TAG(x1) != CB_TAG_LABEL) {
+      continue;
+    }
+    struct cb_label *label1 = CB_LABEL(x1);
+    if (label1->is_section) {
+      continue;
+    }
+
+    for (l2 = CB_CHAIN(l1); l2; l2 = CB_CHAIN(l2)) {
+      cb_tree x2 = CB_VALUE(l2);
+      if (CB_TREE_TAG(x2) != CB_TAG_LABEL) {
+        continue;
+      }
+      struct cb_label *label2 = CB_LABEL(x2);
+      if (label2->is_section) {
+        continue;
+      }
+
+      if (label1->section != label2->section) {
+        continue;
+      }
+
+      if (strcmp((const char *)label1->name, (const char *)label2->name) == 0) {
+        cb_error_x(x2, _("Duplicate paragraph '%s' in section '%s'"),
+                   label2->name,
+                   label2->section ? label2->section->name
+                                   : (const unsigned char *)"MAIN SECTION");
+        cb_error_x(x1, _("'%s' previously defined here"), label1->name);
+        duplicate_count++;
+      }
+    }
+  }
+  return duplicate_count;
+}
+
 /*
  * Expressions
  */

@@ -1783,6 +1783,14 @@ static int process_translate(struct filename *fn) {
     return 0;
   }
 
+  /* Validate duplicate labels in the same section */
+  for (q = current_program; q; q = q->next_program) {
+    cb_validate_labels(q);
+  }
+  if (errorcount > 0) {
+    return 1;
+  }
+
   /* Set up USE GLOBAL handlers */
   p = current_program;
   for (q = p; q; q = q->next_program) {
