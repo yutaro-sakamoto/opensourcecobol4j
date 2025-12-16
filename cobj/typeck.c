@@ -1489,7 +1489,7 @@ int cb_validate_labels(struct cb_program *prog) {
 
   for (l1 = prog->exec_list; l1; l1 = CB_CHAIN(l1)) {
     cb_tree x1 = CB_VALUE(l1);
-    if (CB_TREE_TAG(x1) != CB_TAG_LABEL) {
+    if (!CB_LABEL_P(x1)) {
       continue;
     }
     struct cb_label *label1 = CB_LABEL(x1);
@@ -1499,16 +1499,16 @@ int cb_validate_labels(struct cb_program *prog) {
 
     for (l2 = CB_CHAIN(l1); l2; l2 = CB_CHAIN(l2)) {
       cb_tree x2 = CB_VALUE(l2);
-      if (CB_TREE_TAG(x2) != CB_TAG_LABEL) {
+      if (!CB_LABEL_P(x2)) {
         continue;
       }
       struct cb_label *label2 = CB_LABEL(x2);
       if (label2->is_section) {
-        continue;
+        break;
       }
 
       if (label1->section != label2->section) {
-        continue;
+        break;
       }
 
       if (strcmp((const char *)label1->name, (const char *)label2->name) == 0) {
