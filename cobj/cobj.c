@@ -1779,16 +1779,14 @@ static int process_translate(struct filename *fn) {
   if (ret) {
     return ret;
   }
-  if (cb_flag_syntax_only || current_program->entry_list == NULL) {
-    return 0;
-  }
 
   /* Validate duplicate labels in the same section */
   for (q = current_program; q; q = q->next_program) {
     cb_validate_labels(q);
   }
-  if (errorcount > 0) {
-    return 1;
+
+  if (cb_flag_syntax_only || current_program->entry_list == NULL) {
+    return 0;
   }
 
   /* Set up USE GLOBAL handlers */
