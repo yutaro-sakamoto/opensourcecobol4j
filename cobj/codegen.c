@@ -5126,7 +5126,12 @@ static char *build_attr_suffix(int type, int digits, int scale, int flags) {
   if (type == COB_TYPE_NUMERIC_DISPLAY || type == COB_TYPE_NUMERIC_BINARY ||
       type == COB_TYPE_NUMERIC_PACKED || type == COB_TYPE_NUMERIC_FLOAT ||
       type == COB_TYPE_NUMERIC_DOUBLE || type == COB_TYPE_NUMERIC_EDITED) {
-    p += sprintf(p, "_Digits%d_Scale%d", digits, scale);
+    p += sprintf(p, "_Digits%d", digits);
+    if (scale < 0) {
+      p += sprintf(p, "_ScaleNeg%d", -scale);
+    } else {
+      p += sprintf(p, "_Scale%d", scale);
+    }
   }
 
   if (flags & COB_FLAG_HAVE_SIGN) {
