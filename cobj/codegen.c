@@ -6741,7 +6741,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     i = lookup_attr(COB_TYPE_ALPHANUMERIC, 0, 0, 0, NULL, 0);
     joutput("  ");
     joutput("private static AbstractCobolField %sebcdic = "
-            "CobolFieldFactori.makeField(256, new "
+            "CobolFieldFactory.makeField(256, new "
             "CobolDataStorage(cob_ebcdic), %s%d%s);\n",
             CB_PREFIX_FIELD, CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
     joutput("\n");
