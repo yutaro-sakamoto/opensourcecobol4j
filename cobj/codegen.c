@@ -152,7 +152,7 @@ enum joutput_stmt_type {
 };
 
 /* Forward declarations */
-static char *build_attr_suffix(int type, int flags);
+static char *build_attr_suffix(int type, int digits, int scale, int flags);
 static const char *lookup_attr_suffix(int id);
 
 static cb_tree call_parameters = NULL;
@@ -1062,7 +1062,7 @@ static int lookup_attr(int type, int digits, int scale, int flags,
   l->flags = flags;
   l->pic = pic;
   l->lenstr = lenstr;
-  l->suffix = build_attr_suffix(type, flags);
+  l->suffix = build_attr_suffix(type, digits, scale, flags);
   l->next = attr_cache;
   attr_cache = l;
 
@@ -5114,13 +5114,20 @@ static const char *get_type_short_name(int type) {
 }
 
 /**
- * typeとflagsから変数名のサフィックスを生成する
+ * type, digits, scale, flagsから変数名のサフィックスを生成する
  */
-static char *build_attr_suffix(int type, int flags) {
+static char *build_attr_suffix(int type, int digits, int scale, int flags) {
   char buf[256];
   char *p = buf;
 
   p += sprintf(p, "_%s", get_type_short_name(type));
+
+  /* NUMERIC型の場合はdigitsとscaleを追加 */
+  if (type == COB_TYPE_NUMERIC_DISPLAY || type == COB_TYPE_NUMERIC_BINARY ||
+      type == COB_TYPE_NUMERIC_PACKED || type == COB_TYPE_NUMERIC_FLOAT ||
+      type == COB_TYPE_NUMERIC_DOUBLE || type == COB_TYPE_NUMERIC_EDITED) {
+    p += sprintf(p, "_Digits%d_Scale%d", digits, scale);
+  }
 
   if (flags & COB_FLAG_HAVE_SIGN) {
     p += sprintf(p, "_HaveSign");
