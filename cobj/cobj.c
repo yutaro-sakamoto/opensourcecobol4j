@@ -1782,7 +1782,9 @@ static int process_translate(struct filename *fn) {
 
   /* Validate duplicate labels in the same section */
   for (q = current_program; q; q = q->next_program) {
-    cb_validate_labels(q);
+    if (cb_validate_labels(q)) {
+      return -1;
+    }
   }
 
   if (cb_flag_syntax_only || current_program->entry_list == NULL) {

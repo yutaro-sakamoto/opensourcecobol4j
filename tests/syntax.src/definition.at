@@ -501,18 +501,84 @@ AT_CLEANUP
 
 AT_SETUP([Redefinition of paragraph names])
 
-AT_DATA([prog.cob], [
+AT_DATA([prog1.cob], [
        IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog.
+       PROGRAM-ID.      prog1.
        PROCEDURE        DIVISION.
+      *No Label
        L.
+      *No Label
        L.
            STOP RUN.
 ])
 
-AT_CHECK([${COMPILE_ONLY} prog.cob], [0], ,
-[prog.cbl:6: Error: Duplicate paragraph 'L' in the default section
-prog.cbl:5: Error: 'L' previously defined here
+AT_DATA([prog2.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog2.
+       PROCEDURE        DIVISION.
+       SECTION-A SECTION.
+       L.
+      *No Label
+       L.
+           STOP RUN.
+])
+
+AT_DATA([prog3.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog3.
+       PROCEDURE        DIVISION.
+       SECTION-A SECTION.
+       L.
+       SECTION-B SECTION.
+       L.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE} -fsyntax-only prog1.cob], [1], ,
+[prog1.cob:8: Error: Duplicate paragraph 'L' in the default section
+prog1.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} -fsyntax-only prog2.cob], [1], ,
+[prog2.cob:8: Error: Duplicate paragraph 'L' in section 'SECTION-A'
+prog2.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} -fsyntax-only prog3.cob])
+
+AT_CHECK([${COMPILE} prog1.cob], [1], ,
+[prog1.cob:8: Error: Duplicate paragraph 'L' in the default section
+prog1.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} prog2.cob], [1], ,
+[prog2.cob:8: Error: Duplicate paragraph 'L' in section 'SECTION-A'
+prog2.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} prog3.cob])
+
+AT_CHECK([${COMPILE} prog1.cob prog3.cob], [1], ,
+[prog1.cob:8: Error: Duplicate paragraph 'L' in the default section
+prog1.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} prog2.cob prog3.cob], [1], ,
+[prog2.cob:8: Error: Duplicate paragraph 'L' in section 'SECTION-A'
+prog2.cob:6: Error: 'L' previously defined here
+])
+
+AT_CHECK([${COMPILE} prog3.cob prog1.cob], [1], ,
+[prog1.cob:8: Error: Duplicate paragraph 'L' in the default section
+prog1.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} prog3.cob prog2.cob], [1], ,
+[prog2.cob:8: Error: Duplicate paragraph 'L' in section 'SECTION-A'
+prog2.cob:6: Error: 'L' previously defined here
+])
+
+AT_CHECK([${COMPILE} prog1.cob prog2.cob], [1], ,
+[prog1.cob:8: Error: Duplicate paragraph 'L' in the default section
+prog1.cob:6: Error: 'L' previously defined here
+])
+AT_CHECK([${COMPILE} prog2.cob prog1.cob], [1], ,
+[prog2.cob:8: Error: Duplicate paragraph 'L' in section 'SECTION-A'
+prog2.cob:6: Error: 'L' previously defined here
 ])
 
 AT_CLEANUP
