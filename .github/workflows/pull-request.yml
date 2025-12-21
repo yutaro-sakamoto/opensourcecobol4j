@@ -55,6 +55,7 @@ jobs:
           - "cobj-idx"
           - "misc"
           - "file-lock"
+          - "file-lock2"
         os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -76,6 +77,7 @@ jobs:
           - "syntax"
           - "cobj-idx"
           - "file-lock"
+          - "file-lock2"
           #- "misc"
         os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
     uses: ./.github/workflows/test-other.yml
