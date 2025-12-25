@@ -1,5 +1,32 @@
 NEWS - user visible changes				-*- outline -*-
 
+-----------------------------------------------------------------------
+
+* opensource COBOL 4J 1.1.16
+
+** New Features
+
+(1) Implementation of CANCEL ALL
+(2) Improve readability of generated code
+  * Rename some variables to more descriptive names
+  * Replace magic numbers with constants or calculations between constants
+
+** Bug Fixes
+
+(1) Fix `-j` option and `-o` option
+(2) Fix cobj-idx installation issues
+(3) Fix configuration items related to maximum size of PIC N items
+(4) Fix cobj command to detect duplicate labels
+(5) Fix `doc/converted_Java_file_JP.md`
+
+** Miscellaneous
+
+(1) Remove unused code from libcobj.jar (runtime library)
+(2) Remove unnecessary code from generated Java code to improve readability
+(3) Improve Dev Container configuration
+
+-----------------------------------------------------------------------
+
 * opensource COBOL 4J 1.1.15
 
 ** Bug Fixes
