@@ -1845,10 +1845,8 @@ static int process_compile_all(void) {
   int ret = 0;
 #ifdef _WIN32
   char current_dir[] = ".\\";
-  char remove_cmd[] = "del";
 #else
   char current_dir[] = "./";
-  char remove_cmd[] = "rm -rf";
 #endif
 
   char *output_name_a = output_name == NULL ? current_dir : output_name;
@@ -1885,6 +1883,11 @@ static int process_compile_all(void) {
       if (ret) {
         return ret;
       }
+#ifdef _WIN32
+      char remove_cmd[] = "del";
+#else
+      char remove_cmd[] = "rm";
+#endif
       snprintf(buff, COB_MEDIUM_BUFF, "%s %s%c%s.class %s%c%s$*.class",
                remove_cmd, output_name_a, file_path_delimitor, *program_id,
                output_name_a, file_path_delimitor, *program_id);
