@@ -200,6 +200,7 @@ char *cb_info_json_dir = NULL;
 
 #define PROGRAM_ID_LIST_MAX_LEN 1024
 char *program_id_list[PROGRAM_ID_LIST_MAX_LEN];
+int program_id_list_index = 0;
 
 #ifdef _MSC_VER
 #if _MSC_VER >= 1400
@@ -1814,11 +1815,14 @@ static int process_translate(struct filename *fn) {
   }
 
   /* translate to Java */
-  for (i = 0; i < PROGRAM_ID_LIST_MAX_LEN; ++i) {
-    program_id_list[i] = NULL;
-  }
-  codegen(p, 0, program_id_list,
+  codegen(p, 0, &program_id_list[program_id_list_index],
           java_source_dir == NULL ? (char *)"./" : java_source_dir, fn->source);
+
+  /* update program_id_list_index to point to the next empty slot */
+  while (program_id_list_index < PROGRAM_ID_LIST_MAX_LEN &&
+         program_id_list[program_id_list_index] != NULL) {
+    program_id_list_index++;
+  }
 
   return 0;
 }
@@ -1835,10 +1839,9 @@ static void package_name_to_path(char *buff, char *package_name) {
   }
 }
 
-static int process_compile(struct filename *fn) {
+static int process_compile_all(void) {
   char buff[COB_MEDIUM_BUFF];
   char buff2[COB_SMALL_BUFF];
-  char name[COB_MEDIUM_BUFF];
   int ret = 0;
 #ifdef _WIN32
   char current_dir[] = ".\\";
@@ -1848,37 +1851,36 @@ static int process_compile(struct filename *fn) {
   char remove_cmd[] = "rm -rf";
 #endif
 
-  if (output_name) {
-    strcpy(name, output_name);
-  } else {
-    file_basename(fn->source, name);
-  }
-
   char *output_name_a = output_name == NULL ? current_dir : output_name;
   char *java_source_dir_a =
       java_source_dir == NULL ? current_dir : java_source_dir;
 
-  char **program_id;
-  for (program_id = program_id_list; *program_id; ++program_id) {
-    snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding %s -d %s %s/%s.java",
-             cob_java_flags, JAVAC_ENCODING, output_name_a, java_source_dir_a,
-             *program_id);
-    ret = process(buff);
+  /* Compile all Java files at once */
+  snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding %s -d %s %s/*.java",
+           cob_java_flags, JAVAC_ENCODING, output_name_a, java_source_dir_a);
+  ret = process(buff);
+  if (ret) {
+    return ret;
+  }
 
-    if (ret) {
-      return ret;
+  /* Create jar files if cb_flag_jar is set */
+  if (cb_flag_jar) {
+    char *package_dir;
+    if (cb_java_package_name) {
+      package_name_to_path(buff2, cb_java_package_name);
+      package_dir = buff2;
+    } else {
+      package_dir = (char *)".";
     }
-    if (cb_flag_jar) {
-      char *package_dir;
-      if (cb_java_package_name) {
-        package_name_to_path(buff2, cb_java_package_name);
-        package_dir = buff2;
-      } else {
-        package_dir = (char *)".";
-      }
+
+    char **program_id;
+    for (program_id = program_id_list; *program_id; ++program_id) {
       snprintf(buff, COB_MEDIUM_BUFF,
-               "cd %s && jar --create --main-class=%s --file=%s.jar %s/*.class",
-               output_name_a, *program_id, *program_id, package_dir);
+               "cd %s && jar --create --main-class=%s --file=%s.jar "
+               "%s%c%s.class %s%c%s$*.class",
+               output_name_a, *program_id, *program_id, package_dir,
+               file_path_delimitor, *program_id, package_dir,
+               file_path_delimitor, *program_id);
       ret = process(buff);
       if (ret) {
         return ret;
@@ -1892,47 +1894,25 @@ static int process_compile(struct filename *fn) {
   return ret;
 }
 
-static int process_build_module(struct filename *fn) {
+static int process_build_module_all(void) {
   int ret = 0;
   char buff[COB_MEDIUM_BUFF];
-  char name[COB_MEDIUM_BUFF];
-
-  char basename[COB_MEDIUM_BUFF];
-  file_basename(fn->source, basename);
-  struct cb_program *p;
 #ifdef _WIN32
   char remove_cmd[] = "del";
 #else
   char remove_cmd[] = "rm";
 #endif
 
-  if (output_name) {
-    strcpy(name, output_name);
-#if defined(_MSC_VER)
-    file_stripext(name);
-#else
-    if (strchr(output_name, '.') == NULL) {
-      strcat(name, ".");
-      strcat(name, COB_MODULE_EXT);
-    }
-#endif
-  } else {
-    file_basename(fn->source, name);
-#if !defined(_MSC_VER)
-    strcat(name, ".");
-    strcat(name, COB_MODULE_EXT);
-#endif
-  }
-
-  for (p = current_program; p; p = p->next_program) {
-    sprintf(buff, "jar cf %s.jar ./%s.class ./%s$*.class", p->program_id,
-            p->program_id, p->program_id);
+  char **program_id;
+  for (program_id = program_id_list; *program_id; ++program_id) {
+    sprintf(buff, "jar cf %s.jar ./%s.class ./%s$*.class", *program_id,
+            *program_id, *program_id);
     ret = process(buff);
     if (ret) {
       return ret;
     }
-    sprintf(buff, "%s %s.class %s$*.class", remove_cmd, p->program_id,
-            p->program_id);
+    sprintf(buff, "%s %s.class %s$*.class", remove_cmd, *program_id,
+            *program_id);
     ret = process(buff);
     if (ret) {
       return ret;
@@ -2381,6 +2361,13 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+
+  /* Initialize program_id_list before translation loop */
+  program_id_list_index = 0;
+  for (int i = 0; i < PROGRAM_ID_LIST_MAX_LEN; ++i) {
+    program_id_list[i] = NULL;
+  }
+
   for (fn = file_list; fn; fn = fn->next) {
     cb_id = 1;
     cb_attr_id = 1;
@@ -2426,24 +2413,26 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    /* Compile */
-    if (!cb_single_jar_name && (cb_compile_level == CB_LEVEL_COMPILE ||
-                                cb_compile_level == CB_LEVEL_MODULE)) {
-      if (process_compile(fn) != 0) {
-        cobc_clean_up(status);
-        return status;
-      }
-    }
-
-    /* Build module */
-    if (cb_compile_level == CB_LEVEL_MODULE) {
-      if (process_build_module(fn) != 0) {
-        cobc_clean_up(status);
-        return status;
-      }
-      /* Build executable */
-    } else if (cb_compile_level == CB_LEVEL_EXECUTABLE) {
+    /* Build executable */
+    if (cb_compile_level == CB_LEVEL_EXECUTABLE) {
       fprintf(stderr, "Building executable files is not supported");
+    }
+  }
+
+  /* Compile all Java files at once after all translations are complete */
+  if (!cb_single_jar_name && (cb_compile_level == CB_LEVEL_COMPILE ||
+                              cb_compile_level == CB_LEVEL_MODULE)) {
+    if (process_compile_all() != 0) {
+      cobc_clean_up(status);
+      return status;
+    }
+  }
+
+  /* Build module for all programs */
+  if (cb_compile_level == CB_LEVEL_MODULE) {
+    if (process_build_module_all() != 0) {
+      cobc_clean_up(status);
+      return status;
     }
   }
 
