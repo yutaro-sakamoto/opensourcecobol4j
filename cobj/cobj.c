@@ -198,7 +198,7 @@ char *cb_single_jar_name = NULL;
 int cb_flag_info_json = 0;
 char *cb_info_json_dir = NULL;
 
-#define PROGRAM_ID_LIST_MAX_LEN 1024
+#define PROGRAM_ID_LIST_MAX_LEN (65536)
 char *program_id_list[PROGRAM_ID_LIST_MAX_LEN];
 int program_id_list_index = 0;
 
