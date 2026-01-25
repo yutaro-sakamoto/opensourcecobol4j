@@ -1840,7 +1840,8 @@ static void package_name_to_path(char *buff, char *package_name) {
 }
 
 static int process_compile_all(void) {
-  char buff[COB_LARGE_BUFF];
+#define BUFF_SIZE (COB_LARGE_BUFF * 32)
+  char buff[BUFF_SIZE];
   char buff2[COB_SMALL_BUFF];
   int ret = 0;
 #ifdef _WIN32
@@ -1856,7 +1857,7 @@ static int process_compile_all(void) {
   /* Build list of Java files to compile */
   /* Reserve space for "javac ... -encoding ... -d ... " prefix (at least 1024
    * bytes) */
-#define JAVA_FILES_MAX_LEN (COB_LARGE_BUFF / 2)
+#define JAVA_FILES_MAX_LEN (BUFF_SIZE / 2)
   char java_files[JAVA_FILES_MAX_LEN] = "";
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
@@ -1874,8 +1875,8 @@ static int process_compile_all(void) {
 #undef JAVA_FILES_MAX_LEN
 
   /* Compile all Java files at once */
-  snprintf(buff, COB_LARGE_BUFF, "javac %s -encoding %s -d %s %s",
-           cob_java_flags, JAVAC_ENCODING, output_name_a, java_files);
+  snprintf(buff, BUFF_SIZE, "javac %s -encoding %s -d %s %s", cob_java_flags,
+           JAVAC_ENCODING, output_name_a, java_files);
   ret = process(buff);
   if (ret) {
     return ret;
@@ -1892,7 +1893,7 @@ static int process_compile_all(void) {
     }
 
     for (program_id = program_id_list; *program_id; ++program_id) {
-      snprintf(buff, COB_MEDIUM_BUFF,
+      snprintf(buff, BUFF_SIZE,
                "cd %s && jar --create --main-class=%s --file=%s.jar "
                "%s%c%s.class %s%c%s$*.class",
                output_name_a, *program_id, *program_id, package_dir,
@@ -1907,7 +1908,7 @@ static int process_compile_all(void) {
 #else
       char remove_cmd[] = "rm";
 #endif
-      snprintf(buff, COB_MEDIUM_BUFF, "%s %s%c%s%c%s.class %s%c%s%c%s$*.class",
+      snprintf(buff, BUFF_SIZE, "%s %s%c%s%c%s.class %s%c%s%c%s$*.class",
                remove_cmd, output_name_a, file_path_delimitor, package_dir,
                file_path_delimitor, *program_id, output_name_a,
                file_path_delimitor, package_dir, file_path_delimitor,
@@ -1915,6 +1916,7 @@ static int process_compile_all(void) {
       process(buff);
     }
   }
+#undef BUFF_SIZE
   return ret;
 }
 
