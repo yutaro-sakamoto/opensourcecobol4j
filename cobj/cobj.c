@@ -1854,12 +1854,15 @@ static int process_compile_all(void) {
       java_source_dir == NULL ? current_dir : java_source_dir;
 
   /* Build list of Java files to compile */
-  char java_files[COB_LARGE_BUFF] = "";
+  /* Reserve space for "javac ... -encoding ... -d ... " prefix (at least 1024
+   * bytes) */
+#define JAVA_FILES_MAX_LEN (COB_LARGE_BUFF / 2)
+  char java_files[JAVA_FILES_MAX_LEN] = "";
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
     if (strlen(java_files) + strlen(java_source_dir_a) + strlen(*program_id) +
             10 >
-        COB_LARGE_BUFF) {
+        JAVA_FILES_MAX_LEN) {
       fprintf(stderr, "Too many Java files to compile at once\n");
       return -1;
     }
@@ -1868,6 +1871,7 @@ static int process_compile_all(void) {
     strcat(java_files, *program_id);
     strcat(java_files, ".java ");
   }
+#undef JAVA_FILES_MAX_LEN
 
   /* Compile all Java files at once */
   snprintf(buff, COB_LARGE_BUFF, "javac %s -encoding %s -d %s %s",
