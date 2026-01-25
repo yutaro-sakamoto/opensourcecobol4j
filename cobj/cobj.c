@@ -1891,7 +1891,6 @@ static int process_compile_all(void) {
       package_dir = (char *)".";
     }
 
-    char **program_id;
     for (program_id = program_id_list; *program_id; ++program_id) {
       snprintf(buff, COB_MEDIUM_BUFF,
                "cd %s && jar --create --main-class=%s --file=%s.jar "
