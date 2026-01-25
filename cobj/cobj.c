@@ -1888,9 +1888,11 @@ static int process_compile_all(void) {
 #else
       char remove_cmd[] = "rm";
 #endif
-      snprintf(buff, COB_MEDIUM_BUFF, "%s %s%c%s.class %s%c%s$*.class",
-               remove_cmd, output_name_a, file_path_delimitor, *program_id,
-               output_name_a, file_path_delimitor, *program_id);
+      snprintf(buff, COB_MEDIUM_BUFF, "%s %s%c%s%c%s.class %s%c%s%c%s$*.class",
+               remove_cmd, output_name_a, file_path_delimitor, package_dir,
+               file_path_delimitor, *program_id, output_name_a,
+               file_path_delimitor, package_dir, file_path_delimitor,
+               *program_id);
       process(buff);
     }
   }
