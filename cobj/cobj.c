@@ -2370,6 +2370,13 @@ int main(int argc, char *argv[]) {
     cb_pretty_display = 0;
   }
 
+  /* Check if the number of COBOL programs exceeds the limit */
+  if (argc - iargs > PROGRAM_ID_LIST_MAX_LEN) {
+    fprintf(stderr, "Error: Too many COBOL programs (max %d)\n",
+            PROGRAM_ID_LIST_MAX_LEN);
+    exit(1);
+  }
+
   while (iargs < argc) {
     fn = process_filename(argv[iargs++]);
     if (!fn) {
