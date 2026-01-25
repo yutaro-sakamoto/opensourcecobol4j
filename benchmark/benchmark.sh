@@ -11,11 +11,11 @@ for i in {1..100}; do
 done
 
 echo "Compiling 100 COBOL programs with single cobj command..."
-echo "Command: ../cobj/cobj $files"
+echo "Command: cobj $files"
 echo ""
 
 # Measure compilation time
-time ../cobj/cobj $files
+time cobj $files
 
 echo ""
 echo "Compilation complete!"
