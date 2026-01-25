@@ -1840,7 +1840,7 @@ static void package_name_to_path(char *buff, char *package_name) {
 }
 
 static int process_compile_all(void) {
-  char buff[COB_MEDIUM_BUFF];
+  char buff[COB_LARGE_BUFF];
   char buff2[COB_SMALL_BUFF];
   int ret = 0;
 #ifdef _WIN32
@@ -1853,9 +1853,25 @@ static int process_compile_all(void) {
   char *java_source_dir_a =
       java_source_dir == NULL ? current_dir : java_source_dir;
 
+  /* Build list of Java files to compile */
+  char java_files[COB_LARGE_BUFF] = "";
+  char **program_id;
+  for (program_id = program_id_list; *program_id; ++program_id) {
+    if (strlen(java_files) + strlen(java_source_dir_a) + strlen(*program_id) +
+            10 >
+        COB_LARGE_BUFF) {
+      fprintf(stderr, "Too many Java files to compile at once\n");
+      return -1;
+    }
+    strcat(java_files, java_source_dir_a);
+    strcat(java_files, "/");
+    strcat(java_files, *program_id);
+    strcat(java_files, ".java ");
+  }
+
   /* Compile all Java files at once */
-  snprintf(buff, COB_MEDIUM_BUFF, "javac %s -encoding %s -d %s %s/*.java",
-           cob_java_flags, JAVAC_ENCODING, output_name_a, java_source_dir_a);
+  snprintf(buff, COB_LARGE_BUFF, "javac %s -encoding %s -d %s %s",
+           cob_java_flags, JAVAC_ENCODING, output_name_a, java_files);
   ret = process(buff);
   if (ret) {
     return ret;
