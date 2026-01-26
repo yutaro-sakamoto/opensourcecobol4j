@@ -1815,14 +1815,8 @@ static int process_translate(struct filename *fn) {
   }
 
   /* translate to Java */
-  codegen(p, 0, &program_id_list[program_id_list_index],
+  codegen(p, 0, &program_id_list[program_id_list_index++],
           java_source_dir == NULL ? (char *)"./" : java_source_dir, fn->source);
-
-  /* update program_id_list_index to point to the next empty slot */
-  while (program_id_list_index < PROGRAM_ID_LIST_MAX_LEN &&
-         program_id_list[program_id_list_index] != NULL) {
-    program_id_list_index++;
-  }
 
   return 0;
 }
