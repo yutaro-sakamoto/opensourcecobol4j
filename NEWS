@@ -2,6 +2,14 @@ NEWS - user visible changes				-*- outline -*-
 
 -----------------------------------------------------------------------
 
+* opensource COBOL 4J 1.1.17
+
+** Improvements
+
+(1) Optimized compilation time for multiple input files (30x faster for batch compilation)
+
+-----------------------------------------------------------------------
+
 * opensource COBOL 4J 1.1.16
 
 ** New Features
