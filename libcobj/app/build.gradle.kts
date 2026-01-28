@@ -79,7 +79,7 @@ publishing {
         register<MavenPublication>("gpr") {
             groupId = "jp.osscons.opensourcecobol"
             artifactId = "libcobj"
-            version = "1.1.16"
+            version = "1.1.17"
             from(components["java"])
         }
     }
