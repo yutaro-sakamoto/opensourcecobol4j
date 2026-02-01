@@ -193,6 +193,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
 static char *convert_byte_value_format(char value);
 static void append_label_id_map(struct cb_label *label);
 static void create_label_id_map(struct cb_program *prog);
+static void calculate_section_end_labels(void);
 static void destroy_label_id_map(void);
 
 static void joutput_label_variable(struct cb_label *label);
@@ -270,6 +271,8 @@ struct cb_label_id_map {
   int val;
   char *label_name;
   struct cb_label *section;
+  int is_section;      /* 1 if this is a section, 0 otherwise */
+  int section_end_val; /* val of the last label in the section (for sections) */
   struct cb_label_id_map *next;
 };
 struct cb_label_id_map *label_id_map_head = NULL;
@@ -3215,9 +3218,9 @@ static void joutput_call(struct cb_call *p) {
 
 static void joutput_goto_1(cb_tree x) {
   joutput_prefix();
-  joutput("if(true) return Optional.of(contList[");
+  joutput("if (true) { currentLabel = ");
   joutput_label_variable(CB_LABEL(cb_ref(x)));
-  joutput("]);");
+  joutput("; continue mainLoop; }");
   joutput_newline();
 }
 
@@ -3241,16 +3244,15 @@ static void joutput_goto(struct cb_goto *p) {
   } else if (p->target == NULL) {
     needs_exit_prog = 1;
     if (cb_flag_implicit_init) {
-      joutput_line(
-          "if(true) return Optional.of(contList[contList.length - 1]);");
+      joutput_line("if (true) { currentLabel = 0; continue mainLoop; }");
     } else {
       joutput_line("if (!CobolModule.isQueueEmpty()) {");
-      joutput_line("  return Optional.of(contList[contList.length - 1]);");
+      joutput_line("  currentLabel = 0; continue mainLoop;");
       joutput_line("}");
     }
   } else if (p->target == cb_int1) {
     needs_exit_prog = 1;
-    joutput_line("if(true) return Optional.of(contList[contList.length - 1]);");
+    joutput_line("if (true) { currentLabel = 0; continue mainLoop; }");
   } else {
     joutput_goto_1(p->target);
   }
@@ -3264,16 +3266,56 @@ static void joutput_perform_call(struct cb_label *lb, struct cb_label *le) {
   if (lb == le) {
     joutput_line("/* PERFORM %s */", lb->name);
     joutput_prefix();
-    joutput("CobolControl.perform(contList, ");
-    joutput_label_variable(lb);
-    joutput(").run();\n");
-  } else {
-    joutput_line("/* PERFORM %s THRU %s */", lb->name, le->name);
-    joutput_line("CobolControl.performThrough(contList, ");
+    joutput("performRange(");
     joutput_label_variable(lb);
     joutput(", ");
-    joutput_label_variable(le);
-    joutput(").run();\n");
+    /* For a single label, end is the same or we use section end if it's a
+     * section */
+    if (lb->is_section) {
+      joutput(CB_PREFIX_LABEL);
+      joutput("END_");
+      char buf[COB_SMALL_BUFF];
+      strcpy_identifier_cobol_to_java(buf, (char *)lb->name);
+      char *p = buf;
+      while (*p) {
+        if (*p < 0x80) {
+          if (*p == '-' || *p == ' ') {
+            *p = '_';
+          }
+        }
+        p++;
+      }
+      joutput("%s", buf);
+    } else {
+      joutput_label_variable(lb);
+    }
+    joutput(");\n");
+  } else {
+    joutput_line("/* PERFORM %s THRU %s */", lb->name, le->name);
+    joutput_prefix();
+    joutput("performRange(");
+    joutput_label_variable(lb);
+    joutput(", ");
+    /* For THRU, end is the label or its section end if it's a section */
+    if (le->is_section) {
+      joutput(CB_PREFIX_LABEL);
+      joutput("END_");
+      char buf[COB_SMALL_BUFF];
+      strcpy_identifier_cobol_to_java(buf, (char *)le->name);
+      char *p = buf;
+      while (*p) {
+        if (*p < 0x80) {
+          if (*p == '-' || *p == ' ') {
+            *p = '_';
+          }
+        }
+        p++;
+      }
+      joutput("%s", buf);
+    } else {
+      joutput_label_variable(le);
+    }
+    joutput(");\n");
   }
 
   cb_id++;
@@ -3408,17 +3450,53 @@ static void joutput_sort_proc(struct cb_sort_proc *p) {
   if (lb == le) {
     joutput_line("/* PERFORM %s */", lb->name);
     joutput_prefix();
-    joutput("CobolControl.perform(contList, ");
+    joutput("performRange(");
     joutput_label_variable(lb);
-    joutput(").run();\n");
+    joutput(", ");
+    if (lb->is_section) {
+      joutput(CB_PREFIX_LABEL);
+      joutput("END_");
+      char buf[COB_SMALL_BUFF];
+      strcpy_identifier_cobol_to_java(buf, (char *)lb->name);
+      char *q = buf;
+      while (*q) {
+        if (*q < 0x80) {
+          if (*q == '-' || *q == ' ') {
+            *q = '_';
+          }
+        }
+        q++;
+      }
+      joutput("%s", buf);
+    } else {
+      joutput_label_variable(lb);
+    }
+    joutput(");\n");
   } else {
     joutput_line("/* PERFORM %s THRU %s */", lb->name, le->name);
     joutput_prefix();
-    joutput("CobolControl.performThrough(contList, ");
+    joutput("performRange(");
     joutput_label_variable(lb);
     joutput(", ");
-    joutput_label_variable(le);
-    joutput(").run();\n");
+    if (le->is_section) {
+      joutput(CB_PREFIX_LABEL);
+      joutput("END_");
+      char buf[COB_SMALL_BUFF];
+      strcpy_identifier_cobol_to_java(buf, (char *)le->name);
+      char *q = buf;
+      while (*q) {
+        if (*q < 0x80) {
+          if (*q == '-' || *q == ' ') {
+            *q = '_';
+          }
+        }
+        q++;
+      }
+      joutput("%s", buf);
+    } else {
+      joutput_label_variable(le);
+    }
+    joutput(");\n");
   }
 
   cb_id++;
@@ -3719,21 +3797,21 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     lp = CB_LABEL(x);
     joutput_newline();
 
-    // the end of the previous label.
+    /* End of the previous label (for switch-based execution) */
     if (flag_execution_end == EXECUTION_NORMAL) {
+      /* Transition to the next label */
       joutput_prefix();
-      joutput("return Optional.of(contList[");
+      joutput("currentLabel = ");
       joutput_label_variable_by_value(++control_counter);
-      joutput("]);\n");
+      joutput(";\n");
+      joutput_line("break;");
     } else {
-      joutput_line("return Optional.of(CobolControl.pure());");
+      joutput_line("currentLabel = 0;");
+      joutput_line("break;");
     }
     joutput_indent_level -= 2;
-    joutput_line("}");
-    joutput_indent_level -= 2;
-    joutput_line("},");
 
-    // output comment
+    /* Output comment */
     if (lp->is_section) {
       if (strcmp((const char *)(lp->name), "MAIN SECTION")) {
         joutput_line("/* %s SECTION */", lp->name);
@@ -3749,31 +3827,18 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
         joutput_line("/* %s */", lp->name);
       }
       excp_current_paragraph = (const char *)lp->name;
-      // if (!lp->need_begin) {
-      //	joutput_newline ();
-      // }
     }
 
-    // the start of the label
+    /* Start of the label as a switch case */
     joutput_prefix();
-    joutput("new CobolControl(");
+    joutput("case ");
     if (flag_execution_begin == EXECUTION_ERROR_HANDLER) {
       joutput_label_variable_by_value(control_counter + 1);
     } else {
       joutput_label_variable_by_value(control_counter);
     }
-
-    if (lp->is_section) {
-      joutput(", CobolControl.LabelType.section) {");
-    } else {
-      joutput(", CobolControl.LabelType.label) {");
-    }
+    joutput(":");
     joutput_newline();
-
-    joutput_indent_level += 2;
-    joutput_line(
-        "public Optional<CobolControl> run() throws CobolRuntimeException, "
-        "CobolStopRunException {");
     joutput_indent_level += 2;
 
     if (cb_flag_trace) {
@@ -5942,6 +6007,8 @@ static void append_label_id_map(struct cb_label *label) {
   new_entry->key = label->id;
   new_entry->val = ++label_id_counter;
   new_entry->section = label->section;
+  new_entry->is_section = label->is_section ? 1 : 0;
+  new_entry->section_end_val = 0; /* will be computed later */
   // clone label name
   if (label->name) {
     new_entry->label_name = malloc(strlen((char *)label->name) + 1);
@@ -5971,6 +6038,33 @@ static void create_label_id_map(struct cb_program *prog) {
     }
   }
   append_label_id_map(CB_LABEL(cb_standard_error_handler));
+}
+
+/* Calculate section_end_val for each section */
+static void calculate_section_end_labels(void) {
+  struct cb_label_id_map *current_section = NULL;
+  struct cb_label_id_map *l;
+
+  for (l = label_id_map_head; l; l = l->next) {
+    if (l->is_section) {
+      /* When we see a new section, finalize the previous section's end */
+      if (current_section) {
+        /* The previous label's val is the end of the previous section */
+        struct cb_label_id_map *prev = label_id_map_head;
+        while (prev && prev->next != l) {
+          prev = prev->next;
+        }
+        if (prev) {
+          current_section->section_end_val = prev->val;
+        }
+      }
+      current_section = l;
+    }
+  }
+  /* Finalize the last section */
+  if (current_section && label_id_map_last) {
+    current_section->section_end_val = label_id_map_last->val;
+  }
 }
 
 static void joutput_label_variable_name(char *s, int key,
@@ -6058,14 +6152,31 @@ static void destroy_label_id_map() {
 static void joutput_execution_list(struct cb_program *prog) {
   control_counter = 0;
 
-  joutput_line("public CobolControl[] contList = {");
+  /* Switch-based execution method */
+  joutput_line("private void execProcedureDivision(int startLabel) throws "
+               "CobolRuntimeException, CobolStopRunException {");
   joutput_indent_level += 2;
-  joutput_line("new CobolControl(0, CobolControl.LabelType.label) {");
-  joutput_indent_level += 2;
+  joutput_line("execProcedureDivisionRange(startLabel, Integer.MAX_VALUE);");
+  joutput_indent_level -= 2;
+  joutput_line("}");
+  joutput_newline();
+
   joutput_line(
-      "public Optional<CobolControl> run() throws CobolRuntimeException, "
-      "CobolStopRunException {");
+      "private void execProcedureDivisionRange(int startLabel, int endLabel) "
+      "throws CobolRuntimeException, CobolStopRunException {");
   joutput_indent_level += 2;
+  joutput_line("currentLabel = startLabel;");
+  joutput_newline();
+  joutput_line(
+      "mainLoop: while (currentLabel > 0 && currentLabel <= endLabel) {");
+  joutput_indent_level += 2;
+  joutput_line("switch (currentLabel) {");
+
+  /* Initial case for the first label */
+  joutput_indent_level -= 2;
+  joutput_line("case 0:");
+  joutput_indent_level += 2;
+
   cb_tree l;
   flag_execution_begin = EXECUTION_NORMAL;
   flag_execution_end = EXECUTION_NORMAL;
@@ -6152,29 +6263,69 @@ static void joutput_execution_list(struct cb_program *prog) {
     joutput_newline();
   }
 
-  joutput_line("return Optional.of(CobolControl.pure());");
+  /* Close the last case and add default */
+  joutput_line("currentLabel = 0;");
+  joutput_line("break;");
+  joutput_indent_level -= 2;
+  joutput_line("default:");
+  joutput_indent_level += 2;
+  joutput_line("currentLabel = 0;");
+  joutput_line("break;");
+  joutput_indent_level -= 2;
+  joutput_line("} /* end switch */");
+  joutput_newline();
+
+  /* PERFORM end check */
+  joutput_line("/* PERFORM end check */");
+  joutput_line("while (!performStack.isEmpty()) {");
+  joutput_indent_level += 2;
+  joutput_line("int[] top = performStack.peek();");
+  joutput_line("if (currentLabel < top[0] || currentLabel > top[1]) {");
+  joutput_indent_level += 2;
+  joutput_line("int[] popped = performStack.pop();");
+  joutput_line("currentLabel = popped[2];");
+  joutput_indent_level -= 2;
+  joutput_line("} else {");
+  joutput_indent_level += 2;
+  joutput_line("break;");
   joutput_indent_level -= 2;
   joutput_line("}");
   joutput_indent_level -= 2;
-  joutput_line("},");
+  joutput_line("}");
 
-  joutput_line("CobolControl.pure()");
   joutput_indent_level -= 2;
-  joutput_line("};");
+  joutput_line("} /* end mainLoop */");
+  joutput_indent_level -= 2;
+  joutput_line("} /* end execProcedureDivisionRange */");
 }
 
 static void joutput_execution_entry_func() {
   joutput_line("public void execEntry(int start) throws CobolRuntimeException, "
                "CobolStopRunException {");
   joutput_indent_level += 2;
-  joutput_line(
-      "Optional<CobolControl> nextLabel = Optional.of(contList[start]);");
-  joutput_line("while(nextLabel.isPresent()) {");
-  joutput_indent_level += 2;
-  joutput_line("CobolControl section = nextLabel.get();");
-  joutput_line("nextLabel = section.run();");
+  joutput_line("execProcedureDivision(start);");
   joutput_indent_level -= 2;
   joutput_line("}");
+  joutput_newline();
+
+  /* Helper method for PERFORM - executes a range of labels */
+  joutput_line("private void performRange(int startLabel, int endLabel) throws "
+               "CobolRuntimeException, CobolStopRunException {");
+  joutput_indent_level += 2;
+  joutput_line("/* Save state */");
+  joutput_line("int savedCurrentLabel = currentLabel;");
+  joutput_line("java.util.ArrayDeque<int[]> savedStack = new "
+               "java.util.ArrayDeque<>(performStack);");
+  joutput_newline();
+  joutput_line("/* Clear stack for nested PERFORM */");
+  joutput_line("performStack.clear();");
+  joutput_newline();
+  joutput_line("/* Execute the range */");
+  joutput_line("execProcedureDivisionRange(startLabel, endLabel);");
+  joutput_newline();
+  joutput_line("/* Restore state */");
+  joutput_line("performStack = savedStack;");
+  joutput_line("currentLabel = savedCurrentLabel;");
   joutput_indent_level -= 2;
   joutput_line("}");
 }
@@ -6361,6 +6512,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   //}
 
   create_label_id_map(prog);
+  calculate_section_end_labels();
   init_data_storage_list();
   joutput_java_entrypoint(prog, prog->parameter_list);
   joutput_internal_function(prog, prog->parameter_list);
@@ -6482,6 +6634,43 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     joutput_label_variable_name(label->label_name, label->key, label->section);
     joutput(" = %d;\n", label->val);
   }
+  joutput("\n");
+
+  /* Section end labels */
+  joutput_line("/* Section end labels */");
+  for (label = label_id_map_head; label; label = label->next) {
+    if (label->is_section && label->section_end_val > 0) {
+      joutput_prefix();
+      joutput("private final static int ");
+      joutput(CB_PREFIX_LABEL);
+      joutput("END_");
+      /* Output section name */
+      if (label->label_name) {
+        char buf[COB_SMALL_BUFF];
+        strcpy_identifier_cobol_to_java(buf, label->label_name);
+        char *p = buf;
+        while (*p) {
+          if (*p < 0x80) {
+            if (*p == '-' || *p == ' ') {
+              *p = '_';
+            }
+          }
+          p++;
+        }
+        joutput("%s", buf);
+      } else {
+        joutput("anonymous__%d", label->key);
+      }
+      joutput(" = %d;\n", label->section_end_val);
+    }
+  }
+
+  /* Switch-based execution state variables */
+  joutput("\n");
+  joutput_line("/* Switch-based execution state */");
+  joutput_line("private int currentLabel = 0;");
+  joutput_line("private java.util.ArrayDeque<int[]> performStack = new "
+               "java.util.ArrayDeque<>();");
   destroy_label_id_map();
   joutput("\n");
 

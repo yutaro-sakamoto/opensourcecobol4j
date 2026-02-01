@@ -22,43 +22,51 @@ import java.util.Optional;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * Control flow class for COBOL program execution.
+ *
+ * @deprecated This class is no longer used in switch-based code generation.
+ *     Kept for backward compatibility with older generated code.
+ */
+@Deprecated
 public abstract class CobolControl {
-    /** TODO: 準備中 */
+    /** Label type enumeration */
     public enum LabelType {
-        /** TODO: 準備中 */
+        /** Regular label/paragraph */
         label,
-        /** TODO: 準備中 */
+        /** Section label */
         section,
     }
 
     /**
-     * TODO: 準備中
+     * Execute the label's code.
      *
-     * @return TODO: 準備中
-     * @throws CobolRuntimeException TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @return The next label to execute, or empty if done
+     * @throws CobolRuntimeException On runtime error
+     * @throws CobolStopRunException On STOP RUN
+     * @deprecated No longer used in switch-based execution
      */
+    @Deprecated
     public abstract Optional<CobolControl> run()
             throws CobolRuntimeException, CobolStopRunException;
 
-    /** TODO: 準備中 */
+    /** Control ID */
     public int contId = -1;
 
-    /** TODO: 準備中 */
+    /** Label type */
     public LabelType type = LabelType.label;
 
-    /** TODO: 準備中 */
+    /** Default constructor */
     public CobolControl() {
         this.contId = -1;
         this.type = LabelType.label;
     }
 
     /**
-     * TODO: 準備中
+     * Constructor with control ID and type.
      *
-     * @param contId TODO: 準備中
-     * @param type TODO: 準備中
+     * @param contId Control ID
+     * @param type Label type
      */
     public CobolControl(int contId, LabelType type) {
         this.contId = contId;
@@ -66,10 +74,12 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * Returns a pure (no-op) control.
      *
-     * @return TODO: 準備中
+     * @return A control that returns empty
+     * @deprecated No longer used in switch-based execution
      */
+    @Deprecated
     public static CobolControl pure() {
         return new CobolControl() {
             @Override
@@ -81,11 +91,13 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * Creates a GO TO control.
      *
-     * @param cont TODO: 準備中
-     * @return TODO: 準備中
+     * @param cont Target control
+     * @return A control that jumps to target
+     * @deprecated No longer used in switch-based execution
      */
+    @Deprecated
     public static CobolControl goTo(CobolControl cont) {
         return new CobolControl() {
             @Override
@@ -97,13 +109,15 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * Creates a PERFORM THRU control.
      *
-     * @param contList TODO: 準備中
-     * @param begin TODO: 準備中
-     * @param end TODO: 準備中
-     * @return TODO: 準備中
+     * @param contList Array of controls
+     * @param begin Start label index
+     * @param end End label index
+     * @return A control that performs the range
+     * @deprecated No longer used in switch-based execution
      */
+    @Deprecated
     public static CobolControl performThrough(CobolControl[] contList, int begin, int end) {
         return new CobolControl() {
             @Override
@@ -130,12 +144,14 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * Creates a PERFORM control.
      *
-     * @param contList TODO: 準備中
-     * @param labelId TODO: 準備中
-     * @return TODO: 準備中
+     * @param contList Array of controls
+     * @param labelId Label index
+     * @return A control that performs the label
+     * @deprecated No longer used in switch-based execution
      */
+    @Deprecated
     public static CobolControl perform(CobolControl[] contList, int labelId) {
         return CobolControl.performThrough(contList, labelId, labelId);
     }

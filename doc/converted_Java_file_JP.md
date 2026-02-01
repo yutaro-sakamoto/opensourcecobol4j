@@ -248,96 +248,158 @@ COBOLでは、PROCEDURE DIVISION内はSECTIONやPARAGRAPHによって、分割�
            DISPLAY "END".
 ```
 
-opensouce COBOL 4Jでは、SECTION内やPARAGRAPHで分割された処理を切り出し、それらをCobolControlクラスから派生した無名クラスに変換する。
-変換後の無名クラスは、PROCEDURE DIVISION内で記述された順番通りに、CobolControlクラスの配列に格納される。
+opensource COBOL 4Jでは、PROCEDURE DIVISION内のSECTIONやPARAGRAPHは、switch文を使った制御構造に変換される。
+各ラベル（SECTION、PARAGRAPH）には一意の整数IDが割り当てられ、switch文のcaseとして使用される。
+
+### ラベルIDの定義
+
+各SECTIONとPARAGRAPHには、整数定数としてラベルIDが割り当てられる。
 
 ```java
-public CobolControl[] contList = {
-    //...
-    //...
-    new CobolControl(l_MAIN_SECTION__DEFAULT_PARAGRAPH, CobolControl.LabelType.label) {
-        // MAIN SECTIONの処理
-        //...
-    },
-    new CobolControl(l_SUB, CobolControl.LabelType.section) {
-        // SUB SECTIONの処理
-        //...
-    },
-    new CobolControl(l_SUB__A_01, CobolControl.LabelType.label) {
-        // A-01の処理
-        //...
-    },
-    new CobolControl(l_SUB__A_01, CobolControl.LabelType.label) {
-        // A-02の処理
-        //...
-    },
-    new CobolControl(l_LAST_PROC, CobolControl.LabelType.section) {
-        // LAST-PROC SECTIONの処理
-        //...
-    },
-    new CobolControl(l_LAST_PROC__LAST_MESSAGE, CobolControl.LabelType.paragraph) {
-        // LAST-MESSAGEの処理
-        //...
-    }
-}
-
+/* Label IDs */
+private static final int l_MAIN = 1;
+private static final int l_MAIN__DEFAULT_PARAGRAPH = 2;
+private static final int l_SUB = 3;
+private static final int l_SUB__A_01 = 4;
+private static final int l_SUB__A_02 = 5;
+private static final int l_LAST_PROC = 6;
+private static final int l_LAST_PROC__LAST_MESSAGE = 7;
+/* Section end markers */
+private static final int l_END_MAIN = 2;
+private static final int l_END_SUB = 5;
+private static final int l_END_LAST_PROC = 7;
 ```
 
-例えば、COBOLソースコード中のA-01の処理は以下のように変換される。
+### 実行制御の仕組み
+
+生成されるJavaコードには、以下の状態変数とメソッドが含まれる。
 
 ```java
-new CobolControl(l_SUB__A_01, CobolControl.LabelType.label) {
-  public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
-    /* prog.cbl:13: DISPLAY */
-    {
-      CobolTerminal.display (0, 1, 1, c_1);
-    }
-    /* prog.cbl:14: DISPLAY */
-    {
-      CobolTerminal.display (0, 1, 1, c_2);
-    }
-
-    return Optional.of(contList[l_SUB__A_02]);
-  }
-}
+/* Switch-based execution state */
+private int currentLabel = 0;
+private java.util.ArrayDeque<int[]> performStack = new java.util.ArrayDeque<>();
 ```
 
-A-02の処理は以下のように変換される。
+- `currentLabel`: 現在実行中のラベルを示す整数値
+- `performStack`: PERFORM文の実行範囲を管理するスタック
+
+### メインループ構造
+
+PROCEDURE DIVISION内の処理は、`mainLoop`というラベル付きwhileループとswitch文で制御される。
 
 ```java
-new CobolControl(l_SUB__A_02, CobolControl.LabelType.label) {
-  public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
-    /* prog.cbl:16: DISPLAY */
-    {
-      CobolTerminal.display (0, 1, 1, c_3);
+private void execProcedureDivisionRange(int startLabel, int endLabel)
+    throws CobolRuntimeException, CobolStopRunException {
+  currentLabel = startLabel;
+
+  mainLoop: while (currentLabel > 0 && currentLabel <= endLabel) {
+    switch (currentLabel) {
+    case 0:
+      /* ... */
+
+    case 2: /* l_MAIN__DEFAULT_PARAGRAPH */
+      /* prog.cbl:6: PERFORM */
+      performRange(l_SUB__A_01, l_SUB__A_01);
+      /* prog.cbl:7: PERFORM */
+      performRange(l_SUB__A_02, l_SUB__A_02);
+      /* prog.cbl:8: PERFORM */
+      performRange(l_SUB, l_END_SUB);
+      /* prog.cbl:9: GO TO */
+      if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
+
+    case 4: /* l_SUB__A_01 */
+      /* prog.cbl:12: DISPLAY */
+      {
+        CobolTerminal.display (0, 1, 1, c_1);
+      }
+      /* prog.cbl:13: DISPLAY */
+      {
+        CobolTerminal.display (0, 1, 1, c_2);
+      }
+      currentLabel = 5;
+      break;
+
+    case 5: /* l_SUB__A_02 */
+      /* prog.cbl:15: DISPLAY */
+      {
+        CobolTerminal.display (0, 1, 1, c_3);
+      }
+      currentLabel = 6;
+      break;
+
+    case 7: /* l_LAST_PROC__LAST_MESSAGE */
+      /* prog.cbl:18: DISPLAY */
+      {
+        CobolTerminal.display (0, 1, 1, c_4);
+      }
+      currentLabel = 0;
+      break;
+
+    default:
+      currentLabel = 0;
+      break;
+    } /* end switch */
+
+    /* PERFORM end check */
+    while (!performStack.isEmpty()) {
+      int[] top = performStack.peek();
+      if (currentLabel < top[0] || currentLabel > top[1]) {
+        int[] popped = performStack.pop();
+        currentLabel = popped[2];
+      } else {
+        break;
+      }
     }
-
-    return Optional.of(contList[l_LAST_PROC]);
-  }
+  } /* end mainLoop */
 }
 ```
 
-CobolControlクラスは、opensource COBOL 4Jが提供するランタイムであるlibcobj.jarに含まれるクラスである。
-runメソッドに、実際の処理が記述され、その他必要な情報はメンバ変数に格納される。
+### GO TO文の変換
 
-CobolControlの配列contListを使って、PROCEDURE DIVISION内の処理を実行する。
+GO TO文は、`currentLabel`を更新して`continue mainLoop;`を実行するコードに変換される。
 
-opensource COBOL 4Jでは、PERFORM文やGO TO文はCobolControlクラスの機能を利用して呼び出しやジャンプを実現するメソッドを用意している。
-PERFORM文やGO TO文はこれらのメソッドを呼び出すコードへと変換される。
 ```java
-CobolControl.perform(contList, l_SUB__A_01).run();
-
-CobolControl.perform(contList, l_SUB__A_02).run();
-
-CobolControl.perform(contList, l_SUB).run();
-
-{
-  if(true) return Optional.of(contList[l_LAST_PROC          ]);
-
-}
+/* GO TO LAST-PROC */
+if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
 ```
 
-※ Javaコンパイラは明らかに到達不可能なコードをエラーとして扱う。上記のコードの`if(true)`はこのコンパイルエラーを回避するために生成されている。
+`if(true)`はJavaコンパイラが「到達不能コード」としてエラーを報告するのを防ぐために使用される。
+
+### PERFORM文の変換
+
+PERFORM文は、`performRange`メソッドの呼び出しに変換される。このメソッドは指定された範囲のラベルを実行する。
+
+```java
+/* PERFORM A-01 */
+performRange(l_SUB__A_01, l_SUB__A_01);
+
+/* PERFORM SUB */
+performRange(l_SUB, l_END_SUB);
+
+/* PERFORM A-01 THRU A-02 */
+performRange(l_SUB__A_01, l_SUB__A_02);
+```
+
+`performRange`メソッドは現在の実行状態を保存し、指定範囲を実行後に状態を復元する。
+
+```java
+private void performRange(int startLabel, int endLabel)
+    throws CobolRuntimeException, CobolStopRunException {
+  /* Save state */
+  int savedCurrentLabel = currentLabel;
+  java.util.ArrayDeque<int[]> savedStack = new java.util.ArrayDeque<>(performStack);
+
+  /* Clear stack for nested PERFORM */
+  performStack.clear();
+
+  /* Execute the range */
+  execProcedureDivisionRange(startLabel, endLabel);
+
+  /* Restore state */
+  performStack = savedStack;
+  currentLabel = savedCurrentLabel;
+}
+```
 
 ## libcobj/の解説
 libcobj.jarはopensource COBOL 4Jのランタイムであり、
@@ -364,16 +426,16 @@ libcobj.jarはopensource COBOL 4Jのランタイムであり、
 | CobolCallParams.java | 未使用のクラス。 |
 | CobolCheck.java | 実行時チェックに関する処理を実装するクラス。 |
 | CobolConstant.java | 様々な定数を定義するクラス。 |
-| CobolControl.java | セクションやラベル等の制御構造を実装するクラス。 |
+| CobolControl.java | 非推奨。以前のバージョンで使用されていた制御構造のクラス。現在はswitch文ベースのコード生成に置き換えられ、後方互換性のためのみ残されている。 |
+| CobolEncoding.java | 文字エンコーディングに関する処理を実装するクラス。 |
 | CobolExternal.java | EXTERNAL句実装のためのクラス。(実装は未完成) |
-| CobolFrame.java | 未使用のクラス。 |
 | CobolInspect.java | INSPECT文向けの機能を実装するクラス。 |
 | CobolIntrinsic.java | 組み込み関数を定義するクラス。 |
 | CobolModule.java | 実行時に様々な情報を保持するクラス。 |
 | CobolString.java | STRING文やUNSTRING文に関する処理を定義するクラス。 |
 | CobolUtil.java | 雑多な処理を定義するクラス。 |
 | GetAbstractCobolField.java | AbstractCobolFieldを返すメソッドrunを実装したインターフェース。 |
-| GetInt.java | AbstractCobolFieldを返すメソッドrunを実装したインターフェース。 |
+| GetInt.java | int値を返すメソッドrunを実装したインターフェース。 |
 
 ### dataディレクトリ
 `opensourcecobol4j/libcobj/src/jp/osscons/opensourcecobol/libcobj/data`に格納されているソースコードについて説明する。
@@ -406,14 +468,10 @@ libcobj.jarはopensource COBOL 4Jのランタイムであり、
 | ファイル名 | 説明 |
 | --- | --- |
 | CobolExceptionId.java | 例外IDを定義するクラス。 |
-| CobolException.java | 例外を示すクラスの親クラス。 |
+| CobolExceptionInfo.java | 例外情報を保持するクラス。 |
 | CobolExceptionTabCode.java | 例外コードを管理するクラス。 |
-| CobolGoBackException.java | GO BACK実行時に使用する例外のためのクラス。 |
 | CobolRuntimeException.java | 実行時エラーに関するクラス。 |
 | CobolStopRunException.java | STOP RUN実行時に使用する例外のためのクラス。 |
-| CobolUndefinedException.java | 未使用のクラス。 |
-| RuntimeErrorHandler.java | 例外発生時のハンドラのためのインターフェース。 |
-| RuntimeExitHandler.java | プログラム終了時のハンドラのためのインターフェース。 |
 
 
 ### fileディレクトリ
