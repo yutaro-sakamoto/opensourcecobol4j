@@ -6167,8 +6167,7 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_indent_level += 2;
   joutput_line("currentLabel = startLabel;");
   joutput_newline();
-  joutput_line(
-      "mainLoop: while (currentLabel > 0) {");
+  joutput_line("mainLoop: while (currentLabel > 0) {");
   joutput_indent_level += 2;
   joutput_line("switch (currentLabel) {");
 
