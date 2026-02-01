@@ -6136,6 +6136,8 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_newline();
   joutput_line("mainLoop: while (currentLabel > 0) {");
   joutput_indent_level += 2;
+  /* Pre-switch range check for GO TO handling in PERFORM */
+  joutput_line("if (endLabel > 0 && currentLabel > endLabel) { break; }");
   joutput_line("switch (currentLabel) {");
 
   /* Initial case for the first label */
