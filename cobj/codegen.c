@@ -6168,7 +6168,7 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_line("currentLabel = startLabel;");
   joutput_newline();
   joutput_line(
-      "mainLoop: while (currentLabel > 0 && currentLabel <= endLabel) {");
+      "mainLoop: while (currentLabel > 0) {");
   joutput_indent_level += 2;
   joutput_line("switch (currentLabel) {");
 
@@ -6273,6 +6273,11 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_line("break;");
   joutput_indent_level -= 2;
   joutput_line("} /* end switch */");
+  joutput_newline();
+
+  /* Range end check - exit loop when past endLabel via natural flow */
+  joutput_line("/* Range end check */");
+  joutput_line("if (currentLabel > endLabel) { break; }");
   joutput_newline();
 
   /* PERFORM end check */
