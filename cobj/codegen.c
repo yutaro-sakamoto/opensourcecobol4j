@@ -200,6 +200,7 @@ static void joutput_label_variable(struct cb_label *label);
 static void joutput_label_variable_name(char *s, int key,
                                         struct cb_label *section);
 static void joutput_label_variable_by_value(int value);
+static void joutput_section_end_label_variable(struct cb_label *section);
 
 static char *get_java_identifier_field(struct cb_field *f) {
   char *buf = malloc(COB_SMALL_BUFF);
@@ -3266,26 +3267,13 @@ static void joutput_perform_call(struct cb_label *lb, struct cb_label *le) {
   if (lb == le) {
     joutput_line("/* PERFORM %s */", lb->name);
     joutput_prefix();
-    joutput("performRange(");
+    joutput("execProcedureDivision(");
     joutput_label_variable(lb);
     joutput(", ");
     /* For a single label, end is the same or we use section end if it's a
      * section */
     if (lb->is_section) {
-      joutput(CB_PREFIX_LABEL);
-      joutput("END_");
-      char buf[COB_SMALL_BUFF];
-      strcpy_identifier_cobol_to_java(buf, (char *)lb->name);
-      char *p = buf;
-      while (*p) {
-        if (*p < 0x80) {
-          if (*p == '-' || *p == ' ') {
-            *p = '_';
-          }
-        }
-        p++;
-      }
-      joutput("%s", buf);
+      joutput_section_end_label_variable(lb);
     } else {
       joutput_label_variable(lb);
     }
@@ -3293,25 +3281,12 @@ static void joutput_perform_call(struct cb_label *lb, struct cb_label *le) {
   } else {
     joutput_line("/* PERFORM %s THRU %s */", lb->name, le->name);
     joutput_prefix();
-    joutput("performRange(");
+    joutput("execProcedureDivision(");
     joutput_label_variable(lb);
     joutput(", ");
     /* For THRU, end is the label or its section end if it's a section */
     if (le->is_section) {
-      joutput(CB_PREFIX_LABEL);
-      joutput("END_");
-      char buf[COB_SMALL_BUFF];
-      strcpy_identifier_cobol_to_java(buf, (char *)le->name);
-      char *p = buf;
-      while (*p) {
-        if (*p < 0x80) {
-          if (*p == '-' || *p == ' ') {
-            *p = '_';
-          }
-        }
-        p++;
-      }
-      joutput("%s", buf);
+      joutput_section_end_label_variable(le);
     } else {
       joutput_label_variable(le);
     }
@@ -3450,24 +3425,11 @@ static void joutput_sort_proc(struct cb_sort_proc *p) {
   if (lb == le) {
     joutput_line("/* PERFORM %s */", lb->name);
     joutput_prefix();
-    joutput("performRange(");
+    joutput("execProcedureDivision(");
     joutput_label_variable(lb);
     joutput(", ");
     if (lb->is_section) {
-      joutput(CB_PREFIX_LABEL);
-      joutput("END_");
-      char buf[COB_SMALL_BUFF];
-      strcpy_identifier_cobol_to_java(buf, (char *)lb->name);
-      char *q = buf;
-      while (*q) {
-        if (*q < 0x80) {
-          if (*q == '-' || *q == ' ') {
-            *q = '_';
-          }
-        }
-        q++;
-      }
-      joutput("%s", buf);
+      joutput_section_end_label_variable(lb);
     } else {
       joutput_label_variable(lb);
     }
@@ -3475,24 +3437,11 @@ static void joutput_sort_proc(struct cb_sort_proc *p) {
   } else {
     joutput_line("/* PERFORM %s THRU %s */", lb->name, le->name);
     joutput_prefix();
-    joutput("performRange(");
+    joutput("execProcedureDivision(");
     joutput_label_variable(lb);
     joutput(", ");
     if (le->is_section) {
-      joutput(CB_PREFIX_LABEL);
-      joutput("END_");
-      char buf[COB_SMALL_BUFF];
-      strcpy_identifier_cobol_to_java(buf, (char *)le->name);
-      char *q = buf;
-      while (*q) {
-        if (*q < 0x80) {
-          if (*q == '-' || *q == ' ') {
-            *q = '_';
-          }
-        }
-        q++;
-      }
-      joutput("%s", buf);
+      joutput_section_end_label_variable(le);
     } else {
       joutput_label_variable(le);
     }
@@ -6137,6 +6086,24 @@ static void joutput_label_variable_by_value(int value) {
   fprintf(stderr, "[internal error] cannot find label_value: %d\n", value);
 }
 
+/* Output the label variable for the last paragraph in a section */
+static void joutput_section_end_label_variable(struct cb_label *section) {
+  if (!section || !section->is_section) {
+    fprintf(stderr, "[internal error] expected a section label\n");
+    return;
+  }
+  int id = CB_LABEL(section)->id;
+  struct cb_label_id_map *l;
+  for (l = label_id_map_head; l; l = l->next) {
+    if (l->key == id && l->is_section) {
+      joutput_label_variable_by_value(l->section_end_val);
+      return;
+    }
+  }
+  fprintf(stderr, "[internal error] cannot find section_id: %d %s\n", id,
+          section->name);
+}
+
 static void destroy_label_id_map() {
   while (label_id_map_head) {
     struct cb_label_id_map *next = label_id_map_head->next;
@@ -6156,13 +6123,13 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_line("private void execProcedureDivision(int startLabel) throws "
                "CobolRuntimeException, CobolStopRunException {");
   joutput_indent_level += 2;
-  joutput_line("execProcedureDivisionRange(startLabel, Integer.MAX_VALUE);");
+  joutput_line("execProcedureDivision(startLabel, 0);");
   joutput_indent_level -= 2;
   joutput_line("}");
   joutput_newline();
 
   joutput_line(
-      "private void execProcedureDivisionRange(int startLabel, int endLabel) "
+      "private void execProcedureDivision(int startLabel, int endLabel) "
       "throws CobolRuntimeException, CobolStopRunException {");
   joutput_indent_level += 2;
   joutput_line("currentLabel = startLabel;");
@@ -6276,31 +6243,14 @@ static void joutput_execution_list(struct cb_program *prog) {
 
   /* Range end check - exit loop when past endLabel via natural flow */
   joutput_line("/* Range end check */");
-  joutput_line("if (currentLabel > endLabel) { break; }");
+  joutput_line("if ((currentLabel == 0 && endLabel == 0) || (endLabel > 0 && "
+               "currentLabel > endLabel)) { break; }");
   joutput_newline();
-
-  /* PERFORM end check */
-  joutput_line("/* PERFORM end check */");
-  joutput_line("while (!performStack.isEmpty()) {");
-  joutput_indent_level += 2;
-  joutput_line("int[] top = performStack.peek();");
-  joutput_line("if (currentLabel < top[0] || currentLabel > top[1]) {");
-  joutput_indent_level += 2;
-  joutput_line("int[] popped = performStack.pop();");
-  joutput_line("currentLabel = popped[2];");
-  joutput_indent_level -= 2;
-  joutput_line("} else {");
-  joutput_indent_level += 2;
-  joutput_line("break;");
-  joutput_indent_level -= 2;
-  joutput_line("}");
-  joutput_indent_level -= 2;
-  joutput_line("}");
 
   joutput_indent_level -= 2;
   joutput_line("} /* end mainLoop */");
   joutput_indent_level -= 2;
-  joutput_line("} /* end execProcedureDivisionRange */");
+  joutput_line("} /* end execProcedureDivision */");
 }
 
 static void joutput_execution_entry_func() {
@@ -6308,28 +6258,6 @@ static void joutput_execution_entry_func() {
                "CobolStopRunException {");
   joutput_indent_level += 2;
   joutput_line("execProcedureDivision(start);");
-  joutput_indent_level -= 2;
-  joutput_line("}");
-  joutput_newline();
-
-  /* Helper method for PERFORM - executes a range of labels */
-  joutput_line("private void performRange(int startLabel, int endLabel) throws "
-               "CobolRuntimeException, CobolStopRunException {");
-  joutput_indent_level += 2;
-  joutput_line("/* Save state */");
-  joutput_line("int savedCurrentLabel = currentLabel;");
-  joutput_line("java.util.ArrayDeque<int[]> savedStack = new "
-               "java.util.ArrayDeque<>(performStack);");
-  joutput_newline();
-  joutput_line("/* Clear stack for nested PERFORM */");
-  joutput_line("performStack.clear();");
-  joutput_newline();
-  joutput_line("/* Execute the range */");
-  joutput_line("execProcedureDivisionRange(startLabel, endLabel);");
-  joutput_newline();
-  joutput_line("/* Restore state */");
-  joutput_line("performStack = savedStack;");
-  joutput_line("currentLabel = savedCurrentLabel;");
   joutput_indent_level -= 2;
   joutput_line("}");
 }
@@ -6640,41 +6568,10 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   }
   joutput("\n");
 
-  /* Section end labels */
-  joutput_line("/* Section end labels */");
-  for (label = label_id_map_head; label; label = label->next) {
-    if (label->is_section && label->section_end_val > 0) {
-      joutput_prefix();
-      joutput("private final static int ");
-      joutput(CB_PREFIX_LABEL);
-      joutput("END_");
-      /* Output section name */
-      if (label->label_name) {
-        char buf[COB_SMALL_BUFF];
-        strcpy_identifier_cobol_to_java(buf, label->label_name);
-        char *p = buf;
-        while (*p) {
-          if (*p < 0x80) {
-            if (*p == '-' || *p == ' ') {
-              *p = '_';
-            }
-          }
-          p++;
-        }
-        joutput("%s", buf);
-      } else {
-        joutput("anonymous__%d", label->key);
-      }
-      joutput(" = %d;\n", label->section_end_val);
-    }
-  }
-
   /* Switch-based execution state variables */
   joutput("\n");
   joutput_line("/* Switch-based execution state */");
   joutput_line("private int currentLabel = 0;");
-  joutput_line("private java.util.ArrayDeque<int[]> performStack = new "
-               "java.util.ArrayDeque<>();");
   destroy_label_id_map();
   joutput("\n");
 
