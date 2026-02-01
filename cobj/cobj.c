@@ -1897,9 +1897,8 @@ static int process_compile_all(void) {
     for (program_id = program_id_list; *program_id; ++program_id) {
       snprintf(buff, BUFF_SIZE,
                "cd %s && jar --create --main-class=%s --file=%s.jar "
-               "%s%c%s.class %s%c%s$*.class",
+               "%s%c%s.class",
                output_name_a, *program_id, *program_id, package_dir,
-               file_path_delimitor, *program_id, package_dir,
                file_path_delimitor, *program_id);
       ret = process(buff);
       if (ret) {
@@ -1910,11 +1909,9 @@ static int process_compile_all(void) {
 #else
       char remove_cmd[] = "rm";
 #endif
-      snprintf(buff, BUFF_SIZE, "%s %s%c%s%c%s.class %s%c%s%c%s$*.class",
+      snprintf(buff, BUFF_SIZE, "%s %s%c%s%c%s.class",
                remove_cmd, output_name_a, file_path_delimitor, package_dir,
-               file_path_delimitor, *program_id, output_name_a,
-               file_path_delimitor, package_dir, file_path_delimitor,
-               *program_id);
+               file_path_delimitor, *program_id);
       process(buff);
     }
   }
@@ -1933,14 +1930,12 @@ static int process_build_module_all(void) {
 
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
-    sprintf(buff, "jar cf %s.jar ./%s.class ./%s$*.class", *program_id,
-            *program_id, *program_id);
+    sprintf(buff, "jar cf %s.jar ./%s.class", *program_id, *program_id);
     ret = process(buff);
     if (ret) {
       return ret;
     }
-    sprintf(buff, "%s %s.class %s$*.class", remove_cmd, *program_id,
-            *program_id);
+    sprintf(buff, "%s %s.class", remove_cmd, *program_id);
     ret = process(buff);
     if (ret) {
       return ret;
