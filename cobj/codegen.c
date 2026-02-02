@@ -6139,9 +6139,9 @@ static void joutput_execution_list(struct cb_program *prog) {
   /* Pre-switch range check for GO TO handling in PERFORM */
   joutput_line("if (endLabel > 0 && currentLabel > endLabel) { break; }");
   joutput_line("switch (currentLabel) {");
+  joutput_indent_level += 2;
 
   /* Initial case for the first label */
-  joutput_indent_level -= 2;
   joutput_line("case 0:");
   joutput_indent_level += 2;
 
@@ -6239,6 +6239,7 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_indent_level += 2;
   joutput_line("currentLabel = 0;");
   joutput_line("break;");
+  joutput_indent_level -= 2;
   joutput_indent_level -= 2;
   joutput_line("} /* end switch */");
   joutput_newline();
