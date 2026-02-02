@@ -6136,8 +6136,8 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_newline();
   joutput_line("mainLoop: while (currentLabel > 0) {");
   joutput_indent_level += 2;
-  /* Pre-switch range check for GO TO handling in PERFORM */
-  joutput_line("if (endLabel > 0 && currentLabel > endLabel) { break; }");
+  /* Save currentLabel before switch to check if endLabel was executed */
+  joutput_line("int oldLabel = currentLabel;");
   joutput_line("switch (currentLabel) {");
   joutput_indent_level += 2;
 
@@ -6244,10 +6244,10 @@ static void joutput_execution_list(struct cb_program *prog) {
   joutput_line("} /* end switch */");
   joutput_newline();
 
-  /* Range end check - exit loop when past endLabel via natural flow */
+  /* Range end check - exit loop when endLabel has been executed */
   joutput_line("/* Range end check */");
-  joutput_line("if ((currentLabel == 0 && endLabel == 0) || (endLabel > 0 && "
-               "currentLabel > endLabel)) { break; }");
+  joutput_line("if ((oldLabel == 0 && endLabel == 0) || (endLabel > 0 && "
+               "oldLabel == endLabel)) { break; }");
   joutput_newline();
 
   joutput_indent_level -= 2;
