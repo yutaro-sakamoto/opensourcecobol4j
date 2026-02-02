@@ -1841,6 +1841,33 @@ static void package_name_to_path(char *buff, char *package_name) {
   }
 }
 
+/* Check if inner class files exist by trying to open program_id$1.class */
+static int has_inner_class_files(const char *dir, const char *package_dir,
+                                 const char *program_id) {
+  char filepath[COB_MEDIUM_BUFF];
+  snprintf(filepath, sizeof(filepath), "%s%c%s%c%s$1.class", dir,
+           file_path_delimitor, package_dir, file_path_delimitor, program_id);
+  FILE *fp = fopen(filepath, "rb");
+  if (fp != NULL) {
+    fclose(fp);
+    return 1;
+  }
+  return 0;
+}
+
+/* Check if inner class files exist in current directory */
+static int has_inner_class_files_cwd(const char *program_id) {
+  char filepath[COB_MEDIUM_BUFF];
+  snprintf(filepath, sizeof(filepath), ".%c%s$1.class", file_path_delimitor,
+           program_id);
+  FILE *fp = fopen(filepath, "rb");
+  if (fp != NULL) {
+    fclose(fp);
+    return 1;
+  }
+  return 0;
+}
+
 static int process_compile_all(void) {
 #define BUFF_SIZE (COB_LARGE_BUFF * 32)
   char buff[BUFF_SIZE];
@@ -1895,23 +1922,51 @@ static int process_compile_all(void) {
     }
 
     for (program_id = program_id_list; *program_id; ++program_id) {
-      snprintf(buff, BUFF_SIZE,
-               "cd %s && jar --create --main-class=%s --file=%s.jar "
-               "%s%c%s.class",
-               output_name_a, *program_id, *program_id, package_dir,
-               file_path_delimitor, *program_id);
+      int has_inner =
+          has_inner_class_files(output_name_a, package_dir, *program_id);
+
+      /* Create jar with main class file */
+      if (has_inner) {
+        snprintf(buff, BUFF_SIZE,
+                 "cd %s && jar --create --main-class=%s --file=%s.jar "
+                 "%s%c%s.class %s%c%s$*.class",
+                 output_name_a, *program_id, *program_id, package_dir,
+                 file_path_delimitor, *program_id, package_dir,
+                 file_path_delimitor, *program_id);
+      } else {
+        snprintf(buff, BUFF_SIZE,
+                 "cd %s && jar --create --main-class=%s --file=%s.jar "
+                 "%s%c%s.class",
+                 output_name_a, *program_id, *program_id, package_dir,
+                 file_path_delimitor, *program_id);
+      }
       ret = process(buff);
       if (ret) {
         return ret;
       }
+
+      /* Remove class files */
+      if (has_inner) {
+        snprintf(buff, BUFF_SIZE,
 #ifdef _WIN32
-      char remove_cmd[] = "del";
+                 "del /f /q %s%c%s%c%s.class %s%c%s%c%s$*.class",
 #else
-      char remove_cmd[] = "rm";
+                 "rm -f %s%c%s%c%s.class %s%c%s%c%s$*.class",
 #endif
-      snprintf(buff, BUFF_SIZE, "%s %s%c%s%c%s.class", remove_cmd,
-               output_name_a, file_path_delimitor, package_dir,
-               file_path_delimitor, *program_id);
+                 output_name_a, file_path_delimitor, package_dir,
+                 file_path_delimitor, *program_id, output_name_a,
+                 file_path_delimitor, package_dir, file_path_delimitor,
+                 *program_id);
+      } else {
+        snprintf(buff, BUFF_SIZE,
+#ifdef _WIN32
+                 "del /f /q %s%c%s%c%s.class",
+#else
+                 "rm -f %s%c%s%c%s.class",
+#endif
+                 output_name_a, file_path_delimitor, package_dir,
+                 file_path_delimitor, *program_id);
+      }
       process(buff);
     }
   }
@@ -1922,24 +1977,38 @@ static int process_compile_all(void) {
 static int process_build_module_all(void) {
   int ret = 0;
   char buff[COB_MEDIUM_BUFF];
-#ifdef _WIN32
-  char remove_cmd[] = "del";
-#else
-  char remove_cmd[] = "rm";
-#endif
 
   char **program_id;
   for (program_id = program_id_list; *program_id; ++program_id) {
-    sprintf(buff, "jar cf %s.jar ./%s.class", *program_id, *program_id);
+    int has_inner = has_inner_class_files_cwd(*program_id);
+
+    /* Create jar with class files */
+    if (has_inner) {
+      sprintf(buff, "jar cf %s.jar ./%s.class ./%s$*.class", *program_id,
+              *program_id, *program_id);
+    } else {
+      sprintf(buff, "jar cf %s.jar ./%s.class", *program_id, *program_id);
+    }
     ret = process(buff);
     if (ret) {
       return ret;
     }
-    sprintf(buff, "%s %s.class", remove_cmd, *program_id);
-    ret = process(buff);
-    if (ret) {
-      return ret;
+
+    /* Remove class files */
+    if (has_inner) {
+#ifdef _WIN32
+      sprintf(buff, "del /f /q %s.class %s$*.class", *program_id, *program_id);
+#else
+      sprintf(buff, "rm -f %s.class %s$*.class", *program_id, *program_id);
+#endif
+    } else {
+#ifdef _WIN32
+      sprintf(buff, "del /f /q %s.class", *program_id);
+#else
+      sprintf(buff, "rm -f %s.class", *program_id);
+#endif
     }
+    process(buff);
   }
   return ret;
 }
