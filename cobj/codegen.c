@@ -5991,28 +5991,28 @@ static void create_label_id_map(struct cb_program *prog) {
 
 /* Calculate section_end_val for each section */
 static void calculate_section_end_labels(void) {
-  struct cb_label_id_map *current_section = NULL;
+  struct cb_label_id_map *curr_section_map = NULL;
   struct cb_label_id_map *l;
 
   for (l = label_id_map_head; l; l = l->next) {
     if (l->is_section) {
       /* When we see a new section, finalize the previous section's end */
-      if (current_section) {
+      if (curr_section_map) {
         /* The previous label's val is the end of the previous section */
         struct cb_label_id_map *prev = label_id_map_head;
         while (prev && prev->next != l) {
           prev = prev->next;
         }
         if (prev) {
-          current_section->section_end_val = prev->val;
+          curr_section_map->section_end_val = prev->val;
         }
       }
-      current_section = l;
+      curr_section_map = l;
     }
   }
   /* Finalize the last section */
-  if (current_section && label_id_map_last) {
-    current_section->section_end_val = label_id_map_last->val;
+  if (curr_section_map && label_id_map_last) {
+    curr_section_map->section_end_val = label_id_map_last->val;
   }
 }
 
