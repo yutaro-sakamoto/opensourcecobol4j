@@ -6255,8 +6255,7 @@ static void joutput_execution_list(struct cb_program *prog) {
 
   /* Range end check - exit loop when endLabel has been executed */
   joutput_line("/* Range end check */");
-  joutput_line("if ((oldLabel == 0 && endLabel == 0) || (endLabel > 0 && "
-               "oldLabel == endLabel)) { break; }");
+  joutput_line("if (endLabel > 0 && oldLabel == endLabel) { break; }");
   joutput_newline();
 
   joutput_indent_level -= 2;
