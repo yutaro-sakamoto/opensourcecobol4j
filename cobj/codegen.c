@@ -49,6 +49,7 @@
 #define EXECUTION_ERROR_HANDLER 2
 #define BUF_SIZE 1024
 #define MAX_LITERAL_SIZE 64
+#define LABEL_INCREMENT 100
 
 #ifndef __GNUC__
 static int inside_check = 0;
@@ -3757,7 +3758,8 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
       /* Transition to the next label */
       joutput_prefix();
       joutput("currentLabel = ");
-      joutput_label_variable_by_value(++control_counter);
+      control_counter += LABEL_INCREMENT;
+      joutput_label_variable_by_value(control_counter);
       joutput(";\n");
       joutput_line("break;");
     } else {
@@ -3788,7 +3790,7 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     joutput_prefix();
     joutput("case ");
     if (flag_execution_begin == EXECUTION_ERROR_HANDLER) {
-      joutput_label_variable_by_value(control_counter + 1);
+      joutput_label_variable_by_value(control_counter + LABEL_INCREMENT);
     } else {
       joutput_label_variable_by_value(control_counter);
     }
@@ -5960,7 +5962,8 @@ static void joutput_class_name_definition(struct cb_class_name *p) {
 static void append_label_id_map(struct cb_label *label) {
   struct cb_label_id_map *new_entry = malloc(sizeof(struct cb_label_id_map));
   new_entry->key = label->id;
-  new_entry->val = ++label_id_counter;
+  label_id_counter += LABEL_INCREMENT;
+  new_entry->val = label_id_counter;
   new_entry->section = label->section;
   new_entry->is_section = label->is_section ? 1 : 0;
   new_entry->section_end_val = 0; /* will be computed later */
