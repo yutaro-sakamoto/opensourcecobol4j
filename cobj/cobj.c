@@ -200,6 +200,7 @@ char *cb_info_json_dir = NULL;
 
 #define PROGRAM_ID_LIST_MAX_LEN (65536)
 char *program_id_list[PROGRAM_ID_LIST_MAX_LEN];
+int has_inner_class_list[PROGRAM_ID_LIST_MAX_LEN];
 int program_id_list_index = 0;
 
 #ifdef _MSC_VER
@@ -1823,8 +1824,10 @@ static int process_translate(struct filename *fn) {
   }
 
   /* translate to Java */
-  codegen(p, 0, &program_id_list[program_id_list_index++],
-          java_source_dir == NULL ? (char *)"./" : java_source_dir, fn->source);
+  codegen(p, 0, &program_id_list[program_id_list_index],
+          java_source_dir == NULL ? (char *)"./" : java_source_dir, fn->source,
+          &has_inner_class_list[program_id_list_index]);
+  program_id_list_index++;
 
   return 0;
 }
@@ -1839,33 +1842,6 @@ static void package_name_to_path(char *buff, char *package_name) {
       *b_p = *p_p;
     }
   }
-}
-
-/* Check if inner class files exist by trying to open program_id$1.class */
-static int has_inner_class_files(const char *dir, const char *package_dir,
-                                 const char *program_id) {
-  char filepath[COB_MEDIUM_BUFF];
-  snprintf(filepath, sizeof(filepath), "%s%c%s%c%s$1.class", dir,
-           file_path_delimitor, package_dir, file_path_delimitor, program_id);
-  FILE *fp = fopen(filepath, "rb");
-  if (fp != NULL) {
-    fclose(fp);
-    return 1;
-  }
-  return 0;
-}
-
-/* Check if inner class files exist in current directory */
-static int has_inner_class_files_cwd(const char *program_id) {
-  char filepath[COB_MEDIUM_BUFF];
-  snprintf(filepath, sizeof(filepath), ".%c%s$1.class", file_path_delimitor,
-           program_id);
-  FILE *fp = fopen(filepath, "rb");
-  if (fp != NULL) {
-    fclose(fp);
-    return 1;
-  }
-  return 0;
 }
 
 static int process_compile_all(void) {
@@ -1921,9 +1897,10 @@ static int process_compile_all(void) {
       package_dir = (char *)".";
     }
 
-    for (program_id = program_id_list; *program_id; ++program_id) {
-      int has_inner =
-          has_inner_class_files(output_name_a, package_dir, *program_id);
+    int *has_inner_ptr = has_inner_class_list;
+    for (program_id = program_id_list; *program_id;
+         ++program_id, ++has_inner_ptr) {
+      int has_inner = *has_inner_ptr;
 
       /* Create jar with main class file */
       if (has_inner) {
@@ -1979,8 +1956,10 @@ static int process_build_module_all(void) {
   char buff[COB_MEDIUM_BUFF];
 
   char **program_id;
-  for (program_id = program_id_list; *program_id; ++program_id) {
-    int has_inner = has_inner_class_files_cwd(*program_id);
+  int *has_inner_ptr = has_inner_class_list;
+  for (program_id = program_id_list; *program_id;
+       ++program_id, ++has_inner_ptr) {
+    int has_inner = *has_inner_ptr;
 
     /* Create jar with class files */
     if (has_inner) {
@@ -2461,10 +2440,12 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  /* Initialize program_id_list before translation loop */
+  /* Initialize program_id_list and has_inner_class_list before translation loop
+   */
   program_id_list_index = 0;
   for (int i = 0; i < PROGRAM_ID_LIST_MAX_LEN; ++i) {
     program_id_list[i] = NULL;
+    has_inner_class_list[i] = 0;
   }
 
   for (fn = file_list; fn; fn = fn->next) {

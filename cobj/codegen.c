@@ -88,6 +88,9 @@ extern unsigned char cb_default_byte;
 // OCCURS指定したときのIDNEXに対応するCobolDataStorage型変数を扱うときに必要なフラグ
 static int index_read_flag = 0;
 
+// 無名クラスを生成したかどうかを示すフラグへのポインタ
+static int *current_has_inner_class = NULL;
+
 static struct label_list {
   // struct label_list *next;
   int id;
@@ -1557,6 +1560,7 @@ static void joutput_param(cb_tree x, int id) {
     r = CB_REFERENCE(x);
     if (r->check) {
       joutput("(new GetAbstractCobolField() {");
+      *current_has_inner_class = 1;
       joutput_newline();
       joutput_indent_level += 2;
       joutput_line(
@@ -1678,6 +1682,7 @@ static void joutput_param(cb_tree x, int id) {
           joutput(field_name);
         } else {
           joutput("new GetAbstractCobolField() {");
+          *current_has_inner_class = 1;
           joutput_newline();
           joutput_indent_level += 2;
           joutput_line("public AbstractCobolField run() {");
@@ -2024,6 +2029,7 @@ static void joutput_cond(cb_tree x, int save_flag) {
       joutput("(ret = ");
     }
     joutput_indent("(new GetInt() {");
+    *current_has_inner_class = 1;
     joutput_indent_level += 2;
     joutput_indent("public int run() throws CobolStopRunException {");
     joutput_indent_level += 2;
@@ -6266,7 +6272,7 @@ static void joutput_execution_entry_func() {
 }
 
 void codegen(struct cb_program *prog, const int nested, char **program_id_list,
-             char *java_source_dir, char *source_file) {
+             char *java_source_dir, char *source_file, int *has_inner_class) {
 
   int i;
   cb_tree l;
@@ -6277,6 +6283,8 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
 
   /* Clear local program stuff */
   current_prog = prog;
+  current_has_inner_class = has_inner_class;
+  *current_has_inner_class = 0;
   param_id = 0;
   stack_id = 0;
   num_cob_fields = 0;
@@ -6612,8 +6620,10 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     joutput_line("}");
     fclose(joutput_target);
     ++program_id_list;
+    ++current_has_inner_class;
+    *current_has_inner_class = 0;
     codegen(prog->next_program, 1, program_id_list, java_source_dir,
-            source_file);
+            source_file, current_has_inner_class);
     return;
   }
 
