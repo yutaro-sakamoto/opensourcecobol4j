@@ -426,7 +426,6 @@ libcobj.jarはopensource COBOL 4Jのランタイムであり、
 | CobolCallParams.java | 未使用のクラス。 |
 | CobolCheck.java | 実行時チェックに関する処理を実装するクラス。 |
 | CobolConstant.java | 様々な定数を定義するクラス。 |
-| CobolControl.java | 非推奨。以前のバージョンで使用されていた制御構造のクラス。現在はswitch文ベースのコード生成に置き換えられ、後方互換性のためのみ残されている。 |
 | CobolEncoding.java | 文字エンコーディングに関する処理を実装するクラス。 |
 | CobolExternal.java | EXTERNAL句実装のためのクラス。(実装は未完成) |
 | CobolInspect.java | INSPECT文向けの機能を実装するクラス。 |

@@ -17,7 +17,6 @@ SRC_FILES = \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/CobolUtil.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/GetInt.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/CobolCheck.java \
-	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/CobolControl.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/CobolIntrinsic.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/CobolString.java \
 	./app/src/main/java/jp/osscons/opensourcecobol/libcobj/common/GetAbstractCobolField.java \
