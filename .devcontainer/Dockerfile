@@ -5,7 +5,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # classpath settings
 ENV CLASSPATH=:/usr/lib/opensourcecobol4j/libcobj.jar
 
-# hadolint ignore=DL3041
+# hadolint ignore=DL3041,DL3003
 RUN dnf update -y \
     && dnf install -y --setopt=install_weak_deps=False \
         epel-release \
@@ -26,8 +26,7 @@ RUN dnf update -y \
         wget \
     && dnf clean all \
     && rm -rf /var/cache/dnf \
-    # Install automake 1.16.5 from source to ensure consistent version
-    && wget https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz \
+    && wget -q https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz \
     && echo "f01d58cd6d9d77fbdca9eb4bbd5ead1988228fdb73d6f7a201f5f8d6b118b469  automake-1.16.5.tar.gz" | sha256sum -c - \
     && tar xzf automake-1.16.5.tar.gz \
     && cd automake-1.16.5 \
