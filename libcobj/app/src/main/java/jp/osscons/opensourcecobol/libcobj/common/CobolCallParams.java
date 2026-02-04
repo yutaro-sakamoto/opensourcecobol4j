@@ -18,8 +18,19 @@
  */
 package jp.osscons.opensourcecobol.libcobj.common;
 
-/** TODO: 準備中 */
+/**
+ * COBOL CALL文で渡されるパラメータ数を管理するクラス。
+ *
+ * <p>COBOLのCALL文でサブプログラムを呼び出す際、渡されたパラメータの数を追跡する。
+ * これにより、呼び出されたプログラムはCALL文で実際に渡されたパラメータ数を
+ * 確認することができる。libcob/common.cのcob_call_paramsに対応する。
+ */
 public class CobolCallParams {
-    /** TODO: 準備中 */
+    /**
+     * 現在のCALL文で渡されたパラメータ数。
+     *
+     * <p>CALL文の実行前に設定され、呼び出されたプログラム内で参照される。
+     * COBOL組み込み関数NUMBER-OF-CALL-PARAMETERSで使用される値に対応する。
+     */
     public static int callParams = 0;
 }

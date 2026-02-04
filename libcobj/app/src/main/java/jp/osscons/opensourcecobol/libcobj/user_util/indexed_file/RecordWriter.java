@@ -1,18 +1,21 @@
 package jp.osscons.opensourcecobol.libcobj.user_util.indexed_file;
 
-/** TODO: 準備中 */
+/**
+ * Interface for writing records to various output destinations in the cobj-idx utility. This
+ * interface provides a common abstraction for writing COBOL-style records to output sources.
+ */
 interface RecordWriter {
-    /** TODO: 準備中 */
+    /** Opens the underlying output destination for writing. */
     void open();
 
     /**
-     * TODO: 準備中
+     * Writes a single record to the output destination.
      *
-     * @param record TODO: 準備中
-     * @return TODO: 準備中
+     * @param record the byte array containing the record data to be written
+     * @return true if the write operation succeeded, false otherwise
      */
     boolean write(byte[] record);
 
-    /** TODO: 準備中 */
+    /** Closes the underlying output destination and releases associated resources. */
     void close();
 }

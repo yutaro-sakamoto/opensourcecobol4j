@@ -20,175 +20,202 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
-/** TODO: 準備中 */
+/**
+ * COBOL LINAGE句の情報を保持するクラス。
+ *
+ * <p>COBOL LINAGE句は印刷ファイルの論理ページ構造を定義するために使用される。 このクラスはページ本体行数、フッティング行位置、トップマージン、ボトムマージンなどの
+ * 情報を保持し、WRITE文でのページ制御（ADVANCING句）を実現する。
+ *
+ * <p>LINAGE句の典型的な指定: {@code LINAGE IS 50 LINES WITH FOOTING AT 45 LINES AT TOP 3 LINES AT
+ * BOTTOM 2}
+ *
+ * <p>libcob/common.hのstruct linageに対応する。
+ */
 public class Linage {
+    /** LINAGE値を参照するフィールド（動的参照の場合） */
     private AbstractCobolField linage;
+
+    /** LINAGE-COUNTERレジスタ。現在のページ内行位置を追跡 */
     private AbstractCobolField linageCtr;
+
+    /** FOOTING AT値を参照するフィールド（動的参照の場合） */
     private AbstractCobolField latfoot;
+
+    /** LINES AT TOP値を参照するフィールド（動的参照の場合） */
     private AbstractCobolField lattop;
+
+    /** LINES AT BOTTOM値を参照するフィールド（動的参照の場合） */
     private AbstractCobolField latbot;
+
+    /** ページ本体の行数（LINAGE IS n LINES） */
     private int linLines;
+
+    /** フッティング領域の開始行位置（WITH FOOTING AT n） */
     private int linFoot;
+
+    /** トップマージンの行数（LINES AT TOP n） */
     private int linTop;
+
+    /** ボトムマージンの行数（LINES AT BOTTOM n） */
     private int linBot;
 
     /**
-     * TODO: 準備中
+     * LINAGE参照フィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return LINAGEフィールド
      */
     AbstractCobolField getLinage() {
         return linage;
     }
 
     /**
-     * TODO: 準備中
+     * LINAGE参照フィールドを設定する。
      *
-     * @param linage TODO: 準備中
+     * @param linage 設定するLINAGEフィールド
      */
     public void setLinage(AbstractCobolField linage) {
         this.linage = linage;
     }
 
     /**
-     * TODO: 準備中
+     * LINAGE-COUNTERフィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return LINAGE-COUNTERフィールド
      */
     AbstractCobolField getLinageCtr() {
         return linageCtr;
     }
 
     /**
-     * TODO: 準備中
+     * LINAGE-COUNTERフィールドを設定する。
      *
-     * @param linageCtr TODO: 準備中
+     * @param linageCtr 設定するLINAGE-COUNTERフィールド
      */
     public void setLinageCtr(AbstractCobolField linageCtr) {
         this.linageCtr = linageCtr;
     }
 
     /**
-     * TODO: 準備中
+     * FOOTING参照フィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return FOOTINGフィールド
      */
     AbstractCobolField getLatfoot() {
         return latfoot;
     }
 
     /**
-     * TODO: 準備中
+     * FOOTING参照フィールドを設定する。
      *
-     * @param latfoot TODO: 準備中
+     * @param latfoot 設定するFOOTINGフィールド
      */
     public void setLatfoot(AbstractCobolField latfoot) {
         this.latfoot = latfoot;
     }
 
     /**
-     * TODO: 準備中
+     * LINES AT TOP参照フィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return LINES AT TOPフィールド
      */
     AbstractCobolField getLattop() {
         return lattop;
     }
 
     /**
-     * TODO: 準備中
+     * LINES AT TOP参照フィールドを設定する。
      *
-     * @param lattop TODO: 準備中
+     * @param lattop 設定するLINES AT TOPフィールド
      */
     public void setLattop(AbstractCobolField lattop) {
         this.lattop = lattop;
     }
 
     /**
-     * TODO: 準備中
+     * LINES AT BOTTOM参照フィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return LINES AT BOTTOMフィールド
      */
     AbstractCobolField getLatbot() {
         return latbot;
     }
 
     /**
-     * TODO: 準備中
+     * LINES AT BOTTOM参照フィールドを設定する。
      *
-     * @param latbot TODO: 準備中
+     * @param latbot 設定するLINES AT BOTTOMフィールド
      */
     public void setLatbot(AbstractCobolField latbot) {
         this.latbot = latbot;
     }
 
     /**
-     * TODO: 準備中
+     * ページ本体の行数を取得する。
      *
-     * @return TODO: 準備中
+     * @return ページ本体行数
      */
     int getLinLines() {
         return linLines;
     }
 
     /**
-     * TODO: 準備中
+     * ページ本体の行数を設定する。
      *
-     * @param linLines TODO: 準備中
+     * @param linLines 設定するページ本体行数
      */
     public void setLinLines(int linLines) {
         this.linLines = linLines;
     }
 
     /**
-     * TODO: 準備中
+     * フッティング領域の開始行位置を取得する。
      *
-     * @return TODO: 準備中
+     * @return フッティング開始行位置
      */
     int getLinFoot() {
         return linFoot;
     }
 
     /**
-     * TODO: 準備中
+     * フッティング領域の開始行位置を設定する。
      *
-     * @param linFoot TODO: 準備中
+     * @param linFoot 設定するフッティング開始行位置
      */
     public void setLinFoot(int linFoot) {
         this.linFoot = linFoot;
     }
 
     /**
-     * TODO: 準備中
+     * トップマージンの行数を取得する。
      *
-     * @return TODO: 準備中
+     * @return トップマージン行数
      */
     int getLinTop() {
         return linTop;
     }
 
     /**
-     * TODO: 準備中
+     * トップマージンの行数を設定する。
      *
-     * @param linTop TODO: 準備中
+     * @param linTop 設定するトップマージン行数
      */
     public void setLinTop(int linTop) {
         this.linTop = linTop;
     }
 
     /**
-     * TODO: 準備中
+     * ボトムマージンの行数を取得する。
      *
-     * @return TODO: 準備中
+     * @return ボトムマージン行数
      */
     int getLinBot() {
         return linBot;
     }
 
     /**
-     * TODO: 準備中
+     * ボトムマージンの行数を設定する。
      *
-     * @param linBot TODO: 準備中
+     * @param linBot 設定するボトムマージン行数
      */
     public void setLinBot(int linBot) {
         this.linBot = linBot;

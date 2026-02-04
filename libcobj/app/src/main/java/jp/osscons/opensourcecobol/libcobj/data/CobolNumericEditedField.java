@@ -23,7 +23,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
 
-/** TODO: 準備中 */
+/**
+ * COBOL数値編集型（PIC 編集）の変数を表現するクラス。
+ * PIC句に編集文字（Z、*、-、+、$、CR、DB、小数点、カンマ等）を含む数値項目を扱う。
+ * MOVE時に数値を指定された編集パターンに従って整形し、ゼロサプレスや符号挿入等を行う。
+ */
 public class CobolNumericEditedField extends AbstractCobolField {
     /**
      * コンストラクタ

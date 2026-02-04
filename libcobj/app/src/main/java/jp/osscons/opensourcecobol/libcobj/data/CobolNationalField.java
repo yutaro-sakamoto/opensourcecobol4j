@@ -24,7 +24,7 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 /** PIC 文字列がN(5)やN(9)の変数を表現するクラス. */
 public class CobolNationalField extends AbstractCobolField {
 
-    /** TODO: 準備中 */
+    /** 半角から全角への変換後のバイトサイズを格納する作業用フィールド。 */
     public static int workReturnSize;
 
     /**
@@ -157,10 +157,11 @@ public class CobolNationalField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * ソースフィールドのデータを全角（Shift_JIS）に変換する。
+     * 変換後のバイトサイズはworkReturnSizeフィールドに格納される。
      *
-     * @param src TODO: 準備中
-     * @return TODO: 準備中
+     * @param src 変換対象のフィールド
+     * @return 全角変換後のバイト配列、またはソースが空の場合はnull
      */
     public static byte[] judge_hankakujpn_exist(AbstractCobolField src) {
         byte[] tmpZenJpnWord = null;
@@ -176,11 +177,14 @@ public class CobolNationalField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 半角文字（ASCII、半角カナ）を全角文字（Shift_JIS）に変換する。
+     * 各半角文字は対応する全角文字の2バイトに変換される。
+     * 濁点・半濁点は直前の文字と結合して処理される。
+     * 変換後のサイズはworkReturnSizeに設定される。
      *
-     * @param str TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param str 変換対象のバイト配列
+     * @param size 変換対象のバイト数
+     * @return 変換後の全角文字バイト配列
      */
     public static byte[] han2zen(byte[] str, int size) {
         byte[] buf;

@@ -23,7 +23,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import jp.osscons.opensourcecobol.libcobj.common.CobolConstant;
 
-/** TODO: 準備中 */
+/**
+ * COBOL日本語編集型（PIC N編集）の変数を表現するクラス。
+ * PIC句に編集文字（B、0、/等）を含む日本語項目を扱い、
+ * MOVE時に指定された編集パターンに従って全角文字の編集・整形を行う。
+ */
 public class CobolNationalEditedField extends AbstractCobolField {
     /**
      * コンストラクタ

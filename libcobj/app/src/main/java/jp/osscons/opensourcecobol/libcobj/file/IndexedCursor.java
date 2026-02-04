@@ -6,23 +6,27 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Optional;
 
-/** Represents a result of fetching a data from SQLite tables. */
+/**
+ * SQLiteテーブルからフェッチしたレコードの結果を保持するクラス。
+ *
+ * <p>INDEXEDファイルの読み取り操作の結果として、キー値、レコードデータ、 および重複キーの場合は重複番号を格納する。
+ */
 class FetchResult {
-    /** TODO: 準備中 */
+    /** フェッチしたレコードのキー値 */
     byte[] key;
 
-    /** TODO: 準備中 */
+    /** フェッチしたレコードのデータ（主キーテーブルのvalue列の値） */
     byte[] value;
 
-    /** TODO: 準備中 */
+    /** 重複キー（DUPLICATES指定）の場合の重複番号。非重複キーの場合は0 */
     int dupNo;
 
     /**
-     * TODO: 準備中
+     * 重複キーを含む結果を生成するコンストラクタ。
      *
-     * @param key TODO: 準備中
-     * @param value TODO: 準備中
-     * @param dupNo TODO: 準備中
+     * @param key フェッチしたキー値
+     * @param value フェッチしたレコードデータ
+     * @param dupNo 重複番号
      */
     FetchResult(byte[] key, byte[] value, int dupNo) {
         this.key = key;
@@ -31,10 +35,10 @@ class FetchResult {
     }
 
     /**
-     * TODO: 準備中
+     * 重複番号なしの結果を生成するコンストラクタ。
      *
-     * @param key TODO: 準備中
-     * @param value TODO: 準備中
+     * @param key フェッチしたキー値
+     * @param value フェッチしたレコードデータ
      */
     FetchResult(byte[] key, byte[] value) {
         this.key = key;

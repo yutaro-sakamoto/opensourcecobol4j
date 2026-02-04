@@ -3,18 +3,22 @@ package jp.osscons.opensourcecobol.libcobj.user_util.indexed_file;
 import java.util.Scanner;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * A base RecordReader implementation that reads records from standard input. This class provides
+ * common functionality for reading COBOL-style records from stdin, with concrete implementations
+ * for different data formats (SEQUENTIAL and LINE_SEQUENTIAL).
+ */
 class StdinRecordReader implements RecordReader {
-    /** TODO: 準備中 */
+    /** The expected size of each record in bytes. */
     protected int recordSize;
 
-    /** TODO: 準備中 */
+    /** The scanner used to read input from standard input. */
     protected Scanner scan;
 
     /**
-     * TODO: 準備中
+     * Constructs a new StdinRecordReader with the specified record size.
      *
-     * @param recordSize TODO: 準備中
+     * @param recordSize the expected size of each record in bytes
      */
     protected StdinRecordReader(int recordSize) {
         this.recordSize = recordSize;
@@ -35,11 +39,15 @@ class StdinRecordReader implements RecordReader {
         this.scan.close();
     }
 
+    /**
+     * A StdinRecordReader implementation for reading LINE SEQUENTIAL format data from stdin. Each
+     * record is expected to be on a separate line.
+     */
     static class StdinLineSeqReader extends StdinRecordReader {
         /**
-         * TODO: 準備中
+         * Constructs a new StdinLineSeqReader with the specified record size.
          *
-         * @param recordSize TODO: 準備中
+         * @param recordSize the expected size of each record in bytes (excluding newline)
          */
         StdinLineSeqReader(int recordSize) {
             super(recordSize);
@@ -60,15 +68,19 @@ class StdinRecordReader implements RecordReader {
         }
     }
 
+    /**
+     * A StdinRecordReader implementation for reading SEQUENTIAL format data from stdin. Records are
+     * concatenated without separators and are split based on the fixed record size.
+     */
     static class StdinSeqReader extends StdinRecordReader {
         private boolean firstFetchFail;
         private byte[] readData;
         private int readDataOffset;
 
         /**
-         * TODO: 準備中
+         * Constructs a new StdinSeqReader with the specified record size.
          *
-         * @param recordSize TODO: 準備中
+         * @param recordSize the fixed size of each record in bytes
          */
         public StdinSeqReader(int recordSize) {
             super(recordSize);
@@ -107,11 +119,12 @@ class StdinRecordReader implements RecordReader {
     }
 
     /**
-     * TODO: 準備中
+     * Factory method that creates an appropriate stdin reader based on the specified data format.
      *
-     * @param userDataFormat TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @return TODO: 準備中
+     * @param userDataFormat the format of the input data (SEQUENTIAL or LINE_SEQUENTIAL)
+     * @param recordSize the expected size of each record in bytes
+     * @return a RecordReader implementation for reading from stdin in the specified format, or null
+     *     if the format is not supported
      */
     static RecordReader getInstance(UserDataFormat userDataFormat, int recordSize) {
         switch (userDataFormat) {

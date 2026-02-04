@@ -20,111 +20,127 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
-/** TODO: 準備中 */
+/**
+ * COBOLファイルのキー情報を保持するクラス。
+ *
+ * <p>INDEXED/RELATIVEファイルの主キーおよび代替キー、またはSORT文のソートキーの定義を表す。 COBOL RECORD KEY句、ALTERNATE RECORD KEY句、SORT KEY句で定義された
+ * キー情報（フィールド、オフセット、昇順/降順フラグ等）を保持する。 複合キーの場合は複数のKeyComponentで構成される。
+ *
+ * <p>libcob/common.hのstruct cob_file_keyに対応する。
+ */
 public class CobolFileKey {
-    /** TODO: 準備中 */
+    /** 複合キーを構成できる最大コンポーネント数 */
     public static final int COB_MAX_KEY_COMPONENTS = 8;
 
+    /** このキーに対応するCOBOLフィールド */
     private AbstractCobolField field;
+
+    /** キーのフラグ。SORT時は昇順(0)/降順(1)、INDEXEDファイルではDUPLICATES指定等 */
     private int flag;
+
+    /** レコード内でのこのキーの開始オフセット（バイト位置） */
     private int offset;
+
+    /** 複合キーを構成するコンポーネントの数 */
     private int countComponents;
+
+    /** 複合キーの各コンポーネント情報の配列 */
     private KeyComponent[] component = new KeyComponent[COB_MAX_KEY_COMPONENTS];
 
     /**
-     * TODO: 準備中
+     * キーに対応するCOBOLフィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return キーフィールド
      */
     public AbstractCobolField getField() {
         return field;
     }
 
     /**
-     * TODO: 準備中
+     * キーに対応するCOBOLフィールドを設定する。
      *
-     * @param field TODO: 準備中
+     * @param field 設定するキーフィールド
      */
     public void setField(AbstractCobolField field) {
         this.field = field;
     }
 
     /**
-     * TODO: 準備中
+     * キーのフラグを取得する。
      *
-     * @return TODO: 準備中
+     * @return フラグ値（SORT時: 0=昇順, 1=降順）
      */
     public int getFlag() {
         return flag;
     }
 
     /**
-     * TODO: 準備中
+     * キーのフラグを設定する。
      *
-     * @param flag TODO: 準備中
+     * @param flag 設定するフラグ値
      */
     public void setFlag(int flag) {
         this.flag = flag;
     }
 
     /**
-     * TODO: 準備中
+     * レコード内でのキーの開始オフセットを取得する。
      *
-     * @return TODO: 準備中
+     * @return オフセット（バイト位置）
      */
     public int getOffset() {
         return offset;
     }
 
     /**
-     * TODO: 準備中
+     * レコード内でのキーの開始オフセットを設定する。
      *
-     * @param offset TODO: 準備中
+     * @param offset 設定するオフセット（バイト位置）
      */
     public void setOffset(int offset) {
         this.offset = offset;
     }
 
     /**
-     * TODO: 準備中
+     * 複合キーのコンポーネント数を取得する。
      *
-     * @return TODO: 準備中
+     * @return コンポーネント数
      */
     public int getCountComponents() {
         return countComponents;
     }
 
     /**
-     * TODO: 準備中
+     * 複合キーのコンポーネント数を設定する。
      *
-     * @param countComponents TODO: 準備中
+     * @param countComponents 設定するコンポーネント数
      */
     public void setCountComponents(int countComponents) {
         this.countComponents = countComponents;
     }
 
     /**
-     * TODO: 準備中
+     * 複合キーのコンポーネント配列を取得する。
      *
-     * @return TODO: 準備中
+     * @return コンポーネント配列
      */
     public KeyComponent[] getComponent() {
         return component;
     }
 
     /**
-     * TODO: 準備中
+     * 複合キーのコンポーネント配列を設定する。
      *
-     * @param component TODO: 準備中
+     * @param component 設定するコンポーネント配列
      */
     public void setComponent(KeyComponent[] component) {
         this.component = component;
     }
 
     /**
-     * TODO: 準備中
+     * 複合キーの最大コンポーネント数を取得する。
      *
-     * @return TODO: 準備中
+     * @return 最大コンポーネント数（8）
      */
     public static int getCobMaxKeyComponents() {
         return COB_MAX_KEY_COMPONENTS;

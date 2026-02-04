@@ -21,7 +21,16 @@ package jp.osscons.opensourcecobol.libcobj.exceptions;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 
-/** STOP RUNの呼び出し時にスローされる例外。返り値を保持する。 */
+/**
+ * COBOLのSTOP RUN文が実行されたときにスローされる例外。
+ *
+ * <p>COBOLプログラムからJavaに変換されたコードでは、STOP RUN文がこの例外のスローに変換される。
+ * この例外はプログラムの正常終了を示すため、Exceptionを継承している（RuntimeExceptionではない）。
+ * 変換されたJavaコードのmainメソッドやrun_moduleメソッドでこの例外をキャッチし、
+ * 適切な終了処理（ファイルのクローズ等）を行った後、返り値に基づいて終了する。
+ *
+ * @see CobolFile#exitFileIO()
+ */
 public final class CobolStopRunException extends Exception {
 
     /** 返り値 */
@@ -58,7 +67,7 @@ public final class CobolStopRunException extends Exception {
      * CobolStopRunExceptionを例外としてスローする。 COBOLプログラム終了時のデフォルトの終了処理は実行されない。
      *
      * @param returnCode STOP RUNの返り値
-     * @throws CobolStopRunException TODO: 準備中
+     * @throws CobolStopRunException 指定された返り値を保持したCobolStopRunException
      */
     public static void throwException(int returnCode) throws CobolStopRunException {
         throw new CobolStopRunException(returnCode);
@@ -67,8 +76,8 @@ public final class CobolStopRunException extends Exception {
     /**
      * CobolStopRunExceptionを例外としてスローする。 COBOLプログラム終了時のデフォルトの終了処理は実行されない。
      *
-     * @param storage STOP RUNの返り値
-     * @throws CobolStopRunException TODO: 準備中
+     * @param storage STOP RUNの返り値を格納したCobolDataStorageインスタンス
+     * @throws CobolStopRunException 指定された返り値を保持したCobolStopRunException
      */
     public static void throwException(CobolDataStorage storage) throws CobolStopRunException {
         throw new CobolStopRunException(storage);

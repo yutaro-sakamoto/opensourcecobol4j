@@ -139,9 +139,9 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 指定された項目名の数値チェックを行う（現在は未実装）
      *
-     * @param s TODO: 準備中
+     * @param s チェック対象の項目名
      */
     public void checkNumeric(String s) {}
 
@@ -529,10 +529,11 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     /**
-     * byte型データを右に4回シフトした値を返す CとJavaのビット演算の仕様に差異があるため実装した
+     * byte型データを右に4回シフトした値を返す。
+     * CとJavaのビット演算の仕様に差異があるため実装した。
      *
-     * @param b TODO: 準備中
-     * @return b>>4
+     * @param b 変換対象のバイト値
+     * @return bの上位4ビットを下位4ビットに移動した値（0～15）
      */
     private byte upper4bits(byte b) {
         return (byte) ((b >>> 4) & 0x0F);
@@ -754,10 +755,11 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     /**
-     * libcob/codegen.hのcob_cmp_packed_intの実装
+     * libcob/codegen.hのcob_cmp_packed_intの実装。
+     * 9桁以下のパック10進数と整数の比較を行う。
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisがnより小さい場合は-1、等しい場合は0、大きい場合は1
      */
     private int cmpPackedInt(int n) {
         CobolDataStorage data = this.getDataStorage();
@@ -780,10 +782,11 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     /**
-     * libcob/numeric.cのcob_cmp_packedの実装
+     * libcob/numeric.cのcob_cmp_packedの実装。
+     * 10桁以上のパック10進数と整数の比較を行う。
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisがnより小さい場合は負、等しい場合は0、大きい場合は正の値
      */
     private int cmpPacked(int n) {
         int sign = this.getSign();

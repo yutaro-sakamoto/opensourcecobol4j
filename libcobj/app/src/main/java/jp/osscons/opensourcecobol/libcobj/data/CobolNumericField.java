@@ -43,9 +43,9 @@ public class CobolNumericField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 指定された項目名の数値チェックを行う（現在は未実装）
      *
-     * @param s TODO: 準備中
+     * @param s チェック対象の項目名
      */
     public void checkNumeric(String s) {}
 
@@ -526,12 +526,13 @@ public class CobolNumericField extends AbstractCobolField {
     }
 
     /**
-     * libcob/move.cのstore_common_regionの実装
+     * libcob/move.cのstore_common_regionの実装。
+     * 数値データをフィールドにスケールを考慮して格納する。
      *
-     * @param field TODO: 準備中
-     * @param data TODO: 準備中
-     * @param size TODO: 準備中
-     * @param scale TODO: 準備中
+     * @param field 格納先のフィールド
+     * @param data 格納元のデータ
+     * @param size 格納元のデータサイズ
+     * @param scale 格納元のスケール（小数点以下の桁数）
      */
     private void storeCommonRegion(
             AbstractCobolField field, CobolDataStorage data, int size, int scale) {
@@ -539,13 +540,14 @@ public class CobolNumericField extends AbstractCobolField {
     }
 
     /**
-     * libcob/move.cのstore_common_regionの実装
+     * libcob/move.cのstore_common_regionの実装。
+     * 数値データをフィールドにスケールを考慮して格納する。
      *
-     * @param field TODO: 準備中
-     * @param data TODO: 準備中
-     * @param dataStartIndex TODO: 準備中
-     * @param size TODO: 準備中
-     * @param scale TODO: 準備中
+     * @param field 格納先のフィールド
+     * @param data 格納元のデータ
+     * @param dataStartIndex 格納元データの開始インデックス
+     * @param size 格納元のデータサイズ
+     * @param scale 格納元のスケール（小数点以下の桁数）
      */
     private void storeCommonRegion(
             AbstractCobolField field,
@@ -726,13 +728,14 @@ public class CobolNumericField extends AbstractCobolField {
     }
 
     /**
-     * libcob/numeric.cのdisplay_add_intの実装
+     * libcob/numeric.cのdisplay_add_intの実装。
+     * 数値表示型フィールドに整数値を加算する。
      *
-     * @param data TODO: 準備中
+     * @param data 加算対象のデータストレージ
      * @param firstDataIndex dataにアクセスするときの開始位置
-     * @param size TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値データのサイズ
+     * @param n 加算する整数値
+     * @return 正常終了時は0、オーバーフロー時は1
      */
     private int displayAddInt(CobolDataStorage data, int firstDataIndex, int size, long n) {
         int carry = 0;

@@ -21,25 +21,61 @@ package jp.osscons.opensourcecobol.libcobj.file;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * COBOL SORT/MERGE文の処理を管理するクラス。
+ *
+ * <p>COBOL SORT文およびMERGE文の実行時に使用され、ソート対象レコードの管理、 一時ファイルの管理、マージソートのフェーズ制御などを行う。
+ * メモリ内ソートと外部マージソートの両方をサポートし、 大量データの効率的なソートを実現する。
+ *
+ * <p>libcob/fileio.cのstruct cobsortに対応する。
+ */
 class CobolSort {
+    /** ソート対象のCobolFileへの参照 */
     private CobolFile pointer;
+
+    /** 再利用可能なCobolItemの空きリストの先頭 */
     private CobolItem empty;
+
+    /** SORT-RETURNレジスタの値を保持するストレージ */
     private CobolDataStorage sortReturn;
+
+    /** ファイルステータスフィールドへの参照 */
     private AbstractCobolField fnstatus;
+
+    /** 安定ソートのための一意識別子カウンタ */
     private int unique;
+
+    /** レコード取り出しフェーズかどうか。1の場合は取り出し中 */
     private int retrieving;
+
+    /** 一時ファイルが使用されているかどうか。1の場合は使用中 */
     private int filesUsed;
+
+    /** ソート対象レコードのサイズ（バイト数） */
     private int size;
+
+    /** 読み取り用のレコードサイズ（サイズ情報を含む） */
     private int rSize;
+
+    /** 書き込み用のレコードサイズ（ブロック区切りを含む） */
     private int wSize;
+
+    /** メモリ内に保持可能なレコード数の上限 */
     private int memory;
+
+    /** 外部マージソートで次の書き込み先ファイルのインデックス */
     private int destinationFile;
+
+    /** 結果取り出し時に使用するキューのインデックス */
     private int retrievalQueue;
+
+    /** マージソート用のキュー配列（4つのキューを使用） */
     private MemoryStruct[] queue = new MemoryStruct[4];
+
+    /** 外部マージソート用の一時ファイル配列（4つのファイルを使用） */
     private FileStruct[] file = new FileStruct[4];
 
-    /** TODO: 準備中 */
+    /** デフォルトコンストラクタ。4つのキューと4つのファイル構造を初期化する。 */
     CobolSort() {
         for (int i = 0; i < 4; ++i) {
             this.queue[i] = new MemoryStruct();
@@ -48,270 +84,270 @@ class CobolSort {
     }
 
     /**
-     * TODO: 準備中
+     * ソート対象のCobolFileを取得する。
      *
-     * @return TODO: 準備中
+     * @return ソート対象のCobolFile
      */
     CobolFile getPointer() {
         return pointer;
     }
 
     /**
-     * TODO: 準備中
+     * ソート対象のCobolFileを設定する。
      *
-     * @param pointer TODO: 準備中
+     * @param pointer 設定するCobolFile
      */
     void setPointer(CobolFile pointer) {
         this.pointer = pointer;
     }
 
     /**
-     * TODO: 準備中
+     * 再利用可能な空きCobolItemリストの先頭を取得する。
      *
-     * @return TODO: 準備中
+     * @return 空きリストの先頭要素。リストが空の場合はnull
      */
     CobolItem getEmpty() {
         return empty;
     }
 
     /**
-     * TODO: 準備中
+     * 再利用可能な空きCobolItemリストの先頭を設定する。
      *
-     * @param empty TODO: 準備中
+     * @param empty 設定する空きリストの先頭要素
      */
     void setEmpty(CobolItem empty) {
         this.empty = empty;
     }
 
     /**
-     * TODO: 準備中
+     * SORT-RETURNレジスタのストレージを取得する。
      *
-     * @return TODO: 準備中
+     * @return SORT-RETURNレジスタのストレージ
      */
     CobolDataStorage getSortReturn() {
         return sortReturn;
     }
 
     /**
-     * TODO: 準備中
+     * SORT-RETURNレジスタのストレージを設定する。
      *
-     * @param sortReturn TODO: 準備中
+     * @param sortReturn 設定するストレージ
      */
     void setSortReturn(CobolDataStorage sortReturn) {
         this.sortReturn = sortReturn;
     }
 
     /**
-     * TODO: 準備中
+     * ファイルステータスフィールドを取得する。
      *
-     * @return TODO: 準備中
+     * @return ファイルステータスフィールド
      */
     AbstractCobolField getFnstatus() {
         return fnstatus;
     }
 
     /**
-     * TODO: 準備中
+     * ファイルステータスフィールドを設定する。
      *
-     * @param fnstatus TODO: 準備中
+     * @param fnstatus 設定するファイルステータスフィールド
      */
     void setFnstatus(AbstractCobolField fnstatus) {
         this.fnstatus = fnstatus;
     }
 
     /**
-     * TODO: 準備中
+     * 一意識別子カウンタの現在値を取得する。
      *
-     * @return TODO: 準備中
+     * @return 一意識別子カウンタの値
      */
     int getUnique() {
         return unique;
     }
 
     /**
-     * TODO: 準備中
+     * 一意識別子カウンタの値を設定する。
      *
-     * @param unique TODO: 準備中
+     * @param unique 設定する値
      */
     void setUnique(int unique) {
         this.unique = unique;
     }
 
     /**
-     * TODO: 準備中
+     * レコード取り出しフェーズかどうかを取得する。
      *
-     * @return TODO: 準備中
+     * @return 取り出しフェーズの場合は1、それ以外は0
      */
     int getRetrieving() {
         return retrieving;
     }
 
     /**
-     * TODO: 準備中
+     * レコード取り出しフェーズのフラグを設定する。
      *
-     * @param retrieving TODO: 準備中
+     * @param retrieving 設定するフラグ値
      */
     void setRetrieving(int retrieving) {
         this.retrieving = retrieving;
     }
 
     /**
-     * TODO: 準備中
+     * 一時ファイルが使用されているかどうかを取得する。
      *
-     * @return TODO: 準備中
+     * @return 使用中の場合は1、それ以外は0
      */
     int getFilesUsed() {
         return filesUsed;
     }
 
     /**
-     * TODO: 準備中
+     * 一時ファイル使用フラグを設定する。
      *
-     * @param filesUsed TODO: 準備中
+     * @param filesUsed 設定するフラグ値
      */
     void setFilesUsed(int filesUsed) {
         this.filesUsed = filesUsed;
     }
 
     /**
-     * TODO: 準備中
+     * レコードサイズを取得する。
      *
-     * @return TODO: 準備中
+     * @return レコードサイズ（バイト数）
      */
     int getSize() {
         return size;
     }
 
     /**
-     * TODO: 準備中
+     * レコードサイズを設定する。
      *
-     * @param size TODO: 準備中
+     * @param size 設定するレコードサイズ（バイト数）
      */
     void setSize(int size) {
         this.size = size;
     }
 
     /**
-     * TODO: 準備中
+     * 読み取り用レコードサイズを取得する。
      *
-     * @return TODO: 準備中
+     * @return 読み取り用レコードサイズ（バイト数）
      */
     int getrSize() {
         return rSize;
     }
 
     /**
-     * TODO: 準備中
+     * 読み取り用レコードサイズを設定する。
      *
-     * @param rSize TODO: 準備中
+     * @param rSize 設定する読み取り用レコードサイズ（バイト数）
      */
     void setrSize(int rSize) {
         this.rSize = rSize;
     }
 
     /**
-     * TODO: 準備中
+     * 書き込み用レコードサイズを取得する。
      *
-     * @return TODO: 準備中
+     * @return 書き込み用レコードサイズ（バイト数）
      */
     int getwSize() {
         return wSize;
     }
 
     /**
-     * TODO: 準備中
+     * 書き込み用レコードサイズを設定する。
      *
-     * @param wSize TODO: 準備中
+     * @param wSize 設定する書き込み用レコードサイズ（バイト数）
      */
     void setwSize(int wSize) {
         this.wSize = wSize;
     }
 
     /**
-     * TODO: 準備中
+     * メモリ内に保持可能なレコード数の上限を取得する。
      *
-     * @return TODO: 準備中
+     * @return レコード数の上限
      */
     int getMemory() {
         return memory;
     }
 
     /**
-     * TODO: 準備中
+     * メモリ内に保持可能なレコード数の上限を設定する。
      *
-     * @param memory TODO: 準備中
+     * @param memory 設定するレコード数の上限
      */
     void setMemory(int memory) {
         this.memory = memory;
     }
 
     /**
-     * TODO: 準備中
+     * 次の書き込み先ファイルのインデックスを取得する。
      *
-     * @return TODO: 準備中
+     * @return ファイルインデックス（0-3）
      */
     int getDestinationFile() {
         return destinationFile;
     }
 
     /**
-     * TODO: 準備中
+     * 次の書き込み先ファイルのインデックスを設定する。
      *
-     * @param destinationFile TODO: 準備中
+     * @param destinationFile 設定するファイルインデックス（0-3）
      */
     void setDestinationFile(int destinationFile) {
         this.destinationFile = destinationFile;
     }
 
     /**
-     * TODO: 準備中
+     * 結果取り出し時に使用するキューのインデックスを取得する。
      *
-     * @return TODO: 準備中
+     * @return キューインデックス（0-3）
      */
     int getRetrievalQueue() {
         return retrievalQueue;
     }
 
     /**
-     * TODO: 準備中
+     * 結果取り出し時に使用するキューのインデックスを設定する。
      *
-     * @param retrievalQueue TODO: 準備中
+     * @param retrievalQueue 設定するキューインデックス（0-3）
      */
     void setRetrievalQueue(int retrievalQueue) {
         this.retrievalQueue = retrievalQueue;
     }
 
     /**
-     * TODO: 準備中
+     * マージソート用のキュー配列を取得する。
      *
-     * @return TODO: 準備中
+     * @return キュー配列（4要素）
      */
     MemoryStruct[] getQueue() {
         return queue;
     }
 
     /**
-     * TODO: 準備中
+     * マージソート用のキュー配列を設定する。
      *
-     * @param queue TODO: 準備中
+     * @param queue 設定するキュー配列
      */
     void setQueue(MemoryStruct[] queue) {
         this.queue = queue;
     }
 
     /**
-     * TODO: 準備中
+     * 一時ファイル配列を取得する。
      *
-     * @return TODO: 準備中
+     * @return 一時ファイル配列（4要素）
      */
     FileStruct[] getFile() {
         return file;
     }
 
     /**
-     * TODO: 準備中
+     * 一時ファイル配列を設定する。
      *
-     * @param file TODO: 準備中
+     * @param file 設定する一時ファイル配列
      */
     void setFile(FileStruct[] file) {
         this.file = file;

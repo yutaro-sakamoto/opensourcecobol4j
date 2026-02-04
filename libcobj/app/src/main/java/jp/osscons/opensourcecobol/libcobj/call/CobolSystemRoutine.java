@@ -66,9 +66,9 @@ public class CobolSystemRoutine {
      *
      * @param cmd コマンド文字列。Linux/Unix環境であればシェルコマンド、Windows環境であればコマンドプロンプトのコマンド。
      * @return コマンドの終了コード。
-     * @throws CobolStopRunException TODO: 準備中
+     * @throws CobolStopRunException
      *     このメソッドは内部でCobolModule.getCurrentModule().cob_procedure_parametersを参照する。
-     *     このリストの形式に問題がある場合にスローされる。
+     *     パラメータのサイズが0以下の場合、またはパラメータが指定されていない場合にスローされる。
      */
     public static int SYSTEM(CobolDataStorage cmd) throws CobolStopRunException {
         int size = SYSTEM_getParameterSize();
@@ -136,8 +136,8 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数すうC$SLEEPの実装
-     * opensource COBOLのlibcob/common.cのcob_acuw_sleep関数に相当する
+     * 組み込み関数C$SLEEPの実装。指定された秒数だけスリープする。
+     * opensource COBOLのlibcob/common.cのcob_acuw_sleep関数に相当する。
      *
      * @param data C$SLEEPの引数として指定されたCOBOL変数のバイト列。
      */
@@ -285,12 +285,13 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数CBL_ORの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_ORの実装。1バイトごとに論理和を取る。
+     * 先頭lengthバイトのデータについて論理和を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_OR(AbstractCobolField data1, AbstractCobolField data2, int length) {
         return CBL_OR(data1.getDataStorage(), data2.getDataStorage(), length);
@@ -305,12 +306,13 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数CBL_NORの実装。1バイトごとに排他的論理和を取る。 先頭lengthバイトのデータについて論理否定を計算し、計算結果を2番目の引数の先頭に格納する。
+     * 組み込み関数CBL_NORの実装。1バイトごとに否定論理和（NOR）を取る。
+     * 先頭lengthバイトのデータについてNOR（NOT(data1 OR data2)）を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOR(CobolDataStorage data1, CobolDataStorage data2, int length) {
         return CBL_COMMON_OPERATION(
@@ -327,48 +329,52 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NORの実装。1バイトごとに否定論理和（NOR）を取る。
+     * 先頭lengthバイトのデータについてNOR（NOT(data1 OR data2)）を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOR(AbstractCobolField data1, CobolDataStorage data2, int length) {
         return CBL_NOR(data1.getDataStorage(), data2, length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NORの実装。1バイトごとに否定論理和（NOR）を取る。
+     * 先頭lengthバイトのデータについてNOR（NOT(data1 OR data2)）を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOR(CobolDataStorage data1, AbstractCobolField data2, int length) {
         return CBL_NOR(data1, data2.getDataStorage(), length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NORの実装。1バイトごとに否定論理和（NOR）を取る。
+     * 先頭lengthバイトのデータについてNOR（NOT(data1 OR data2)）を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOR(AbstractCobolField data1, AbstractCobolField data2, int length) {
         return CBL_NOR(data1.getDataStorage(), data2.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_XORの実装。1バイトごとに排他的論理和を取る。 先頭lengthバイトのデータについて排他的論理和を計算し、計算結果を2番目の引数の先頭に格納する。
+     * 組み込み関数CBL_XORの実装。1バイトごとに排他的論理和を取る。
+     * 先頭lengthバイトのデータについて排他的論理和を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_XOR(CobolDataStorage data1, CobolDataStorage data2, int length) {
         return CBL_COMMON_OPERATION(
@@ -385,48 +391,52 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数CBL_XORの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_XORの実装。1バイトごとに排他的論理和を取る。
+     * 先頭lengthバイトのデータについて排他的論理和を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_XOR(AbstractCobolField data1, CobolDataStorage data2, int length) {
         return CBL_XOR(data1.getDataStorage(), data2, length);
     }
 
     /**
-     * 組み込み関数CBL_XORの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_XORの実装。1バイトごとに排他的論理和を取る。
+     * 先頭lengthバイトのデータについて排他的論理和を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_XOR(CobolDataStorage data1, AbstractCobolField data2, int length) {
         return CBL_XOR(data1, data2.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_XORの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_XORの実装。1バイトごとに排他的論理和を取る。
+     * 先頭lengthバイトのデータについて排他的論理和を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_XOR(AbstractCobolField data1, AbstractCobolField data2, int length) {
         return CBL_XOR(data1.getDataStorage(), data2.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_NIMPの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_NIMPの実装。1バイトごとに否定含意（NIMP: data1 AND NOT data2）を取る。
+     * 先頭lengthバイトのデータについて否定含意を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NIMP(CobolDataStorage data1, CobolDataStorage data2, int length) {
         return CBL_COMMON_OPERATION(
@@ -443,48 +453,53 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数CBL_NIMPの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_NIMPの実装。1バイトごとに否定含意（NIMP: data1 AND NOT data2）を取る。
+     * 先頭lengthバイトのデータについて否定含意を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NIMP(AbstractCobolField data1, CobolDataStorage data2, int length) {
         return CBL_NIMP(data1.getDataStorage(), data2, length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NIMPの実装。1バイトごとに否定含意（NIMP: data1 AND NOT data2）を取る。
+     * 先頭lengthバイトのデータについて否定含意を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NIMP(CobolDataStorage data1, AbstractCobolField data2, int length) {
         return CBL_NIMP(data1, data2.getDataStorage(), length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NIMPの実装。1バイトごとに否定含意（NIMP: data1 AND NOT data2）を取る。
+     * 先頭lengthバイトのデータについて否定含意を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NIMP(AbstractCobolField data1, AbstractCobolField data2, int length) {
         return CBL_NIMP(data1.getDataStorage(), data2.getDataStorage(), length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_EQの実装。1バイトごとに等価（XNOR: NOT(data1 XOR data2)）を取る。
+     * 先頭lengthバイトのデータについて等価を計算し、計算結果を2番目の引数の先頭に格納する。
+     * ビットごとに、両方のビットが同じ場合は1、異なる場合は0となる。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_EQ(CobolDataStorage data1, CobolDataStorage data2, int length) {
         return CBL_COMMON_OPERATION(
@@ -501,47 +516,51 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_EQの実装。1バイトごとに等価（XNOR: NOT(data1 XOR data2)）を取る。
+     * 先頭lengthバイトのデータについて等価を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数のバイト列。先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_EQ(AbstractCobolField data1, CobolDataStorage data2, int length) {
         return CBL_EQ(data1.getDataStorage(), data2, length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_EQの実装。1バイトごとに等価（XNOR: NOT(data1 XOR data2)）を取る。
+     * 先頭lengthバイトのデータについて等価を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数のバイト列。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_EQ(CobolDataStorage data1, AbstractCobolField data2, int length) {
         return CBL_EQ(data1, data2.getDataStorage(), length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_EQの実装。1バイトごとに等価（XNOR: NOT(data1 XOR data2)）を取る。
+     * 先頭lengthバイトのデータについて等価を計算し、計算結果を2番目の引数の先頭に格納する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 計算対象の1番目のCOBOL変数。
+     * @param data2 計算対象の2番目のCOBOL変数。そのバイト列の先頭lengthバイトに計算結果が格納される。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_EQ(AbstractCobolField data1, AbstractCobolField data2, int length) {
         return CBL_EQ(data1.getDataStorage(), data2.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_NOTの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_NOTの実装。1バイトごとに論理否定を取る。
+     * 先頭lengthバイトのデータについて論理否定（全ビットを反転）を計算し、計算結果を同じ引数に格納する。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 計算対象のCOBOL変数のバイト列。先頭lengthバイトが論理否定され上書きされる。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOT(CobolDataStorage data, int length) {
         CobolUtil.COB_CHK_PARMS("CBL_NOT", 2);
@@ -556,22 +575,25 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_NOTの実装。1バイトごとに論理否定を取る。
+     * 先頭lengthバイトのデータについて論理否定（全ビットを反転）を計算し、計算結果を同じ引数に格納する。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 計算対象のCOBOL変数。そのバイト列の先頭lengthバイトが論理否定され上書きされる。
+     * @param length 計算するバイト数。
+     * @return 0
      */
     public static int CBL_NOT(AbstractCobolField data, int length) {
         return CBL_NOT(data.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_XF4の実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_XF4の実装。8バイトのビット配列を1バイトに集約する。
+     * data2の各バイト（8バイト）の最下位ビットを取り出し、data1の1バイトの各ビット位置にOR演算で設定する。
+     * data2[0]の最下位ビット→data1のビット7、data2[7]の最下位ビット→data1のビット0となる。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 出力先のCOBOL変数のバイト列。先頭1バイトに結果が格納される。
+     * @param data2 入力元のCOBOL変数のバイト列。先頭8バイトの各最下位ビットが使用される。
+     * @return 0
      */
     public static int CBL_XF4(CobolDataStorage data1, CobolDataStorage data2) {
         CobolUtil.COB_CHK_PARMS("CBL_XF4", 2);
@@ -584,44 +606,50 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF4の実装。8バイトのビット配列を1バイトに集約する。
+     * data2の各バイト（8バイト）の最下位ビットを取り出し、data1の1バイトの各ビット位置にOR演算で設定する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 出力先のCOBOL変数。先頭1バイトに結果が格納される。
+     * @param data2 入力元のCOBOL変数のバイト列。先頭8バイトの各最下位ビットが使用される。
+     * @return 0
      */
     public static int CBL_XF4(AbstractCobolField data1, CobolDataStorage data2) {
         return CBL_XF4(data1.getDataStorage(), data2);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF4の実装。8バイトのビット配列を1バイトに集約する。
+     * data2の各バイト（8バイト）の最下位ビットを取り出し、data1の1バイトの各ビット位置にOR演算で設定する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 出力先のCOBOL変数のバイト列。先頭1バイトに結果が格納される。
+     * @param data2 入力元のCOBOL変数。そのバイト列の先頭8バイトの各最下位ビットが使用される。
+     * @return 0
      */
     public static int CBL_XF4(CobolDataStorage data1, AbstractCobolField data2) {
         return CBL_XF4(data1, data2.getDataStorage());
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF4の実装。8バイトのビット配列を1バイトに集約する。
+     * data2の各バイト（8バイト）の最下位ビットを取り出し、data1の1バイトの各ビット位置にOR演算で設定する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 出力先のCOBOL変数。先頭1バイトに結果が格納される。
+     * @param data2 入力元のCOBOL変数。そのバイト列の先頭8バイトの各最下位ビットが使用される。
+     * @return 0
      */
     public static int CBL_XF4(AbstractCobolField data1, AbstractCobolField data2) {
         return CBL_XF4(data1.getDataStorage(), data2.getDataStorage());
     }
 
     /**
-     * 組み込み関数CBL_XF5の実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_XF5の実装。1バイトを8バイトのビット配列に展開する。
+     * data1の先頭1バイトの各ビットを、data2の8バイトに展開する。
+     * data1のビット7→data2[0]、data1のビット0→data2[7]となる。
+     * 各バイトは対応するビットが1なら1、0なら0となる。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 入力元のCOBOL変数のバイト列。先頭1バイトが使用される。
+     * @param data2 出力先のCOBOL変数のバイト列。先頭8バイトに結果が格納される。
+     * @return 0
      */
     public static int CBL_XF5(CobolDataStorage data1, CobolDataStorage data2) {
         CobolUtil.COB_CHK_PARMS("CBL_XF5", 2);
@@ -633,45 +661,54 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF5の実装。1バイトを8バイトのビット配列に展開する。
+     * data1の先頭1バイトの各ビットを、data2の8バイトに展開する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 入力元のCOBOL変数。そのバイト列の先頭1バイトが使用される。
+     * @param data2 出力先のCOBOL変数のバイト列。先頭8バイトに結果が格納される。
+     * @return 0
      */
     public static int CBL_XF5(AbstractCobolField data1, CobolDataStorage data2) {
         return CBL_XF5(data1.getDataStorage(), data2);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF5の実装。1バイトを8バイトのビット配列に展開する。
+     * data1の先頭1バイトの各ビットを、data2の8バイトに展開する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 入力元のCOBOL変数のバイト列。先頭1バイトが使用される。
+     * @param data2 出力先のCOBOL変数。そのバイト列の先頭8バイトに結果が格納される。
+     * @return 0
      */
     public static int CBL_XF5(CobolDataStorage data1, AbstractCobolField data2) {
         return CBL_XF5(data1, data2.getDataStorage());
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_XF5の実装。1バイトを8バイトのビット配列に展開する。
+     * data1の先頭1バイトの各ビットを、data2の8バイトに展開する。
      *
-     * @param data1 TODO: 準備中
-     * @param data2 TODO: 準備中
-     * @return TODO: 準備中
+     * @param data1 入力元のCOBOL変数。そのバイト列の先頭1バイトが使用される。
+     * @param data2 出力先のCOBOL変数。そのバイト列の先頭8バイトに結果が格納される。
+     * @return 0
      */
     public static int CBL_XF5(AbstractCobolField data1, AbstractCobolField data2) {
         return CBL_XF5(data1.getDataStorage(), data2.getDataStorage());
     }
 
     /**
-     * 組み込み関数CBL_X91の実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_X91の実装。スイッチの設定・取得やパラメータ数の取得を行う。
+     * funcの値によって動作が異なる。
+     * <ul>
+     *   <li>func=11: parmの8バイトでスイッチを設定（0でOFF、1でON）</li>
+     *   <li>func=12: スイッチの状態をparmの8バイトに取得</li>
+     *   <li>func=16: 呼び出し元からのパラメータ数をparmの先頭1バイトに取得</li>
+     * </ul>
      *
-     * @param result TODO: 準備中
-     * @param func TODO: 準備中
-     * @param parm TODO: 準備中
-     * @return TODO: 準備中
+     * @param result 結果を格納するバイト列。成功時は0、失敗時は1が先頭1バイトに設定される。
+     * @param func 機能コードを格納するバイト列。先頭1バイトが使用される。
+     * @param parm パラメータを格納するバイト列。機能によって入力または出力に使用される。
+     * @return 0
      */
     public static int CBL_X91(
             CobolDataStorage result, CobolDataStorage func, CobolDataStorage parm) {
@@ -704,11 +741,13 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * 組み込み関数CBL_TOLOWERの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_TOLOWERの実装。データを小文字に変換する。
+     * 先頭lengthバイトのデータを小文字に変換し、同じ場所に格納する。
+     * 変換はShift_JIS文字コードで行われる。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 変換対象のCOBOL変数のバイト列。先頭lengthバイトが小文字に変換される。
+     * @param length 変換するバイト数。
+     * @return 0
      */
     public static int CBL_TOLOWER(CobolDataStorage data, int length) {
         CobolUtil.COB_CHK_PARMS("CBL_TOLOWER", 2);
@@ -729,22 +768,25 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_TOLOWERの実装。データを小文字に変換する。
+     * 先頭lengthバイトのデータを小文字に変換し、同じ場所に格納する。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 変換対象のCOBOL変数。そのバイト列の先頭lengthバイトが小文字に変換される。
+     * @param length 変換するバイト数。
+     * @return 0
      */
     public static int CBL_TOLOWER(AbstractCobolField data, int length) {
         return CBL_TOLOWER(data.getDataStorage(), length);
     }
 
     /**
-     * 組み込み関数CBL_TOUPPERの実装。詳しい説明はTODO: 準備中
+     * 組み込み関数CBL_TOUPPERの実装。データを大文字に変換する。
+     * 先頭lengthバイトのデータを大文字に変換し、同じ場所に格納する。
+     * 変換はShift_JIS文字コードで行われる。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 変換対象のCOBOL変数のバイト列。先頭lengthバイトが大文字に変換される。
+     * @param length 変換するバイト数。
+     * @return 0
      */
     public static int CBL_TOUPPER(CobolDataStorage data, int length) {
         CobolUtil.COB_CHK_PARMS("CBL_TOUPPER", 2);
@@ -765,21 +807,23 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_TOUPPERの実装。データを大文字に変換する。
+     * 先頭lengthバイトのデータを大文字に変換し、同じ場所に格納する。
      *
-     * @param data TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 変換対象のCOBOL変数。そのバイト列の先頭lengthバイトが大文字に変換される。
+     * @param length 変換するバイト数。
+     * @return 0
      */
     public static int CBL_TOUPPER(AbstractCobolField data, int length) {
         return CBL_TOUPPER(data.getDataStorage(), length);
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_OC_NANOSLEEPの実装。指定されたナノ秒数だけスリープする。
+     * opensource COBOL拡張の組み込み関数。
      *
-     * @param data TODO: 準備中
-     * @return TODO: 準備中
+     * @param data スリープ時間（ナノ秒）を格納するCOBOL変数のバイト列。
+     * @return 0
      */
     public static int CBL_OC_NANOSLEEP(CobolDataStorage data) {
         CobolUtil.COB_CHK_PARMS("CBL_OC_NANOSLEEP", 1);
@@ -799,10 +843,11 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数CBL_OC_NANOSLEEPの実装。指定されたナノ秒数だけスリープする。
+     * opensource COBOL拡張の組み込み関数。
      *
-     * @param field TODO: 準備中
-     * @return TODO: 準備中
+     * @param field スリープ時間（ナノ秒）を格納するCOBOL変数。
+     * @return 0
      */
     public static int CBL_OC_NANOSLEEP(AbstractCobolField field) {
         CobolSystemRoutine.CBL_OC_NANOSLEEP(field.getDataStorage());
@@ -810,10 +855,11 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数calledByの実装。呼び出し元のプログラム名を取得する。
+     * 呼び出し元のプログラム名をdataに格納する。
      *
-     * @param data TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 呼び出し元プログラム名を格納するCOBOL変数のバイト列。
+     * @return 呼び出し元が存在する場合は0、存在しない場合は-1。
      */
     public static int calledBy(CobolDataStorage data) {
         CobolUtil.COB_CHK_PARMS("calledby", 1);
@@ -821,10 +867,16 @@ public class CobolSystemRoutine {
     }
 
     /**
-     * TODO: 準備中
+     * 組み込み関数listDirectoryの実装。ディレクトリ内のファイル一覧を取得する。
+     * 最初のパラメータが操作コードを指定する。
+     * <ul>
+     *   <li>操作コード1（LISTDIR-OPEN）: ディレクトリを開く</li>
+     *   <li>操作コード2（LISTDIR-NEXT）: 次のファイル名を取得</li>
+     *   <li>操作コード3（LISTDIR-CLOSE）: ディレクトリを閉じる</li>
+     * </ul>
      *
-     * @param data TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 可変長引数。最初の引数は操作コード、以降は操作に応じたパラメータ。
+     * @return 成功時は0、失敗時は-1。
      */
     public static int listDir(CobolDataStorage... data) {
         CobolUtil.COB_CHK_PARMS("listDirectory", 1);

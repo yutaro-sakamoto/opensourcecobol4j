@@ -18,7 +18,11 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-/** TODO: 準備中 */
+/**
+ * COBOL ALL定数（日本語型）を表現するクラス。
+ * ALL NC"文字"など、指定された全角文字またはリテラルを繰り返すALL定数を扱う。
+ * 比較やMOVE時に、受け側のサイズに合わせて指定文字が繰り返し適用される。
+ */
 public class CobolNationalAllField extends CobolNationalField {
     /**
      * コンストラクタ

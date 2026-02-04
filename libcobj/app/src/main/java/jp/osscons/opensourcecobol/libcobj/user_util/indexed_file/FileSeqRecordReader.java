@@ -4,17 +4,20 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * A RecordReader implementation that reads records from a file in COBOL SEQUENTIAL format. In this
+ * format, records are concatenated without any separator, and each record has a fixed size.
+ */
 public class FileSeqRecordReader implements RecordReader {
     private FileInputStream reader;
     private String filePath;
     private byte[] readData;
 
     /**
-     * TODO: 準備中
+     * Constructs a new FileSeqRecordReader for reading sequential records from a file.
      *
-     * @param recordSize TODO: 準備中
-     * @param filePath TODO: 準備中
+     * @param recordSize the fixed size of each record in bytes
+     * @param filePath the path to the file to read from
      */
     FileSeqRecordReader(int recordSize, String filePath) {
         this.filePath = filePath;

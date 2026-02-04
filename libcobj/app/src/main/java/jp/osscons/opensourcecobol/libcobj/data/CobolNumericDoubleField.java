@@ -21,15 +21,19 @@ package jp.osscons.opensourcecobol.libcobj.data;
 import java.math.BigDecimal;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
-/** TODO: 準備中 */
+/**
+ * COBOL倍精度浮動小数点型（COMP-2 / USAGE FLOAT-LONG）の変数を表現するクラス。
+ * IEEE 754形式の64ビット倍精度浮動小数点数を扱い、
+ * 科学技術計算や高精度な数値演算に使用される。
+ */
 public class CobolNumericDoubleField extends AbstractCobolField {
 
     /**
-     * TODO: 準備中
+     * コンストラクタ
      *
-     * @param size TODO: 準備中
-     * @param dataStorage TODO: 準備中
-     * @param attribute TODO: 準備中
+     * @param size データを格納するバイト配列の長さ（通常8バイト）
+     * @param dataStorage データを格納するバイト配列を扱うオブジェクト
+     * @param attribute 変数に関する様々な情報を保持するオブジェクト
      */
     public CobolNumericDoubleField(
             int size, CobolDataStorage dataStorage, CobolFieldAttribute attribute) {
@@ -110,9 +114,11 @@ public class CobolNumericDoubleField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 数値表示フィールドから倍精度浮動小数点数への変換を行う。
+     * ソースフィールドの各桁を解析し、小数点位置（scale）を考慮して
+     * double値に変換する。符号も反映される。
      *
-     * @param src TODO: 準備中
+     * @param src 変換元の数値表示フィールド
      */
     public void moveDisplayToDouble(AbstractCobolField src) {
         double dval = 0;

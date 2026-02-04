@@ -364,11 +364,11 @@ public class CobolDataStorage {
     }
 
     /**
-     * C言語のmemcmpに相当するメソッド
+     * C言語のmemcmpに相当するメソッド。バイト配列との比較を行う。
      *
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param buf 比較対象のバイト配列
+     * @param size 比較するバイト数
+     * @return 一致する場合は0、thisが小さい場合は負、thisが大きい場合は正の値
      */
     public int memcmp(byte[] buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -382,22 +382,22 @@ public class CobolDataStorage {
     }
 
     /**
-     * C言語のmemcmpに相当するメソッド
+     * C言語のmemcmpに相当するメソッド。文字列との比較を行う。
      *
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param buf 比較対象の文字列（SHIFT-JISでバイト配列に変換される）
+     * @param size 比較するバイト数
+     * @return 一致する場合は0、thisが小さい場合は負、thisが大きい場合は正の値
      */
     public int memcmp(String buf, int size) {
         return this.memcmp(buf.getBytes(AbstractCobolField.charSetSJIS), size);
     }
 
     /**
-     * C言語のmemcmpに相当するメソッド
+     * C言語のmemcmpに相当するメソッド。CobolDataStorageとの比較を行う。
      *
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param buf 比較対象のCobolDataStorage
+     * @param size 比較するバイト数
+     * @return 一致する場合は0、thisが小さい場合は負、thisが大きい場合は正の値
      */
     public int memcmp(CobolDataStorage buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -411,12 +411,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * オフセット指定付きのmemcmp。指定位置からCobolDataStorageとの比較を行う。
      *
-     * @param offset TODO: 準備中
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param offset 比較開始位置（現在位置からの相対位置）
+     * @param buf 比較対象のCobolDataStorage
+     * @param size 比較するバイト数
+     * @return 一致する場合は0、thisが小さい場合は負、thisが大きい場合は正の値
      */
     public int memcmp(int offset, CobolDataStorage buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -432,7 +432,7 @@ public class CobolDataStorage {
     /**
      * 引数で与えられたバイト配列に保持したデータをこのオブジェクトに書き込む
      *
-     * @param data TODO: 準備中
+     * @param data コピー元のバイト配列
      */
     public void setData(byte[] data) {
         setData(data, 0);
@@ -494,27 +494,27 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 現在位置（インデックス0）に指定のバイト値を代入する
      *
-     * @param value TODO: 準備中
+     * @param value 代入する値
      */
     public void setByte(byte value) {
         this.setByte(0, value);
     }
 
     /**
-     * TODO: 準備中
+     * 現在位置（インデックス0）に指定の整数値をバイトとして代入する
      *
-     * @param value TODO: 準備中
+     * @param value 代入する値（byteにキャストされる）
      */
     public void setByte(int value) {
         this.setByte((byte) value);
     }
 
     /**
-     * TODO: 準備中
+     * 現在位置（インデックス0）に指定の文字値をバイトとして代入する
      *
-     * @param value TODO: 準備中
+     * @param value 代入する値（byteにキャストされる）
      */
     public void setByte(char value) {
         this.setByte((byte) value);
@@ -596,7 +596,7 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列全体をこのオブジェクトにコピーする
      *
      * @param bytes コピー元のバイト配列
      */
@@ -607,10 +607,10 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列をコピーし、残りの部分を空白で埋める
      *
      * @param bytes コピー元のバイト配列
-     * @param length コピーする最大バイト数
+     * @param length 出力領域の長さ（バイト配列より長い場合は空白でパディング）
      */
     public void setByByteArrayAndPaddingSpaces(byte[] bytes, int length) {
         int copyLength = Math.min(bytes.length, length);
@@ -624,7 +624,7 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列から指定バイト数をコピーする
      *
      * @param bytes コピー元の配列
      * @param length コピーするバイト数
@@ -688,7 +688,7 @@ public class CobolDataStorage {
      *
      * @param data コピー元のCobolDataStorage
      * @param length コピーするバイト数
-     * @param dstIndex TODO: 準備中
+     * @param dstIndex コピー先のthis.indexからの相対位置
      * @param srcIndex コピー元バイト配列中の相対位置
      */
     public void setBytes(CobolDataStorage data, int length, int dstIndex, int srcIndex) {
@@ -698,9 +698,9 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO 暫定的な実装
+     * 文字列をこのオブジェクトに設定する（空白で初期化後に文字列をコピー）
      *
-     * @param str TODO: 準備中
+     * @param str 設定する文字列
      */
     public void setString(String str) {
         this.fillBytes((byte) 0x20, this.data.length);
@@ -712,16 +712,16 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO 暫定的な実装(対応未定)
+     * ポインタ値を設定する（現在未実装）
      *
-     * @param pointer TODO: 準備中
+     * @param pointer 設定するポインタ値
      */
     public void setPointer(int pointer) {
         System.err.println("setPointer is not implemented");
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列の内容をこのオブジェクトに設定する（範囲チェック付き）
      *
      * @param bytes 書き込むバイト配列
      */
@@ -732,9 +732,9 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 現在位置にバイト値を設定する
      *
-     * @param value TODO: 準備中
+     * @param value 設定するバイト値
      */
     public void set(byte value) {
         this.setByte(0, value);
@@ -777,9 +777,9 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 他のCobolDataStorageの値を整数として読み取り、このオブジェクトに設定する
      *
-     * @param other TODO: 準備中
+     * @param other 値を読み取るCobolDataStorage
      */
     public void set(CobolDataStorage other) {
         this.set(other.intValue());
@@ -788,8 +788,8 @@ public class CobolDataStorage {
     /**
      * コピーの開始位置を指定して、4バイト整数値を書き込む
      *
-     * @param value TODO: 準備中
-     * @param index TODO: 準備中
+     * @param value 書き込む整数値
+     * @param index 書き込み開始位置（現在位置からの相対位置）
      */
     public void set(int value, int index) {
         ByteBuffer buffer = ByteBuffer.wrap(this.data, this.index + index, 4);
@@ -797,10 +797,10 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * このオブジェクトと他のCobolDataStorageが同一のデータ領域を参照しているかを判定する
      *
-     * @param other TODO: 準備中
-     * @return TODO: 準備中
+     * @param other 比較対象のCobolDataStorage
+     * @return 同一のバイト配列と同一のインデックスを持つ場合true
      */
     public boolean isSame(CobolDataStorage other) {
         return this.data == other.data && this.index == other.index;
@@ -834,9 +834,9 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * このオブジェクトの保持するバイト配列の先頭8バイトを読み込んでdouble型として返す
      *
-     * @return TODO: 準備中
+     * @return 読み込んだ倍精度浮動小数点値
      */
     public double doubleValue() {
         return ByteBuffer.wrap(this.data, this.index, Double.BYTES).getDouble();
@@ -853,10 +853,10 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 相対位置を加算したCobolDataStorageのインスタンスを返す（long版）
      *
-     * @param index TODO: 準備中
-     * @return TODO: 準備中
+     * @param index 変位させるバイト数（intにキャストされる）
+     * @return 新たに作成したCobolDataStorageクラスのインスタンス
      */
     public CobolDataStorage getSubDataStorage(long index) {
         return this.getDataStorage((int) index);
@@ -903,13 +903,13 @@ public class CobolDataStorage {
             };
 
     /**
-     * TODO: 準備中
+     * バイナリデータとして格納された値と長整数を比較する
      *
-     * @param n TODO: 準備中
-     * @param numOfBytes TODO: 準備中
-     * @param signed TODO: 準備中
-     * @param isBigEndian TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @param numOfBytes バイナリデータのバイト数
+     * @param signed 符号付きかどうか
+     * @param isBigEndian ビッグエンディアンかどうか
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int compareToBinary(long n, int numOfBytes, boolean signed, boolean isBigEndian) {
         long val = this.toLong(numOfBytes, signed, isBigEndian);
@@ -932,12 +932,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイナリデータとして格納された値に長整数を加算する
      *
-     * @param n TODO: 準備中
-     * @param numOfBytes TODO: 準備中
-     * @param signed TODO: 準備中
-     * @param isBigEndian TODO: 準備中
+     * @param n 加算する整数値
+     * @param numOfBytes バイナリデータのバイト数
+     * @param signed 符号付きかどうか
+     * @param isBigEndian ビッグエンディアンかどうか
      */
     public void addBinary(long n, int numOfBytes, boolean signed, boolean isBigEndian) {
         long x = this.toLong(numOfBytes, signed, isBigEndian);
@@ -946,12 +946,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイナリデータとして格納された値から長整数を減算する
      *
-     * @param n TODO: 準備中
-     * @param numOfBytes TODO: 準備中
-     * @param signed TODO: 準備中
-     * @param isBigEndian TODO: 準備中
+     * @param n 減算する整数値
+     * @param numOfBytes バイナリデータのバイト数
+     * @param signed 符号付きかどうか
+     * @param isBigEndian ビッグエンディアンかどうか
      */
     public void subBinary(long n, int numOfBytes, boolean signed, boolean isBigEndian) {
         long x = this.toLong(numOfBytes, signed, isBigEndian);
@@ -961,240 +961,240 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * 1バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU8Binary(long n) {
         return compareToBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 1バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS8Binary(long n) {
         return compareToBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU16Binary(long n) {
         return compareToBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS16Binary(long n) {
         return compareToBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU24Binary(long n) {
         return compareToBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS24Binary(long n) {
         return compareToBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU32Binary(long n) {
         return compareToBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS32Binary(long n) {
         return compareToBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU40Binary(long n) {
         return compareToBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS40Binary(long n) {
         return compareToBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU48Binary(long n) {
         return compareToBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS48Binary(long n) {
         return compareToBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU56Binary(long n) {
         return compareToBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS56Binary(long n) {
         return compareToBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpU64Binary(long n) {
         return compareToBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpS64Binary(long n) {
         return compareToBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignU8Binary(long n) {
         return compareToBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignS8Binary(long n) {
         return compareToBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignU16Binary(long n) {
         return compareToBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignS16Binary(long n) {
         return compareToBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignU32Binary(long n) {
         return compareToBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignS32Binary(long n) {
         return compareToBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignU64Binary(long n) {
         return compareToBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpAlignS64Binary(long n) {
         return compareToBinary(n, 8, true, true);
@@ -1202,216 +1202,216 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * 1バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU8Binary(long n) {
         addBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 1バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS8Binary(long n) {
         addBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU16Binary(long n) {
         addBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS16Binary(long n) {
         addBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU24Binary(long n) {
         addBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS24Binary(long n) {
         addBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU32Binary(long n) {
         addBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS32Binary(long n) {
         addBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU40Binary(long n) {
         addBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS40Binary(long n) {
         addBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU48Binary(long n) {
         addBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS48Binary(long n) {
         addBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU56Binary(long n) {
         addBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS56Binary(long n) {
         addBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addU64Binary(long n) {
         addBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addS64Binary(long n) {
         addBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignU8Binary(long n) {
         addBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignS8Binary(long n) {
         addBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignU16Binary(long n) {
         addBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignS16Binary(long n) {
         addBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignU32Binary(long n) {
         addBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignS32Binary(long n) {
         addBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignU64Binary(long n) {
         addBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addAlignS64Binary(long n) {
         addBinary(n, 8, true, true);
@@ -1419,216 +1419,216 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * 1バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU8Binary(long n) {
         subBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 1バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS8Binary(long n) {
         subBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU16Binary(long n) {
         subBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 2バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS16Binary(long n) {
         subBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU24Binary(long n) {
         subBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 3バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS24Binary(long n) {
         subBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU32Binary(long n) {
         subBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 4バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS32Binary(long n) {
         subBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU40Binary(long n) {
         subBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 5バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS40Binary(long n) {
         subBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU48Binary(long n) {
         subBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 6バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS48Binary(long n) {
         subBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU56Binary(long n) {
         subBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 7バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS56Binary(long n) {
         subBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subU64Binary(long n) {
         subBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * 8バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subS64Binary(long n) {
         subBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignU8Binary(long n) {
         subBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み1バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignS8Binary(long n) {
         subBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignU16Binary(long n) {
         subBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み2バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignS16Binary(long n) {
         subBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignU32Binary(long n) {
         subBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み4バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignS32Binary(long n) {
         subBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignU64Binary(long n) {
         subBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * アライン済み8バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subAlignS64Binary(long n) {
         subBinary(n, 8, true, true);
@@ -1636,240 +1636,240 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU8Binary(long n) {
         return compareToBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS8Binary(long n) {
         return compareToBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU16Binary(long n) {
         return compareToBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS16Binary(long n) {
         return compareToBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU24Binary(long n) {
         return compareToBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS24Binary(long n) {
         return compareToBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU32Binary(long n) {
         return compareToBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS32Binary(long n) {
         return compareToBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU40Binary(long n) {
         return compareToBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS40Binary(long n) {
         return compareToBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU48Binary(long n) {
         return compareToBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS48Binary(long n) {
         return compareToBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU56Binary(long n) {
         return compareToBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS56Binary(long n) {
         return compareToBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpU64Binary(long n) {
         return compareToBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpS64Binary(long n) {
         return compareToBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignU8Binary(long n) {
         return compareToBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignS8Binary(long n) {
         return compareToBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignU16Binary(long n) {
         return compareToBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignS16Binary(long n) {
         return compareToBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignU32Binary(long n) {
         return compareToBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignS32Binary(long n) {
         return compareToBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号なしバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignU64Binary(long n) {
         return compareToBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号付きバイナリ値と比較する
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は負、等しい場合は0、thisが大きい場合は正の値
      */
     public int cmpSwpAlignS64Binary(long n) {
         return compareToBinary(n, 8, true, true);
@@ -1877,216 +1877,216 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU8Binary(long n) {
         addBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS8Binary(long n) {
         addBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU16Binary(long n) {
         addBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS16Binary(long n) {
         addBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU24Binary(long n) {
         addBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS24Binary(long n) {
         addBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU32Binary(long n) {
         addBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS32Binary(long n) {
         addBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU40Binary(long n) {
         addBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS40Binary(long n) {
         addBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU48Binary(long n) {
         addBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS48Binary(long n) {
         addBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU56Binary(long n) {
         addBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS56Binary(long n) {
         addBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpU64Binary(long n) {
         addBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpS64Binary(long n) {
         addBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignU8Binary(long n) {
         addBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignS8Binary(long n) {
         addBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignU16Binary(long n) {
         addBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignS16Binary(long n) {
         addBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignU32Binary(long n) {
         addBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignS32Binary(long n) {
         addBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号なしバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignU64Binary(long n) {
         addBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号付きバイナリ値に整数を加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する整数値
      */
     public void addSwpAlignS64Binary(long n) {
         addBinary(n, 8, true, true);
@@ -2094,342 +2094,342 @@ public class CobolDataStorage {
 
     // n numofBytes signed isBigEndian
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU8Binary(int n) {
         subBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み1バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS8Binary(int n) {
         subBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU16Binary(int n) {
         subBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS16Binary(int n) {
         subBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU24Binary(int n) {
         subBinary(n, 3, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS24Binary(int n) {
         subBinary(n, 3, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU32Binary(int n) {
         subBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS32Binary(int n) {
         subBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU40Binary(int n) {
         subBinary(n, 5, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS40Binary(int n) {
         subBinary(n, 5, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU48Binary(int n) {
         subBinary(n, 6, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS48Binary(int n) {
         subBinary(n, 6, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU56Binary(int n) {
         subBinary(n, 7, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS56Binary(int n) {
         subBinary(n, 7, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpU64Binary(int n) {
         subBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpS64Binary(int n) {
         subBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignU8Binary(int n) {
         subBinary(n, 1, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み1バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignS8Binary(int n) {
         subBinary(n, 1, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignU16Binary(int n) {
         subBinary(n, 2, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み2バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignS16Binary(int n) {
         subBinary(n, 2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignU32Binary(int n) {
         subBinary(n, 4, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み4バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignS32Binary(int n) {
         subBinary(n, 4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号なしバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignU64Binary(int n) {
         subBinary(n, 8, false, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ・アライン済み8バイト符号付きバイナリ値から整数を減算する
      *
-     * @param n TODO: 準備中
+     * @param n 減算する整数値
      */
     public void subSwpAlignS64Binary(int n) {
         subBinary(n, 8, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU16Binary(int n) {
         this.fromLong(2, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み2バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS16Binary(int n) {
         this.fromLong(2, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU24Binary(int n) {
         this.fromLong(3, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み3バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS24Binary(int n) {
         this.fromLong(3, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU32Binary(int n) {
         this.fromLong(4, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み4バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS32Binary(int n) {
         this.fromLong(4, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU40Binary(int n) {
         this.fromLong(5, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み5バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS40Binary(int n) {
         this.fromLong(5, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU48Binary(int n) {
         this.fromLong(6, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み6バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS48Binary(int n) {
         this.fromLong(6, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU56Binary(int n) {
         this.fromLong(7, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み7バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS56Binary(int n) {
         this.fromLong(7, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号なしバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpU64Binary(int n) {
         this.fromLong(8, true, n);
     }
 
     /**
-     * TODO: 準備中
+     * バイトスワップ済み8バイト符号付きバイナリ値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public void setSwpS64Binary(int n) {
         this.fromLong(8, true, n);
@@ -2437,11 +2437,12 @@ public class CobolDataStorage {
 
     // libcob/numeric.cのcob_cmp_numdispの実装
     /**
-     * TODO: 準備中
+     * 数値表示フィールド（符号なし）と整数を比較する。
+     * ASCIIの'0'-'9'を数値として解釈し比較を行う。
      *
-     * @param size TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値表示フィールドのバイト数
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は-1、等しい場合は0、thisが大きい場合は1
      */
     public int cmpNumdisp(int size, long n) {
         int p = 0;
@@ -2454,22 +2455,24 @@ public class CobolDataStorage {
 
     // libcob/numeric.cのcob_cmp_long_numdispの実装
     /**
-     * TODO: 準備中
+     * 大きな数値表示フィールド（符号なし）と整数を比較する。
+     * cmpNumdispと同等の処理を行う。
      *
-     * @param size TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値表示フィールドのバイト数
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は-1、等しい場合は0、thisが大きい場合は1
      */
     public int cmpLongNumdisp(int size, long n) {
         return this.cmpNumdisp(size, n);
     }
 
     /**
-     * TODO: 準備中
+     * 数値表示フィールド（符号付き）と整数を比較する。
+     * 末尾バイトにエンコードされた符号を考慮して比較を行う。
      *
-     * @param size TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値表示フィールドのバイト数
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は-1、等しい場合は0、thisが大きい場合は1
      */
     public int cmpSignNumdisp(int size, long n) {
         int p = 0;
@@ -2496,11 +2499,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 大きな数値表示フィールド（符号付き）と整数を比較する。
+     * 末尾バイトにエンコードされた符号を考慮して比較を行う。
      *
-     * @param size TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値表示フィールドのバイト数
+     * @param n 比較対象の整数値
+     * @return thisが小さい場合は-1、等しい場合は0、thisが大きい場合は1
      */
     public int cmpLongSignNumdisp(int size, long n) {
         int p = 0;
@@ -2527,10 +2531,11 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 数値表示フィールドの値を整数として取得する。
+     * ASCIIの'0'-'9'を数値として解釈し、整数値を返す。
      *
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 数値表示フィールドのバイト数
+     * @return 数値表示フィールドの整数値
      */
     public int getNumdisp(int size) {
         int retval = 0;
@@ -2557,11 +2562,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * EBCDIC符号エンコーディングから数値と符号を取得する。
+     * EBCDIC形式では末尾の数字と符号が特殊文字（{, A-I, }, J-R）にエンコードされる。
      *
-     * @param p TODO: 準備中
-     * @param val TODO: 準備中
-     * @return TODO: 準備中
+     * @param p 符号を含むバイト位置
+     * @param val 現在までの数値（この値に最下位桁を加算）
+     * @return 数値と符号フラグ（負の場合1、正の場合0）のペア
      */
     public PairInt getEbcdicSign(int p, int val) {
         switch (this.getByte(p)) {
@@ -2611,11 +2617,12 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 大きな数値用のEBCDIC符号エンコーディングから数値と符号を取得する。
+     * getEbcdicSignと同等の処理を行う。
      *
-     * @param p TODO: 準備中
-     * @param val TODO: 準備中
-     * @return TODO: 準備中
+     * @param p 符号を含むバイト位置
+     * @param val 現在までの数値（この値に最下位桁を加算）
+     * @return 数値と符号フラグ（負の場合1、正の場合0）のペア
      */
     public PairInt getLongEbcdicSign(int p, int val) {
         switch (this.getByte(p)) {
@@ -2668,27 +2675,30 @@ public class CobolDataStorage {
     // opensource COBOLにはない実装 COB_BSWAP_32などの代替
     // 本家opensource COBOLのcobc/codegen.cの894行目付近を参照
     /**
-     * TODO: 準備中
+     * 16ビット（2バイト）のバイトスワップを行い、整数値として返す。
+     * ビッグエンディアン形式でデータを読み取る。
      *
-     * @return TODO: 準備中
+     * @return バイトスワップ後の16ビット整数値
      */
     public long bswap_16() {
         return this.toLong(2, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 32ビット（4バイト）のバイトスワップを行い、整数値として返す。
+     * ビッグエンディアン形式でデータを読み取る。
      *
-     * @return TODO: 準備中
+     * @return バイトスワップ後の32ビット整数値
      */
     public long bswap_32() {
         return this.toLong(4, true, true);
     }
 
     /**
-     * TODO: 準備中
+     * 64ビット（8バイト）のバイトスワップを行い、整数値として返す。
+     * ビッグエンディアン形式でデータを読み取る。
      *
-     * @return TODO: 準備中
+     * @return バイトスワップ後の64ビット整数値
      */
     public long bswap_64() {
         return this.toLong(8, true, true);

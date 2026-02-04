@@ -20,124 +20,142 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * COBOL SORT処理における1つのソート対象レコードを表すクラス。
+ *
+ * <p>マージソートのキュー内で連結リストの要素として使用される。 各レコードのデータ、一意識別子、ブロック終端フラグなどの情報を保持し、
+ * ソート処理中のレコードの追跡と安定ソートの実現に使用される。
+ *
+ * <p>libcob/fileio.cのstruct cobitemに対応する。
+ */
 class CobolItem {
+    /** 連結リスト内の次の要素への参照 */
     private CobolItem next;
+
+    /** ソート済みブロック（ラン）の終端を示すフラグ。1の場合はブロック終端 */
     private int endOfBlock;
+
+    /** このレコードのサイズ（バイト数）。可変長レコードの場合に使用 */
     private int recordSize;
+
+    /** 一時ファイルへの書き込み時に使用するブロック区切りバイト */
     private byte blockByte = 0;
+
+    /** 安定ソートを実現するための一意識別子（8バイト）。同一キー値のレコードの順序を保持 */
     private CobolDataStorage unique = new CobolDataStorage(new byte[8]);
+
+    /** ソート対象レコードの実データ */
     private CobolDataStorage item;
 
-    /** TODO: 準備中 */
+    /** デフォルトコンストラクタ。空のソートアイテムを作成する。 */
     CobolItem() {
         this.next = null;
         this.endOfBlock = 0;
     }
 
     /**
-     * TODO: 準備中
+     * 連結リスト内の次の要素を取得する。
      *
-     * @return TODO: 準備中
+     * @return 次の要素。末尾の場合はnull
      */
     CobolItem getNext() {
         return next;
     }
 
     /**
-     * TODO: 準備中
+     * 連結リスト内の次の要素を設定する。
      *
-     * @param next TODO: 準備中
+     * @param next 設定する次の要素
      */
     void setNext(CobolItem next) {
         this.next = next;
     }
 
     /**
-     * TODO: 準備中
+     * ブロック終端フラグを取得する。
      *
-     * @return TODO: 準備中
+     * @return ブロック終端フラグ。1の場合はこの要素がブロックの最後
      */
     int getEndOfBlock() {
         return endOfBlock;
     }
 
     /**
-     * TODO: 準備中
+     * ブロック終端フラグを設定する。
      *
-     * @param endOfBlock TODO: 準備中
+     * @param endOfBlock 設定するブロック終端フラグ
      */
     void setEndOfBlock(int endOfBlock) {
         this.endOfBlock = endOfBlock;
     }
 
     /**
-     * TODO: 準備中
+     * レコードサイズを取得する。
      *
-     * @return TODO: 準備中
+     * @return レコードサイズ（バイト数）
      */
     int getRecordSize() {
         return recordSize;
     }
 
     /**
-     * TODO: 準備中
+     * レコードサイズを設定する。
      *
-     * @param recordSize TODO: 準備中
+     * @param recordSize 設定するレコードサイズ（バイト数）
      */
     void setRecordSize(int recordSize) {
         this.recordSize = recordSize;
     }
 
     /**
-     * TODO: 準備中
+     * ブロック区切りバイトを取得する。
      *
-     * @return TODO: 準備中
+     * @return ブロック区切りバイト
      */
     byte getBlockByte() {
         return blockByte;
     }
 
     /**
-     * TODO: 準備中
+     * ブロック区切りバイトを設定する。
      *
-     * @param blockByte TODO: 準備中
+     * @param blockByte 設定するブロック区切りバイト
      */
     void setBlockByte(byte blockByte) {
         this.blockByte = blockByte;
     }
 
     /**
-     * TODO: 準備中
+     * 一意識別子を取得する。
      *
-     * @return TODO: 準備中
+     * @return 一意識別子のストレージ
      */
     CobolDataStorage getUnique() {
         return unique;
     }
 
     /**
-     * TODO: 準備中
+     * 一意識別子を設定する。
      *
-     * @param unique TODO: 準備中
+     * @param unique 設定する一意識別子
      */
     void setUnique(CobolDataStorage unique) {
         this.unique = unique;
     }
 
     /**
-     * TODO: 準備中
+     * レコードデータを取得する。
      *
-     * @return TODO: 準備中
+     * @return レコードデータのストレージ
      */
     CobolDataStorage getItem() {
         return item;
     }
 
     /**
-     * TODO: 準備中
+     * レコードデータを設定する。
      *
-     * @param item TODO: 準備中
+     * @param item 設定するレコードデータ
      */
     void setItem(CobolDataStorage item) {
         this.item = item;

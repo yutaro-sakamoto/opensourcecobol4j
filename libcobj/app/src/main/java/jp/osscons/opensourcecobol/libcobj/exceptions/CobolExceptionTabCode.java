@@ -18,8 +18,24 @@
  */
 package jp.osscons.opensourcecobol.libcobj.exceptions;
 
-/** エラーコード関連の計算に用いる */
+/**
+ * CobolExceptionIdの例外IDから16ビット例外コード値へのマッピングテーブルを提供するクラス。
+ *
+ * <p>このクラスのcode配列は、CobolExceptionIdの定数値をインデックスとして使用し、
+ * 対応するCOBOL 2002標準の16ビット例外コードを取得するために使われる。
+ * 例外コードの上位バイトは例外カテゴリを、下位バイトは詳細な例外種別を示す。
+ *
+ * <p>例えば、code[CobolExceptionId.COB_EC_I_O_AT_END]は0x0501を返し、
+ * これはEC-I-O-AT-END例外を表す。
+ *
+ * @see CobolExceptionId
+ * @see CobolExceptionInfo#setException(int)
+ */
 public class CobolExceptionTabCode {
+    /**
+     * 例外IDから例外コード値へのマッピング配列。
+     * インデックスはCobolExceptionIdの定数値、値は16ビット例外コード。
+     */
     static int[] code = {
         0, 0xFFFF, 0x0100, 0x0101, 0x0102, 0x0200, 0x0201, 0x0202, 0x0203, 0x0204, 0x0205, 0x0206,
         0x0207, 0x0208, 0x0300, 0x0301, 0x0302, 0x0303, 0x0304, 0x0305, 0x0306, 0x0307, 0x0308,

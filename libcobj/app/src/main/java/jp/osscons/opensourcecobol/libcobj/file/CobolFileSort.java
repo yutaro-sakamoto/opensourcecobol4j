@@ -35,30 +35,37 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * COBOL SORT文およびMERGE文のファイルソート処理を実装するクラス。
+ *
+ * <p>SORT USING/GIVING句、SORT INPUT/OUTPUT PROCEDURE句によるソート処理を提供する。 メモリ内ソート（Java標準ライブラリ使用）と外部マージソート（一時ファイル使用）の
+ * 2つのソート戦略をサポートし、テーブルソート（SORT verb for tables）も実装する。
+ *
+ * <p>libcob/fileio.cのソート関連関数群に対応する。
+ */
 public class CobolFileSort {
-    /** TODO: 準備中 */
+    /** ソート終了ステータス: ソート処理が正常に終了（レコード取り出し完了） */
     protected static final int COBSORTEND = 1;
 
-    /** TODO: 準備中 */
+    /** ソート終了ステータス: ソート処理が異常終了（中断） */
     protected static final int COBSORTABORT = 2;
 
-    /** TODO: 準備中 */
+    /** ソート終了ステータス: ファイルI/Oエラー発生 */
     protected static final int COBSORTFILEERR = 3;
 
-    /** TODO: 準備中 */
+    /** ソート終了ステータス: ソートファイルが開かれていない */
     protected static final int COBSORTNOTOPEN = 4;
 
-    /** TODO: 準備中 */
+    /** ソートキーフラグ: 昇順ソート */
     protected static final int COB_ASCENDING = 0;
 
-    /** TODO: 準備中 */
+    /** ソートキーフラグ: 降順ソート */
     protected static final int COB_DESCENDING = 1;
 
     private static String cob_process_id = "";
     private static int cob_iteration = 0;
 
-    /** TODO: 準備中 */
+    /** ソート用メモリ上限（バイト数）。デフォルト128MB */
     protected static int cob_sort_memory = 128 * 1024 * 1024;
 
     // Javaの標準ライブラリでソートするならtrue
@@ -66,13 +73,13 @@ public class CobolFileSort {
     private static List<CobolDataStorage> dataList;
 
     /**
-     * libcob/fileio.cのsort_cmpsの実装
+     * 照合順序を考慮した文字列比較を行う（libcob/fileio.cのsort_cmpsの実装）。
      *
-     * @param s1 TODO: 準備中
-     * @param s2 TODO: 準備中
-     * @param size TODO: 準備中
-     * @param col TODO: 準備中
-     * @return TODO: 準備中
+     * @param s1 比較対象1
+     * @param s2 比較対象2
+     * @param size 比較するバイト数
+     * @param col 照合順序テーブル（nullの場合はバイナリ比較）
+     * @return s1がs2より小さい場合は負、等しい場合は0、大きい場合は正
      */
     private static int sortCmps(
             CobolDataStorage s1, CobolDataStorage s2, int size, CobolDataStorage col) {
@@ -101,12 +108,12 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_file_sort_compareの実装
+     * 2つのソートアイテムをキー値で比較する（libcob/fileio.cのcob_file_sort_compareの実装）。
      *
-     * @param k1 TODO: 準備中
-     * @param k2 TODO: 準備中
-     * @param pointer TODO: 準備中
-     * @return TODO: 準備中
+     * @param k1 比較対象のソートアイテム1
+     * @param k2 比較対象のソートアイテム2
+     * @param pointer ソート対象のファイル（キー情報と照合順序を保持）
+     * @return k1がk2より小さい場合は負、等しい場合は0、大きい場合は正
      */
     private static int sortCompare(CobolItem k1, CobolItem k2, CobolFile pointer) {
         CobolFile f = pointer;
@@ -152,19 +159,19 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_free_listの実装
+     * ソートアイテムリストのメモリを解放する（libcob/fileio.cのcob_free_listの実装）。
      *
-     * @param q TODO: 準備中
+     * @param q 解放するリストの先頭要素（Javaではガベージコレクタが処理するため何もしない）
      */
     private static void cob_free_list(CobolItem q) {
         // nothing to do
     }
 
     /**
-     * libcob/fileio.cのcob_new_itemの実装
+     * 新しいソートアイテムを取得する（libcob/fileio.cのcob_new_itemの実装）。
      *
-     * @param hp TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体（空きリストを保持）
+     * @return 新しいまたは再利用されたCobolItem
      */
     private static CobolItem newItem(CobolSort hp) {
         CobolItem q;
@@ -178,9 +185,9 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_tmpfileの実装
+     * 一時ファイルを作成して開く（libcob/fileio.cのcob_tmpfileの実装）。
      *
-     * @return TODO: 準備中
+     * @return 作成された一時ファイルのFileIOオブジェクト。失敗時はnull
      */
     private static FileIO tmpfile() {
         FileIO fp = new FileIO();
@@ -225,11 +232,11 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_get_temp_fileの実装
+     * 一時ファイルを取得または作成する（libcob/fileio.cのcob_get_temp_fileの実装）。
      *
-     * @param hp TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体
+     * @param n ファイルインデックス（0-3）
+     * @return ファイル取得に失敗した場合はtrue
      */
     private static boolean getTempFile(CobolSort hp, int n) {
         if (hp.getFile()[n].getFp() == null) {
@@ -247,10 +254,10 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_sort_queuesの実装
+     * キュー内のレコードをマージソートする（libcob/fileio.cのcob_sort_queuesの実装）。
      *
-     * @param hp TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体
+     * @return ソート結果が格納されたキューのインデックス
      */
     private static int sortQueues(CobolSort hp) {
         CobolItem q;
@@ -315,11 +322,11 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_read_itemの実装
+     * 一時ファイルからソートアイテムを読み込む（libcob/fileio.cのcob_read_itemの実装）。
      *
-     * @param hp TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体
+     * @param n ファイルインデックス（0-3）
+     * @return 成功時は0、エラー時は1
      */
     private static int readItem(CobolSort hp, int n) {
         FileIO fp = hp.getFile()[n].getFp();
@@ -342,12 +349,12 @@ public class CobolFileSort {
     }
 
     /**
-     * writeBlock内で使う補助メソッド
+     * ソートアイテムを一時ファイルに書き込む補助メソッド。
      *
-     * @param fp TODO: 準備中
-     * @param q TODO: 準備中
-     * @param hp TODO: 準備中
-     * @return 書き込み失敗時true,それ以外はfalse
+     * @param fp 書き込み先のファイル
+     * @param q 書き込むソートアイテム
+     * @param hp ソート管理構造体
+     * @return 書き込み失敗時true、成功時false
      */
     private static boolean writeItem(FileIO fp, CobolItem q, CobolSort hp) {
         byte[] blockByteData = new byte[1];
@@ -362,11 +369,11 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_write_blockの実装
+     * ソート済みブロックを一時ファイルに書き込む（libcob/fileio.cのcob_write_blockの実装）。
      *
-     * @param hp TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体
+     * @param n キューインデックス
+     * @return 成功時は0、エラー時は1
      */
     private static int writeBlock(CobolSort hp, int n) {
         FileIO fp = hp.getFile()[hp.getDestinationFile()].getFp();
@@ -392,9 +399,10 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_copy_checkの実装
+     * ファイル間でレコードをコピーする（libcob/fileio.cのcob_copy_checkの実装）。
      *
-     * @param from TODO: 準備中
+     * @param to コピー先のファイル
+     * @param from コピー元のファイル
      */
     private static void copyCheck(CobolFile to, CobolFile from) {
         CobolDataStorage toptr = to.record.getDataStorage();
@@ -416,10 +424,10 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_file_sort_processの実装
+     * ソート処理を実行し、レコード取り出しの準備をする（libcob/fileio.cのcob_file_sort_processの実装）。
      *
-     * @param hp TODO: 準備中
-     * @return TODO: 準備中
+     * @param hp ソート管理構造体
+     * @return 成功時は0、エラー時はCOBSORTFILEERR
      */
     private static int sortProcess(CobolSort hp) {
         hp.setRetrieving(1);
@@ -509,10 +517,11 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_file_sort_submitの実装
+     * ソート対象レコードを登録する（libcob/fileio.cのcob_file_sort_submitの実装）。
      *
-     * @param p TODO: 準備中
-     * @return TODO: 準備中
+     * @param f ソート対象のファイル
+     * @param p 登録するレコードのデータ
+     * @return 成功時は0、エラー時はエラーコード
      */
     private static int sortSubmit(CobolFile f, CobolDataStorage p) {
 
@@ -579,10 +588,11 @@ public class CobolFileSort {
     }
 
     /**
-     * libcob/fileio.cのcob_file_sort_retrieveの実装
+     * ソート済みレコードを取り出す（libcob/fileio.cのcob_file_sort_retrieveの実装）。
      *
-     * @param p TODO: 準備中
-     * @return TODO: 準備中
+     * @param f ソート対象のファイル
+     * @param p 取り出したレコードを格納するストレージ
+     * @return 成功時は0、終了時はCOBSORTEND、エラー時はエラーコード
      */
     private static int sortRetrieve(CobolFile f, CobolDataStorage p) {
         CobolSort hp = f.filex;
@@ -700,13 +710,13 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_initの実装
     /**
-     * TODO: 準備中
+     * ソート処理を初期化する（SORT文の開始時に呼び出される）。
      *
-     * @param f TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param collatingSequence TODO: 準備中
-     * @param sortReturn TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param f ソート対象のファイル
+     * @param nkeys ソートキーの数
+     * @param collatingSequence 照合順序テーブル（nullの場合はデフォルト）
+     * @param sortReturn SORT-RETURNレジスタのストレージ
+     * @param fnstatus ファイルステータスフィールド
      */
     public static void sortInit(
             CobolFile f,
@@ -742,13 +752,13 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_initの実装
     /**
-     * TODO: 準備中
+     * ソート処理を初期化する（照合順序なし版）。
      *
-     * @param f TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param collatingSequence TODO: 準備中
-     * @param sortReturn TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param f ソート対象のファイル
+     * @param nkeys ソートキーの数
+     * @param collatingSequence 照合順序（未使用、nullとして扱われる）
+     * @param sortReturn SORT-RETURNレジスタのストレージ
+     * @param fnstatus ファイルステータスフィールド
      */
     public static void sortInit(
             CobolFile f,
@@ -761,12 +771,12 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_init_keyの実装
     /**
-     * TODO: 準備中
+     * ソートキーを初期化する（SORT KEY句の処理）。
      *
-     * @param f TODO: 準備中
-     * @param flag TODO: 準備中
-     * @param field TODO: 準備中
-     * @param offset TODO: 準備中
+     * @param f ソート対象のファイル
+     * @param flag ソート順序（COB_ASCENDING=昇順、COB_DESCENDING=降順）
+     * @param field キーフィールド
+     * @param offset レコード内でのキーのオフセット
      */
     public static void sortInitKey(CobolFile f, int flag, AbstractCobolField field, int offset) {
         f.keys[f.nkeys].setFlag(flag);
@@ -777,10 +787,10 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_usingの実装
     /**
-     * TODO: 準備中
+     * SORT USING句を処理する（入力ファイルからレコードを読み込んでソートに登録）。
      *
-     * @param sortFile TODO: 準備中
-     * @param dataFile TODO: 準備中
+     * @param sortFile ソート用ファイル
+     * @param dataFile 入力データファイル
      */
     public static void sortUsing(CobolFile sortFile, CobolFile dataFile) {
         dataFile.open(CobolFile.COB_OPEN_INPUT, 0, null);
@@ -800,12 +810,12 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_givingの実装
     /**
-     * TODO: 準備中
+     * SORT GIVING句を処理する（ソート結果を出力ファイルに書き込む）。
      *
-     * @param sortFile TODO: 準備中
-     * @param varcnt TODO: 準備中
-     * @param fbase TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param sortFile ソート用ファイル
+     * @param varcnt 出力ファイルの数
+     * @param fbase 出力ファイルの配列
+     * @throws CobolStopRunException ソート処理中にエラーが発生した場合
      */
     public static void sortGiving(CobolFile sortFile, int varcnt, CobolFile... fbase)
             throws CobolStopRunException {
@@ -881,9 +891,9 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_sort_closeの実装
     /**
-     * TODO: 準備中
+     * ソート処理を終了し、リソースを解放する。
      *
-     * @param f TODO: 準備中
+     * @param f ソート用ファイル
      */
     public static void sortClose(CobolFile f) {
         AbstractCobolField fnstatus = null;
@@ -905,9 +915,9 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_releaseの実装
     /**
-     * TODO: 準備中
+     * RELEASE文を処理する（SORT INPUT PROCEDUREからレコードを登録）。
      *
-     * @param f TODO: 準備中
+     * @param f ソート用ファイル
      */
     public static void performRelease(CobolFile f) {
         AbstractCobolField fnstatus = null;
@@ -932,9 +942,9 @@ public class CobolFileSort {
 
     // libcob/fileio.cのcob_file_returnの実装
     /**
-     * TODO: 準備中
+     * RETURN文を処理する（SORT OUTPUT PROCEDUREでソート済みレコードを取得）。
      *
-     * @param f TODO: 準備中
+     * @param f ソート用ファイル
      */
     public static void performReturn(CobolFile f) {
         AbstractCobolField fnstatus = null;
@@ -987,20 +997,20 @@ public class CobolFileSort {
                             CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null));
 
     /**
-     * TODO: 準備中
+     * テーブルソートを初期化する（照合順序なし版）。
      *
-     * @param nkeys TODO: 準備中
-     * @param collatingSequence TODO: 準備中
+     * @param nkeys ソートキーの数
+     * @param collatingSequence 照合順序（未使用、nullとして扱われる）
      */
     public static void sortTableInit(int nkeys, int collatingSequence) {
         sortTableInit(nkeys, null);
     }
 
     /**
-     * TODO: 準備中
+     * テーブルソートを初期化する。
      *
-     * @param nkeys TODO: 準備中
-     * @param collatingSequence TODO: 準備中
+     * @param nkeys ソートキーの数
+     * @param collatingSequence 照合順序テーブル（nullの場合はデフォルト）
      */
     public static void sortTableInit(int nkeys, CobolDataStorage collatingSequence) {
         sortNKeys = 0;
@@ -1015,11 +1025,11 @@ public class CobolFileSort {
     }
 
     /**
-     * TODO: 準備中
+     * テーブルソートのキーを初期化する。
      *
-     * @param flag TODO: 準備中
-     * @param field TODO: 準備中
-     * @param offset TODO: 準備中
+     * @param flag ソート順序（COB_ASCENDING=昇順、COB_DESCENDING=降順）
+     * @param field キーフィールド
+     * @param offset テーブル要素内でのキーのオフセット
      */
     public static void sortTableInitKey(int flag, AbstractCobolField field, int offset) {
         if (sortKeys[sortNKeys] == null) {
@@ -1034,10 +1044,10 @@ public class CobolFileSort {
     }
 
     /**
-     * TODO: 準備中
+     * テーブル（OCCURS配列）をソートする（COBOL SORT動詞のテーブル版）。
      *
-     * @param f TODO: 準備中
-     * @param n TODO: 準備中
+     * @param f ソート対象のテーブルフィールド
+     * @param n テーブル要素数
      */
     public static void sortTable(AbstractCobolField f, int n) {
         int recordSize = f.getSize();

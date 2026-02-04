@@ -18,42 +18,51 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
-/** TODO: 準備中 */
+/**
+ * 外部マージソート処理で使用する一時ファイルの情報を保持するクラス。
+ *
+ * <p>COBOL SORT文の処理において、メモリに収まりきらない大量データをソートする際に、 一時ファイルを使用したマージソートを実行する。
+ * このクラスは各一時ファイルのハンドルと、そのファイルに書き込まれたブロック数を管理する。 {@link CobolSort}クラスで4つのFileStructインスタンスが使用され、
+ * マージソートの入力と出力を交互に切り替えながらソートを進める。
+ */
 class FileStruct {
+    /** 一時ファイルへのI/Oハンドル */
     private FileIO fp;
+
+    /** このファイルに書き込まれたブロック（ソート済みラン）の数 */
     private int count;
 
     /**
-     * TODO: 準備中
+     * 一時ファイルのI/Oハンドルを取得する。
      *
-     * @return TODO: 準備中
+     * @return 一時ファイルのI/Oハンドル。ファイルが作成されていない場合はnull
      */
     FileIO getFp() {
         return fp;
     }
 
     /**
-     * TODO: 準備中
+     * 一時ファイルのI/Oハンドルを設定する。
      *
-     * @param fp TODO: 準備中
+     * @param fp 設定する一時ファイルのI/Oハンドル
      */
     void setFp(FileIO fp) {
         this.fp = fp;
     }
 
     /**
-     * TODO: 準備中
+     * ファイルに書き込まれたブロック数を取得する。
      *
-     * @return TODO: 準備中
+     * @return ブロック数
      */
     int getCount() {
         return count;
     }
 
     /**
-     * TODO: 準備中
+     * ファイルに書き込まれたブロック数を設定する。
      *
-     * @param count TODO: 準備中
+     * @param count 設定するブロック数
      */
     void setCount(int count) {
         this.count = count;

@@ -22,43 +22,64 @@ import java.util.Optional;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * COBOLの制御フロー（PERFORM文、GO TO文）を表現する抽象クラス。
+ *
+ * <p>COBOLのPERFORM文やGO TO文による制御の移動を、継続渡しスタイル（CPS: Continuation Passing Style）
+ * を用いて実装する。各段落・節は{@link CobolControl}のサブクラスとして表現され、
+ * {@link #run()}メソッドが次の実行ポイントを返す。
+ *
+ * <p>この実装により、COBOLの複雑な制御フロー（PERFORMのネスト、GO TOによる脱出等）を
+ * Javaで自然に表現できる。
+ *
+ * @see CobolModule
+ */
 public abstract class CobolControl {
-    /** TODO: 準備中 */
+    /**
+     * ラベルの種類を表す列挙型。
+     * PERFORM THRU文の終了判定で、節（SECTION）と段落（PARAGRAPH）を区別するために使用。
+     */
     public enum LabelType {
-        /** TODO: 準備中 */
+        /** 段落ラベル（PARAGRAPH）。節の中の個別の実行単位。 */
         label,
-        /** TODO: 準備中 */
+        /** 節ラベル（SECTION）。複数の段落を含む実行単位。 */
         section,
     }
 
     /**
-     * TODO: 準備中
+     * この制御ポイントを実行し、次の制御ポイントを返す。
      *
-     * @return TODO: 準備中
-     * @throws CobolRuntimeException TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOLの段落や節に対応するコードを実行し、実行後に次に移動すべき
+     * 制御ポイントを{@link Optional}でラップして返す。空の{@link Optional}を返すと
+     * 実行が終了する。
+     *
+     * @return 次に実行すべき制御ポイント。実行終了時は空のOptional
+     * @throws CobolRuntimeException 実行時エラー発生時
+     * @throws CobolStopRunException STOP RUN文の実行時
      */
     public abstract Optional<CobolControl> run()
             throws CobolRuntimeException, CobolStopRunException;
 
-    /** TODO: 準備中 */
+    /** この制御ポイントの識別子。プログラム内で一意の値。 */
     public int contId = -1;
 
-    /** TODO: 準備中 */
+    /** この制御ポイントの種類（段落または節）。 */
     public LabelType type = LabelType.label;
 
-    /** TODO: 準備中 */
+    /**
+     * デフォルトコンストラクタ。
+     * contIdは-1、typeはLabelType.labelで初期化される。
+     */
     public CobolControl() {
         this.contId = -1;
         this.type = LabelType.label;
     }
 
     /**
-     * TODO: 準備中
+     * 制御ポイントの識別子と種類を指定するコンストラクタ。
      *
-     * @param contId TODO: 準備中
-     * @param type TODO: 準備中
+     * @param contId 制御ポイントの識別子
+     * @param type 制御ポイントの種類（段落または節）
      */
     public CobolControl(int contId, LabelType type) {
         this.contId = contId;
@@ -66,9 +87,11 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * 何もしない制御ポイントを生成する。
      *
-     * @return TODO: 準備中
+     * <p>PERFORM文の終了後に制御を戻す際など、実行を終了させる目的で使用する。
+     *
+     * @return 空のOptionalを返すCobolControlインスタンス
      */
     public static CobolControl pure() {
         return new CobolControl() {
@@ -81,10 +104,12 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * GO TO文に対応する制御ポイントを生成する。
      *
-     * @param cont TODO: 準備中
-     * @return TODO: 準備中
+     * <p>指定された制御ポイントへ無条件にジャンプする。
+     *
+     * @param cont ジャンプ先の制御ポイント
+     * @return GO TO文を表現するCobolControlインスタンス
      */
     public static CobolControl goTo(CobolControl cont) {
         return new CobolControl() {
@@ -97,12 +122,16 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * PERFORM THRU文に対応する制御ポイントを生成する。
      *
-     * @param contList TODO: 準備中
-     * @param begin TODO: 準備中
-     * @param end TODO: 準備中
-     * @return TODO: 準備中
+     * <p>指定された範囲（begin〜end）の段落・節を順次実行する。
+     * COBOL文「PERFORM begin-paragraph THRU end-paragraph」に対応。
+     * 終了判定では、endがセクションの場合はそのセクション内の全段落を実行する。
+     *
+     * @param contList 全制御ポイントの配列
+     * @param begin 開始ラベルのインデックス
+     * @param end 終了ラベルのインデックス
+     * @return PERFORM THRU文を表現するCobolControlインスタンス
      */
     public static CobolControl performThrough(CobolControl[] contList, int begin, int end) {
         return new CobolControl() {
@@ -130,11 +159,14 @@ public abstract class CobolControl {
     }
 
     /**
-     * TODO: 準備中
+     * PERFORM文に対応する制御ポイントを生成する。
      *
-     * @param contList TODO: 準備中
-     * @param labelId TODO: 準備中
-     * @return TODO: 準備中
+     * <p>単一の段落・節を実行する。COBOL文「PERFORM label-name」に対応。
+     * 内部的にはperformThrough(contList, labelId, labelId)として実装。
+     *
+     * @param contList 全制御ポイントの配列
+     * @param labelId 実行するラベルのインデックス
+     * @return PERFORM文を表現するCobolControlインスタンス
      */
     public static CobolControl perform(CobolControl[] contList, int labelId) {
         return CobolControl.performThrough(contList, labelId, labelId);

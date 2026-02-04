@@ -37,13 +37,38 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolExceptionId;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolExceptionInfo;
 
-/** DISPLAY文やACCEPT文に関するメソッドを実装するクラス */
+/**
+ * COBOLのDISPLAY文およびACCEPT文の実行時処理を提供するクラス。
+ *
+ * <p>このクラスは、COBOLプログラムからJavaに変換された際に使用される静的メソッドを提供し、
+ * 標準入出力への表示、日時情報の取得、環境変数の操作、コマンドライン引数の処理を行う。
+ * COBOLの特殊レジスタ（DATE, TIME, DAY等）やACCEPT文のFROM句、DISPLAY文のUPON句に
+ * 対応するメソッドを実装している。
+ *
+ * <p>主な機能:
+ *
+ * <ul>
+ *   <li>DISPLAY文: {@link #display(boolean, boolean, AbstractCobolField...)} による標準出力/標準エラー出力
+ *   <li>ACCEPT文: {@link #accept(AbstractCobolField)} による標準入力からのデータ受け取り
+ *   <li>日時取得: {@link #acceptDate}, {@link #acceptTime} などによるシステム日時の取得
+ *   <li>環境変数: {@link #displayEnvironment}, {@link #acceptEnvironment} による環境変数の設定/取得
+ *   <li>コマンドライン: {@link #acceptCommandLine}, {@link #acceptArgValue} によるコマンドライン引数の取得
+ * </ul>
+ */
 public class CobolTerminal {
 
-    /** TDOD: 準備中 */
+    /**
+     * DISPLAY UPON COMMAND-LINE で設定されたコマンドライン文字列の長さ。
+     *
+     * <p>{@link #displayCommandLine} で設定され、{@link #acceptCommandLine} で参照される。
+     */
     private static int commlncnt = 0;
 
-    /** TDOD: 準備中 */
+    /**
+     * DISPLAY UPON COMMAND-LINE で設定されたコマンドライン文字列のバイト配列。
+     *
+     * <p>{@link #displayCommandLine} で設定され、{@link #acceptCommandLine} で参照される。
+     */
     private static byte[] commlnptr = null;
 
     /**
@@ -113,9 +138,13 @@ public class CobolTerminal {
     private static Scanner scan = null;
 
     /**
-     * 標準入力からデータを受け取る
+     * 標準入力からデータを受け取り、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier} 文に対応する。標準入力から1行読み込み、
+     * 読み込んだデータを指定されたフィールドに移送する。文字エンコーディングは {@link
+     * CobolUtil#terminalEncoding} の設定に従う。
+     *
+     * @param f 入力データを格納するCOBOLフィールド
      */
     public static void accept(AbstractCobolField f) {
         try {
@@ -152,9 +181,12 @@ public class CobolTerminal {
     // Time
 
     /**
-     * libcob/common.c job_or_current_localtime
+     * ジョブ時刻または現在時刻を取得する。
      *
-     * @return TODO: 準備中
+     * <p>opensource COBOL 4Jの内部関数。{@link CobolUtil#cobLocalTm} が設定されている場合はその値を返し、
+     * 設定されていない場合は現在の日時を返す。これにより、テストや特定のジョブ実行時に 日時を固定することが可能になる。
+     *
+     * @return ジョブ時刻が設定されている場合はその値、そうでなければ現在の日時
      */
     private static LocalDateTime jobOrCurrentLocalTime() {
         if (CobolUtil.cobLocalTm != null) {
@@ -165,9 +197,12 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の日付をYYMMDD形式で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM DATE} 文に対応する。
+     * 日付は6桁の数字（YYMMDD形式: 2桁の年、2桁の月、2桁の日）で返される。
+     *
+     * @param f 日付を格納するCOBOLフィールド（6桁以上の数字フィールド、例: PIC 9(6)）
      */
     public static void acceptDate(AbstractCobolField f) {
         LocalDateTime date = jobOrCurrentLocalTime();
@@ -176,9 +211,12 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の日付をYYYYMMDD形式で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM DATE YYYYMMDD} 文に対応する。
+     * 日付は8桁の数字（YYYYMMDD形式: 4桁の年、2桁の月、2桁の日）で返される。
+     *
+     * @param f 日付を格納するCOBOLフィールド（8桁以上の数字フィールド、例: PIC 9(8)）
      */
     public static void acceptDate_yyyymmdd(AbstractCobolField f) {
         LocalDateTime date = jobOrCurrentLocalTime();
@@ -187,9 +225,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の年間通日をYYDDD形式で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM DAY} 文に対応する。
+     * 日付は5桁の数字（YYDDD形式: 2桁の年、3桁の年間通日）で返される。
+     * 年間通日は1月1日を001として、12月31日が365（閏年は366）となる。
+     *
+     * @param f 年間通日を格納するCOBOLフィールド（5桁以上の数字フィールド、例: PIC 9(5)）
      */
     public static void acceptDay(AbstractCobolField f) {
         LocalDateTime date = jobOrCurrentLocalTime();
@@ -198,9 +240,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の年間通日をYYYYDDD形式で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM DAY YYYYDDD} 文に対応する。
+     * 日付は7桁の数字（YYYYDDD形式: 4桁の年、3桁の年間通日）で返される。
+     * 年間通日は1月1日を001として、12月31日が365（閏年は366）となる。
+     *
+     * @param f 年間通日を格納するCOBOLフィールド（7桁以上の数字フィールド、例: PIC 9(7)）
      */
     public static void acceptDay_yyyyddd(AbstractCobolField f) {
         LocalDateTime date = jobOrCurrentLocalTime();
@@ -209,9 +255,12 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の曜日を1～7の数値で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM DAY-OF-WEEK} 文に対応する。
+     * 曜日は1桁の数字で返される（1=月曜日、2=火曜日、...、7=日曜日）。
+     *
+     * @param f 曜日を格納するCOBOLフィールド（1桁以上の数字フィールド、例: PIC 9(1)）
      */
     public static void acceptDayOfWeek(AbstractCobolField f) {
         LocalDateTime date = jobOrCurrentLocalTime();
@@ -219,9 +268,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の時刻をHHMMSSCC形式で取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM TIME} 文に対応する。
+     * 時刻は8桁の数字（HHMMSSCC形式: 2桁の時、2桁の分、2桁の秒、2桁の1/100秒）で返される。
+     * このメソッドは常に現在時刻を使用し、{@link CobolUtil#cobLocalTm} の設定は考慮しない。
+     *
+     * @param f 時刻を格納するCOBOLフィールド（8桁以上の数字フィールド、例: PIC 9(8)）
      */
     public static void acceptTime(AbstractCobolField f) {
         LocalDateTime date = LocalDateTime.now();
@@ -232,18 +285,26 @@ public class CobolTerminal {
     // Environment
 
     /**
-     * TODO: 準備中
+     * 環境変数名を設定する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code DISPLAY identifier UPON ENVIRONMENT-NAME} 文に対応する。
+     * 指定されたフィールドの値を環境変数名として {@link CobolUtil#cobLocalEnv} に保存する。 この後 {@link
+     * #displayEnvValue} で値を設定するか、{@link #acceptEnvironment} で値を取得できる。
+     *
+     * @param f 環境変数名を含むCOBOLフィールド
      */
     public static void displayEnvironment(AbstractCobolField f) {
         CobolUtil.cobLocalEnv = f.fieldToString();
     }
 
     /**
-     * TODO: 準備中
+     * 環境変数に値を設定する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code DISPLAY identifier UPON ENVIRONMENT-VALUE} 文に対応する。 事前に {@link
+     * #displayEnvironment} で設定された環境変数名に対して、指定されたフィールドの値を設定する。
+     * 環境変数名が設定されていない場合は、{@link CobolExceptionId#COB_EC_IMP_DISPLAY} 例外が設定される。
+     *
+     * @param f 環境変数に設定する値を含むCOBOLフィールド
      */
     public static void displayEnvValue(AbstractCobolField f) {
         if (CobolUtil.cobLocalEnv == null || CobolUtil.cobLocalEnv.equals("")) {
@@ -254,9 +315,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 環境変数の値を取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM ENVIRONMENT-VALUE} 文に対応する。 事前に {@link
+     * #displayEnvironment} で設定された環境変数名の値を取得し、指定されたフィールドに格納する。
+     * 環境変数が存在しない場合は、{@link CobolExceptionId#COB_EC_IMP_ACCEPT} 例外が設定され、 フィールドには空白が格納される。
+     *
+     * @param f 環境変数の値を格納するCOBOLフィールド
      */
     public static void acceptEnvironment(AbstractCobolField f) {
         String p = null;
@@ -276,9 +341,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * コマンドライン文字列を設定する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code DISPLAY identifier UPON COMMAND-LINE} 文に対応する。
+     * 指定されたフィールドの内容をコマンドライン文字列として内部バッファ（{@link #commlnptr}）に保存する。 保存された値は後続の {@link
+     * #acceptCommandLine} 呼び出しで取得できる。
+     *
+     * @param f コマンドライン文字列を含むCOBOLフィールド
      */
     public static void displayCommandLine(AbstractCobolField f) {
         CobolTerminal.commlnptr = new byte[f.getSize()];
@@ -289,9 +358,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * コマンドライン文字列を取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM COMMAND-LINE} 文に対応する。 {@link #displayCommandLine}
+     * で設定されたコマンドライン文字列がある場合はその値を返し、 ない場合はプログラム起動時のコマンドライン引数（{@link
+     * CobolUtil#commandLineArgs}）を スペースで連結した文字列を返す。
+     *
+     * @param f コマンドライン文字列を格納するCOBOLフィールド
      */
     public static void acceptCommandLine(AbstractCobolField f) {
         if (CobolTerminal.commlncnt != 0) {
@@ -303,9 +376,14 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の引数インデックスを設定する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code DISPLAY identifier UPON ARGUMENT-NUMBER} 文に対応する。 指定されたフィールドの値を現在の引数インデックス（{@link
+     * CobolUtil#currentArgIndex}）として設定する。 このインデックスは後続の {@link #acceptArgValue}
+     * 呼び出しで参照される引数の位置を決定する。 値が0未満または引数の総数を超える場合は、{@link CobolExceptionId#COB_EC_IMP_DISPLAY}
+     * 例外が設定される。
+     *
+     * @param f 引数インデックス（0から引数の総数までの整数）を含むCOBOLフィールド
      */
     public static void displayArgNumber(AbstractCobolField f) {
         CobolFieldAttribute attr =
@@ -323,9 +401,12 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * コマンドライン引数の総数を取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM ARGUMENT-NUMBER} 文に対応する。 プログラム起動時に渡されたコマンドライン引数（{@link
+     * CobolUtil#commandLineArgs}）の 総数を取得し、指定されたフィールドに格納する。
+     *
+     * @param f 引数の総数を格納するCOBOLフィールド
      */
     public static void acceptArgNumber(AbstractCobolField f) {
         CobolFieldAttribute attr =
@@ -338,9 +419,13 @@ public class CobolTerminal {
     }
 
     /**
-     * TODO: 準備中
+     * 現在の引数インデックスに対応するコマンドライン引数の値を取得し、指定されたCOBOLフィールドに格納する。
      *
-     * @param f TODO: 準備中
+     * <p>COBOLの {@code ACCEPT identifier FROM ARGUMENT-VALUE} 文に対応する。 {@link #displayArgNumber}
+     * で設定された引数インデックス（{@link CobolUtil#currentArgIndex}）に対応する 引数の値を取得し、指定されたフィールドに格納する。取得後、引数インデックスは自動的に1増加する。
+     * インデックスが引数の総数を超えている場合は、{@link CobolExceptionId#COB_EC_IMP_ACCEPT} 例外が設定される。
+     *
+     * @param f 引数の値を格納するCOBOLフィールド
      */
     public static void acceptArgValue(AbstractCobolField f) {
         if (CobolUtil.currentArgIndex > CobolUtil.commandLineArgs.length) {

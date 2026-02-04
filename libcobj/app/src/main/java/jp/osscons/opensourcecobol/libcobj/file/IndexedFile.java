@@ -21,50 +21,57 @@ package jp.osscons.opensourcecobol.libcobj.file;
 import java.sql.Connection;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * INDEXEDファイルの内部状態を保持するクラス。
+ *
+ * <p>COBOL INDEXED FILE（索引ファイル）の実装において、SQLiteデータベースへの接続情報、
+ * 現在のキー情報、最後に読み取ったキー値、ロック状態などの内部状態を管理する。 {@link CobolIndexedFile}がファイル操作の実行時にこのクラスのインスタンスを使用する。
+ *
+ * <p>libcob/fileio.cのstruct indexfileに対応する。
+ */
 class IndexedFile {
-    /** TODO: 準備中 */
+    /** 現在使用中のキーのインデックス。0が主キー、1以降が代替キー */
     int key_index;
 
-    /** TODO: 準備中 */
+    /** 最後に読み取ったキー値を保持するストレージ */
     CobolDataStorage last_key;
 
-    /** TODO: 準備中 */
+    /** キー操作時の一時バッファ */
     CobolDataStorage temp_key;
 
-    /** TODO: 準備中 */
+    /** SQLiteデータベースへのJDBC接続 */
     Connection connection;
 
-    /** TODO: 準備中 */
+    /** 現在のキー値（バイト配列形式） */
     byte[] key;
 
-    /** TODO: 準備中 */
+    /** 現在のレコードデータ（バイト配列形式） */
     byte[] data;
 
-    /** TODO: 準備中 */
+    /** 各キーごとに最後に読み取ったキー値を保持する配列 */
     byte[][] last_readkey;
 
-    /** TODO: 準備中 */
+    /** 各キーごとに最後に読み取った重複番号を保持する配列（DUPLICATES指定時に使用） */
     int[] last_dupno;
 
-    /** TODO: 準備中 */
+    /** REWRITE操作時に代替キーの更新が必要かどうかを示すフラグ配列 */
     int[] rewrite_sec_key;
 
-    /** TODO: 準備中 */
+    /** SQLiteデータベースファイルのパス */
     String filename;
 
-    /** TODO: 準備中 */
+    /** レコードロックに使用するオブジェクト */
     Object record_lock;
 
-    /** TODO: 準備中 */
+    /** 書き込み用カーソルがオープンされているかどうか */
     boolean write_cursor_open;
 
-    /** TODO: 準備中 */
+    /** 現在のファイルロックID */
     int lock_id;
 
-    /** TODO: 準備中 */
+    /** 現在のレコードがロックされているかどうか */
     boolean record_locked;
 
-    /** TODO: 準備中 */
+    /** ファイル名の長さ */
     int filenamelen;
 }

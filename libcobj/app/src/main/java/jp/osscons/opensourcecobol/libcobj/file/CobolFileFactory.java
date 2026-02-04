@@ -20,38 +20,53 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
-/** TODO: 準備中 */
+/**
+ * COBOLファイルインスタンスを生成するファクトリクラス。
+ *
+ * <p>COBOLからJavaへ変換されたコードで使用され、ファイル編成（ORGANIZATION）に応じて 適切なCobolFileサブクラスのインスタンスを生成する。
+ *
+ * <p>対応するファイル編成:
+ *
+ * <ul>
+ *   <li>SEQUENTIAL - {@link CobolSequentialFile}
+ *   <li>LINE SEQUENTIAL - {@link CobolLineSequentialFile}
+ *   <li>RELATIVE - {@link CobolRelativeFile}
+ *   <li>INDEXED - {@link CobolIndexedFile}
+ * </ul>
+ */
 public class CobolFileFactory {
 
     /**
-     * TODO: 準備中
+     * 指定されたパラメータに基づいてCobolFileインスタンスを生成する。
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
-     * @return TODO: 準備中
+     * <p>organization引数に応じて適切なサブクラスのインスタンスが返される。
+     *
+     * @param selectName ファイルのSELECT名（COBOL SELECT句で指定された名前）
+     * @param fileStatus ファイルステータスを格納するバイト配列（4バイト）
+     * @param assign ASSIGN句で指定されたファイル名フィールド
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 可変長レコードの場合のレコード長フィールド（固定長の場合はnull）
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（INDEXED/RELATIVEファイルの場合）
+     * @param keys キー情報の配列
+     * @param organization ファイル編成（COB_ORG_SEQUENTIAL等）
+     * @param accessMode アクセスモード（COB_ACCESS_SEQUENTIAL等）
+     * @param lockMode ロックモード
+     * @param openMode 現在のオープンモード
+     * @param flagOptional OPTIONALファイルかどうか
+     * @param lastOpenMode 最後のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが存在しないかどうか
+     * @param flagEndOfFile ファイル終端に達したかどうか
+     * @param flagBeginOfFile ファイル先頭にいるかどうか
+     * @param flagFirstRead 最初の読み取りかどうか
+     * @param flagReadDone 読み取りが完了したかどうか
+     * @param flagSelectFeatures SELECT機能フラグ
+     * @param flagNeedsNl 改行が必要かどうか
+     * @param flagNeedsTop ページトップが必要かどうか
+     * @param fileVersion ファイルバージョン
+     * @return 生成されたCobolFileインスタンス
      */
     public static CobolFile makeCobolFileInstance(
             String selectName,

@@ -30,7 +30,21 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteErrorCode;
 
-/** TODO: 準備中 */
+/**
+ * COBOL INDEXED編成ファイルの実装クラス。
+ *
+ * <p>COBOL ORGANIZATION IS INDEXEDで定義されたファイルの入出力操作を提供する。 SQLiteデータベースを使用してキーによる索引アクセスを実現する。
+ *
+ * <p>主キー（RECORD KEY）と複数の代替キー（ALTERNATE RECORD KEY）をサポートし、 代替キーにはDUPLICATES指定（重複キー許可）も可能。
+ *
+ * <p>SQLiteテーブル構造:
+ *
+ * <ul>
+ *   <li>table0（主キーテーブル）: key, value, locked_by, process_id, locked_at
+ *   <li>tableN（代替キーテーブル）: key, value[, dupNo]
+ *   <li>file_lock: プロセス間の排他制御
+ * </ul>
+ */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
     private boolean updateWhileReading = false;
@@ -40,55 +54,55 @@ public class CobolIndexedFile extends CobolFile {
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
-    /** TODO: 準備中 */
+    /** 比較条件: 等しい (START/READ時に使用) */
     public static final int COB_EQ = 1;
 
-    /** TODO: 準備中 */
+    /** 比較条件: より小さい (START時に使用) */
     public static final int COB_LT = 2;
 
-    /** TODO: 準備中 */
+    /** 比較条件: 以下 (START時に使用) */
     public static final int COB_LE = 3;
 
-    /** TODO: 準備中 */
+    /** 比較条件: より大きい (START時に使用) */
     public static final int COB_GT = 4;
 
-    /** TODO: 準備中 */
+    /** 比較条件: 以上 (START時に使用) */
     public static final int COB_GE = 5;
 
-    /** TODO: 準備中 */
+    /** 比較条件: 等しくない */
     public static final int COB_NE = 6;
 
     private static String storedProcessUuid = null;
     private static String storedProcessId = null;
 
     /**
-     * TODO: 準備中
+     * INDEXEDファイルインスタンスを生成する。
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
+     * @param selectName ファイルのSELECT名
+     * @param fileStatus ファイルステータスを格納するバイト配列
+     * @param assign ASSIGN句で指定されたファイル名（SQLiteデータベースファイルのパス）
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 可変長レコードの場合のレコード長フィールド
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（主キー+代替キー）
+     * @param keys キー情報の配列（RECORD KEY、ALTERNATE RECORD KEY）
+     * @param organization ファイル編成（COB_ORG_INDEXED）
+     * @param accessMode アクセスモード
+     * @param lockMode ロックモード
+     * @param openMode 現在のオープンモード
+     * @param flagOptional OPTIONALファイルかどうか
+     * @param lastOpenMode 最後のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが存在しないかどうか
+     * @param flagEndOfFile ファイル終端に達したかどうか
+     * @param flagBeginOfFile ファイル先頭にいるかどうか
+     * @param flagFirstRead 最初の読み取りかどうか
+     * @param flagReadDone 読み取りが完了したかどうか
+     * @param flagSelectFeatures SELECT機能フラグ
+     * @param flagNeedsNl 改行が必要かどうか
+     * @param flagNeedsTop ページトップが必要かどうか
+     * @param fileVersion ファイルバージョン
      */
     public CobolIndexedFile(
             String selectName,
@@ -171,20 +185,20 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * 指定されたインデックスに対応するSQLiteテーブル名を取得する。
      *
-     * @param index TODO: 準備中
-     * @return TODO: 準備中
+     * @param index キーのインデックス（0=主キー、1以降=代替キー）
+     * @return テーブル名（例: "table0", "table1"）
      */
     public static String getTableName(int index) {
         return String.format("table%d", index);
     }
 
     /**
-     * TODO: 準備中
+     * 指定されたインデックスに対応するカーソル名を取得する。
      *
-     * @param index TODO: 準備中
-     * @return TODO: 準備中
+     * @param index キーのインデックス
+     * @return カーソル名（例: "cursor0", "cursor1"）
      */
     public static String getCursorName(int index) {
         return String.format("cursor%d", index);
@@ -195,9 +209,9 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * 変更操作時の自動コミット設定を変更する。
      *
-     * @param commitOnModification TODO: 準備中
+     * @param commitOnModification trueの場合、WRITE/REWRITE/DELETE後に自動コミット
      */
     public void setCommitOnModification(boolean commitOnModification) {
         this.commitOnModification = commitOnModification;
@@ -592,13 +606,13 @@ public class CobolIndexedFile extends CobolFile {
 
     // Equivalent to indexed_start_internal in libcob/fileio.c
     /**
-     * TODO: 準備中
+     * START文の内部処理を実行する。
      *
-     * @param cond TODO: 準備中
-     * @param key TODO: 準備中
-     * @param readOpts TODO: 準備中
-     * @param testLock TODO: 準備中
-     * @return TODO: 準備中
+     * @param cond 比較条件（COB_EQ, COB_GT, COB_GE, COB_LT, COB_LE）
+     * @param key 検索キーフィールド
+     * @param readOpts 読み取りオプション
+     * @param testLock ロックテストを行うかどうか
+     * @return ファイルステータスコード
      */
     public int indexed_start_internal(
             int cond, AbstractCobolField key, int readOpts, boolean testLock) {
@@ -1362,7 +1376,7 @@ public class CobolIndexedFile extends CobolFile {
         System.err.println("Unlocking INDEXED file is not implemented");
     }
 
-    /** TODO: 準備中 */
+    /** JDBCトランザクションをコミットする。 */
     public void commitJdbcTransaction() {
         IndexedFile p = this.filei;
         try {

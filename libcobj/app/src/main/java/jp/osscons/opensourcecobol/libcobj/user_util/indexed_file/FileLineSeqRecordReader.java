@@ -5,21 +5,24 @@ import java.io.FileReader;
 import java.io.IOException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * A RecordReader implementation that reads records from a file in COBOL LINE SEQUENTIAL format. In
+ * this format, each record is stored on a separate line, terminated by a newline character.
+ */
 class FileLineSeqRecordReader implements RecordReader {
-    /** TODO: 準備中 */
+    /** The expected size of each record in bytes. */
     int recordSize;
 
-    /** TODO: 準備中 */
+    /** The buffered reader used to read lines from the file. */
     BufferedReader reader;
 
     private String filePath;
 
     /**
-     * TODO: 準備中
+     * Constructs a new FileLineSeqRecordReader for reading line-sequential records from a file.
      *
-     * @param recordSize TODO: 準備中
-     * @param filePath TODO: 準備中
+     * @param recordSize the expected size of each record in bytes (excluding newline)
+     * @param filePath the path to the file to read from
      */
     FileLineSeqRecordReader(int recordSize, String filePath) {
         this.recordSize = recordSize;

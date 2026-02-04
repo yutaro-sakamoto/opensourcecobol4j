@@ -18,7 +18,11 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
-/** TODO: 準備中 */
+/**
+ * COBOL ALL定数（英数字型）を表現するクラス。
+ * ALL "文字"やALL SPACEなど、指定された文字またはリテラルを繰り返すALL定数を扱う。
+ * 比較やMOVE時に、受け側のサイズに合わせて指定文字が繰り返し適用される。
+ */
 public class CobolAlphanumericAllField extends CobolAlphanumericField {
     /**
      * コンストラクタ

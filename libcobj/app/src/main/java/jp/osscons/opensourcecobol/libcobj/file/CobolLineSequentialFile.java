@@ -23,37 +23,45 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * COBOL LINE SEQUENTIAL編成ファイルの実装クラス。
+ *
+ * <p>COBOL ORGANIZATION IS LINE SEQUENTIALで定義されたファイルの入出力操作を提供する。 テキストファイルとして扱われ、各レコードは改行文字で区切られる。
+ * 主に印刷出力やテキストデータの処理に使用される。
+ *
+ * <p>読み取り時は改行文字までをレコードとして読み込み、 書き込み時は末尾の空白を除去してから改行を追加する（cob_ls_fixedが設定されていない場合）。
+ * LINAGE句によるページ制御もサポートする。
+ */
 public class CobolLineSequentialFile extends CobolFile {
 
     /**
-     * TODO: 準備中
+     * LINE SEQUENTIALファイルインスタンスを生成する。
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
+     * @param selectName ファイルのSELECT名
+     * @param fileStatus ファイルステータスを格納するバイト配列
+     * @param assign ASSIGN句で指定されたファイル名フィールド
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 可変長レコードの場合のレコード長フィールド
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（LINE SEQUENTIALファイルでは未使用）
+     * @param keys キー情報の配列（LINE SEQUENTIALファイルでは未使用）
+     * @param organization ファイル編成（COB_ORG_LINE_SEQUENTIAL）
+     * @param accessMode アクセスモード
+     * @param lockMode ロックモード
+     * @param openMode 現在のオープンモード
+     * @param flagOptional OPTIONALファイルかどうか
+     * @param lastOpenMode 最後のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが存在しないかどうか
+     * @param flagEndOfFile ファイル終端に達したかどうか
+     * @param flagBeginOfFile ファイル先頭にいるかどうか
+     * @param flagFirstRead 最初の読み取りかどうか
+     * @param flagReadDone 読み取りが完了したかどうか
+     * @param flagSelectFeatures SELECT機能フラグ
+     * @param flagNeedsNl 改行が必要かどうか
+     * @param flagNeedsTop ページトップが必要かどうか
+     * @param fileVersion ファイルバージョン
      */
     public CobolLineSequentialFile(
             String selectName,

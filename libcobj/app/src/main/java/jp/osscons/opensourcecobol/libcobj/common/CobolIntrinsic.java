@@ -38,7 +38,21 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 
-/** TODO: 準備中 */
+/**
+ * COBOLの組み込み関数（Intrinsic Functions）を実装するクラス。
+ *
+ * <p>COBOL 85拡張およびCOBOL 2002で定義された組み込み関数を提供する。
+ * 日付・時刻関数、数学関数、文字列関数、変換関数などが含まれる。
+ *
+ * <p>使用例（COBOL）：
+ * <pre>
+ *     COMPUTE WS-RESULT = FUNCTION LENGTH(WS-STRING).
+ *     MOVE FUNCTION CURRENT-DATE TO WS-DATE.
+ *     COMPUTE WS-SQRT = FUNCTION SQRT(WS-NUM).
+ * </pre>
+ *
+ * <p>libcob/intrinsic.cの各関数に対応する。
+ */
 public class CobolIntrinsic {
 
     private static int[] normalDays = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
@@ -90,17 +104,20 @@ public class CobolIntrinsic {
     }
 
     /**
-     * libcob/intrinsicのcob_intr_ordの実装
+     * 指定された年がうるう年かどうかを判定する。
      *
-     * @param year TODO: 準備中
-     * @return TODO: 準備中
+     * @param year 判定対象の西暦年
+     * @return うるう年の場合true、それ以外はfalse
      */
     private static boolean isLeapYear(int year) {
         return ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0));
     }
 
-    // libcob/intrinsicのcob_init_intrinsicの実装
-    /** TODO: 準備中 */
+    /**
+     * 組み込み関数モジュールを初期化する。libcob/intrinsic.cのcob_init_intrinsicに対応。
+     *
+     * <p>計算用の一時フィールド配列を初期化する。ランタイム初期化時にCobolUtil.cob_initから呼び出される。
+     */
     public static void init() {
         CobolFieldAttribute attr =
                 new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
@@ -109,12 +126,13 @@ public class CobolIntrinsic {
         }
     }
 
-    // libcob/intrinsicのcob_intr_get_doubleの実装
     /**
-     * TODO: 準備中
+     * CobolDecimalをdouble型に変換する。libcob/intrinsic.cのcob_intr_get_doubleに対応。
      *
-     * @param d
-     * @return
+     * <p>スケール（小数点位置）を考慮して数値を変換する。
+     *
+     * @param d 変換対象のCobolDecimal
+     * @return double型に変換された値
      */
     private static double intrGetDouble(CobolDecimal d) {
         double v = d.getValue().doubleValue();
@@ -130,11 +148,14 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * フィールドの参照修飾（Reference Modification）を適用する。
      *
-     * @param f TODO: 準備中
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
+     * <p>COBOLの参照修飾「identifier(leftmost-character-position: length)」に対応。
+     * フィールドの部分文字列を切り出す。
+     *
+     * @param f 参照修飾を適用するフィールド
+     * @param offset 開始位置（1から始まる）
+     * @param length 切り出す長さ（0の場合は末尾まで）
      */
     private static void calcRefMod(AbstractCobolField f, int offset, int length) {
         if (offset <= f.getSize()) {
@@ -153,13 +174,16 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * 2つの数値フィールドに対して二項演算を行う。
      *
-     * @param f1 TODO: 準備中
-     * @param op TODO: 準備中
-     * @param f2 TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>組み込み関数内で使用される算術演算を実行する。
+     * 対応する演算子: '+' (加算), '-' (減算), '*' (乗算), '/' (除算), '^' (べき乗)
+     *
+     * @param f1 左オペランド
+     * @param op 演算子（文字コード）
+     * @param f2 右オペランド
+     * @return 演算結果を格納した数値フィールド
+     * @throws CobolStopRunException 演算中にエラーが発生した場合
      */
     public static AbstractCobolField intrBinop(AbstractCobolField f1, int op, AbstractCobolField f2)
             throws CobolStopRunException {
@@ -214,10 +238,12 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION LENGTH - フィールドの長さを返す。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION LENGTH(field)」に対応。フィールドのバイト数を返す。
+     *
+     * @param srcfield 長さを取得するフィールド
+     * @return フィールドの長さ（バイト数）を格納した数値フィールド
      */
     public static AbstractCobolField funcLength(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -230,10 +256,13 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION INTEGER - 引数以下の最大整数を返す（床関数）。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION INTEGER(number)」に対応。正数の場合は整数部分、
+     * 負数の場合は引数以下の最大整数（負の無限大方向に丸め）を返す。
+     *
+     * @param srcfield 数値フィールド
+     * @return 整数値を格納した数値フィールド
      */
     public static AbstractCobolField funcInteger(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -283,10 +312,12 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION INTEGER-PART - 数値の整数部分を返す。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION INTEGER-PART(number)」に対応。小数点以下を切り捨てて整数部分のみを返す。
+     *
+     * @param srcfield 数値フィールド
+     * @return 整数部分を格納した数値フィールド
      */
     public static AbstractCobolField funcIntegerPart(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -305,12 +336,14 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION UPPER-CASE - 文字列を大文字に変換する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION UPPER-CASE(string)」に対応。小文字を大文字に変換する。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcfield 変換対象の文字列フィールド
+     * @return 大文字に変換された文字列フィールド
      */
     public static AbstractCobolField funcUpperCase(
             int offset, int length, AbstractCobolField srcfield) {
@@ -328,12 +361,14 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION LOWER-CASE - 文字列を小文字に変換する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION LOWER-CASE(string)」に対応。大文字を小文字に変換する。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcfield 変換対象の文字列フィールド
+     * @return 小文字に変換された文字列フィールド
      */
     public static AbstractCobolField funcLowerCase(
             int offset, int length, AbstractCobolField srcfield) {
@@ -351,12 +386,14 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION REVERSE - 文字列を逆順にする。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION REVERSE(string)」に対応。文字列の文字順序を反転させる。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcfield 反転対象の文字列フィールド
+     * @return 反転された文字列フィールド
      */
     public static AbstractCobolField funcReverse(
             int offset, int length, AbstractCobolField srcfield) {
@@ -374,12 +411,15 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION WHEN-COMPILED - コンパイル日時を返す。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param f TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION WHEN-COMPILED」に対応。プログラムがコンパイルされた日時を返す。
+     * 形式は「YYYYMMDDHHMMSSFF+HHMM」（21桁）。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @param f コンパイル日時を格納したフィールド（生成コード側で設定）
+     * @return コンパイル日時の文字列フィールド
      */
     public static AbstractCobolField funcWhenCompiled(
             int offset, int length, AbstractCobolField f) {
@@ -392,11 +432,14 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION CURRENT-DATE - 現在の日時を返す。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION CURRENT-DATE」に対応。システムの現在日時を
+     * 「YYYYMMDDHHMMSSFF+HHMM」形式（21桁）で返す。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @return 現在日時の文字列フィールド
      */
     public static AbstractCobolField funcCurrentDate(int offset, int length) {
         CobolFieldAttribute attr =
@@ -425,10 +468,13 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION CHAR - 文字コードに対応する文字を返す。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION CHAR(integer)」に対応。引数の整数値（1-256）に対応する
+     * 文字を返す。1は0x00、256は0xFFに対応。範囲外の場合はNULL文字を返す。
+     *
+     * @param srcfield 文字コード（1-256）を格納した数値フィールド
+     * @return 対応する1バイト文字を格納したフィールド
      */
     public static AbstractCobolField funcChar(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -446,12 +492,14 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_ordの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ORD - 文字の序数位置を返す。libcob/intrinsic.cのcob_intr_ordに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ORD(character)」に対応。文字の内部表現（文字コード）に
+     * 1を加えた値を返す。FUNCTION CHARの逆関数。
+     *
+     * @param srcfield 1バイト文字を格納したフィールド
+     * @return 序数位置（1-256）を格納した数値フィールド
      */
     public static AbstractCobolField funcOrd(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -464,12 +512,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_date_of_integerの実装
     /**
-     * TODO: 準備中
+     * FUNCTION DATE-OF-INTEGER - 整数日付を標準日付に変換する。libcob/intrinsic.cのcob_intr_date_of_integerに対応。
      *
-     * @param srcdays TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION DATE-OF-INTEGER(integer)」に対応。1601年1月1日を起点とした
+     * 通算日数から標準日付形式（YYYYMMDD）に変換する。
+     * 有効範囲: 1〜3067671（1601年1月1日〜9999年12月31日）
+     *
+     * @param srcdays 1601年1月1日からの通算日数を格納した数値フィールド
+     * @return 標準日付形式（YYYYMMDD）の8桁数値フィールド
      */
     public static AbstractCobolField funcDateOfInteger(AbstractCobolField srcdays) {
         CobolFieldAttribute attr =
@@ -518,12 +569,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_day_of_integerの実装
     /**
-     * TODO: 準備中
+     * FUNCTION DAY-OF-INTEGER - 整数日付を年通日に変換する。libcob/intrinsic.cのcob_intr_day_of_integerに対応。
      *
-     * @param srcdays TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION DAY-OF-INTEGER(integer)」に対応。1601年1月1日を起点とした
+     * 通算日数から年通日形式（YYYYDDD）に変換する。DDDは年初からの通算日数（1-366）。
+     * 有効範囲: 1〜3067671（1601年1月1日〜9999年12月31日）
+     *
+     * @param srcdays 1601年1月1日からの通算日数を格納した数値フィールド
+     * @return 年通日形式（YYYYDDD）の7桁数値フィールド
      */
     public static AbstractCobolField funcDayOfInteger(AbstractCobolField srcdays) {
         CobolFieldAttribute attr =
@@ -558,12 +612,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_integer_of_dateの実装
     /**
-     * TODO: 準備中
+     * FUNCTION INTEGER-OF-DATE - 標準日付を整数日付に変換する。libcob/intrinsic.cのcob_intr_integer_of_dateに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION INTEGER-OF-DATE(date)」に対応。標準日付形式（YYYYMMDD）を
+     * 1601年1月1日を起点とした通算日数に変換する。FUNCTION DATE-OF-INTEGERの逆関数。
+     * 有効範囲: 16010101〜99991231
+     *
+     * @param srcfield 標準日付形式（YYYYMMDD）の8桁数値フィールド
+     * @return 1601年1月1日からの通算日数を格納した数値フィールド
      */
     public static AbstractCobolField funcIntegerOfDate(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -629,12 +686,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_integer_of_dayの実装
     /**
-     * TODO: 準備中
+     * FUNCTION INTEGER-OF-DAY - 年通日を整数日付に変換する。libcob/intrinsic.cのcob_intr_integer_of_dayに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION INTEGER-OF-DAY(julian-date)」に対応。年通日形式（YYYYDDD）を
+     * 1601年1月1日を起点とした通算日数に変換する。FUNCTION DAY-OF-INTEGERの逆関数。
+     * 有効範囲: 1601001〜9999365（またはうるう年の366）
+     *
+     * @param srcfield 年通日形式（YYYYDDD）の7桁数値フィールド
+     * @return 1601年1月1日からの通算日数を格納した数値フィールド
      */
     public static AbstractCobolField funcIntegerOfDay(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -672,12 +732,14 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_integer_of_dayの実装
     /**
-     * TODO: 準備中
+     * FUNCTION FACTORIAL - 階乗を計算する。libcob/intrinsic.cのcob_intr_factorialに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION FACTORIAL(integer)」に対応。引数nに対してn!（n階乗）を返す。
+     * 0! = 1、負の値の場合は例外を発生させる。
+     *
+     * @param srcfield 非負整数を格納した数値フィールド
+     * @return 階乗の結果を格納した数値フィールド
      */
     public static AbstractCobolField funcFactorial(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -760,12 +822,13 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_expの実装
     /**
-     * TODO: 準備中
+     * FUNCTION EXP - 自然対数の底eのべき乗を返す。libcob/intrinsic.cのcob_intr_expに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION EXP(number)」に対応。e^x（ネイピア数eのx乗）を返す。
+     *
+     * @param srcfield 指数を格納した数値フィールド
+     * @return e^xの計算結果を格納した数値フィールド
      */
     public static AbstractCobolField funcExp(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -773,12 +836,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_exp10の実装
     /**
-     * TODO: 準備中
+     * FUNCTION EXP10 - 10のべき乗を返す。libcob/intrinsic.cのcob_intr_exp10に対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION EXP10(number)」に対応。10^x（10のx乗）を返す。
+     *
+     * @param srcfield 指数を格納した数値フィールド
+     * @return 10^xの計算結果を格納した数値フィールド
      */
     public static AbstractCobolField funcExp10(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -786,12 +850,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_absの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ABS - 絶対値を返す。libcob/intrinsic.cのcob_intr_absに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ABS(number)」に対応。引数の絶対値を返す。
+     *
+     * @param srcfield 数値フィールド
+     * @return 絶対値を格納した数値フィールド
      */
     public static AbstractCobolField funcAbs(AbstractCobolField srcfield) {
         makeFieldEntry(srcfield);
@@ -805,12 +870,14 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_acosの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ACOS - 逆余弦（アークコサイン）を返す。libcob/intrinsic.cのcob_intr_acosに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ACOS(number)」に対応。結果はラジアン単位。
+     * 有効範囲: -1 ≤ number ≤ 1
+     *
+     * @param srcfield -1から1の範囲の数値フィールド
+     * @return 逆余弦（ラジアン）を格納した数値フィールド
      */
     public static AbstractCobolField funcAcos(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore1(srcfield);
@@ -818,12 +885,14 @@ public class CobolIntrinsic {
         return mathFunctionAfter1(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_asinの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ASIN - 逆正弦（アークサイン）を返す。libcob/intrinsic.cのcob_intr_asinに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ASIN(number)」に対応。結果はラジアン単位。
+     * 有効範囲: -1 ≤ number ≤ 1
+     *
+     * @param srcfield -1から1の範囲の数値フィールド
+     * @return 逆正弦（ラジアン）を格納した数値フィールド
      */
     public static AbstractCobolField funcAsin(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore1(srcfield);
@@ -831,12 +900,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter1(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_atanの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ATAN - 逆正接（アークタンジェント）を返す。libcob/intrinsic.cのcob_intr_atanに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ATAN(number)」に対応。結果はラジアン単位。
+     *
+     * @param srcfield 数値フィールド
+     * @return 逆正接（ラジアン）を格納した数値フィールド
      */
     public static AbstractCobolField funcAtan(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore1(srcfield);
@@ -844,12 +914,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter1(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_cosの実装
     /**
-     * TODO: 準備中
+     * FUNCTION COS - 余弦（コサイン）を返す。libcob/intrinsic.cのcob_intr_cosに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION COS(number)」に対応。引数はラジアン単位。
+     *
+     * @param srcfield 角度（ラジアン）を格納した数値フィールド
+     * @return 余弦値を格納した数値フィールド
      */
     public static AbstractCobolField funcCos(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore1(srcfield);
@@ -857,12 +928,14 @@ public class CobolIntrinsic {
         return mathFunctionAfter1(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_logの実装
     /**
-     * TODO: 準備中
+     * FUNCTION LOG - 自然対数を返す。libcob/intrinsic.cのcob_intr_logに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION LOG(number)」に対応。底eの対数（ln）を返す。
+     * 引数は正の数である必要がある。
+     *
+     * @param srcfield 正の数値フィールド
+     * @return 自然対数を格納した数値フィールド
      */
     public static AbstractCobolField funcLog(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -870,12 +943,14 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_log10の実装
     /**
-     * TODO: 準備中
+     * FUNCTION LOG10 - 常用対数（10を底とする対数）を返す。libcob/intrinsic.cのcob_intr_log10に対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION LOG10(number)」に対応。底10の対数を返す。
+     * 引数は正の数である必要がある。
+     *
+     * @param srcfield 正の数値フィールド
+     * @return 常用対数を格納した数値フィールド
      */
     public static AbstractCobolField funcLog10(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -883,12 +958,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_sinの実装
     /**
-     * TODO: 準備中
+     * FUNCTION SIN - 正弦（サイン）を返す。libcob/intrinsic.cのcob_intr_sinに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION SIN(number)」に対応。引数はラジアン単位。
+     *
+     * @param srcfield 角度（ラジアン）を格納した数値フィールド
+     * @return 正弦値を格納した数値フィールド
      */
     public static AbstractCobolField funcSin(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore1(srcfield);
@@ -896,12 +972,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter1(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_sqrtの実装
     /**
-     * TODO: 準備中
+     * FUNCTION SQRT - 平方根を返す。libcob/intrinsic.cのcob_intr_sqrtに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION SQRT(number)」に対応。引数は非負である必要がある。
+     *
+     * @param srcfield 非負の数値フィールド
+     * @return 平方根を格納した数値フィールド
      */
     public static AbstractCobolField funcSqrt(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -909,12 +986,13 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_tanの実装
     /**
-     * TODO: 準備中
+     * FUNCTION TAN - 正接（タンジェント）を返す。libcob/intrinsic.cのcob_intr_tanに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION TAN(number)」に対応。引数はラジアン単位。
+     *
+     * @param srcfield 角度（ラジアン）を格納した数値フィールド
+     * @return 正接値を格納した数値フィールド
      */
     public static AbstractCobolField funcTan(AbstractCobolField srcfield) {
         CobolDecimal d1 = mathFunctionBefore2(srcfield);
@@ -922,12 +1000,14 @@ public class CobolIntrinsic {
         return mathFunctionAfter2(mathd2);
     }
 
-    // libcob/intrinsicのcob_intr_numvalの実装
     /**
-     * TODO: 準備中
+     * FUNCTION NUMVAL - 文字列を数値に変換する。libcob/intrinsic.cのcob_intr_numvalに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION NUMVAL(string)」に対応。編集済み数字項目や数値文字列を
+     * 数値に変換する。空白、符号（+/-）、小数点を認識。末尾のCR/DBは負号として扱う。
+     *
+     * @param srcfield 数値文字列を格納したフィールド
+     * @return 数値に変換された数値フィールド
      */
     public static AbstractCobolField funcNumval(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -1010,13 +1090,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_numval_cの実装
     /**
-     * TODO: 準備中
+     * FUNCTION NUMVAL-C - 通貨記号付き文字列を数値に変換する。libcob/intrinsic.cのcob_intr_numval_cに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @param currency TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION NUMVAL-C(string, currency)」に対応。NUMVAL関数に加えて、
+     * 通貨記号と桁区切りカンマを無視して数値に変換する。
+     *
+     * @param srcfield 通貨記号付き数値文字列を格納したフィールド
+     * @param currency 通貨記号を格納したフィールド（nullの場合はデフォルトの通貨記号を使用）
+     * @return 数値に変換された数値フィールド
      */
     public static AbstractCobolField funcNumvalC(
             AbstractCobolField srcfield, AbstractCobolField currency) {
@@ -1132,11 +1214,13 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * FUNCTION NUMVAL-C - 通貨記号付き文字列を数値に変換する（通貨記号省略版）。
      *
-     * @param srcfield TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * <p>通貨記号を省略した場合のオーバーロード。デフォルトの通貨記号を使用する。
+     *
+     * @param srcfield 通貨記号付き数値文字列を格納したフィールド
+     * @param n 未使用パラメータ
+     * @return 数値に変換された数値フィールド
      */
     public static AbstractCobolField funcNumvalC(AbstractCobolField srcfield, int n) {
         return funcNumvalC(srcfield, null);
@@ -1154,13 +1238,15 @@ public class CobolIntrinsic {
         return null;
     }
 
-    // libcob/intrinsicのcob_intr_annuityの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ANNUITY - 年金係数を計算する。libcob/intrinsic.cのcob_intr_annuityに対応。
      *
-     * @param srcfield1 TODO: 準備中
-     * @param srcfield2 TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ANNUITY(rate, periods)」に対応。指定された利率と期間に基づいて、
+     * 元本1に対する年金（均等返済）の係数を返す。利率が0の場合は1/periodsを返す。
+     *
+     * @param srcfield1 利率を格納した数値フィールド
+     * @param srcfield2 期間（回数）を格納した数値フィールド
+     * @return 年金係数を格納した数値フィールド
      */
     public static AbstractCobolField funcAnnuity(
             AbstractCobolField srcfield1, AbstractCobolField srcfield2) {
@@ -1191,13 +1277,14 @@ public class CobolIntrinsic {
         return end - begin - 1;
     }
 
-    // libcob/intrinsicのcob_intr_sumの実装
     /**
-     * TODO: 準備中
+     * FUNCTION SUM - 引数の合計を返す。libcob/intrinsic.cのcob_intr_sumに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION SUM(arg1, arg2, ...)」に対応。全ての引数の合計値を返す。
+     *
+     * @param params 引数の数
+     * @param fields 合計する数値フィールドの可変長配列
+     * @return 合計値を格納した数値フィールド
      */
     public static AbstractCobolField funcSum(int params, AbstractCobolField... fields) {
         CobolDecimal d1 = new CobolDecimal();
@@ -1249,13 +1336,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_ord_minの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ORD-MIN - 最小値の引数位置を返す。libcob/intrinsic.cのcob_intr_ord_minに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ORD-MIN(arg1, arg2, ...)」に対応。引数の中で最小値を持つ
+     * 引数の序数位置（1から始まる）を返す。
+     *
+     * @param params 引数の数
+     * @param fields 比較するフィールドの可変長配列
+     * @return 最小値を持つ引数の序数位置（1から始まる）
      */
     public static AbstractCobolField funcOrdMin(int params, AbstractCobolField... fields) {
         CobolFieldAttribute attr =
@@ -1284,13 +1373,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_ord_maxの実装
     /**
-     * TODO: 準備中
+     * FUNCTION ORD-MAX - 最大値の引数位置を返す。libcob/intrinsic.cのcob_intr_ord_maxに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION ORD-MAX(arg1, arg2, ...)」に対応。引数の中で最大値を持つ
+     * 引数の序数位置（1から始まる）を返す。
+     *
+     * @param params 引数の数
+     * @param fields 比較するフィールドの可変長配列
+     * @return 最大値を持つ引数の序数位置（1から始まる）
      */
     public static AbstractCobolField funcOrdMax(int params, AbstractCobolField... fields) {
         CobolFieldAttribute attr =
@@ -1319,13 +1410,14 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_minの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MIN - 最小値を返す。libcob/intrinsic.cのcob_intr_minに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION MIN(arg1, arg2, ...)」に対応。引数の中で最小の値を返す。
+     *
+     * @param params 引数の数
+     * @param fields 比較するフィールドの可変長配列
+     * @return 最小値を持つフィールドへの参照
      */
     public static AbstractCobolField funcMin(int params, AbstractCobolField... fields) {
         AbstractCobolField beasef = fields[0];
@@ -1339,13 +1431,14 @@ public class CobolIntrinsic {
         return beasef;
     }
 
-    // libcob/intrinsicのcob_intr_maxの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MAX - 最大値を返す。libcob/intrinsic.cのcob_intr_maxに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION MAX(arg1, arg2, ...)」に対応。引数の中で最大の値を返す。
+     *
+     * @param params 引数の数
+     * @param fields 比較するフィールドの可変長配列
+     * @return 最大値を持つフィールドへの参照
      */
     public static AbstractCobolField funcMax(int params, AbstractCobolField... fields) {
         AbstractCobolField beasef = fields[0];
@@ -1359,13 +1452,15 @@ public class CobolIntrinsic {
         return beasef;
     }
 
-    // libcob/intrinsicのcob_intr_midrangeの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MIDRANGE - 中央範囲（最大値と最小値の平均）を返す。libcob/intrinsic.cのcob_intr_midrangeに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION MIDRANGE(arg1, arg2, ...)」に対応。引数の最大値と最小値の
+     * 算術平均（(max + min) / 2）を返す。
+     *
+     * @param params 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 中央範囲を格納した数値フィールド
      */
     public static AbstractCobolField funcMidrange(int params, AbstractCobolField... fields) {
         makeDoubleEntry();
@@ -1396,13 +1491,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_medianの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MEDIAN - 中央値を返す。libcob/intrinsic.cのcob_intr_medianに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION MEDIAN(arg1, arg2, ...)」に対応。引数を昇順にソートした時の
+     * 中央値を返す。引数の数が偶数の場合は中央2つの値の平均を返す。
+     *
+     * @param params 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 中央値を格納した数値フィールド
      */
     public static AbstractCobolField funcMedian(int params, AbstractCobolField... fields) {
         if (fields.length == 1) {
@@ -1437,13 +1534,14 @@ public class CobolIntrinsic {
         }
     }
 
-    // libcob/intrinsicのcob_intr_medianの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MEAN - 算術平均を返す。libcob/intrinsic.cのcob_intr_meanに対応。
      *
-     * @param pramas TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION MEAN(arg1, arg2, ...)」に対応。全ての引数の算術平均を返す。
+     *
+     * @param pramas 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 算術平均を格納した数値フィールド
      */
     public static AbstractCobolField funcMean(int pramas, AbstractCobolField... fields) {
         CobolFieldAttribute attr =
@@ -1496,14 +1594,16 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_modの実装
     /**
-     * TODO: 準備中
+     * FUNCTION MOD - 整数除算の剰余を返す。libcob/intrinsic.cのcob_intr_modに対応。
      *
-     * @param srcfield1 TODO: 準備中
-     * @param srcfield2 TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION MOD(arg1, arg2)」に対応。arg1をarg2で割った商を
+     * 負の無限大方向に丸めた後の剰余を返す。arg1 - (arg2 * INTEGER(arg1 / arg2))に相当。
+     *
+     * @param srcfield1 被除数
+     * @param srcfield2 除数
+     * @return 剰余を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcMod(
             AbstractCobolField srcfield1, AbstractCobolField srcfield2)
@@ -1535,14 +1635,16 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_rangeの実装
     /**
-     * TODO: 準備中
+     * FUNCTION RANGE - 最大値と最小値の差を返す。libcob/intrinsic.cのcob_intr_rangeに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION RANGE(arg1, arg2, ...)」に対応。引数の最大値から最小値を
+     * 引いた値（範囲）を返す。
+     *
+     * @param params 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 範囲（最大値 - 最小値）を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcRange(int params, AbstractCobolField... fields)
             throws CobolStopRunException {
@@ -1582,14 +1684,17 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_remの実装
     /**
-     * TODO: 準備中
+     * FUNCTION REM - 除算の剰余を返す。libcob/intrinsic.cのcob_intr_remに対応。
      *
-     * @param srcfield1 TODO: 準備中
-     * @param srcfield2 TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION REM(arg1, arg2)」に対応。arg1をarg2で割った商の整数部分を
+     * 切り捨てた後の剰余を返す。arg1 - (arg2 * INTEGER-PART(arg1 / arg2))に相当。
+     * MOD関数とは丸めの方向が異なる。
+     *
+     * @param srcfield1 被除数
+     * @param srcfield2 除数
+     * @return 剰余を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcRem(
             AbstractCobolField srcfield1, AbstractCobolField srcfield2)
@@ -1622,13 +1727,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_randomの実装
     /**
-     * TODO: 準備中
+     * FUNCTION RANDOM - 擬似乱数を返す。libcob/intrinsic.cのcob_intr_randomに対応。
      *
-     * @param prams TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION RANDOM」または「FUNCTION RANDOM(seed)」に対応。
+     * 0以上1未満の擬似乱数を返す。引数を指定した場合は乱数のシードを設定する。
+     *
+     * @param prams 引数の数（0または1）
+     * @param fields シード値を格納したフィールドの可変長配列（オプション）
+     * @return 0以上1未満の乱数を格納した数値フィールド
      */
     public static AbstractCobolField funcRandom(int prams, AbstractCobolField... fields) {
         CobolFieldAttribute attr =
@@ -1669,14 +1776,16 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_varianceの実装
     /**
-     * TODO: 準備中
+     * FUNCTION VARIANCE - 分散を返す。libcob/intrinsic.cのcob_intr_varianceに対応。
      *
-     * @param prams TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION VARIANCE(arg1, arg2, ...)」に対応。引数の分散（各値と平均の
+     * 差の2乗の平均）を返す。引数が1つの場合は0を返す。
+     *
+     * @param prams 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 分散を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcVariance(int prams, AbstractCobolField... fields)
             throws CobolStopRunException {
@@ -1744,14 +1853,16 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_standard_deviationの実装
     /**
-     * TODO: 準備中
+     * FUNCTION STANDARD-DEVIATION - 標準偏差を返す。libcob/intrinsic.cのcob_intr_standard_deviationに対応。
      *
-     * @param prams TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION STANDARD-DEVIATION(arg1, arg2, ...)」に対応。引数の標準偏差
+     * （分散の平方根）を返す。引数が1つの場合は0を返す。
+     *
+     * @param prams 引数の数
+     * @param fields 数値フィールドの可変長配列
+     * @return 標準偏差を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcStandardDeviation(int prams, AbstractCobolField... fields)
             throws CobolStopRunException {
@@ -1808,14 +1919,17 @@ public class CobolIntrinsic {
         return funcSqrt(currField);
     }
 
-    // libcob/intrinsicのcob_intr_present_valueの実装
     /**
-     * TODO: 準備中
+     * FUNCTION PRESENT-VALUE - 現在価値を返す。libcob/intrinsic.cのcob_intr_present_valueに対応。
      *
-     * @param prams TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>COBOL文「FUNCTION PRESENT-VALUE(rate, amount1, amount2, ...)」に対応。
+     * 指定された割引率で将来の金額の現在価値を計算する。各金額を(1 + rate)^nで割り引いた
+     * 合計を返す。
+     *
+     * @param prams 引数の数（2以上必要）
+     * @param fields 利率と金額のフィールドの可変長配列（最初が利率、以降が金額）
+     * @return 現在価値を格納した数値フィールド
+     * @throws CobolStopRunException 計算中にエラーが発生した場合
      */
     public static AbstractCobolField funcPresentValue(int prams, AbstractCobolField... fields)
             throws CobolStopRunException {
@@ -1849,12 +1963,14 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // libcob/intrinsicのcob_intr_nationalの実装
     /**
-     * TODO: 準備中
+     * FUNCTION NATIONAL - 文字列を日本語（全角）に変換する。libcob/intrinsic.cのcob_intr_nationalに対応。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION NATIONAL(string)」に対応。半角英数字を全角に変換する。
+     * 日本語項目（PIC N）への変換に使用される。
+     *
+     * @param srcfield 変換対象の文字列フィールド
+     * @return 日本語（全角）に変換された文字列フィールド
      */
     public static AbstractCobolField funcNational(AbstractCobolField srcfield) {
         int size = srcfield.getSize();
@@ -1871,13 +1987,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // cob_intr_combined_datetimeの実装
     /**
-     * TODO: 準備中
+     * FUNCTION COMBINED-DATETIME - 日付と時刻を組み合わせた値を返す。libcob/intrinsic.cのcob_intr_combined_datetimeに対応。
      *
-     * @param srcdays TODO: 準備中
-     * @param srctime TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION COMBINED-DATETIME(date, time)」に対応。整数日付（1601年1月1日からの通算日数）と
+     * 午前0時からの秒数を組み合わせて、単一の数値として返す。
+     *
+     * @param srcdays 整数日付（1-3067671）
+     * @param srctime 午前0時からの秒数（1-86400）
+     * @return 日時を組み合わせた12桁の数値フィールド（小数点位置5）
      */
     public static AbstractCobolField funcCombinedDatetime(
             AbstractCobolField srcdays, AbstractCobolField srctime) {
@@ -1915,15 +2033,17 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // cob_intr_concatenateの実装
     /**
-     * TODO: 準備中
+     * FUNCTION CONCATENATE - 文字列を連結する。libcob/intrinsic.cのcob_intr_concatenateに対応。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION CONCATENATE(str1, str2, ...)」に対応。全ての引数文字列を
+     * 左から右に連結した文字列を返す。
+     *
+     * @param offset 参照修飾の開始位置（0の場合は修飾なし）
+     * @param length 参照修飾の長さ
+     * @param params 引数の数
+     * @param fields 連結する文字列フィールドの可変長配列
+     * @return 連結された文字列フィールド
      */
     public static AbstractCobolField funcConcatenate(
             int offset, int length, int params, AbstractCobolField... fields) {
@@ -1955,13 +2075,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // cob_intr_date_to_yyyymmddの実装
     /**
-     * TODO: 準備中
+     * FUNCTION DATE-TO-YYYYMMDD - 2桁年日付を4桁年日付に変換する。libcob/intrinsic.cのcob_intr_date_to_yyyymmddに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION DATE-TO-YYYYMMDD(date, interval, base-year)」に対応。
+     * YYMMDD形式の日付をYYYYMMDD形式に変換する。スライディングウィンドウ方式で世紀を決定。
+     *
+     * @param params 引数の数（1-3）
+     * @param fields 日付（YYMMDD）、間隔（デフォルト50）、基準年（デフォルト現在年）
+     * @return 4桁年日付（YYYYMMDD）を格納した数値フィールド
      */
     public static AbstractCobolField funcDateToYyyymmdd(int params, AbstractCobolField... fields) {
         int year;
@@ -2017,13 +2139,15 @@ public class CobolIntrinsic {
         return currField;
     }
 
-    // cob_intr_day_to_yyyydddの実装
     /**
-     * TODO: 準備中
+     * FUNCTION DAY-TO-YYYYDDD - 2桁年通日を4桁年通日に変換する。libcob/intrinsic.cのcob_intr_day_to_yyyydddに対応。
      *
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>COBOL文「FUNCTION DAY-TO-YYYYDDD(julian-date, interval, base-year)」に対応。
+     * YYDDD形式の年通日をYYYYDDD形式に変換する。スライディングウィンドウ方式で世紀を決定。
+     *
+     * @param params 引数の数（1-3）
+     * @param fields 年通日（YYDDD）、間隔（デフォルト50）、基準年（デフォルト現在年）
+     * @return 4桁年通日（YYYYDDD）を格納した数値フィールド
      */
     public static AbstractCobolField funcDayToYyyyddd(int params, AbstractCobolField... fields) {
         int year;
@@ -2082,9 +2206,13 @@ public class CobolIntrinsic {
 
     // cob_intr_exception_fileの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION EXCEPTION-FILEを実装する。
      *
-     * @return TODO: 準備中
+     * <p>最後のファイル操作例外が発生したファイルのステータスと名前を返す。
+     * 例外がない場合や、ファイル例外でない場合は"00"を返す。
+     * ファイル例外の場合は、ステータス2桁 + ファイル名（SELECT句で指定した名前）を連結して返す。
+     *
+     * @return ファイルステータスとファイル名を連結した英数字フィールド
      */
     public static AbstractCobolField funcExceptionFile() {
         int flen;
@@ -2118,9 +2246,14 @@ public class CobolIntrinsic {
 
     // cob_intr_exception_locationの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION EXCEPTION-LOCATIONを実装する。
      *
-     * @return TODO: 準備中
+     * <p>最後の例外が発生した位置情報を返す。
+     * 形式: "プログラムID; パラグラフ名 OF セクション名; 行番号"
+     * パラグラフ名やセクション名がない場合は省略される。
+     * 例外がない場合は空白1文字を返す。
+     *
+     * @return 例外発生位置を示す英数字フィールド
      */
     public static AbstractCobolField funcExceptionLocation() {
         String buff;
@@ -2175,9 +2308,11 @@ public class CobolIntrinsic {
 
     // cob_intr_exception_statementの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION EXCEPTION-STATEMENTを実装する。
      *
-     * @return TODO: 準備中
+     * <p>最後の例外が発生した文の種類を返す。例外がない場合は空白31文字を返す。
+     *
+     * @return 例外発生文の種類を示す31桁の英数字フィールド
      */
     public static AbstractCobolField funcExceptionStatement() {
         CobolFieldAttribute attr =
@@ -2203,9 +2338,12 @@ public class CobolIntrinsic {
 
     // cob_intr_exception_statusの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION EXCEPTION-STATUSを実装する。
      *
-     * @return TODO: 準備中
+     * <p>最後の例外の名前（例: "EC-I-O-FILE-NOT-FOUND"）を返す。
+     * 例外がない場合は空白31文字を返す。
+     *
+     * @return 例外名を示す31桁の英数字フィールド
      */
     public static AbstractCobolField funcExceptionStatus() {
         byte[] exceptName;
@@ -2233,10 +2371,13 @@ public class CobolIntrinsic {
 
     // cob_intr_fraction_partの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION FRACTION-PARTを実装する。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>引数の小数部を返す。例えば、3.14に対して0.14を返す。
+     * 結果は18桁の精度を持つ数値フィールドとして返される。
+     *
+     * @param srcfield 小数部を取得する数値フィールド
+     * @return 小数部を表す数値フィールド
      */
     public static AbstractCobolField funcFractionPart(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -2256,11 +2397,15 @@ public class CobolIntrinsic {
 
     // cob_intr_seconds_from_formatted_timeの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION SECONDS-FROM-FORMATTED-TIMEを実装する。
      *
-     * @param format TODO: 準備中
-     * @param value TODO: 準備中
-     * @return TODO: 準備中
+     * <p>フォーマット指定に従って時刻文字列を解析し、午前0時からの秒数を返す。
+     * フォーマット文字列中の"hh"は時、"mm"は分、"ss"は秒を表す。
+     * 例: フォーマット"hh:mm:ss"、値"14:30:45"に対して52245を返す。
+     *
+     * @param format 時刻のフォーマットを指定するフィールド（例: "hh:mm:ss"）
+     * @param value フォーマットに従った時刻文字列
+     * @return 午前0時からの秒数を表す数値フィールド
      */
     public static AbstractCobolField funcSecondsFromFormattedTime(
             AbstractCobolField format, AbstractCobolField value) {
@@ -2336,9 +2481,12 @@ public class CobolIntrinsic {
 
     // cob_intr_seconds_past_midnightの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION SECONDS-PAST-MIDNIGHTを実装する。
      *
-     * @return TODO: 準備中
+     * <p>現在時刻における午前0時からの経過秒数を返す。
+     * 計算式: (時 × 3600) + (分 × 60) + 秒
+     *
+     * @return 午前0時からの経過秒数を表す8桁の数値フィールド
      */
     public static AbstractCobolField funcSecondsPastMidnight() {
         int seconds;
@@ -2355,10 +2503,12 @@ public class CobolIntrinsic {
 
     // cob_intr_signの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION SIGNを実装する。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>引数の符号を返す。負の場合は-1、ゼロの場合は0、正の場合は1を返す。
+     *
+     * @param srcfield 符号を判定する数値フィールド
+     * @return -1、0、または1を表す数値フィールド
      */
     public static AbstractCobolField funcSign(AbstractCobolField srcfield) {
         CobolFieldAttribute attr =
@@ -2384,10 +2534,13 @@ public class CobolIntrinsic {
 
     // cob_intr_stored_char_lengthの実装
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION STORED-CHAR-LENGTHを実装する。
      *
-     * @param srcfield TODO: 準備中
-     * @return TODO: 準備中
+     * <p>後続する空白を除いた、引数の実際の文字数を返す。
+     * 例: "HELLO     "（10文字）に対して5を返す。
+     *
+     * @param srcfield 長さを取得する英数字フィールド
+     * @return 後続空白を除いた文字数を表す数値フィールド
      */
     public static AbstractCobolField funcStoredCharLength(AbstractCobolField srcfield) {
         int count;
@@ -2410,13 +2563,17 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION SUBSTITUTEを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>文字列中の指定された部分文字列を別の文字列に置換する。
+     * 複数の置換パターンを同時に指定できる。大文字/小文字を区別して比較する。
+     * 例: FUNCTION SUBSTITUTE("HELLO", "L", "X") → "HEXXO"
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param params 置換パターンの数（検索文字列と置換文字列のペア数×2）
+     * @param fields 元の文字列、検索文字列1、置換文字列1、検索文字列2、置換文字列2...
+     * @return 置換後の英数字フィールド
      */
     public static AbstractCobolField funcSubstitute(
             int offset, int length, int params, AbstractCobolField... fields) {
@@ -2473,13 +2630,17 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION SUBSTITUTE-CASEを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param params TODO: 準備中
-     * @param fields TODO: 準備中
-     * @return TODO: 準備中
+     * <p>文字列中の指定された部分文字列を別の文字列に置換する（大文字/小文字を区別しない）。
+     * SUBSTITUTEとの違いは、検索時に大文字/小文字を区別しない点である。
+     * 例: FUNCTION SUBSTITUTE-CASE("Hello", "L", "X") → "HeXXo"
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param params 置換パターンの数（検索文字列と置換文字列のペア数×2）
+     * @param fields 元の文字列、検索文字列1、置換文字列1、検索文字列2、置換文字列2...
+     * @return 置換後の英数字フィールド
      */
     public static AbstractCobolField funcSubstituteCase(
             int offset, int length, int params, AbstractCobolField... fields) {
@@ -2539,13 +2700,16 @@ public class CobolIntrinsic {
 
     // Equivalent to cob_intr_trim
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION TRIMを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param direction TODO: 準備中
-     * @return TODO: 準備中
+     * <p>文字列の先頭および/または末尾の空白を除去する。
+     * directionパラメータにより、除去する方向を指定できる。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField 空白を除去する元の英数字フィールド
+     * @param direction 除去方向（1: 先頭のみ/LEADING、2: 末尾のみ/TRAILING、その他: 両方）
+     * @return 空白除去後の英数字フィールド（全て空白の場合は空白1文字）
      */
     public static AbstractCobolField funcTrim(
             int offset, int length, AbstractCobolField srcField, int direction) {
@@ -2587,13 +2751,16 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-DATEを実装する（ロケール未指定版）。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>日付をシステムのデフォルトロケールに基づいた形式で返す。
+     * 入力はYYYYMMDD形式の8桁数値または文字列。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField YYYYMMDD形式の日付
+     * @param localeField 未使用（オーバーロード用ダミー）
+     * @return ロケールに基づいた日付文字列
      */
     public static AbstractCobolField funcLocaleDate(
             int offset, int length, AbstractCobolField srcField, int localeField) {
@@ -2601,13 +2768,17 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-DATEを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>日付を指定されたロケールに基づいた形式で返す。
+     * 入力はYYYYMMDD形式の8桁数値または文字列。年は1601～9999の範囲で有効。
+     * 無効な日付の場合、"0000000000"を返しEC-ARGUMENT-FUNCTION例外を設定する。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField YYYYMMDD形式の日付（数値または文字列）
+     * @param localeField ロケールを指定する文字列（例: "ja", "en"）、nullの場合はデフォルト
+     * @return ロケールに基づいた日付文字列
      */
     public static AbstractCobolField funcLocaleDate(
             int offset, int length, AbstractCobolField srcField, AbstractCobolField localeField) {
@@ -2697,13 +2868,16 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-TIMEを実装する（ロケール未指定版）。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>時刻をシステムのデフォルトロケールに基づいた形式で返す。
+     * 入力はHHMMSS形式の6桁数値または文字列。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField HHMMSS形式の時刻
+     * @param localeField 未使用（オーバーロード用ダミー）
+     * @return ロケールに基づいた時刻文字列（"HH:mm:ss"形式）
      */
     public static AbstractCobolField funcLocaleTime(
             int offset, int length, AbstractCobolField srcField, int localeField) {
@@ -2711,13 +2885,17 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-TIMEを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>時刻を指定されたロケールに基づいた形式で返す。
+     * 入力はHHMMSS形式の6桁数値または文字列。
+     * 時は0～24、分・秒は0～59の範囲で有効。無効な場合は例外を設定する。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField HHMMSS形式の時刻（数値または文字列）
+     * @param localeField ロケールを指定する文字列、nullの場合はデフォルト
+     * @return ロケールに基づいた時刻文字列（"HH:mm:ss"形式）
      */
     public static AbstractCobolField funcLocaleTime(
             int offset, int length, AbstractCobolField srcField, AbstractCobolField localeField) {
@@ -2789,13 +2967,15 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-TIME-FROM-SECONDSを実装する（ロケール未指定版）。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>午前0時からの秒数を時刻文字列に変換する。
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField 午前0時からの秒数を表す数値フィールド
+     * @param localeField 未使用（オーバーロード用ダミー）
+     * @return ロケールに基づいた時刻文字列（"HH:mm:ss"形式）
      */
     public static AbstractCobolField funcLocaleTimeFromSeconds(
             int offset, int length, AbstractCobolField srcField, int localeField) {
@@ -2803,13 +2983,17 @@ public class CobolIntrinsic {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLのFUNCTION LOCALE-TIME-FROM-SECONDSを実装する。
      *
-     * @param offset TODO: 準備中
-     * @param length TODO: 準備中
-     * @param srcField TODO: 準備中
-     * @param localeField TODO: 準備中
-     * @return TODO: 準備中
+     * <p>午前0時からの秒数を時刻文字列に変換する。
+     * 秒数から時・分・秒を計算し、指定されたロケールに基づいた形式で返す。
+     * 計算式: 時=秒/3600、分=(秒%3600)/60、秒=秒%60
+     *
+     * @param offset 参照修飾の開始位置（0以下の場合は参照修飾なし）
+     * @param length 参照修飾の長さ
+     * @param srcField 午前0時からの秒数を表す数値フィールド
+     * @param localeField ロケールを指定する文字列、nullの場合はデフォルト
+     * @return ロケールに基づいた時刻文字列（"HH:mm:ss"形式）
      */
     public static AbstractCobolField funcLocaleTimeFromSeconds(
             int offset, int length, AbstractCobolField srcField, AbstractCobolField localeField) {

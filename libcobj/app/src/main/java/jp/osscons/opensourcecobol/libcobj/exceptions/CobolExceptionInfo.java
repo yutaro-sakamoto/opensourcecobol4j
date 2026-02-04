@@ -18,15 +18,30 @@
  */
 package jp.osscons.opensourcecobol.libcobj.exceptions;
 
-/** エラーコードを保持する。 */
+/**
+ * COBOL実行時の例外情報を保持するクラス。
+ *
+ * <p>このクラスは、COBOLプログラム実行中に発生した例外の16ビット例外コードを
+ * 静的変数として保持する。主にCobolRuntimeExceptionと連携して使用される。
+ *
+ * @see CobolExceptionId
+ * @see CobolExceptionTabCode
+ * @see CobolRuntimeException
+ */
 public class CobolExceptionInfo {
-    /** エラーコード。TODO: 準備中 */
+    /**
+     * 現在の例外コード。
+     * 例外が発生していない場合は0、発生した場合は対応する16ビット例外コードが設定される。
+     */
     public static int code = 0;
 
     /**
-     * エラーコードを設定する。TODO: 準備中
+     * 指定された例外IDに対応する例外コードを設定する。
      *
-     * @param id TODO: 準備中
+     * <p>CobolExceptionIdの定数をインデックスとしてCobolExceptionTabCodeのテーブルを参照し、
+     * 対応する16ビット例外コードを取得してcode変数に設定する。
+     *
+     * @param id CobolExceptionIdで定義された例外ID
      */
     public static void setException(int id) {
         CobolExceptionInfo.code = CobolExceptionTabCode.code[id];

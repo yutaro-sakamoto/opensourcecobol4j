@@ -23,90 +23,98 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory;
 
-/** TODO: 準備中 */
+/**
+ * COBOLの表意定数（Figurative Constants）およびランタイム定数を定義するクラス。
+ *
+ * <p>COBOLプログラムで使用される ZERO, SPACE, HIGH-VALUE, LOW-VALUE, QUOTE などの
+ * 表意定数をJavaの静的フィールドとして提供する。また、日本語（全角）文字用の
+ * 表意定数やバッファサイズ定数なども含む。
+ *
+ * <p>libcob/common.hで定義されている各種定数に対応する。
+ */
 public class CobolConstant {
-    /** TODO: 準備中 */
+    /** ALLキーワード用の属性。英数字型で全桁に同じ値を繰り返す場合に使用。 */
     public static final CobolFieldAttribute allAttr =
             new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC_ALL, 0, 0, 0, null);
 
-    /** TODO: 準備中 */
+    /** 数値定数"1"用の属性。1桁の数値型。 */
     public static final CobolFieldAttribute oneAttr =
             new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_NUMERIC, 1, 0, 0, null);
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角数字「０」のバイト表現。0x82 0x4f。 */
     public static final byte[] SJZERO = {(byte) 0x82, (byte) 0x4f};
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角スペースのバイト表現。0x81 0x40。 */
     public static final byte[] SJSPC = {(byte) 0x81, (byte) 0x40};
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角ブランク（スペースと同一）のバイト表現。0x81 0x40。 */
     public static final byte[] SJBLK = {(byte) 0x81, (byte) 0x40};
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角引用符「"」のバイト表現。0x81 0x68。 */
     public static final byte[] SJQUOT = {(byte) 0x81, (byte) 0x68};
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角スラッシュ「／」のバイト表現。0x81 0x5e。 */
     public static final byte[] SJSLAS = {(byte) 0x81, (byte) 0x5e};
 
-    /** TODO: 準備中 */
+    /** Shift-JIS全角文字のサイズ（バイト数）。常に2。 */
     public static final int SJCSIZ = 2;
 
-    /** TODO: 準備中 */
+    /** 全角数字「０」のバイト表現。SJZEROへのエイリアス。 */
     public static final byte[] ZENZERO = SJZERO;
 
-    /** TODO: 準備中 */
+    /** 全角スペースのバイト表現。SJSPCへのエイリアス。 */
     public static final byte[] ZENSPC = SJSPC;
 
-    /** TODO: 準備中 */
+    /** 全角ブランクのバイト表現。SJBLKへのエイリアス。 */
     public static final byte[] ZENBLK = SJBLK;
 
-    /** TODO: 準備中 */
+    /** 全角引用符のバイト表現。SJQUOTへのエイリアス。 */
     public static final byte[] ZENQUOT = SJQUOT;
 
-    /** TODO: 準備中 */
+    /** 全角スラッシュのバイト表現。SJSLASへのエイリアス。 */
     public static final byte[] ZENSLAS = SJSLAS;
 
-    /** TODO: 準備中 */
+    /** 全角文字のサイズ（バイト数）。SJCSIZへのエイリアス。 */
     public static final int ZENCSIZ = SJCSIZ;
 
-    /** TODO: 準備中 */
+    /** 表意定数ZERO/ZEROS/ZEROES。数字の"0"を表す。 */
     public static final AbstractCobolField zero = CobolFieldFactory.makeCobolField(1, "0", allAttr);
 
-    /** TODO: 準備中 */
+    /** 表意定数SPACE/SPACES。半角スペース文字を表す。 */
     public static final AbstractCobolField space =
             CobolFieldFactory.makeCobolField(1, " ", allAttr);
 
-    /** TODO: 準備中 */
+    /** 表意定数として使用されるブランク。spaceと同一の値。 */
     public static final AbstractCobolField blank =
             CobolFieldFactory.makeCobolField(1, " ", allAttr);
 
-    /** TODO: 準備中 */
+    /** 表意定数HIGH-VALUE/HIGH-VALUES。最大値0xFFを表す。 */
     public static final AbstractCobolField high =
             CobolFieldFactory.makeCobolField(1, CobolConstant.get0xFFStorage(), allAttr);
 
-    /** TODO: 準備中 */
+    /** 表意定数LOW-VALUE/LOW-VALUES。最小値0x00（NULL文字）を表す。 */
     public static final AbstractCobolField low = CobolFieldFactory.makeCobolField(1, "\0", allAttr);
 
-    /** TODO: 準備中 */
+    /** 表意定数QUOTE/QUOTES。引用符（"）を表す。 */
     public static final AbstractCobolField quote =
             CobolFieldFactory.makeCobolField(1, "\"", allAttr);
 
-    /** TODO: 準備中 */
+    /** 数値定数1。算術演算で使用される。 */
     public static final AbstractCobolField one = CobolFieldFactory.makeCobolField(1, "1", oneAttr);
 
-    /** TODO: 準備中 */
+    /** 全角数字「０」を表すフィールド。日本語項目のZERO相当。 */
     public static final AbstractCobolField zenZero =
             CobolFieldFactory.makeCobolField(ZENCSIZ, new CobolDataStorage(ZENZERO), allAttr);
 
-    /** TODO: 準備中 */
+    /** 全角スペースを表すフィールド。日本語項目のSPACE相当。 */
     public static final AbstractCobolField zenSpace =
             CobolFieldFactory.makeCobolField(ZENCSIZ, new CobolDataStorage(ZENSPC), allAttr);
 
-    /** TODO: 準備中 */
+    /** 全角ブランクを表すフィールド。zenSpaceと同一の値。 */
     public static final AbstractCobolField zenBlank =
             CobolFieldFactory.makeCobolField(ZENCSIZ, new CobolDataStorage(ZENBLK), allAttr);
 
-    /** TODO: 準備中 */
+    /** 全角引用符を表すフィールド。日本語項目のQUOTE相当。 */
     public static final AbstractCobolField zenQuote =
             CobolFieldFactory.makeCobolField(ZENCSIZ, new CobolDataStorage(ZENQUOT), allAttr);
 
@@ -116,7 +124,11 @@ public class CobolConstant {
         return new CobolDataStorage(bytes);
     }
 
-    /** TODO: 準備中 */
+    /**
+     * 10のべき乗テーブル（long型）。
+     * インデックスnに対して10^nの値を格納。数値変換や桁数計算に使用。
+     * 範囲は10^0から10^18まで。
+     */
     public static final long[] exp10LL = {
         1L,
         10L,
@@ -139,52 +151,51 @@ public class CobolConstant {
         1000000000000000000L
     };
 
-    /** TODO: 準備中 */
+    /** 最小サイズのバッファ容量（256バイト）。小規模な一時領域に使用。 */
     static final int COB_MINI_BUFF = 256;
 
-    /** TODO: 準備中 */
+    /** 小サイズのバッファ容量（1024バイト）。 */
     static final int COB_SMALL_BUFF = 1024;
 
-    /** TODO: 準備中 */
+    /** 通常サイズのバッファ容量（2048バイト）。 */
     static final int COB_NORMAL_BUFF = 2048;
 
-    /** TODO: 準備中 */
+    /** 中サイズのバッファ容量（8192バイト）。 */
     static final int COB_MEDIUM_BUFF = 8192;
 
-    /** TODO: 準備中 */
+    /** 大サイズのバッファ容量（16384バイト）。 */
     static final int COB_LARGE_BUFF = 16384;
 
-    /** TODO: 準備中 */
+    /** 最小バッファの最大インデックス（COB_MINI_BUFF - 1）。 */
     static final int COB_MINI_MAX = COB_MINI_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** 小バッファの最大インデックス（COB_SMALL_BUFF - 1）。 */
     static final int COB_SMALL_MAX = COB_SMALL_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** 通常バッファの最大インデックス（COB_NORMAL_BUFF - 1）。 */
     static final int COB_NORMAL_MAX = COB_NORMAL_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** 中バッファの最大インデックス（COB_MEDIUM_BUFF - 1）。 */
     static final int COB_MEDIUM_MAX = COB_MEDIUM_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** 大バッファの最大インデックス（COB_LARGE_BUFF - 1）。 */
     static final int COB_LARGE_MAX = COB_LARGE_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** フィールドパラメータの最大数。CALL文やINTRINSIC関数の引数上限。 */
     static final int COB_MAX_FIELD_PARAMS = 64;
 
-    /** TODO: 準備中 */
+    /** 致命的エラーコード: 初期化未完了。 */
     static final int COB_FERROR_INITIALIZED = 0;
 
-    /** TODO: 準備中 */
+    /** ソースファイル名（デバッグ用）。現在未使用。 */
     static final String COB_SOURCE_FILE = null;
 
-    /** TODO: 準備中 */
+    /** パッケージバージョン番号。現在未使用。 */
     static final int COB_PACKAGE_VERSION = 0;
 
-    /** TODO: 準備中 */
+    /** パッチレベル番号。現在未使用。 */
     static final int COB_PATCH_LEVEL = 0;
 
-    // TODO 標準パスの設定
-    /** TODO: 準備中 */
+    /** 外部COBOLライブラリの検索パス。環境変数COB_LIBRARY_PATHのデフォルト値。 */
     public static final String COB_LIBRARY_PATH = "";
 }

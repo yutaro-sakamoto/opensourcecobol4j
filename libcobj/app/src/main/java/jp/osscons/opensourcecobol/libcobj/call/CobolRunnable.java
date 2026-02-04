@@ -30,13 +30,19 @@ public interface CobolRunnable {
      */
     int run(CobolDataStorage... storages);
 
-    /** CANCELのためのメソッド */
+    /**
+     * プログラムの状態を初期化してキャンセルする。
+     * COBOLのCANCEL文の実装に使用される。
+     * キャンセルされたプログラムは、次回のCALL時に再初期化される。
+     */
     void cancel();
 
     /**
-     * 取り扱いについては準備中
+     * プログラムがアクティブ（実行中）かどうかを返す。
+     * このメソッドはCANCEL文の実行時に、対象プログラムが実行中でないことを確認するために使用される。
+     * 実行中のプログラムをキャンセルすることはできない。
      *
-     * @return 準備中
+     * @return プログラムが実行中の場合はtrue、そうでない場合はfalse
      */
     boolean isActive();
 }

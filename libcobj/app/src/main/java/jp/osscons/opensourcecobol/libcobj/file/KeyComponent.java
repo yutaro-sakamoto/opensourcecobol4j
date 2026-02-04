@@ -20,11 +20,15 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
-/** TODO: 準備中 */
+/**
+ * INDEXED/RELATIVEファイルのキーを構成するコンポーネントを表すクラス。
+ *
+ * <p>COBOLのRECORD KEY句で複合キーを定義する際に、各キー構成要素の情報を保持する。 複合キーの場合、複数のKeyComponentインスタンスで1つのキーを構成する。
+ */
 public class KeyComponent {
-    /** TODO: 準備中 */
+    /** このキー構成要素に対応するCOBOLフィールド */
     public AbstractCobolField field;
 
-    /** TODO: 準備中 */
+    /** レコードバッファ内でのこのキー構成要素の相対バイト位置 */
     public int rb;
 }

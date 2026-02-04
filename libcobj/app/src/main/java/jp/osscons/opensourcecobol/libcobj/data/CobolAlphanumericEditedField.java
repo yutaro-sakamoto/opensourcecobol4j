@@ -22,7 +22,11 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/** TODO: 準備中 */
+/**
+ * COBOL英数字編集型（PIC X編集）の変数を表現するクラス。
+ * PIC句に編集文字（B、0、/等）を含む英数字項目を扱い、
+ * MOVE時に指定された編集パターンに従って文字の挿入・整形を行う。
+ */
 public class CobolAlphanumericEditedField extends AbstractCobolField {
     /**
      * コンストラクタ
@@ -112,10 +116,13 @@ public class CobolAlphanumericEditedField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 英数字フィールドから英数字編集フィールドへのMOVE処理を行う。
+     * PIC句の編集パターン（A、X、9、0、/、B等）に従って、ソースフィールドの
+     * 文字データを編集先フィールドに転記する。編集文字に応じて、
+     * 文字の挿入（0、/）や空白挿入（B）が行われる。
      *
-     * @param dst TODO: 準備中
-     * @param src TODO: 準備中
+     * @param dst 編集先の英数字編集フィールド
+     * @param src 転記元のフィールド
      */
     public static void moveAlphanumToEdited(AbstractCobolField dst, AbstractCobolField src) {
         CobolDataStorage srcd = src.getDataStorage();

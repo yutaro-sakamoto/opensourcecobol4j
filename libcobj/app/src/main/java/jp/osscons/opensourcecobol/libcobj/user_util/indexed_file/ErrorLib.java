@@ -1,12 +1,15 @@
 package jp.osscons.opensourcecobol.libcobj.user_util.indexed_file;
 
-/** Manage error info */
+/**
+ * Utility class for reporting errors that occur during cobj-idx indexed file operations. All
+ * methods return error code 1 and print diagnostic messages to stderr.
+ */
 class ErrorLib {
     /**
-     * Error when indexed file does not exist
+     * Reports an error when the specified indexed file does not exist and returns an error code.
      *
-     * @param indexedFilePath TODO: 準備中
-     * @return 1
+     * @param indexedFilePath the path to the indexed file that was not found
+     * @return 1 as the error code
      */
     static int errorFileDoesNotExist(String indexedFilePath) {
         System.err.println("error: '" + indexedFilePath + "' does not exist.");
@@ -14,10 +17,10 @@ class ErrorLib {
     }
 
     /**
-     * Error when indexed file is not a valid indexed file
+     * Reports an error when the specified file is not a valid opensource COBOL 4J indexed file.
      *
-     * @param indexedFilePath TODO: 準備中
-     * @return 1
+     * @param indexedFilePath the path to the invalid indexed file
+     * @return 1 as the error code
      */
     static int errorInvalidIndexedFile(String indexedFilePath) {
         System.err.println("error: '" + indexedFilePath + "' is not a valid indexed file.");
@@ -25,9 +28,9 @@ class ErrorLib {
     }
 
     /**
-     * Error when IO operations of indexed files
+     * Reports an error when an I/O operation fails while accessing the indexed file.
      *
-     * @return 1
+     * @return 1 as the error code
      */
     static int errorIO() {
         System.err.println("error: IO error.");
@@ -35,9 +38,9 @@ class ErrorLib {
     }
 
     /**
-     * Error when some keys in input data have conflicts
+     * Reports an error when duplicate keys are detected during data loading.
      *
-     * @return 1
+     * @return 1 as the error code
      */
     static int errorDuplicateKeys() {
         System.err.println("error: loading fails because of duplicate keys.");
@@ -45,10 +48,10 @@ class ErrorLib {
     }
 
     /**
-     * Error when some records in input data have invalid size
+     * Reports an error when input records have sizes that do not match the expected record size.
      *
-     * @param correctSize TODO: 準備中
-     * @return TODO: 準備中
+     * @param correctSize the expected record size in bytes that all records must have
+     * @return 1 as the error code
      */
     static int errorDataSizeMismatch(int correctSize) {
         System.err.println("error: all record must have the length of " + correctSize + " bytes.");

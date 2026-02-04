@@ -20,13 +20,24 @@ package jp.osscons.opensourcecobol.libcobj.common;
 
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * 整数値を遅延評価で取得するための関数型インターフェース。
+ *
+ * <p>COBOLの数値式や添字式において、値の評価を実行時まで遅延させる必要がある場合に使用する。
+ * 例えば、テーブル要素の添字計算やOCCURS DEPENDING ON句で指定された変数の評価など、
+ * 実行時に整数値を動的に決定する場面で利用される。
+ *
+ * <p>Java 8のIntSupplierインターフェースに類似するが、CobolStopRunExceptionをスローできる点が異なる。
+ */
 public interface GetInt {
     /**
-     * TODO: 準備中
+     * 整数値を取得する。
      *
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>実行時に整数値を評価・取得する。評価中にランタイムエラーが発生した場合は
+     * CobolStopRunExceptionがスローされる可能性がある。
+     *
+     * @return 取得された整数値
+     * @throws CobolStopRunException STOP RUN文の実行やランタイムエラー発生時
      */
     int run() throws CobolStopRunException;
 }

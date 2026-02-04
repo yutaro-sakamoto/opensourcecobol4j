@@ -32,6 +32,7 @@ public class CobolModule {
 
     /** モジュール呼び出しスタック。CALL文でプッシュ、GO BACK/EXIT PROGRAMでポップされる。 */
     private static List<CobolModule> moduleStack = new ArrayList<CobolModule>();
+
     /** 現在実行中のモジュール */
     private static CobolModule currentModule;
 

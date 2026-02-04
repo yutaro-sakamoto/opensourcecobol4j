@@ -42,247 +42,247 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
 /** INDEXED, RELATIVE, SEQUENTIAL, LINE SEQUENTIAL等のCOBOLの ファイルを実装するための基底クラス */
 public class CobolFile {
-    /** TODO: 準備中 */
+    /** ファイル編成: 順編成 (ORGANIZATION IS SEQUENTIAL) */
     protected static final int COB_ORG_SEQUENTIAL = 0;
 
-    /** TODO: 準備中 */
+    /** ファイル編成: 行順編成 (ORGANIZATION IS LINE SEQUENTIAL) */
     protected static final int COB_ORG_LINE_SEQUENTIAL = 1;
 
-    /** TODO: 準備中 */
+    /** ファイル編成: 相対編成 (ORGANIZATION IS RELATIVE) */
     protected static final int COB_ORG_RELATIVE = 2;
 
-    /** TODO: 準備中 */
+    /** ファイル編成: 索引編成 (ORGANIZATION IS INDEXED) */
     protected static final int COB_ORG_INDEXED = 3;
 
-    /** TODO: 準備中 */
+    /** ファイル編成: ソート用 (SORT文で使用) */
     protected static final int COB_ORG_SORT = 4;
 
-    /** TODO: 準備中 */
+    /** ファイル編成の最大値 */
     protected static final int COB_ORG_MAX = 5;
 
-    /** TODO: 準備中 */
+    /** アクセスモード: 順次アクセス (ACCESS MODE IS SEQUENTIAL) */
     protected static final int COB_ACCESS_SEQUENTIAL = 1;
 
-    /** TODO: 準備中 */
+    /** アクセスモード: 動的アクセス (ACCESS MODE IS DYNAMIC) */
     protected static final int COB_ACCESS_DYNAMIC = 2;
 
-    /** TODO: 準備中 */
+    /** アクセスモード: 乱アクセス (ACCESS MODE IS RANDOM) */
     protected static final int COB_ACCESS_RANDOM = 3;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: OPEN */
     protected static final int COB_IO_OPEN = 0;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: READ */
     protected static final int COB_IO_READ = 1;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: WRITE */
     protected static final int COB_IO_WRITE = 2;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: CLOSE */
     protected static final int COB_IO_CLOSE = 3;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: DELETE (レコード削除) */
     protected static final int COB_IO_DELETE = 4;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: REWRITE */
     protected static final int COB_IO_REWRITE = 5;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: START (位置決め) */
     protected static final int COB_IO_START = 6;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: COMMIT (トランザクションコミット) */
     protected static final int COB_IO_COMMIT = 7;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: ROLLBACK (トランザクションロールバック) */
     protected static final int COB_IO_ROLLBACK = 8;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: UNLOCK (レコードロック解除) */
     protected static final int COB_IO_UNLOCK = 9;
 
-    /** TODO: 準備中 */
+    /** 入出力操作種別: DELETE FILE (ファイル削除) */
     protected static final int COB_IO_DELETE_FILE = 10;
 
-    /** TODO: 準備中 */
+    /** オープンモード: クローズ状態 */
     public static final int COB_OPEN_CLOSED = 0;
 
-    /** TODO: 準備中 */
+    /** オープンモード: 入力 (OPEN INPUT) */
     public static final int COB_OPEN_INPUT = 1;
 
-    /** TODO: 準備中 */
+    /** オープンモード: 出力 (OPEN OUTPUT) */
     public static final int COB_OPEN_OUTPUT = 2;
 
-    /** TODO: 準備中 */
+    /** オープンモード: 入出力 (OPEN I-O) */
     public static final int COB_OPEN_I_O = 3;
 
-    /** TODO: 準備中 */
+    /** オープンモード: 追記 (OPEN EXTEND) */
     public static final int COB_OPEN_EXTEND = 4;
 
-    /** TODO: 準備中 */
+    /** オープンモード: ロック状態 (CLOSE WITH LOCK後) */
     public static final int COB_OPEN_LOCKED = 5;
 
-    /** TODO: 準備中 */
+    /** クローズオプション: 通常クローズ */
     public static final int COB_CLOSE_NORMAL = 0;
 
-    /** TODO: 準備中 */
+    /** クローズオプション: ロック付きクローズ (CLOSE WITH LOCK) */
     public static final int COB_CLOSE_LOCK = 1;
 
-    /** TODO: 準備中 */
+    /** クローズオプション: 巻き戻しなしクローズ (CLOSE WITH NO REWIND) */
     public static final int COB_CLOSE_NO_REWIND = 2;
 
-    /** TODO: 準備中 */
+    /** クローズオプション: ユニットクローズ */
     public static final int COB_CLOSE_UNIT = 3;
 
-    /** TODO: 準備中 */
+    /** クローズオプション: ユニット削除付きクローズ */
     public static final int COB_CLOSE_UNIT_REMOVAL = 4;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: 行数マスク（下位16ビット） */
     public static final int COB_WRITE_MASK = 0x0000ffff;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: 行単位で進める (ADVANCING n LINES) */
     public static final int COB_WRITE_LINES = 0x00010000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: ページ単位で進める (ADVANCING PAGE) */
     public static final int COB_WRITE_PAGE = 0x00020000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: チャネル指定 */
     public static final int COB_WRITE_CHANNEL = 0x00040000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: 書き込み後に進める (AFTER ADVANCING) */
     public static final int COB_WRITE_AFTER = 0x00100000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: 書き込み前に進める (BEFORE ADVANCING) */
     public static final int COB_WRITE_BEFORE = 0x00200000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: ページ終端チェック (AT END-OF-PAGE) */
     public static final int COB_WRITE_EOP = 0x00400000;
 
-    /** TODO: 準備中 */
+    /** WRITEオプション: レコードロック付き書き込み */
     public static final int COB_WRITE_LOCK = 0x00800000;
 
-    /** TODO: 準備中 */
+    /** READオプション: 次レコード読み込み (READ NEXT) */
     public static final int COB_READ_NEXT = 0x01;
 
-    /** TODO: 準備中 */
+    /** READオプション: 前レコード読み込み (READ PREVIOUS) */
     public static final int COB_READ_PREVIOUS = 0x2;
 
-    /** TODO: 準備中 */
+    /** READオプション: 先頭レコード読み込み (READ FIRST) */
     public static final int COB_READ_FIRST = 0x04;
 
-    /** TODO: 準備中 */
+    /** READオプション: 末尾レコード読み込み (READ LAST) */
     public static final int COB_READ_LAST = 0x08;
 
-    /** TODO: 準備中 */
+    /** READオプション: レコードロック付き読み込み (READ WITH LOCK) */
     public static final int COB_READ_LOCK = 0x10;
 
-    /** TODO: 準備中 */
+    /** READオプション: ロックなし読み込み (READ WITH NO LOCK) */
     public static final int COB_READ_NO_LOCK = 0x20;
 
-    /** TODO: 準備中 */
+    /** READオプション: ロック保持読み込み (READ WITH KEPT LOCK) */
     public static final int COB_READ_KEPT_LOCK = 0x40;
 
-    /** TODO: 準備中 */
+    /** READオプション: ロック待機読み込み (READ WITH WAIT) */
     public static final int COB_READ_WAIT_LOCK = 0x80;
 
-    /** TODO: 準備中 */
+    /** READオプション: ロック無視読み込み (READ WITH IGNORE LOCK) */
     public static final int COB_READ_IGNORE_LOCK = 0x100;
 
-    /** TODO: 準備中 */
+    /** 環境変数名: ユーザー定義ファイルハンドラ */
     protected static final String TIS_DEFINE_USERFH = "OC_USERFH";
 
-    /** TODO: 準備中 */
+    /** 環境変数名: I-Oモードでファイル作成を許可 */
     protected static final String COB_IO_CREATES = "OC_IO_CREATES";
 
-    /** TODO: 準備中 */
+    /** 環境変数名: EXTENDモードでファイル作成を許可 */
     protected static final String COB_EXTEND_CREATES = "OC_EXTEND_CREATES";
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 00: 正常終了 */
     protected static final int COB_STATUS_00_SUCCESS = 0;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 02: 正常終了（重複キー） */
     protected static final int COB_STATUS_02_SUCCESS_DUPLICATE = 2;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 04: 正常終了（レコード長不完全） */
     protected static final int COB_STATUS_04_SUCCESS_INCOMPLETE = 4;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 05: 正常終了（OPTIONALファイルが存在しない） */
     protected static final int COB_STATUS_05_SUCCESS_OPTIONAL = 5;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 07: 正常終了（ユニットなし） */
     protected static final int COB_STATUS_07_SUCCESS_NO_UNIT = 7;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 10: ファイル終端 */
     protected static final int COB_STATUS_10_END_OF_FILE = 10;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 14: キー範囲外 */
     protected static final int COB_STATUS_14_OUT_OF_KEY_RANGE = 14;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 21: キー順序不正 */
     protected static final int COB_STATUS_21_KEY_INVALID = 21;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 22: キー重複 */
     protected static final int COB_STATUS_22_KEY_EXISTS = 22;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 23: キーが存在しない */
     protected static final int COB_STATUS_23_KEY_NOT_EXISTS = 23;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 30: 永続エラー */
     protected static final int COB_STATUS_30_PERMANENT_ERROR = 30;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 31: ファイル名不整合 */
     protected static final int COB_STATUS_31_INCONSISTENT_FILENAME = 31;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 34: 境界違反 */
     protected static final int COB_STATUS_34_BOUNDARY_VIOLATION = 34;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 35: ファイルが存在しない */
     protected static final int COB_STATUS_35_NOT_EXISTS = 35;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 37: アクセス権限なし */
     protected static final int COB_STATUS_37_PERMISSION_DENIED = 37;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 38: ロック付きでクローズ済み */
     protected static final int COB_STATUS_38_CLOSED_WITH_LOCK = 38;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 39: 属性競合 */
     protected static final int COB_STATUS_39_CONFLICT_ATTRIBUTE = 39;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 41: ファイルは既にオープン済み */
     protected static final int COB_STATUS_41_ALREADY_OPEN = 41;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 42: ファイルがオープンされていない */
     protected static final int COB_STATUS_42_NOT_OPEN = 42;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 43: READが先行していない */
     protected static final int COB_STATUS_43_READ_NOT_DONE = 43;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 44: レコード長オーバーフロー */
     protected static final int COB_STATUS_44_RECORD_OVERFLOW = 44;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 46: READ失敗 */
     protected static final int COB_STATUS_46_READ_ERROR = 46;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 47: READ/START不可（オープンモード不正） */
     protected static final int COB_STATUS_47_INPUT_DENIED = 47;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 48: WRITE不可（オープンモード不正） */
     protected static final int COB_STATUS_48_OUTPUT_DENIED = 48;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 49: DELETE/REWRITE不可（オープンモード不正） */
     protected static final int COB_STATUS_49_I_O_DENIED = 49;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 51: レコードロック中 */
     protected static final int COB_STATUS_51_RECORD_LOCKED = 51;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 52: ページ終端 (END-OF-PAGE) */
     protected static final int COB_STATUS_52_EOP = 52;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 57: LINAGEエラー */
     protected static final int COB_STATUS_57_I_O_LINAGE = 57;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 61: ファイル共有競合 */
     protected static final int COB_STATUS_61_FILE_SHARING = 61;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス 91: 機能が利用不可 */
     protected static final int COB_STATUS_91_NOT_AVAILABLE = 91;
 
     /**
@@ -295,104 +295,104 @@ public class CobolFile {
     // The following constants must not be equal
     // to any of the above constants `COB_STATUS_*`
 
-    /** TODO: 準備中 */
+    /** エラーコード: ファイルまたはディレクトリが存在しない */
     protected static final int ENOENT = 1002;
 
-    /** TODO: 準備中 */
+    /** エラーコード: 不正なファイル記述子 */
     protected static final int EBADF = 1009;
 
-    /** TODO: 準備中 */
+    /** エラーコード: アクセス権限なし */
     protected static final int EACCESS = 1013;
 
-    /** TODO: 準備中 */
+    /** エラーコード: ディレクトリである */
     protected static final int EISDIR = 1021;
 
-    /** TODO: 準備中 */
+    /** エラーコード: 読み取り専用ファイルシステム */
     protected static final int EROFS = 1030;
 
-    /** TODO: 準備中 */
+    /** エラーコード: リソースが一時的に利用不可 */
     protected static final int EAGAIN = 1011;
 
     // ==============================================
 
-    /** TODO: 準備中 */
+    /** 内部エラー: LINAGE値不正 */
     protected static final int COB_LINAGE_INVALID = 16384;
 
-    /** TODO: 準備中 */
+    /** 内部エラー: 設定されていない */
     protected static final int COB_NOT_CONFIGURED = 32768;
 
-    /** TODO: 準備中 */
+    /** SELECT句オプション: FILE STATUS指定あり */
     public static final int COB_SELECT_FILE_STATUS = 0x01;
 
-    /** TODO: 準備中 */
+    /** SELECT句オプション: EXTERNAL指定あり */
     public static final int COB_SELECT_EXTERNAL = 0x02;
 
-    /** TODO: 準備中 */
+    /** SELECT句オプション: LINAGE指定あり */
     public static final int COB_SELECT_LINAGE = 0x04;
 
-    /** TODO: 準備中 */
+    /** SELECT句オプション: 分割キー指定あり */
     public static final int COB_SELECT_SPLITKEY = 0x08;
 
-    /** TODO: 準備中 */
+    /** ファイルステータスのサイズ */
     protected static final int FNSTATUSSIZE = 3;
 
-    /** TODO: 準備中 */
+    /** 最後にエラーが発生したファイル */
     public static CobolFile errorFile;
 
-    /** TODO: 準備中 */
+    /** 小バッファサイズ */
     protected static int COB_SMALL_BUFF = 1024;
 
-    /** TODO: 準備中 */
+    /** 小バッファ最大インデックス */
     protected static int COB_SMALL_MAX = COB_SMALL_BUFF - 1;
 
-    /** TODO: 準備中 */
+    /** ロックモード: 排他ロック */
     protected static final int COB_LOCK_EXCLUSIVE = 1;
 
-    /** TODO: 準備中 */
+    /** ロックモード: 手動ロック */
     protected static final int COB_LOCK_MANUAL = 2;
 
-    /** TODO: 準備中 */
+    /** ロックモード: 自動ロック */
     protected static final int COB_LOCK_AUTOMATIC = 4;
 
-    /** TODO: 準備中 */
+    /** ロックモード: 複数レコードロック */
     protected static final int COB_LOCK_MULTIPLE = 8;
 
-    /** TODO: 準備中 */
+    /** ロックモードマスク */
     protected static final int COB_LOCK_MASK = 0x7;
 
-    /** TODO: 準備中 */
+    /** 環境変数COB_FILE_PATHの値（ファイル検索パス） */
     protected static String cob_file_path = null;
 
-    /** TODO: 準備中 */
+    /** 環境変数COB_LS_NULLSの値（LINE SEQUENTIALでのNULL文字処理） */
     protected static String cob_ls_nulls = null;
 
-    /** TODO: 準備中 */
+    /** 環境変数COB_LS_FIXEDの値（LINE SEQUENTIALでの固定長レコード処理） */
     protected static String cob_ls_fixed = null;
 
-    /** TODO: 準備中 */
+    /** ファイルオープン時の環境変数展開用バッファ */
     protected static byte[] file_open_env = new byte[1024];
 
-    /** TODO: 準備中 */
+    /** オープン対象のファイル名 */
     protected static String file_open_name;
 
-    /** TODO: 準備中 */
+    /** ファイルオープン時のバッファ */
     protected static byte[] file_open_buff = new byte[1024];
 
-    /** TODO: 準備中 */
+    /** ファイル名検索時のプレフィックス一覧（DD_xxx, dd_xxx, xxx） */
     protected static final String[] prefix = {"DD_", "dd_", ""};
 
-    /** TODO: 準備中 */
+    /** プレフィックスの数 */
     protected static final int NUM_PREFIX = prefix.length;
 
-    /** TODO: 準備中 */
+    /** ページ終端(EOP)ステータス */
     protected static int eop_status = 0;
 
-    /** TODO: 準備中 */
+    /** 同期書き込みフラグ（0=無効、1=flush、2=fsync） */
     protected static int cob_do_sync = 0;
 
     private static List<CobolFile> file_cache = new ArrayList<CobolFile>();
 
-    /** TODO: 準備中 */
+    /** ファイルステータスコードから例外IDへのマッピング配列（10で割った値をインデックスとして使用） */
     protected static int[] status_exception = {
         0,
         CobolExceptionId.COB_EC_I_O_AT_END,
@@ -406,157 +406,157 @@ public class CobolFile {
         CobolExceptionId.COB_EC_I_O_IMP
     };
 
-    /** TODO: 準備中 */
+    /** SELECT句で指定されたファイル名 */
     public String select_name;
 
-    /** TODO: 準備中 */
+    /** ファイルステータス（2バイト: "00"～"99"） */
     public byte[] file_status;
 
-    /** TODO: 準備中 */
+    /** ASSIGN句で指定されたファイル名フィールド */
     protected AbstractCobolField assign;
 
-    /** TODO: 準備中 */
+    /** レコード領域 */
     public AbstractCobolField record;
 
-    /** TODO: 準備中 */
+    /** レコードサイズフィールド（可変長レコードの場合） */
     protected AbstractCobolField record_size;
 
-    /** TODO: 準備中 */
+    /** キー情報の配列（INDEXED/RELATIVEファイル用） */
     protected CobolFileKey[] keys;
 
-    /** TODO: 準備中 */
+    /** ファイルI/Oハンドラ */
     public FileIO file;
 
-    /** TODO: 準備中 */
+    /** ソート処理用構造体（SORT文で使用） */
     protected CobolSort filex;
 
-    /** TODO: 準備中 */
+    /** 索引ファイル用構造体（INDEXEDファイルで使用） */
     protected IndexedFile filei;
 
-    /** TODO: 準備中 */
+    /** LINAGE情報（LINAGE句使用時） */
     protected Linage linorkeyptr;
 
-    /** TODO: 準備中 */
+    /** ソート時の照合順序 */
     protected CobolDataStorage sort_collating;
 
-    /** TODO: 準備中 */
+    /** 外部ファイルハンドラへのポインタ */
     protected Object extfh_ptr;
 
-    /** TODO: 準備中 */
+    /** 最小レコード長 */
     protected int record_min;
 
-    /** TODO: 準備中 */
+    /** 最大レコード長 */
     public int record_max;
 
-    /** TODO: 準備中 */
+    /** キー数（INDEXED/RELATIVEファイル用） */
     protected int nkeys;
 
-    /** TODO: 準備中 */
+    /** ファイル編成（COB_ORG_*） */
     protected char organization;
 
-    /** TODO: 準備中 */
+    /** アクセスモード（COB_ACCESS_*） */
     protected char access_mode;
 
-    /** TODO: 準備中 */
+    /** ロックモード（COB_LOCK_*） */
     protected char lock_mode;
 
-    /** TODO: 準備中 */
+    /** 現在のオープンモード（COB_OPEN_*） */
     protected char open_mode;
 
-    /** TODO: 準備中 */
+    /** OPTIONALファイルかどうか */
     protected boolean flag_optional;
 
-    /** TODO: 準備中 */
+    /** 最後に使用されたオープンモード */
     public char last_open_mode;
 
-    /** TODO: 準備中 */
+    /** 特殊ファイル（1=標準入力、2=標準出力） */
     protected char special;
 
-    /** TODO: 準備中 */
+    /** ファイルが存在しないフラグ */
     protected boolean flag_nonexistent;
 
-    /** TODO: 準備中 */
+    /** ファイル終端フラグ */
     protected boolean flag_end_of_file;
 
-    /** TODO: 準備中 */
+    /** ファイル先頭フラグ */
     protected boolean flag_begin_of_file;
 
-    /** TODO: 準備中 */
+    /** 最初の読み込みフラグ */
     protected char flag_first_read;
 
-    /** TODO: 準備中 */
+    /** 読み込み完了フラグ（REWRITE/DELETE前に必要） */
     protected boolean flag_read_done;
 
-    /** TODO: 準備中 */
+    /** SELECT句の機能フラグ（COB_SELECT_*の組み合わせ） */
     public char flag_select_features;
 
-    /** TODO: 準備中 */
+    /** 改行が必要なフラグ（LINE SEQUENTIAL用） */
     protected boolean flag_needs_nl;
 
-    /** TODO: 準備中 */
+    /** ページ先頭処理が必要なフラグ（LINAGE用） */
     protected boolean flag_needs_top;
 
-    /** TODO: 準備中 */
+    /** ファイルバージョン */
     protected char file_version;
 
-    /** TODO: 準備中 */
+    /** ランタイムバッファ */
     protected static String runtime_buffer;
 
-    /** TODO: 準備中 */
+    /** ファイル名 */
     protected static String name;
 
-    /** TODO: 準備中 */
+    /** ステータス */
     protected static byte[] status;
 
     /**
-     * TODO: 準備中
+     * LINAGE情報を取得する
      *
-     * @return TODO: 準備中
+     * @return LINAGE情報
      */
     public Linage getLinorkeyptr() {
         return this.linorkeyptr;
     }
 
     /**
-     * TODO: 準備中
+     * LINAGE情報を設定する
      *
-     * @param ptr TODO: 準備中
+     * @param ptr LINAGE情報
      */
     public void setLinorkeyptr(Linage ptr) {
         this.linorkeyptr = ptr;
     }
 
-    /** TODO: 準備中 */
+    /** デフォルトコンストラクタ */
     public CobolFile() {}
 
     /**
-     * TODO: 準備中
+     * 指定されたパラメータでCobolFileインスタンスを生成する。
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
+     * @param selectName ファイルのSELECT名（COBOL SELECT句で指定された名前）
+     * @param fileStatus ファイルステータスを格納するバイト配列（4バイト）
+     * @param assign ASSIGN句で指定されたファイル名フィールド
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 可変長レコードの場合のレコード長フィールド（固定長の場合はnull）
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（INDEXED/RELATIVEファイルの場合）
+     * @param keys キー情報の配列
+     * @param organization ファイル編成（COB_ORG_SEQUENTIAL等）
+     * @param accessMode アクセスモード（COB_ACCESS_SEQUENTIAL等）
+     * @param lockMode ロックモード
+     * @param openMode 現在のオープンモード
+     * @param flagOptional OPTIONALファイルかどうか
+     * @param lastOpenMode 最後のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが存在しないかどうか
+     * @param flagEndOfFile ファイル終端に達したかどうか
+     * @param flagBeginOfFile ファイル先頭にいるかどうか
+     * @param flagFirstRead 最初の読み取りかどうか
+     * @param flagReadDone 読み取りが完了したかどうか
+     * @param flagSelectFeatures SELECT機能フラグ
+     * @param flagNeedsNl 改行が必要かどうか
+     * @param flagNeedsTop ページトップが必要かどうか
+     * @param fileVersion ファイルバージョン
      */
     public CobolFile(
             String selectName,
@@ -614,10 +614,10 @@ public class CobolFile {
 
     // libcob/fileio.cのsave_statusの実装 RETURN_STATUSマクロは実装できないため,本メソッドの呼び出し後の次の文はreturn;を書くこと.
     /**
-     * TODO: 準備中
+     * ファイルステータスを保存する（libcob/fileio.cのsave_statusの実装）。
      *
-     * @param status TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param status ファイルステータスコード（COB_STATUS_00_SUCCESS等）
+     * @param fnstatus ステータスを格納するフィールド（nullの場合は格納しない）
      */
     protected void saveStatus(int status, AbstractCobolField fnstatus) {
         CobolFile.errorFile = this;
@@ -645,17 +645,17 @@ public class CobolFile {
 
     // libcob/fileio.のcob_invoke_funの実装
     /**
-     * TODO: 準備中
+     * ファイル操作関数を呼び出す（libcob/fileio.cのcob_invoke_funの実装）。
      *
-     * @param operate TODO: 準備中
-     * @param f TODO: 準備中
-     * @param key TODO: 準備中
-     * @param rec TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param startCond TODO: 準備中
-     * @param readOpts TODO: 準備中
-     * @return TODO: 準備中
+     * @param operate 操作種別
+     * @param f ファイルオブジェクト
+     * @param key キーフィールド
+     * @param rec レコードストレージ
+     * @param fnstatus ファイルステータスフィールド
+     * @param openMode オープンモード
+     * @param startCond START条件
+     * @param readOpts 読み取りオプション
+     * @return ステータスコード
      */
     public static int invokeFun(
             int operate,
@@ -671,9 +671,9 @@ public class CobolFile {
 
     // libcob/cob_cache_fileのj実装
     /**
-     * TODO: 準備中
+     * ファイルをキャッシュに追加する（プログラム終了時のクリーンアップ用）。
      *
-     * @param f TODO: 準備中
+     * @param f キャッシュに追加するファイル
      */
     protected static void cacheFile(CobolFile f) {
         if (file_cache.contains(f)) {
@@ -684,9 +684,9 @@ public class CobolFile {
 
     // libcob/fileio.cのcob_file_linage_checkの実装 TODO 実装
     /**
-     * TODO: 準備中
+     * LINAGE句のパラメータを検証する。
      *
-     * @return TODO: 準備中
+     * @return 検証エラーがある場合はtrue、正常な場合はfalse
      */
     protected boolean file_linage_check() {
         Linage lingptr = getLinorkeyptr();
@@ -730,11 +730,11 @@ public class CobolFile {
 
     // libcob/fileio.cのcob_linage_write_optの実装 TODO 実装
     /**
-     * TODO: 準備中
+     * LINAGE句に基づいてWRITE操作のオプション処理を行う。
      *
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param opt WRITE操作オプション（WRITE BEFORE/AFTER等）
+     * @return ファイルステータスコード
+     * @throws CobolStopRunException 致命的なエラーが発生した場合
      */
     protected int linage_write_opt(int opt) throws CobolStopRunException {
         int i, n;
@@ -798,12 +798,12 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * JIS漢字コードを含むファイル名を変換する。
      *
-     * @param name TODO: 準備中
-     * @param jbuf TODO: 準備中
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param name 変換元のファイル名
+     * @param jbuf 出力バッファ
+     * @param n バッファサイズ
+     * @return 変換後のバイト配列
      */
     protected byte[] cb_get_jisword_buff(byte[] name, byte[] jbuf, int n) {
         int cs = 0;
@@ -926,11 +926,11 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルを開く（COBOL OPEN文の実行）。
      *
-     * @param mode TODO: 準備中
-     * @param sharing TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param mode オープンモード（COB_OPEN_INPUT, COB_OPEN_OUTPUT, COB_OPEN_I_O, COB_OPEN_EXTEND）
+     * @param sharing 共有モード
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void open(int mode, int sharing, AbstractCobolField fnstatus) {
         String openMode = openModeToString(mode);
@@ -1147,24 +1147,26 @@ public class CobolFile {
     // protected long end;
 
     /**
-     * TODO: 準備中
+     * ファイルを指定されたモードで拡張オープンする。 現在は未実装。
      *
-     * @param mode TODO: 準備中
-     * @param sharing TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param mode オープンモード (COB_OPEN_INPUT, COB_OPEN_OUTPUT, COB_OPEN_I_O, COB_OPEN_EXTEND)
+     * @param sharing 共有モード
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void openEx(int mode, int sharing, AbstractCobolField fnstatus) {
         // this.open_("", mode, sharing);
     }
 
     /**
-     * TODO: 準備中
+     * 指定されたファイル名でファイルをオープンする内部メソッド。 COBOL OPEN文の内部実装で、ファイルチャネルの確立、
+     * ファイルロックの取得、LINAGE句のチェックを行う。
      *
-     * @param filename TODO: 準備中
-     * @param mode TODO: 準備中
-     * @param sharing TODO: 準備中
-     * @return TODO: 準備中
-     * @throws IOException TODO: 準備中
+     * @param filename オープンするファイルのパス
+     * @param mode オープンモード (COB_OPEN_INPUT=1, COB_OPEN_OUTPUT=2, COB_OPEN_I_O=3, COB_OPEN_EXTEND=4)
+     * @param sharing 共有モード (0: 共有ロック可, 非0: 排他ロック)
+     * @return 0: 成功, ENOENT: ファイル不在, EACCESS: アクセス拒否, EBADF: 不正なファイル記述子,
+     *     COB_STATUS_61_FILE_SHARING: ファイル共有競合, COB_LINAGE_INVALID: LINAGE値が不正
+     * @throws IOException ファイル入出力エラーが発生した場合
      */
     public int open_(String filename, int mode, int sharing) throws IOException {
         FileChannel fp = null;
@@ -1251,10 +1253,11 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルをクローズする。 COBOL CLOSE文に対応し、指定されたオプションに従ってファイルを閉じる。
+     * ファイルがオープンされていない場合はCOB_STATUS_42_NOT_OPENを返す。
      *
-     * @param opt TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param opt クローズオプション (COB_CLOSE_NORMAL=0, COB_CLOSE_LOCK=1, COB_CLOSE_NO_REWIND=2)
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void close(int opt, AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -1299,10 +1302,11 @@ public class CobolFile {
     // }
 
     /**
-     * TODO: 準備中
+     * ファイルをクローズする内部メソッド。 LINE SEQUENTIALファイルの場合は必要に応じて改行を出力し、
+     * ファイルロックを解放してファイルを閉じる。
      *
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
+     * @param opt クローズオプション (COB_CLOSE_NORMAL=0, COB_CLOSE_LOCK=1, COB_CLOSE_NO_REWIND=2)
+     * @return COB_STATUS_00_SUCCESS: 正常終了, COB_STATUS_07_SUCCESS_NO_UNIT: 正常終了(リワインドなし)
      */
     public int close_(int opt) {
         switch (opt) {
@@ -1332,11 +1336,13 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルの位置決めを行う。 COBOL START文に対応し、指定されたキーと条件に基づいてファイル内の読み取り位置を設定する。
+     * INDEXED/RELATIVEファイルでSEQUENTIAL/DYNAMICアクセスモード時に使用される。
      *
-     * @param cond TODO: 準備中
-     * @param key TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param cond 検索条件 (COB_EQ=等しい, COB_LT=より小さい, COB_LE=以下, COB_GT=より大きい, COB_GE=以上,
+     *     COB_FI=最初, COB_LA=最後)
+     * @param key 検索に使用するキーフィールド
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void start(int cond, AbstractCobolField key, AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -1372,22 +1378,23 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルの位置決めを行う拡張メソッド。 start_()を直接呼び出し、フック処理やステータス保存をスキップする。
      *
-     * @param cond TODO: 準備中
-     * @param key TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param cond 検索条件 (COB_EQ, COB_LT, COB_LE, COB_GT, COB_GE, COB_FI, COB_LA)
+     * @param key 検索に使用するキーフィールド
+     * @param fnstatus ファイルステータスを格納するフィールド (未使用)
      */
     public void startEx(int cond, AbstractCobolField key, AbstractCobolField fnstatus) {
         this.start_(cond, key);
     }
 
     /**
-     * TODO: 準備中
+     * ファイルの位置決めを行う内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の位置決め処理を実装する。
      *
-     * @param cond TODO: 準備中
-     * @param key TODO: 準備中
-     * @return TODO: 準備中
+     * @param cond 検索条件 (COB_EQ, COB_LT, COB_LE, COB_GT, COB_GE, COB_FI, COB_LA)
+     * @param key 検索に使用するキーフィールド
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS等)
      */
     public int start_(int cond, AbstractCobolField key) {
         System.out.println("super.start");
@@ -1395,11 +1402,12 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルからレコードを読み込む。 COBOL READ文に対応し、キー指定による直接読み取り(key!=null)または
+     * 順次読み取り(key==null)を行う。INDEXEDファイルではレコードロック制御も実施する。
      *
-     * @param key TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @param readOpts TODO: 準備中
+     * @param key 読み取りに使用するキーフィールド。nullの場合は順次読み取り(READ NEXT/PREVIOUS)
+     * @param fnstatus ファイルステータスを格納するフィールド
+     * @param readOpts 読み取りオプション (COB_READ_NEXT, COB_READ_PREVIOUS, COB_READ_LOCK, COB_READ_NO_LOCK等)
      */
     public void read(AbstractCobolField key, AbstractCobolField fnstatus, int readOpts) {
         byte[] sbuff = new byte[3];
@@ -1500,33 +1508,34 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルから順次レコードを読み込む。 keyパラメータは無視され、read(null, fnstatus, readOpts)が呼び出される。
      *
-     * @param key TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @param readOpts TODO: 準備中
+     * @param key 未使用 (互換性のために残されている)
+     * @param fnstatus ファイルステータスを格納するフィールド
+     * @param readOpts 読み取りオプション (COB_READ_NEXT, COB_READ_PREVIOUS等)
      */
     public void read(int key, AbstractCobolField fnstatus, int readOpts) {
         this.read(null, fnstatus, readOpts);
     }
 
     /**
-     * TODO: 準備中
+     * ファイルからレコードを読み込む拡張メソッド。 read_()を直接呼び出し、フック処理やステータス保存をスキップする。
      *
-     * @param key TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @param readOpts TODO: 準備中
+     * @param key 読み取りに使用するキーフィールド
+     * @param fnstatus ファイルステータスを格納するフィールド (未使用)
+     * @param readOpts 読み取りオプション
      */
     public void readEx(AbstractCobolField key, AbstractCobolField fnstatus, int readOpts) {
         this.read_(key, readOpts);
     }
 
     /**
-     * TODO: 準備中
+     * 指定されたキーでレコードを読み込む内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の直接読み取り処理を実装する。
      *
-     * @param key TODO: 準備中
-     * @param readOpts TODO: 準備中
-     * @return TODO: 準備中
+     * @param key 読み取りに使用するキーフィールド
+     * @param readOpts 読み取りオプション (COB_READ_LOCK等)
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS, COB_STATUS_23_KEY_NOT_EXISTS等)
      */
     public int read_(AbstractCobolField key, int readOpts) {
         System.out.println("super.read");
@@ -1534,10 +1543,12 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * 次のレコードを順次読み込む内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の順次読み取り処理を実装する。
+     * COB_READ_PREVIOUSオプションが指定された場合は前のレコードを読み込む。
      *
-     * @param readOpts TODO: 準備中
-     * @return TODO: 準備中
+     * @param readOpts 読み取りオプション (COB_READ_PREVIOUS: 前方読み, 0: 後方読み)
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS, COB_STATUS_10_END_OF_FILE等)
      */
     public int readNext(int readOpts) {
         System.out.println("super.readNext");
@@ -1545,12 +1556,14 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルにレコードを書き込む。 COBOL WRITE文に対応し、レコードサイズの検証を行った後に書き込みを実行する。
+     * SEQUENTIALアクセスかつI-Oモードで環境変数COB_IO_ASSUME_REWRITEが設定されている場合は REWRITEとして処理する。
      *
-     * @param rec TODO: 準備中
-     * @param opt TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param rec 書き込むレコードのフィールド
+     * @param opt 書き込みオプション (COB_WRITE_LINES, COB_WRITE_PAGE, COB_WRITE_BEFORE,
+     *     COB_WRITE_AFTER等)
+     * @param fnstatus ファイルステータスを格納するフィールド
+     * @throws CobolStopRunException STOP RUN文が実行された場合
      */
     public void write(AbstractCobolField rec, int opt, AbstractCobolField fnstatus)
             throws CobolStopRunException {
@@ -1618,12 +1631,12 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルにレコードを書き込む拡張メソッド。 write_()を直接呼び出し、フック処理やステータス保存をスキップする。
      *
-     * @param rec TODO: 準備中
-     * @param opt TODO: 準備中
-     * @param fnstatus TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param rec 書き込むレコードのフィールド (未使用)
+     * @param opt 書き込みオプション
+     * @param fnstatus ファイルステータスを格納するフィールド (未使用)
+     * @throws CobolStopRunException STOP RUN文が実行された場合
      */
     public void writeEx(AbstractCobolField rec, int opt, AbstractCobolField fnstatus)
             throws CobolStopRunException {
@@ -1631,11 +1644,12 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * レコードを書き込む内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の書き込み処理を実装する。
      *
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param opt 書き込みオプション (COB_WRITE_LINES, COB_WRITE_PAGE等)
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS等)
+     * @throws CobolStopRunException STOP RUN文が実行された場合
      */
     public int write_(int opt) throws CobolStopRunException {
         System.out.println("super.write");
@@ -1644,11 +1658,12 @@ public class CobolFile {
 
     // libcob/fileio.cのcob_file_write_optの実装
     /**
-     * TODO: 準備中
+     * 書き込みオプションに従って制御文字を出力する。 COBOL WRITE文のADVANCING句に対応し、
+     * LINAGE指定がある場合はlinage_write_opt()を呼び出し、 ない場合は改行またはフォームフィード文字を出力する。
      *
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param opt 書き込みオプション (COB_WRITE_LINES: 改行出力, COB_WRITE_PAGE: 改ページ出力)
+     * @return 操作結果のステータスコード (通常0)
+     * @throws CobolStopRunException STOP RUN文が実行された場合
      */
     protected int file_write_opt(int opt) throws CobolStopRunException {
         if ((this.flag_select_features & COB_SELECT_LINAGE) != 0) {
@@ -1665,11 +1680,13 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイル内の現在のレコードを書き換える。 COBOL REWRITE文に対応し、直前にREADしたレコードを更新する。
+     * I-Oモードでオープンされていない場合や、READが実行されていない場合はエラーとなる。
+     * SEQUENTIALファイルではレコードサイズの変更は許可されない。
      *
-     * @param rec TODO: 準備中
-     * @param opt TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param rec 書き換えるレコードのフィールド
+     * @param opt 書き込みオプション
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void rewrite(AbstractCobolField rec, int opt, AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -1714,21 +1731,22 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイル内の現在のレコードを書き換える拡張メソッド。 rewrite_()を直接呼び出し、フック処理やステータス保存をスキップする。
      *
-     * @param rec TODO: 準備中
-     * @param opt TODO: 準備中
-     * @param fnstatus TODO: 準備中
+     * @param rec 書き換えるレコードのフィールド (未使用)
+     * @param opt 書き込みオプション
+     * @param fnstatus ファイルステータスを格納するフィールド (未使用)
      */
     public void rewriteEx(AbstractCobolField rec, int opt, AbstractCobolField fnstatus) {
         this.rewrite_(opt);
     }
 
     /**
-     * TODO: 準備中
+     * レコードを書き換える内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の書き換え処理を実装する。
      *
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
+     * @param opt 書き込みオプション
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS等)
      */
     public int rewrite_(int opt) {
         System.out.println("super.rewrite");
@@ -1736,9 +1754,10 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルから現在のレコードを削除する。 COBOL DELETE文に対応し、直前にREADしたレコードを削除する。
+     * I-Oモードでオープンされていない場合や、SEQUENTIALアクセスでREADが実行されていない場合はエラーとなる。
      *
-     * @param fnstatus TODO: 準備中
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void delete(AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -1770,18 +1789,19 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルから現在のレコードを削除する拡張メソッド。 delete_()を直接呼び出し、フック処理やステータス保存をスキップする。
      *
-     * @param fnstatus TODO: 準備中
+     * @param fnstatus ファイルステータスを格納するフィールド (未使用)
      */
     public void deleteEx(AbstractCobolField fnstatus) {
         this.delete_();
     }
 
     /**
-     * TODO: 準備中
+     * レコードを削除する内部メソッド。
+     * サブクラスでオーバーライドして、ファイル編成固有の削除処理を実装する。
      *
-     * @return TODO: 準備中
+     * @return 操作結果のステータスコード (COB_STATUS_00_SUCCESS等)
      */
     public int delete_() {
         System.out.println("super.delete");
@@ -1789,9 +1809,9 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルのレコードロックを解除する。 COBOL UNLOCK文に対応し、このファイルに対する全てのレコードロックを解除する。
      *
-     * @param fnstatus TODO: 準備中
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void unlock(AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -1802,14 +1822,17 @@ public class CobolFile {
         saveStatus(COB_STATUS_00_SUCCESS, fnstatus);
     }
 
-    /** TODO: 準備中 */
+    /** ファイルのロックを解除する内部メソッド。 ファイルがオープンされている場合、バッファをフラッシュする。 */
     public void unlock_() {
         if (this.open_mode != COB_OPEN_CLOSED && this.open_mode != COB_OPEN_LOCKED) {
             this.file.flush();
         }
     }
 
-    /** TODO: 準備中 */
+    /**
+     * 全てのオープン中ファイルに対するトランザクションをコミットする。 COBOL COMMIT文に対応し、
+     * 全ファイルのバッファをフラッシュしてレコードロックを解除する。 変更内容を確定し、他のプロセスから参照可能な状態にする。
+     */
     public static void commit() {
         if (invokeFun(COB_IO_COMMIT, null, null, null, null, null, null, null) != 0) {
             return;
@@ -1819,7 +1842,10 @@ public class CobolFile {
         }
     }
 
-    /** TODO: 準備中 */
+    /**
+     * 全てのオープン中ファイルに対するトランザクションをロールバックする。 COBOL ROLLBACK文に対応し、全ファイルのロックを解除する。
+     * 注意: 現在の実装では実際のデータ巻き戻しは行われず、ロック解除のみが実行される。
+     */
     public static void rollback() {
         if (invokeFun(COB_IO_ROLLBACK, null, null, null, null, null, null, null) != 0) {
             return;
@@ -1830,7 +1856,10 @@ public class CobolFile {
     }
 
     /// libcob/fileio.cのcob_exit_fileioの実装 TODO 一部だけ実装したため残りを実装する
-    /** TODO: 準備中 */
+    /**
+     * ファイルI/Oサブシステムを終了する。
+     * オープン中のファイルがある場合は警告メッセージを出力する（暗黙的なCLOSE）。 プログラム終了時に呼び出される。
+     */
     public static void exitFileIO() {
         for (CobolFile f : file_cache) {
             if (f.open_mode != COB_OPEN_CLOSED && f.open_mode != COB_OPEN_LOCKED) {
@@ -1845,10 +1874,11 @@ public class CobolFile {
 
     // libcob/fileio.cのcob_syncの実装
     /**
-     * TODO: 準備中
+     * ファイルバッファをディスクに同期する。 環境変数COB_SYNCが設定されている場合に呼び出され、
+     * ファイルの内容をディスクに強制的に書き込む。
      *
-     * @param f TODO: 準備中
-     * @param mode TODO: 準備中
+     * @param f 同期対象のファイル
+     * @param mode 同期モード (1: flush, 2: fsync)
      */
     protected void cob_sync(CobolFile f, int mode) {
         // TODO
@@ -1864,7 +1894,11 @@ public class CobolFile {
     }
 
     // libcob/fileio.cのcob_init_fileioの実装
-    /** TODO: 準備中 */
+    /**
+     * ファイルI/Oサブシステムを初期化する。 環境変数からファイルI/O関連の設定を読み込む: - COB_SYNC:
+     * 同期モード(Y/y=flush後sync, P/p=物理sync) - COB_FILE_PATH: ファイル検索パス - COB_LS_NULLS:
+     * LINE SEQUENTIALでのNULL処理 - COB_LS_FIXED: LINE SEQUENTIALでの固定長モード
+     */
     public static void cob_init_fileio() {
         String s = CobolUtil.getEnv("COB_SYNC");
         if (s != null) {
@@ -1891,7 +1925,11 @@ public class CobolFile {
         file_open_buff = new byte[COB_SMALL_BUFF];
     }
 
-    /** TODO: 準備中 */
+    /**
+     * デフォルトのファイルエラーハンドラ。 ファイル操作でエラーが発生した際に呼び出され、
+     * ファイルステータスコードに応じたエラーメッセージを標準エラー出力に表示する。 FILE STATUS句のDECLARATIVES
+     * USEがない場合のデフォルト動作。
+     */
     public static void defaultErrorHandle() {
         byte[] fileStatus = CobolFile.errorFile.file_status;
         int status = (fileStatus[0] - '0') * 10 + (fileStatus[1] - '0');
@@ -1970,9 +2008,10 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルを物理的に削除する。 ファイルがオープン中の場合やロック状態の場合はエラーとなる。
+     * ファイルが存在しない場合はCOB_STATUS_35_NOT_EXISTSを返す。
      *
-     * @param fnstatus TODO: 準備中
+     * @param fnstatus ファイルステータスを格納するフィールド
      */
     public void cob_delete_file(AbstractCobolField fnstatus) {
         String openMode = openModeToString(this.last_open_mode);
@@ -2125,9 +2164,9 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルのSELECT名を取得する。 COBOL SELECT句で指定されたファイル名を返す。
      *
-     * @return TODO: 準備中
+     * @return SELECTで指定されたファイル名
      */
     public String getSelectName() {
         // CobolFile cobolFile = new CobolFile();
@@ -2135,9 +2174,9 @@ public class CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * ファイルステータスを取得する。 FILE STATUS句で指定された2バイトのステータス値を返す。
      *
-     * @return TODO: 準備中
+     * @return 2バイトのファイルステータス (例: "00"=成功, "10"=EOF)
      */
     public byte[] getFileStatus() {
         // CobolFile cobolFile = new CobolFile();
@@ -2147,10 +2186,11 @@ public class CobolFile {
     private static Map<String, byte[]> externalFileStatusTable = new HashMap<String, byte[]>();
 
     /**
-     * TODO: 準備中
+     * 外部ファイルのファイルステータス領域を取得する。 EXTERNAL句が指定されたファイルのステータス領域を返す。
+     * 存在しない場合は新規に作成して返す。
      *
-     * @param key TODO: 準備中
-     * @return TODO: 準備中
+     * @param key 外部ファイルのキー (通常はSELECT名)
+     * @return 2バイトのファイルステータス領域
      */
     public static byte[] getExternalFileStatus(String key) {
         byte[] bytes = externalFileStatusTable.get(key);
@@ -2166,21 +2206,21 @@ public class CobolFile {
     private static Map<String, CobolFile> externalFileTable = new HashMap<String, CobolFile>();
 
     /**
-     * TODO: 準備中
+     * 外部ファイルインスタンスを取得する。 EXTERNAL句が指定されたファイルを複数プログラム間で共有するために使用する。
      *
-     * @param key TODO: 準備中
-     * @return TODO: 準備中
+     * @param key 外部ファイルのキー (通常はSELECT名)
+     * @return 登録されているCobolFileインスタンス、未登録の場合はnull
      */
     public static CobolFile getExternalFile(String key) {
         return externalFileTable.get(key);
     }
 
     /**
-     * TODO: 準備中
+     * 外部ファイルインスタンスを登録する。 EXTERNAL句が指定されたファイルを複数プログラム間で共有するために使用する。
      *
-     * @param key TODO: 準備中
-     * @param value TODO: 準備中
-     * @return TODO: 準備中
+     * @param key 外部ファイルのキー (通常はSELECT名)
+     * @param value 登録するCobolFileインスタンス
+     * @return 以前に同じキーで登録されていたインスタンス、なければnull
      */
     public static CobolFile putExternalFile(String key, CobolFile value) {
         return externalFileTable.put(key, value);

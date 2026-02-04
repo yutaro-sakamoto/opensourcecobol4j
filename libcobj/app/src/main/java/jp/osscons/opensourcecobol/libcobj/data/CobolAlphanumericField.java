@@ -133,10 +133,11 @@ public class CobolAlphanumericField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 英数字フィールド間のMOVE処理を行う静的メソッド。
+     * srcからdstへデータを転記し、必要に応じて切り捨てまたは空白パディングを行う。
      *
-     * @param dst TODO: 準備中
-     * @param src TODO: 準備中
+     * @param dst 転記先のフィールド
+     * @param src 転記元のフィールド
      */
     public static void moveAlphanumToAlphanum(AbstractCobolField dst, AbstractCobolField src) {
         CobolDataStorage data1 = src.getDataStorage();

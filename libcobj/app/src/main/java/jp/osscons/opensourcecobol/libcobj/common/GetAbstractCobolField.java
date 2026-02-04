@@ -21,13 +21,24 @@ package jp.osscons.opensourcecobol.libcobj.common;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * COBOLフィールドを遅延評価で取得するための関数型インターフェース。
+ *
+ * <p>COBOLの変数参照において、値の評価を実行時まで遅延させる必要がある場合に使用する。
+ * 例えば、DEPENDING ON句で指定された変数によってサイズが決まる可変長テーブルの
+ * 要素アクセスなど、実行時にフィールドを動的に決定する場面で利用される。
+ *
+ * <p>Java 8のSupplierインターフェースに類似するが、CobolStopRunExceptionをスローできる点が異なる。
+ */
 public interface GetAbstractCobolField {
     /**
-     * TODO: 準備中
+     * COBOLフィールドを取得する。
      *
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * <p>実行時にフィールドを評価・取得する。フィールドの参照が無効な場合や
+     * 実行時エラーが発生した場合はCobolStopRunExceptionがスローされる可能性がある。
+     *
+     * @return 取得されたCOBOLフィールド
+     * @throws CobolStopRunException STOP RUN文の実行やランタイムエラー発生時
      */
     AbstractCobolField run() throws CobolStopRunException;
 }

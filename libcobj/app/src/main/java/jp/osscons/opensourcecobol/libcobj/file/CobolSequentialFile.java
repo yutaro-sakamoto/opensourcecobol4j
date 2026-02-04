@@ -23,37 +23,44 @@ import java.nio.ByteBuffer;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
-/** TODO: 準備中 */
+/**
+ * COBOL SEQUENTIAL編成ファイルの実装クラス。
+ *
+ * <p>COBOL ORGANIZATION IS SEQUENTIALで定義されたファイルの入出力操作を提供する。
+ * レコードはファイル内で連続して格納され、先頭から順次アクセスされる。 固定長レコードと可変長レコードの両方をサポートする。
+ *
+ * <p>可変長レコードの場合、各レコードの先頭にレコード長（4バイト）が格納される。
+ */
 public class CobolSequentialFile extends CobolFile {
 
     /**
-     * TODO: 準備中
+     * SEQUENTIALファイルインスタンスを生成する。
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
+     * @param selectName ファイルのSELECT名
+     * @param fileStatus ファイルステータスを格納するバイト配列
+     * @param assign ASSIGN句で指定されたファイル名フィールド
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 可変長レコードの場合のレコード長フィールド
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（SEQUENTIALファイルでは未使用）
+     * @param keys キー情報の配列（SEQUENTIALファイルでは未使用）
+     * @param organization ファイル編成（COB_ORG_SEQUENTIAL）
+     * @param accessMode アクセスモード
+     * @param lockMode ロックモード
+     * @param openMode 現在のオープンモード
+     * @param flagOptional OPTIONALファイルかどうか
+     * @param lastOpenMode 最後のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが存在しないかどうか
+     * @param flagEndOfFile ファイル終端に達したかどうか
+     * @param flagBeginOfFile ファイル先頭にいるかどうか
+     * @param flagFirstRead 最初の読み取りかどうか
+     * @param flagReadDone 読み取りが完了したかどうか
+     * @param flagSelectFeatures SELECT機能フラグ
+     * @param flagNeedsNl 改行が必要かどうか
+     * @param flagNeedsTop ページトップが必要かどうか
+     * @param fileVersion ファイルバージョン
      */
     public CobolSequentialFile(
             String selectName,

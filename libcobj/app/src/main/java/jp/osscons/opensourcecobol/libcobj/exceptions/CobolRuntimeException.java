@@ -21,12 +21,31 @@ package jp.osscons.opensourcecobol.libcobj.exceptions;
 import jp.osscons.opensourcecobol.libcobj.call.CobolResolve;
 import jp.osscons.opensourcecobol.libcobj.common.CobolUtil;
 
-/** 実行時エラーを示す例外。エラー番号とエラーメッセージを保持する */
+/**
+ * COBOL実行時エラーを示す例外クラス。
+ *
+ * <p>このクラスは、COBOLプログラムの実行時に発生するエラーを表現する。
+ * RuntimeExceptionを継承しているため、チェック例外ではなく、明示的なcatchは必須ではない。
+ * 主にファイル入出力操作やデータ操作でエラーが発生した場合に使用される。
+ *
+ * <p>静的変数codeには、直近の操作で発生した例外コードが保持される。
+ * 操作前にcodeを0に初期化し、操作後にcodeが0以外の場合はエラーハンドラを実行する
+ * というパターンで使用される。
+ *
+ * @see CobolExceptionId
+ * @see CobolExceptionTabCode
+ */
 public class CobolRuntimeException extends RuntimeException {
-    /** TODO: 準備中 */
+    /**
+     * 直近の操作で発生した例外コード。
+     * エラーが発生していない場合は0、発生した場合は対応する16ビット例外コードが設定される。
+     * ファイルI/O操作などの前に0に初期化され、操作後にこの値をチェックしてエラー処理を行う。
+     */
     public static int code;
 
+    /** 例外が設定されたかどうかを示すフラグ。setException()で1に設定される。 */
     private static int cobException = 0;
+
     private static String origProgramId;
     private static String origSection;
     private static String origParagraph;
@@ -69,10 +88,10 @@ public class CobolRuntimeException extends RuntimeException {
     }
 
     /**
-     * 実行時例外を設定する。 エラーIDをベースに、CobolExceptioTabCode.codeテーブルを参照して、対応するエラーコードが設定される。
+     * 実行時例外を設定する。 エラーIDをベースに、CobolExceptionTabCode.codeテーブルを参照して、対応するエラーコードが設定される。
      * また、エラー発生時のプログラムID、セクション名、パラグラフ名、行番号、ステートメントを取得し、このクラスの静的変数に保持する。
      *
-     * @param id エラーID
+     * @param id CobolExceptionIdで定義された例外ID
      */
     public static void setException(int id) {
         code = CobolExceptionTabCode.code[id];
@@ -104,9 +123,10 @@ public class CobolRuntimeException extends RuntimeException {
     }
 
     /**
-     * 常に0を返す。TODO: 必要に応じてこのメソッドは削除ないし修正する。
+     * 例外が設定されているかどうかを示すフラグを取得する。
+     * setException()が呼び出された場合は1、そうでない場合は0を返す。
      *
-     * @return 0
+     * @return 例外が設定されている場合は1、そうでない場合は0
      */
     public static int getException() {
         return cobException;

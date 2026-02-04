@@ -18,67 +18,79 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
-/** TODO: 準備中 */
+/**
+ * COBOL SORT処理でメモリ内ソートに使用するキュー構造を表すクラス。
+ *
+ * <p>{@link CobolItem}の連結リストを管理し、ソート対象レコードを保持する。 {@link CobolSort}クラスで4つのMemoryStructインスタンスがキューとして使用され、
+ * マージソートの各フェーズで入力キューと出力キューの役割を交互に切り替えながらソートを実行する。
+ *
+ * <p>libcob/fileio.cのstruct memory_structに対応する。
+ */
 class MemoryStruct {
+    /** リストの先頭要素 */
     private CobolItem first;
+
+    /** リストの末尾要素 */
     private CobolItem last;
+
+    /** リスト内の要素数 */
     private int count;
 
-    /** TODO: 準備中 */
+    /** デフォルトコンストラクタ。空のリストを作成する。 */
     MemoryStruct() {
         this.first = null;
         this.last = null;
     }
 
     /**
-     * TODO: 準備中
+     * リストの先頭要素を取得する。
      *
-     * @return TODO: 準備中
+     * @return リストの先頭要素。リストが空の場合はnull
      */
     CobolItem getFirst() {
         return first;
     }
 
     /**
-     * TODO: 準備中
+     * リストの先頭要素を設定する。
      *
-     * @param first TODO: 準備中
+     * @param first 設定する先頭要素
      */
     void setFirst(CobolItem first) {
         this.first = first;
     }
 
     /**
-     * TODO: 準備中
+     * リストの末尾要素を取得する。
      *
-     * @return TODO: 準備中
+     * @return リストの末尾要素。リストが空の場合はnull
      */
     CobolItem getLast() {
         return last;
     }
 
     /**
-     * TODO: 準備中
+     * リストの末尾要素を設定する。
      *
-     * @param last TODO: 準備中
+     * @param last 設定する末尾要素
      */
     void setLast(CobolItem last) {
         this.last = last;
     }
 
     /**
-     * TODO: 準備中
+     * リスト内の要素数を取得する。
      *
-     * @return TODO: 準備中
+     * @return 要素数
      */
     int getCount() {
         return count;
     }
 
     /**
-     * TODO: 準備中
+     * リスト内の要素数を設定する。
      *
-     * @param count TODO: 準備中
+     * @param count 設定する要素数
      */
     void setCount(int count) {
         this.count = count;

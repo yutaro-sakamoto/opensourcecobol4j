@@ -23,28 +23,60 @@ import java.util.HashMap;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 
-/** TODO: 準備中 */
+/**
+ * COBOLのEXTERNAL句で定義された外部共有データを管理するクラス。
+ *
+ * <p>EXTERNAL句を持つデータ項目やファイルは、複数のプログラム間で同一の記憶域を共有する。
+ * このクラスは、外部項目の名前と記憶域のマッピングを管理し、プログラム間でデータの
+ * 整合性を保つ。
+ *
+ * <p>COBOLの以下の構文に対応：
+ * <pre>
+ *     01 WS-DATA EXTERNAL PIC X(100).
+ *     SELECT EXT-FILE ASSIGN TO "test.dat" EXTERNAL.
+ * </pre>
+ *
+ * <p>libcob/common.cのcob_external_addr、external_hashに対応する。
+ */
 public final class CobolExternal {
 
+    /** 外部ファイルへの参照 */
     private CobolFile extAllocFile;
+
+    /** 外部データストレージへの参照 */
     private CobolDataStorage extAllocStorage;
 
+    /** 外部項目名とCobolExternalインスタンスのマッピング */
     private static AbstractMap<String, CobolExternal> externalMap =
             new HashMap<String, CobolExternal>();
 
+    /**
+     * ファイル用のコンストラクタ。
+     *
+     * @param file 外部ファイル
+     */
     private CobolExternal(CobolFile file) {
         this.extAllocFile = file;
     }
 
+    /**
+     * データストレージ用のコンストラクタ。
+     *
+     * @param storage 外部データストレージ
+     * @param size ストレージのサイズ（バイト）
+     */
     private CobolExternal(CobolDataStorage storage, int size) {
         this.extAllocStorage = storage;
     }
 
     /**
-     * TODO: 準備中
+     * 外部ファイルのアドレス（参照）を取得する。
      *
-     * @param name TODO: 準備中
-     * @return TODO: 準備中
+     * <p>指定された名前の外部ファイルが既に存在する場合はその参照を返し、
+     * 存在しない場合は新規作成して登録後、その参照を返す。
+     *
+     * @param name 外部ファイルの名前（EXTERNAL句で指定された名前）
+     * @return 外部ファイルへの参照
      */
     public static CobolFile getFileAddress(String name) {
         if (externalMap.containsKey(name)) {
@@ -58,11 +90,15 @@ public final class CobolExternal {
     }
 
     /**
-     * TODO: 準備中
+     * 外部データストレージのアドレス（参照）を取得する。
      *
-     * @param name TODO: 準備中
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * <p>指定された名前の外部データ領域が既に存在する場合はその参照を返し、
+     * 存在しない場合は指定サイズで新規作成して登録後、その参照を返す。
+     * 最初に取得した側のサイズで領域が確保されることに注意。
+     *
+     * @param name 外部データ項目の名前（EXTERNAL句で指定された名前）
+     * @param size データ領域のサイズ（バイト）
+     * @return 外部データストレージへの参照
      */
     public static CobolDataStorage getStorageAddress(String name, int size) {
         if (externalMap.containsKey(name)) {

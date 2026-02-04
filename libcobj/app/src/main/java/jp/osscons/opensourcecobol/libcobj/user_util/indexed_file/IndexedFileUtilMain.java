@@ -42,9 +42,10 @@ class IndexedFileUtilMain {
     private static final String version = jp.osscons.opensourcecobol.libcobj.Const.version;
 
     /**
-     * Main method
+     * Main entry point for the cobj-idx utility. Parses command-line arguments and dispatches to
+     * the appropriate sub-command handler (info, create, load, unload, migrate, unlock).
      *
-     * @param args TODO: 準備中
+     * @param args command-line arguments including sub-command, options, and indexed file path
      */
     public static void main(String[] args) {
 
@@ -385,10 +386,11 @@ class IndexedFileUtilMain {
     }
 
     /**
-     * Process info sub command, which shows information of the indexed file.
+     * Processes the 'info' sub-command, which displays information about the indexed file including
+     * record size, number of records, and key positions.
      *
-     * @param indexedFilePath TODO: 準備中
-     * @return 0 if success, otherwise non-zero. The return value is error code.
+     * @param indexedFilePath the path to the indexed file to inspect
+     * @return 0 if successful, otherwise a non-zero error code
      */
     private static int processInfoCommand(String indexedFilePath) {
         File indexedFile = new File(indexedFilePath);
@@ -508,10 +510,11 @@ class IndexedFileUtilMain {
     }
 
     /**
-     * Process load sub command, which loads data inputted from stdin to the indexed file.
+     * Processes the 'load' sub-command, which loads record data from stdin or a file into the
+     * indexed file.
      *
-     * @param indexedFilePath TODO: 準備中
-     * @return TODO: 準備中
+     * @param indexedFilePath the path to the indexed file to load data into
+     * @return 0 if successful, otherwise a non-zero error code
      */
     private static int processLoadCommand(
             String indexedFilePath,
@@ -709,10 +712,12 @@ class IndexedFileUtilMain {
     }
 
     /**
-     * Create a CobolFile instance from the path of the indexed file.
+     * Creates a new CobolFile instance with the specified configuration for creating a new indexed
+     * file.
      *
-     * @param indexedFilePath TODO: 準備中
-     * @return CobolFile instance if success, otherwise empty.
+     * @param indexedFilePath the path where the indexed file will be created
+     * @return an Optional containing the CobolFile instance if successful, or empty if creation
+     *     fails
      */
     private static Optional<CobolFile> createCobolFile(
             String indexedFilePath, Integer recordSize, List<CobolFileKeyInfo> keyInfoList) {

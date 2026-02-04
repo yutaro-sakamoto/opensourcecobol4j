@@ -24,7 +24,11 @@ import jp.osscons.opensourcecobol.libcobj.common.CobolConstant;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
-/** TODO: 準備中 */
+/**
+ * COBOL COMP（バイナリ）型の変数を表現するクラス。
+ * PIC 9(n) COMP、PIC 9(n) COMP-4、PIC 9(n) BINARY等で定義された変数を扱う。
+ * 内部的には1、2、4、8バイトのバイナリ形式でデータを格納する。
+ */
 public class CobolNumericBinaryField extends AbstractCobolField {
 
     /**
@@ -81,9 +85,9 @@ public class CobolNumericBinaryField extends AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * このフィールドにlong値を設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する長整数値
      */
     public void setLongValue(long n) {
         this.setBinaryValue(n);
