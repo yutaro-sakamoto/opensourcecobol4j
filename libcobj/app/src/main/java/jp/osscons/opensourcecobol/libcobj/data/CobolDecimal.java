@@ -28,49 +28,50 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
 /**
- * BigDecimalを扱うクラス<br>
- * COMPUTE等で計算をするときに使用する
+ * COBOL数値計算用のBigDecimalラッパークラス。
+ * COMPUTE、ADD、SUBTRACT、MULTIPLY、DIVIDE等の算術演算で使用される。
+ * COBOLの固定小数点演算をJavaのBigDecimalで実現する。
  */
 public class CobolDecimal {
-    /** TODO: 準備中 */
+    /** スケールがNaN（非数）であることを示す定数。0除算等のエラー時に設定される。 */
     public static final int DECIMAL_NAN = -128;
 
-    /** TODO: 準備中 */
+    /** 演算結果を四捨五入するオプションフラグ */
     public static final int COB_STORE_ROUND = 0x01;
 
-    /** TODO: 準備中 */
+    /** オーバーフロー時に元の値を保持するオプションフラグ */
     public static final int COB_STORE_KEEP_ON_OVERFLOW = 0x02;
 
-    /** TODO: 準備中 */
+    /** オーバーフロー時に切り捨てるオプションフラグ */
     public static final int COB_STORE_TRUNC_ON_OVERFLOW = 0x04;
 
-    /** TODO: 準備中 */
+    /** バイナリ演算の最大桁数 */
     public static final int COB_MAX_BINARY = 36;
 
     private static BigDecimal cobMexp = BigDecimal.ZERO;
 
-    /** TODO: 準備中 */
+    /** 演算用の作業領域1 */
     static CobolDecimal cobD1 = new CobolDecimal();
 
-    /** TODO: 準備中 */
+    /** 演算用の作業領域2 */
     static CobolDecimal cobD2 = new CobolDecimal();
 
-    /** TODO: 準備中 */
+    /** 演算用の作業領域3。除算の剰余格納にも使用される。 */
     static CobolDecimal cobD3 = new CobolDecimal();
 
-    /** TODO: 準備中 */
+    /** 演算用の作業領域4 */
     static CobolDecimal cobD4 = new CobolDecimal();
 
-    /** TODO: 準備中 */
+    /** 10のべき乗の配列。数値変換の最適化に使用される。 */
     private static BigDecimal[] cobMpze10 = new BigDecimal[COB_MAX_BINARY];
 
-    /** TODO: 準備中 */
+    /** パック10進数変換用の作業バッファ */
     static byte[] packedValue = new byte[20];
 
-    /** TODO: 準備中 */
+    /** パック10進数変換用の作業変数 */
     static int packedValueInt = 0;
 
-    /** TODO: 準備中 */
+    /** 数値演算用の静的変数を初期化する */
     public static void cobInitNumeric() {
         cobD1 = new CobolDecimal();
         cobD2 = new CobolDecimal();
@@ -102,7 +103,7 @@ public class CobolDecimal {
     /** 保持する数値データ */
     BigDecimal value;
 
-    /** TODO: 準備中 */
+    /** 小数点位置。正の値は小数点以下の桁数、負の値はPICTURE句のP（整数部の桁落とし）を示す。 */
     int scale;
 
     /** 値とスケールは0に設定する */
@@ -133,9 +134,9 @@ public class CobolDecimal {
     }
 
     /**
-     * 値を指定し,スケールは0に設定する
+     * long値を指定し、スケールは0に設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public CobolDecimal(long n) {
         if (n == 0L) {
@@ -151,9 +152,9 @@ public class CobolDecimal {
     }
 
     /**
-     * 値を設定し,スケールは0に設定する
+     * int値を指定し、スケールは0に設定する
      *
-     * @param n TODO: 準備中
+     * @param n 設定する整数値
      */
     public CobolDecimal(int n) {
         if (n == 0) {
@@ -169,9 +170,9 @@ public class CobolDecimal {
     }
 
     /**
-     * コピーコンストラクタ
+     * コピーコンストラクタ。otherの値とスケールをコピーして新しいインスタンスを生成する。
      *
-     * @param other TODO: 準備中
+     * @param other コピー元のCobolDecimal
      */
     public CobolDecimal(CobolDecimal other) {
         this.setValue(other.getValue());
@@ -187,7 +188,7 @@ public class CobolDecimal {
         return value;
     }
 
-    /** TODO: 準備中 */
+    /** 数値を0にリセットする。スケールは変更しない。 */
     public void decimalInit() {
         this.value = BigDecimal.ZERO;
     }
@@ -245,9 +246,9 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * 別のCobolDecimalから値とスケールをコピーする
      *
-     * @param decimal TODO: 準備中
+     * @param decimal コピー元のCobolDecimal
      */
     public void set(CobolDecimal decimal) {
         // TODO よりよいコピーの方法を考える
@@ -256,9 +257,9 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * COBOLフィールドから数値を取得して設定する
      *
-     * @param f TODO: 準備中
+     * @param f 数値を取得するCOBOLフィールド
      */
     public void setField(AbstractCobolField f) {
         CobolDecimal decimal = f.getDecimal();
@@ -267,10 +268,12 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * 2つのCobolDecimalがNaN（非数）かどうかをチェックする。
+     * どちらかがNaNの場合、d1をNaNに設定する。
      *
-     * @param d1 TODO: 準備中
-     * @param d2 TODO: 準備中
+     * @param d1 チェック対象の1つ目のCobolDecimal（NaN時に設定される）
+     * @param d2 チェック対象の2つ目のCobolDecimal
+     * @return どちらかがNaNの場合true、それ以外はfalse
      */
     private static boolean DECIMAL_CHECK(CobolDecimal d1, CobolDecimal d2) {
         if (d1.getScale() == DECIMAL_NAN || d2.getScale() == DECIMAL_NAN) {
@@ -347,10 +350,10 @@ public class CobolDecimal {
     }
 
     /**
-     * このオブジェクトの示す数値に対してmod演算を行う
+     * このオブジェクトの示す数値に対して除算を行う
      *
-     * @param decimal このオブジェクトの示す数値にmod演算する値
-     * @throws CobolStopRunException TODO: 準備中
+     * @param decimal このオブジェクトの示す数値を除算する値
+     * @throws CobolStopRunException 0除算が発生し、エラー時終了フラグが設定されている場合
      */
     public void div(CobolDecimal decimal) throws CobolStopRunException {
         if (DECIMAL_CHECK(this, decimal)) {
@@ -406,9 +409,9 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * double値からCobolDecimalを設定する。スケール9で正規化される。
      *
-     * @param v TODO: 準備中
+     * @param v 設定するdouble値
      */
     private void decimalSetDouble(double v) {
         this.setValue(new BigDecimal(v * 1.0e9));
@@ -428,12 +431,13 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * このCobolDecimalの値をCOBOLフィールドに格納する。
+     * フィールドの型に応じて適切な変換（DISPLAY、PACKED、BINARY等）を行う。
      *
-     * @param f TODO: 準備中
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param f 値を格納する先のCOBOLフィールド
+     * @param opt 格納オプション（COB_STORE_ROUND、COB_STORE_KEEP_ON_OVERFLOW等）
+     * @return 正常終了時は0、オーバーフロー時は例外コード
+     * @throws CobolStopRunException 致命的なエラーが発生した場合
      */
     public int getField(AbstractCobolField f, int opt) throws CobolStopRunException {
         if (this.getScale() == CobolDecimal.DECIMAL_NAN) {
@@ -494,11 +498,11 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * このCobolDecimalの値をCOBOL DOUBLE型フィールドに格納する
      *
-     * @param f TODO: 準備中
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
+     * @param f 値を格納する先のCOBOL DOUBLE型フィールド
+     * @param opt 格納オプション（現在未使用）
+     * @return 常に0（正常終了）
      */
     public int getDoubleField(AbstractCobolField f, int opt) {
         CobolDataStorage storage = new CobolDataStorage(8);
@@ -517,9 +521,9 @@ public class CobolDecimal {
     }
 
     /**
-     * TODO: 準備中
+     * 小数点位置をシフトする。正の値で右シフト（10のn乗を乗算）、負の値で左シフト（10の-n乗で除算）。
      *
-     * @param n TODO: 準備中
+     * @param n シフト量（正:右シフト、負:左シフト）
      */
     public void shiftDecimal(int n) {
         if (n == 0) {
@@ -537,10 +541,11 @@ public class CobolDecimal {
 
     // libcob/numeric.cのalign_decimalの実装
     /**
-     * TODO: 準備中
+     * 2つのCobolDecimalのスケールを揃える。スケールが小さい方を大きい方に合わせる。
+     * libcob/numeric.cのalign_decimalに対応する。
      *
-     * @param d1 TODO: 準備中
-     * @param d2 TODO: 準備中
+     * @param d1 スケールを揃える1つ目のCobolDecimal
+     * @param d2 スケールを揃える2つ目のCobolDecimal
      */
     public void alignDecimal(CobolDecimal d1, CobolDecimal d2) {
         if (d1.getScale() < d2.getScale()) {
@@ -552,10 +557,11 @@ public class CobolDecimal {
 
     // libcob/numeric.cのcob_decimal_cmpの実装 引数で与えられたCobolDecimal型のインスタンスとの比較をする.
     /**
-     * TODO: 準備中
+     * 引数で与えられたCobolDecimalと比較する。
+     * libcob/numeric.cのcob_decimal_cmpに対応する。
      *
-     * @param decimal TODO: 準備中
-     * @return TODO: 準備中
+     * @param decimal 比較対象のCobolDecimal
+     * @return this &lt; decimalなら負の値、this == decimalなら0、this &gt; decimalなら正の値
      */
     public int compareTo(CobolDecimal decimal) {
         alignDecimal(this, decimal);
@@ -566,12 +572,13 @@ public class CobolDecimal {
 
     // libcob/numeric.cのcob_decimal_get_displayの実装
     /**
-     * TODO: 準備中
+     * このCobolDecimalの値をCOBOL DISPLAY型（数字表示型）フィールドに格納する。
+     * libcob/numeric.cのcob_decimal_get_displayに対応する。
      *
-     * @param f TODO: 準備中
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
-     * @throws CobolStopRunException TODO: 準備中
+     * @param f 値を格納する先のDISPLAY型フィールド
+     * @param opt 格納オプション（COB_STORE_KEEP_ON_OVERFLOW等）
+     * @return 正常終了時は0、オーバーフロー時は例外コード
+     * @throws CobolStopRunException 致命的なエラーが発生した場合
      */
     public int getDisplayField(AbstractCobolField f, int opt) throws CobolStopRunException {
         int sign = this.value.signum();
@@ -614,11 +621,12 @@ public class CobolDecimal {
 
     // libcob/numeric.cのcob_decimal_get_packedの実装
     /**
-     * TODO: 準備中
+     * このCobolDecimalの値をCOBOL PACKED型（COMP-3、パック10進数）フィールドに格納する。
+     * libcob/numeric.cのcob_decimal_get_packedに対応する。
      *
-     * @param f TODO: 準備中
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
+     * @param f 値を格納する先のPACKED型フィールド
+     * @param opt 格納オプション（COB_STORE_KEEP_ON_OVERFLOW等）
+     * @return 正常終了時は0、オーバーフロー時は例外コード
      */
     public int getPackedField(AbstractCobolField f, int opt) {
         int sign = this.value.signum();
@@ -679,11 +687,12 @@ public class CobolDecimal {
 
     // libcob/numeric.cのcob_decimal_get_binaryの実装
     /**
-     * TODO: 準備中
+     * このCobolDecimalの値をCOBOL BINARY型（COMP、COMP-5）フィールドに格納する。
+     * libcob/numeric.cのcob_decimal_get_binaryに対応する。
      *
-     * @param f TODO: 準備中
-     * @param opt TODO: 準備中
-     * @return TODO: 準備中
+     * @param f 値を格納する先のBINARY型フィールド
+     * @param opt 格納オプション（COB_STORE_KEEP_ON_OVERFLOW、COB_STORE_TRUNC_ON_OVERFLOW等）
+     * @return 正常終了時は0、オーバーフロー時は例外コード
      */
     private int getBinaryField(AbstractCobolField f, int opt) {
         CobolDataStorage data = f.getDataStorage();
@@ -744,13 +753,14 @@ public class CobolDecimal {
 
     // libcob/numeric.cのnum_byte_memcpyの実装
     /**
-     * TODO: 準備中
+     * CobolDataStorage間でバイト単位のコピーを行う。
+     * libcob/numeric.cのnum_byte_memcpyに対応する。
      *
-     * @param s1 TODO: 準備中
-     * @param s1StartIndex TODO: 準備中
-     * @param s2 TODO: 準備中
-     * @param s2StartIndex TODO: 準備中
-     * @param size TODO: 準備中
+     * @param s1 コピー先のCobolDataStorage
+     * @param s1StartIndex コピー先の開始インデックス
+     * @param s2 コピー元のCobolDataStorage
+     * @param s2StartIndex コピー元の開始インデックス
+     * @param size コピーするバイト数
      */
     public static void numByteMemcpy(
             CobolDataStorage s1,

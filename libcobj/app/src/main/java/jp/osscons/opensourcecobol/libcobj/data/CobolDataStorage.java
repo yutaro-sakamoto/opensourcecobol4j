@@ -65,26 +65,26 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 可変長引数のバイト配列からCobolDataStorageを生成するファクトリメソッド
      *
-     * @param bytes TODO: 準備中
-     * @return TODO: 準備中
+     * @param bytes データとして使用するバイト配列（可変長引数）
+     * @return 指定されたバイト配列を保持する新しいCobolDataStorageインスタンス
      */
     public static CobolDataStorage makeCobolDataStorage(byte... bytes) {
         return new CobolDataStorage(bytes);
     }
 
-    /** TODO: 準備中 */
+    /** データを持たない空のCobolDataStorageを生成するコンストラクタ */
     public CobolDataStorage() {
         this.index = 0;
         this.data = null;
     }
 
     /**
-     * TODO: 準備中
+     * 他のCobolDataStorageのバイト配列参照と新しいインデックスを設定する
      *
-     * @param data TODO: 準備中
-     * @param index TODO: 準備中
+     * @param data バイト配列の参照元となるCobolDataStorage
+     * @param index 新しく設定する相対位置
      */
     public void setDataRefAndIndex(CobolDataStorage data, int index) {
         this.data = data.data;
@@ -92,36 +92,36 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列中の現在の相対位置を取得する
      *
-     * @return TODO: 準備中
+     * @return 現在の相対位置（インデックス）
      */
     public int getIndex() {
         return this.index;
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列中の相対位置を設定する
      *
-     * @param index TODO: 準備中
+     * @param index 新しく設定する相対位置
      */
     public void setIndex(int index) {
         this.index = index;
     }
 
     /**
-     * TODO: 準備中
+     * 内部で保持しているバイト配列の参照を取得する
      *
-     * @return TODO: 準備中
+     * @return 内部バイト配列への参照
      */
     public byte[] getRefOfData() {
         return this.data;
     }
 
     /**
-     * TODO: 準備中
+     * このCobolDataStorageのシャローコピーを作成する（バイト配列は共有される）
      *
-     * @return TODO: 準備中
+     * @return 同じバイト配列を参照する新しいCobolDataStorageインスタンス
      */
     public CobolDataStorage copy() {
         CobolDataStorage ret = new CobolDataStorage();
@@ -131,29 +131,29 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 現在位置から指定サイズ分のByteBufferを取得する
      *
-     * @param size TODO: 準備中
-     * @return TODO: 準備中
+     * @param size 取得するバイト数
+     * @return 指定範囲をラップしたByteBuffer
      */
     public ByteBuffer getByteBuffer(int size) {
         return ByteBuffer.wrap(this.data, this.index, size);
     }
 
     /**
-     * TODO: 準備中
+     * 相対位置を指定した値だけ加算する
      *
-     * @param n TODO: 準備中
+     * @param n 加算する値
      */
     public void addIndex(int n) {
         this.index += n;
     }
 
     /**
-     * TODO: 準備中
+     * int型の値をCobolDataStorageに変換するファクトリメソッド
      *
-     * @param n TODO: 準備中
-     * @return TODO: 準備中
+     * @param n 変換する整数値
+     * @return 整数値を4バイトで保持するCobolDataStorage
      */
     public static CobolDataStorage primitiveToDataStorage(int n) {
         byte[] bytes = new byte[4];
@@ -163,19 +163,19 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 文字列をCobolDataStorageに変換するファクトリメソッド
      *
-     * @param s TODO: 準備中
-     * @return TODO: 準備中
+     * @param s 変換する文字列
+     * @return 文字列をSHIFT-JISエンコードで保持するCobolDataStorage
      */
     public static CobolDataStorage primitiveToDataStorage(String s) {
         return new CobolDataStorage(s);
     }
 
     /**
-     * TODO: 準備中
+     * 文字列からCobolDataStorageを生成するコンストラクタ。SHIFT-JISエンコードで変換される。
      *
-     * @param str TODO: 準備中
+     * @param str データとして使用する文字列
      */
     public CobolDataStorage(String str) {
         try {
@@ -192,7 +192,7 @@ public class CobolDataStorage {
     /**
      * 保持するバイト配列のコピーを返す
      *
-     * @return TODO: 準備中
+     * @return 現在位置から末尾までのデータをコピーしたバイト配列
      */
     public byte[] getData() {
         return this.getData(0);
@@ -226,11 +226,11 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * 指定範囲のバイト配列参照を取得する（コピーではなく元配列への参照）
      *
-     * @param index TODO: 準備中
-     * @param length TODO: 準備中
-     * @return TODO: 準備中
+     * @param index 取得開始位置（現在位置からの相対位置）
+     * @param length 取得するバイト数
+     * @return 指定範囲を含む元のバイト配列
      */
     public byte[] getByteArrayRef(int index, int length) {
         ByteBuffer buffer = ByteBuffer.wrap(this.data, this.index + index, length);
@@ -240,8 +240,8 @@ public class CobolDataStorage {
     /**
      * C言語のmemcpyに相当するメソッド
      *
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
+     * @param buf コピー元のCobolDataStorage
+     * @param size コピーするバイト数
      */
     public void memcpy(CobolDataStorage buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -252,8 +252,8 @@ public class CobolDataStorage {
     /**
      * C言語のmemcpyに相当するメソッド
      *
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
+     * @param buf コピー元のバイト配列
+     * @param size コピーするバイト数
      */
     public void memcpy(byte[] buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -264,19 +264,19 @@ public class CobolDataStorage {
     /**
      * C言語のmemcpyに相当するメソッド
      *
-     * @param str TODO: 準備中
-     * @param size TODO: 準備中
+     * @param str コピー元の文字列（SHIFT-JISでバイト配列に変換される）
+     * @param size コピーするバイト数
      */
     public void memcpy(String str, int size) {
         this.memcpy(str.getBytes(AbstractCobolField.charSetSJIS), size);
     }
 
     /**
-     * TODO: 準備中
+     * オフセット指定付きのmemcpy
      *
-     * @param offset TODO: 準備中
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
+     * @param offset コピー先の開始位置（現在位置からの相対位置）
+     * @param buf コピー元のバイト配列
+     * @param size コピーするバイト数
      */
     public void memcpy(int offset, byte[] buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -285,11 +285,11 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * オフセット指定付きのmemcpy
      *
-     * @param offset TODO: 準備中
-     * @param buf TODO: 準備中
-     * @param size TODO: 準備中
+     * @param offset コピー先の開始位置（現在位置からの相対位置）
+     * @param buf コピー元のCobolDataStorage
+     * @param size コピーするバイト数
      */
     public void memcpy(int offset, CobolDataStorage buf, int size) {
         for (int i = 0; i < size; ++i) {
@@ -298,20 +298,20 @@ public class CobolDataStorage {
     }
 
     /**
-     * TODO: 準備中
+     * コピー元にオフセット指定付きのmemcpy
      *
-     * @param buf TODO: 準備中
-     * @param offset TODO: 準備中
-     * @param size TODO: 準備中
+     * @param buf コピー元のバイト配列
+     * @param offset コピー元の開始位置
+     * @param size コピーするバイト数
      */
     public void memcpy(byte[] buf, int offset, int size) {
         System.arraycopy(buf, offset, this.data, this.index, size);
     }
 
     /**
-     * TODO: 準備中
+     * バイト配列全体をコピーするmemcpy
      *
-     * @param buf TODO: 準備中
+     * @param buf コピー元のバイト配列（配列全体がコピーされる）
      */
     public void memcpy(byte[] buf) {
         this.memcpy(buf, buf.length);
@@ -320,8 +320,8 @@ public class CobolDataStorage {
     /**
      * C言語のmemsetに相当するメソッド
      *
-     * @param ch TODO: 準備中
-     * @param size TODO: 準備中
+     * @param ch 埋める値
+     * @param size 埋めるバイト数
      */
     public void memset(byte ch, int size) {
         for (int i = 0; i < size; ++i) {
@@ -332,8 +332,8 @@ public class CobolDataStorage {
     /**
      * C言語のmemsetに相当するメソッド
      *
-     * @param ch TODO: 準備中
-     * @param size TODO: 準備中
+     * @param ch 埋める値（byteにキャストされる）
+     * @param size 埋めるバイト数
      */
     public void memset(int ch, int size) {
         this.memset((byte) ch, size);
@@ -342,9 +342,9 @@ public class CobolDataStorage {
     /**
      * C言語のmemsetに相当するメソッド
      *
-     * @param offset TODO: 準備中
-     * @param ch TODO: 準備中
-     * @param size TODO: 準備中
+     * @param offset 開始位置（現在位置からの相対位置）
+     * @param ch 埋める値
+     * @param size 埋めるバイト数
      */
     public void memset(int offset, byte ch, int size) {
         for (int i = 0; i < size; ++i) {
@@ -355,9 +355,9 @@ public class CobolDataStorage {
     /**
      * C言語のmemsetに相当するメソッド
      *
-     * @param offset TODO: 準備中
-     * @param ch TODO: 準備中
-     * @param size TODO: 準備中
+     * @param offset 開始位置（現在位置からの相対位置）
+     * @param ch 埋める値（byteにキャストされる）
+     * @param size 埋めるバイト数
      */
     public void memset(int offset, int ch, int size) {
         this.memset(offset, (byte) ch, size);

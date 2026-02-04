@@ -23,16 +23,22 @@ import java.util.List;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** libcob/common.hのcob_moduleに対応するクラス */
+/**
+ * COBOLモジュール（プログラム）の実行時情報を管理するクラス。
+ * libcob/common.hのcob_moduleに対応する。
+ * モジュールスタックを使用してCALL/GO BACK時のコンテキスト管理を行う。
+ */
 public class CobolModule {
 
+    /** モジュール呼び出しスタック。CALL文でプッシュ、GO BACK/EXIT PROGRAMでポップされる。 */
     private static List<CobolModule> moduleStack = new ArrayList<CobolModule>();
+    /** 現在実行中のモジュール */
     private static CobolModule currentModule;
 
     /**
-     * TODO: 準備中
+     * 現在実行中のモジュールを取得する
      *
-     * @return TODO: 準備中
+     * @return 現在のモジュール。モジュールスタックが空の場合はnull。
      */
     public static CobolModule getCurrentModule() {
         return currentModule;
@@ -54,10 +60,10 @@ public class CobolModule {
     }
 
     /**
-     * TODO: 準備中
+     * 呼び出し元プログラム名を取得する（COBOL CALLED-BY機能）
      *
-     * @param data TODO: 準備中
-     * @return TODO: 準備中
+     * @param data 結果格納用（未使用、互換性のため保持）
+     * @return 成功時は1、呼び出し元がない場合は0、エラー時は-1
      */
     public static int calledBy(CobolDataStorage data) {
         AbstractCobolField param = CobolModule.getCurrentModule().cob_procedure_parameters.get(0);
@@ -78,70 +84,64 @@ public class CobolModule {
     }
 
     /**
-     * モジュールキューが空かどうか
+     * モジュールスタックが空かどうかを判定する
      *
-     * @return TODO: 準備中
+     * @return スタックが空の場合true、そうでなければfalse
      */
     public static boolean isQueueEmpty() {
         return moduleStack.isEmpty();
     }
 
-    /** TODO: 準備中 */
     // private CobolModule next;
-    /** TODO: 準備中 */
+    /** 照合順序（COLLATING SEQUENCE）を定義するバイト配列。nullの場合はデフォルト（バイナリ順）。 */
     public CobolDataStorage collating_sequence;
 
-    /** TODO: 準備中 */
     // private AbstractCobolField cut_status;
-    /** TODO: 準備中 */
     // private AbstractCobolField cursor_pos;
-    /** TODO: 準備中 */
+    /** DISPLAY文での符号表示形式。0:ASCII形式、非0:EBCDIC形式 */
     public int display_sign;
 
-    /** TODO: 準備中 */
+    /** 小数点文字。デフォルトは'.' */
     public char decimal_point;
 
-    /** TODO: 準備中 */
+    /** 通貨記号。デフォルトは'$' */
     public char currency_symbol;
 
-    /** TODO: 準備中 */
     // private char numeric_separator;
-    /** TODO: 準備中 */
+    /** ファイル名マッピングフラグ */
     public int flag_filename_mapping;
 
-    /** TODO: 準備中 */
+    /** バイナリ切り捨てフラグ。バイナリ演算時の桁あふれ処理を制御する。 */
     public int flag_binary_truncate;
 
-    /** TODO: 準備中 */
+    /** DISPLAY文の整形出力フラグ */
     public int flag_pretty_display;
 
-    /** TODO: 準備中 */
     // private int spare8;
-    /** TODO: 準備中 */
+    /** プログラムID（PROGRAM-ID句で指定された名前） */
     private String program_id;
 
-    /** TODO: 準備中 */
     // private String packageName;
 
-    /** TODO: 準備中 */
+    /** CALL文の引数リスト。PROCEDURE DIVISION USINGで受け取るパラメータ。 */
     public List<AbstractCobolField> cob_procedure_parameters;
 
     /**
      * コンストラクタ
      *
-     * @param next TODO: 準備中
-     * @param collatingSequence TODO: 準備中
-     * @param cutStatus TODO: 準備中
-     * @param cursorPos TODO: 準備中
-     * @param displaySign TODO: 準備中
-     * @param decimalPoint TODO: 準備中
-     * @param currencySymbol TODO: 準備中
-     * @param numericSeparator TODO: 準備中
-     * @param flagFilenameMapping TODO: 準備中
-     * @param flagBinaryTruncate TODO: 準備中
-     * @param flagPrettyDisplay TODO: 準備中
-     * @param spare8 TODO: 準備中
-     * @param programId TODO: 準備中
+     * @param next 次のモジュール（未使用、互換性のため保持）
+     * @param collatingSequence 照合順序を定義するデータ
+     * @param cutStatus CUTステータス（未使用）
+     * @param cursorPos カーソル位置（未使用）
+     * @param displaySign DISPLAY文での符号表示形式
+     * @param decimalPoint 小数点文字
+     * @param currencySymbol 通貨記号
+     * @param numericSeparator 数値区切り文字（未使用）
+     * @param flagFilenameMapping ファイル名マッピングフラグ
+     * @param flagBinaryTruncate バイナリ切り捨てフラグ
+     * @param flagPrettyDisplay DISPLAY整形出力フラグ
+     * @param spare8 予備（未使用）
+     * @param programId プログラムID
      */
     public CobolModule(
             CobolModule next,
@@ -175,9 +175,9 @@ public class CobolModule {
     }
 
     /**
-     * TODO 実装
+     * プログラムIDを設定する
      *
-     * @param programName TODO: 準備中
+     * @param programName 設定するプログラム名
      */
     public void setProgramId(String programName) {
         if (this.program_id != null) {
@@ -187,9 +187,9 @@ public class CobolModule {
     }
 
     /**
-     * TODO: 準備中
+     * CALL文のパラメータを設定する
      *
-     * @param field TODO: 準備中
+     * @param field CALL文で渡すパラメータ（可変長引数）
      */
     public void setParameters(AbstractCobolField... field) {
         cob_procedure_parameters.clear();
@@ -199,9 +199,9 @@ public class CobolModule {
     }
 
     /**
-     * TODO: 準備中
+     * 現在のモジュールの小数点文字を取得する
      *
-     * @return TODO: 準備中
+     * @return 小数点文字のASCIIコード値
      */
     public static int getDecimalPoint() {
         return currentModule.decimal_point;
