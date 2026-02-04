@@ -14,7 +14,6 @@ RUN dnf update -y \
         make \
         bison \
         flex \
-        automake \
         autoconf \
         diffutils \
         gettext \
@@ -24,7 +23,18 @@ RUN dnf update -y \
         libtool \
         gettext-devel \
         unzip \
+        wget \
     && dnf clean all \
-    && rm -rf /var/cache/dnf
+    && rm -rf /var/cache/dnf \
+    # Install automake 1.16.5 from source to ensure consistent version
+    && wget https://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz \
+    && echo "f01d58cd6d9d77fbdca9eb4bbd5ead1988228fdb73d6f7a201f5f8d6b118b469  automake-1.16.5.tar.gz" | sha256sum -c - \
+    && tar xzf automake-1.16.5.tar.gz \
+    && cd automake-1.16.5 \
+    && ./configure \
+    && make -j"$(nproc)" \
+    && make install \
+    && cd .. \
+    && rm -rf automake-1.16.5 automake-1.16.5.tar.gz
 
 RUN echo 'export CLASSPATH=:/usr/lib/opensourcecobol4j/libcobj.jar' >> ~/.bashrc
