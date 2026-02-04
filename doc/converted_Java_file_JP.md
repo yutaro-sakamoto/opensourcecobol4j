@@ -254,60 +254,75 @@ opensource COBOL 4Jでは、PROCEDURE DIVISION内のSECTIONやPARAGRAPHは、swi
 ### ラベルIDの定義
 
 各SECTIONとPARAGRAPHには、整数定数としてラベルIDが割り当てられる。
+ラベルIDは100から始まり、100ずつインクリメントされる。0は実行終了を意味する特別な値として予約されている。
 
 ```java
-/* Label IDs */
-private static final int l_MAIN = 1;
-private static final int l_MAIN__DEFAULT_PARAGRAPH = 2;
-private static final int l_SUB = 3;
-private static final int l_SUB__A_01 = 4;
-private static final int l_SUB__A_02 = 5;
-private static final int l_LAST_PROC = 6;
-private static final int l_LAST_PROC__LAST_MESSAGE = 7;
-/* Section end markers */
-private static final int l_END_MAIN = 2;
-private static final int l_END_SUB = 5;
-private static final int l_END_LAST_PROC = 7;
+/* Label IDs (incremented by 100 for future extensibility) */
+private static final int l_MAIN = 100;
+private static final int l_MAIN__DEFAULT_PARAGRAPH = 200;
+private static final int l_SUB = 300;
+private static final int l_SUB__A_01 = 400;
+private static final int l_SUB__A_02 = 500;
+private static final int l_LAST_PROC = 600;
+private static final int l_LAST_PROC__LAST_MESSAGE = 700;
 ```
 
 ### 実行制御の仕組み
 
-生成されるJavaコードには、以下の状態変数とメソッドが含まれる。
+生成されるJavaコードには、以下の状態変数が含まれる。
 
 ```java
 /* Switch-based execution state */
 private int currentLabel = 0;
-private java.util.ArrayDeque<int[]> performStack = new java.util.ArrayDeque<>();
 ```
 
-- `currentLabel`: 現在実行中のラベルを示す整数値
-- `performStack`: PERFORM文の実行範囲を管理するスタック
+- `currentLabel`: 現在実行中のラベルを示す整数値。0は実行終了を意味する。
+  - メンバ変数としては0で初期化される
+  - `execProcedureDivision`メソッド内で`startLabel`の値に設定される
+  - 各case節の処理後、次に実行すべきラベルの値に更新される
+
+### プログラムエントリーポイント
+
+プログラムの実行は`execEntry`メソッドから開始される。このメソッドは内部で`execProcedureDivision`を呼び出す。
+
+```java
+public void execEntry(int start)
+    throws CobolRuntimeException, CobolStopRunException {
+  execProcedureDivision(start);
+}
+```
 
 ### メインループ構造
 
-PROCEDURE DIVISION内の処理は、`mainLoop`というラベル付きwhileループとswitch文で制御される。
+PROCEDURE DIVISION内の処理は、`execProcedureDivision`メソッド内の`mainLoop`というラベル付きwhileループとswitch文で制御される。
 
 ```java
-private void execProcedureDivisionRange(int startLabel, int endLabel)
+private void execProcedureDivision(int startLabel)
+    throws CobolRuntimeException, CobolStopRunException {
+  execProcedureDivision(startLabel, 0);
+}
+
+private void execProcedureDivision(int startLabel, int endLabel)
     throws CobolRuntimeException, CobolStopRunException {
   currentLabel = startLabel;
 
-  mainLoop: while (currentLabel > 0 && currentLabel <= endLabel) {
+  mainLoop: while (currentLabel > 0) {
+    int oldLabel = currentLabel;
     switch (currentLabel) {
     case 0:
       /* ... */
 
-    case 2: /* l_MAIN__DEFAULT_PARAGRAPH */
+    case 200: /* l_MAIN__DEFAULT_PARAGRAPH */
       /* prog.cbl:6: PERFORM */
-      performRange(l_SUB__A_01, l_SUB__A_01);
+      execProcedureDivision(l_SUB__A_01, l_SUB__A_01);
       /* prog.cbl:7: PERFORM */
-      performRange(l_SUB__A_02, l_SUB__A_02);
+      execProcedureDivision(l_SUB__A_02, l_SUB__A_02);
       /* prog.cbl:8: PERFORM */
-      performRange(l_SUB, l_END_SUB);
+      execProcedureDivision(l_SUB, l_SUB__A_02);
       /* prog.cbl:9: GO TO */
       if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
 
-    case 4: /* l_SUB__A_01 */
+    case 400: /* l_SUB__A_01 */
       /* prog.cbl:12: DISPLAY */
       {
         CobolTerminal.display (0, 1, 1, c_1);
@@ -316,18 +331,18 @@ private void execProcedureDivisionRange(int startLabel, int endLabel)
       {
         CobolTerminal.display (0, 1, 1, c_2);
       }
-      currentLabel = 5;
+      currentLabel = 500;
       break;
 
-    case 5: /* l_SUB__A_02 */
+    case 500: /* l_SUB__A_02 */
       /* prog.cbl:15: DISPLAY */
       {
         CobolTerminal.display (0, 1, 1, c_3);
       }
-      currentLabel = 6;
+      currentLabel = 600;
       break;
 
-    case 7: /* l_LAST_PROC__LAST_MESSAGE */
+    case 700: /* l_LAST_PROC__LAST_MESSAGE */
       /* prog.cbl:18: DISPLAY */
       {
         CobolTerminal.display (0, 1, 1, c_4);
@@ -340,19 +355,13 @@ private void execProcedureDivisionRange(int startLabel, int endLabel)
       break;
     } /* end switch */
 
-    /* PERFORM end check */
-    while (!performStack.isEmpty()) {
-      int[] top = performStack.peek();
-      if (currentLabel < top[0] || currentLabel > top[1]) {
-        int[] popped = performStack.pop();
-        currentLabel = popped[2];
-      } else {
-        break;
-      }
-    }
+    /* Range end check */
+    if (endLabel > 0 && oldLabel == endLabel) { break; }
   } /* end mainLoop */
-}
+} /* end execProcedureDivision */
 ```
+
+`oldLabel`はswitch文の実行前の`currentLabel`の値である。switch文内で`currentLabel`が更新される前の値を保存しておき、指定された終了ラベル（`endLabel`）の処理が完了したかを判定する。終了ラベルの処理が完了した場合、ループを抜けて呼び出し元に戻る。
 
 ### GO TO文の変換
 
@@ -367,39 +376,28 @@ if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
 
 ### PERFORM文の変換
 
-PERFORM文は、`performRange`メソッドの呼び出しに変換される。このメソッドは指定された範囲のラベルを実行する。
+PERFORM文は、`execProcedureDivision`メソッドの呼び出しに変換される。このメソッドは指定された範囲のラベルを実行する。
 
 ```java
 /* PERFORM A-01 */
-performRange(l_SUB__A_01, l_SUB__A_01);
+execProcedureDivision(l_SUB__A_01, l_SUB__A_01);
 
-/* PERFORM SUB */
-performRange(l_SUB, l_END_SUB);
+/* PERFORM SUB (SECTIONの場合は、SECTIONの最後のラベルまで実行) */
+execProcedureDivision(l_SUB, l_SUB__A_02);
 
 /* PERFORM A-01 THRU A-02 */
-performRange(l_SUB__A_01, l_SUB__A_02);
+execProcedureDivision(l_SUB__A_01, l_SUB__A_02);
 ```
 
-`performRange`メソッドは現在の実行状態を保存し、指定範囲を実行後に状態を復元する。
+`execProcedureDivision`メソッドは再帰的に呼び出され、指定された開始ラベルから終了ラベルまでの処理を実行する。終了ラベルの処理が完了すると、ループを抜けて呼び出し元に戻る。
 
-```java
-private void performRange(int startLabel, int endLabel)
-    throws CobolRuntimeException, CobolStopRunException {
-  /* Save state */
-  int savedCurrentLabel = currentLabel;
-  java.util.ArrayDeque<int[]> savedStack = new java.util.ArrayDeque<>(performStack);
+#### PERFORM実行の終了条件
 
-  /* Clear stack for nested PERFORM */
-  performStack.clear();
+- 単一のPARAGRAPH実行（`PERFORM A-01`）の場合、開始ラベルと終了ラベルが同じ値のため、1つのラベル処理が完了した時点でループを抜ける
+- SECTION実行（`PERFORM SUB`）の場合、SECTIONの最後のPARAGRAPH処理が完了した時点でループを抜ける
+- THRU実行（`PERFORM A-01 THRU A-02`）の場合、終了ラベル（A-02）の処理が完了した時点でループを抜ける
 
-  /* Execute the range */
-  execProcedureDivisionRange(startLabel, endLabel);
-
-  /* Restore state */
-  performStack = savedStack;
-  currentLabel = savedCurrentLabel;
-}
-```
+いずれの場合も、`endLabel`と`oldLabel`の比較により、指定された範囲の処理が完了したことを検出する。
 
 ## libcobj/の解説
 libcobj.jarはopensource COBOL 4Jのランタイムであり、
