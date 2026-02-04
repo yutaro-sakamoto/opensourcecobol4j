@@ -257,14 +257,16 @@ opensource COBOL 4Jでは、PROCEDURE DIVISION内のSECTIONやPARAGRAPHは、swi
 ラベルIDは100から始まり、100ずつインクリメントされる。0は実行終了を意味する特別な値として予約されている。
 
 ```java
-/* Label IDs (incremented by 100 for future extensibility) */
-private static final int l_MAIN = 100;
-private static final int l_MAIN__DEFAULT_PARAGRAPH = 200;
-private static final int l_SUB = 300;
-private static final int l_SUB__A_01 = 400;
-private static final int l_SUB__A_02 = 500;
-private static final int l_LAST_PROC = 600;
-private static final int l_LAST_PROC__LAST_MESSAGE = 700;
+/* Sections and Labels (incremented by 100 for future extensibility) */
+private final static int l_PROG = 100;
+private final static int l_MAIN = 200;
+private final static int l_MAIN_SECTION__DEFAULT_PARAGRAPH = 300;
+private final static int l_SUB = 400;
+private final static int l_SUB__A_01 = 500;
+private final static int l_SUB__A_02 = 600;
+private final static int l_LAST_PROC = 700;
+private final static int l_LAST_PROC__LAST_MESSAGE = 800;
+private final static int l_Default_Error_Handler = 900;
 ```
 
 ### 実行制御の仕組み
@@ -309,54 +311,90 @@ private void execProcedureDivision(int startLabel, int endLabel)
   mainLoop: while (currentLabel > 0) {
     int oldLabel = currentLabel;
     switch (currentLabel) {
-    case 0:
-      /* ... */
+      case 0:
 
-    case 200: /* l_MAIN__DEFAULT_PARAGRAPH */
-      /* prog.cbl:6: PERFORM */
-      execProcedureDivision(l_SUB__A_01, l_SUB__A_01);
-      /* prog.cbl:7: PERFORM */
-      execProcedureDivision(l_SUB__A_02, l_SUB__A_02);
-      /* prog.cbl:8: PERFORM */
-      execProcedureDivision(l_SUB, l_SUB__A_02);
-      /* prog.cbl:9: GO TO */
-      if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
+        currentLabel = l_PROG;
+        break;
+      /* Entry PROG */
+      case l_PROG:
 
-    case 400: /* l_SUB__A_01 */
-      /* prog.cbl:12: DISPLAY */
-      {
-        CobolTerminal.display (0, 1, 1, c_1);
-      }
-      /* prog.cbl:13: DISPLAY */
-      {
-        CobolTerminal.display (0, 1, 1, c_2);
-      }
-      currentLabel = 500;
-      break;
+        currentLabel = l_MAIN;
+        break;
+      /* MAIN SECTION */
+      case l_MAIN:
 
-    case 500: /* l_SUB__A_02 */
-      /* prog.cbl:15: DISPLAY */
-      {
-        CobolTerminal.display (0, 1, 1, c_3);
-      }
-      currentLabel = 600;
-      break;
+        currentLabel = l_MAIN_SECTION__DEFAULT_PARAGRAPH;
+        break;
+      /* MAIN_SECTION__DEFAULT_PARAGRAPH */
+      case l_MAIN_SECTION__DEFAULT_PARAGRAPH:
+        /* prog.cbl:7: PERFORM */
+        /* PERFORM A-01 */
+        execProcedureDivision(l_SUB__A_01, l_SUB__A_01);
+        /* prog.cbl:8: PERFORM */
+        /* PERFORM A-02 */
+        execProcedureDivision(l_SUB__A_02, l_SUB__A_02);
+        /* prog.cbl:9: PERFORM */
+        /* PERFORM SUB */
+        execProcedureDivision(l_SUB, l_SUB__A_02);
+        /* prog.cbl:10: GO TO */
+        {
+          if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
+        }
 
-    case 700: /* l_LAST_PROC__LAST_MESSAGE */
-      /* prog.cbl:18: DISPLAY */
-      {
-        CobolTerminal.display (0, 1, 1, c_4);
-      }
-      currentLabel = 0;
-      break;
+        currentLabel = l_SUB;
+        break;
+      /* SUB SECTION */
+      case l_SUB:
 
-    default:
-      currentLabel = 0;
-      break;
+        currentLabel = l_SUB__A_01;
+        break;
+      /* A-01 */
+      case l_SUB__A_01:
+        /* prog.cbl:13: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_1_A);
+        }
+        /* prog.cbl:14: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_2_A);
+        }
+
+        currentLabel = l_SUB__A_02;
+        break;
+      /* A-02 */
+      case l_SUB__A_02:
+        /* prog.cbl:16: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_3_A);
+        }
+
+        currentLabel = l_LAST_PROC;
+        break;
+      /* LAST-PROC SECTION */
+      case l_LAST_PROC:
+
+        currentLabel = l_LAST_PROC__LAST_MESSAGE;
+        break;
+      /* LAST-MESSAGE */
+      case l_LAST_PROC__LAST_MESSAGE:
+        /* prog.cbl:19: DISPLAY */
+        {
+          CobolTerminal.display (0, 1, 1, c_4_END);
+        }
+        /* prog.cbl:20: STOP */
+        {
+          CobolStopRunException.throwException (b_RETURN_CODE.intValue());
+        }
+        currentLabel = 0;
+        break;
+      default:
+        currentLabel = 0;
+        break;
     } /* end switch */
 
     /* Range end check */
     if (endLabel > 0 && oldLabel == endLabel) { break; }
+
   } /* end mainLoop */
 } /* end execProcedureDivision */
 ```
@@ -369,7 +407,9 @@ GO TO文は、`currentLabel`を更新して`continue mainLoop;`を実行する�
 
 ```java
 /* GO TO LAST-PROC */
-if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
+{
+  if (true) { currentLabel = l_LAST_PROC; continue mainLoop; }
+}
 ```
 
 `if(true)`はJavaコンパイラが「到達不能コード」としてエラーを報告するのを防ぐために使用される。
@@ -382,11 +422,11 @@ PERFORM文は、`execProcedureDivision`メソッドの呼び出しに変換さ�
 /* PERFORM A-01 */
 execProcedureDivision(l_SUB__A_01, l_SUB__A_01);
 
+/* PERFORM A-02 */
+execProcedureDivision(l_SUB__A_02, l_SUB__A_02);
+
 /* PERFORM SUB (SECTIONの場合は、SECTIONの最後のラベルまで実行) */
 execProcedureDivision(l_SUB, l_SUB__A_02);
-
-/* PERFORM A-01 THRU A-02 */
-execProcedureDivision(l_SUB__A_01, l_SUB__A_02);
 ```
 
 `execProcedureDivision`メソッドは再帰的に呼び出され、指定された開始ラベルから終了ラベルまでの処理を実行する。終了ラベルの処理が完了すると、ループを抜けて呼び出し元に戻る。
