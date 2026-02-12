@@ -1,0 +1,385 @@
+AT_SETUP([GO TO paragraph])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "STEP-1".
+           GO TO SKIP-PROC.
+           DISPLAY "STEP-2".
+       SKIP-PROC.
+           DISPLAY "STEP-3".
+           GO TO END-PROC.
+           DISPLAY "STEP-4".
+       END-PROC.
+           DISPLAY "STEP-5".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[STEP-1
+STEP-3
+STEP-5
+])
+
+AT_CLEANUP
+
+AT_SETUP([GO TO across sections])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       SEC-A SECTION.
+       PARA-A1.
+           DISPLAY "A1".
+           GO TO PARA-A3.
+       PARA-A2.
+           DISPLAY "A2".
+       PARA-A3.
+           DISPLAY "A3".
+           GO TO PARA-B2.
+       SEC-B SECTION.
+       PARA-B1.
+           DISPLAY "B1".
+       PARA-B2.
+           DISPLAY "B2".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[A1
+A3
+B2
+])
+
+AT_CLEANUP
+
+AT_SETUP([GO TO section])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       SEC-A SECTION.
+       PARA-A1.
+           DISPLAY "A1-START".
+           GO TO SEC-C.
+       PARA-A2.
+           DISPLAY "A2-SKIP".
+       SEC-B SECTION.
+       PARA-B1.
+           DISPLAY "B1-SKIP".
+       SEC-C SECTION.
+       PARA-C1.
+           DISPLAY "C1-REACHED".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[A1-START
+C1-REACHED
+])
+
+AT_CLEANUP
+
+AT_SETUP([Section fall-through])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       SEC-1 SECTION.
+       PARA-1A.
+           DISPLAY "1A".
+       PARA-1B.
+           DISPLAY "1B".
+       SEC-2 SECTION.
+       PARA-2A.
+           DISPLAY "2A".
+           STOP RUN.
+       PARA-2B.
+           DISPLAY "2B".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[1A
+1B
+2A
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM paragraph and PERFORM VARYING])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "BEFORE-PERFORM".
+           PERFORM SUB-PROC.
+           DISPLAY "AFTER-PERFORM".
+           PERFORM SUB-PROC 3 TIMES.
+           DISPLAY "AFTER-TIMES".
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 3
+             DISPLAY "LOOP-" I
+           END-PERFORM.
+           DISPLAY "AFTER-VARYING".
+           STOP RUN.
+       SUB-PROC.
+           DISPLAY "IN-SUB".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[BEFORE-PERFORM
+IN-SUB
+AFTER-PERFORM
+IN-SUB
+IN-SUB
+IN-SUB
+AFTER-TIMES
+LOOP-01
+LOOP-02
+LOOP-03
+AFTER-VARYING
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM section])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-SEC SECTION.
+       MAIN-PARA.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-SEC.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-SEC SECTION.
+       SUB-PARA1.
+           DISPLAY "SUB-1".
+       SUB-PARA2.
+           DISPLAY "SUB-2".
+       SUB-PARA3.
+           DISPLAY "SUB-3".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+SUB-1
+SUB-2
+SUB-3
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM multiple sections])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-SEC SECTION.
+       MAIN-PARA.
+           DISPLAY "M1".
+           PERFORM WORK-SEC.
+           DISPLAY "M2".
+           PERFORM CALC-SEC.
+           DISPLAY "M3".
+           STOP RUN.
+       WORK-SEC SECTION.
+       WORK-PARA1.
+           DISPLAY "W1".
+       WORK-PARA2.
+           DISPLAY "W2".
+       CALC-SEC SECTION.
+       CALC-PARA1.
+           DISPLAY "C1".
+       CALC-PARA2.
+           DISPLAY "C2".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[M1
+W1
+W2
+M2
+C1
+C2
+M3
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM THRU paragraphs])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "START".
+           PERFORM PARA-A THRU PARA-C.
+           DISPLAY "MIDDLE".
+           PERFORM PARA-B THRU PARA-D.
+           DISPLAY "END".
+           STOP RUN.
+       PARA-A.
+           DISPLAY "A".
+       PARA-B.
+           DISPLAY "B".
+       PARA-C.
+           DISPLAY "C".
+       PARA-D.
+           DISPLAY "D".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[START
+A
+B
+C
+MIDDLE
+B
+C
+D
+END
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM THRU VARYING])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "START".
+           PERFORM PROC-A THRU PROC-C
+             VARYING I FROM 1 BY 1 UNTIL I > 2.
+           DISPLAY "END".
+           STOP RUN.
+       PROC-A.
+           DISPLAY "A-" I.
+       PROC-B.
+           DISPLAY "B-" I.
+       PROC-C.
+           DISPLAY "C-" I.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[START
+A-01
+B-01
+C-01
+A-02
+B-02
+C-02
+END
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM THRU sections])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC SECTION.
+       MAIN-PARA.
+           DISPLAY "START".
+           PERFORM SEC-A THRU SEC-B.
+           DISPLAY "DONE".
+           STOP RUN.
+       SEC-A SECTION.
+       PARA-A1.
+           DISPLAY "A1".
+       PARA-A2.
+           DISPLAY "A2".
+       SEC-B SECTION.
+       PARA-B1.
+           DISPLAY "B1".
+       PARA-B2.
+           DISPLAY "B2".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[START
+A1
+A2
+B1
+B2
+DONE
+])
+
+AT_CLEANUP
+
+AT_SETUP([GO TO inside PERFORM THRU])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-PROC THRU SUB-EXIT.
+           DISPLAY "MAIN-MID".
+           PERFORM MULTI-PROC THRU MULTI-EXIT.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-PROC.
+           DISPLAY "SUB-1".
+           GO TO SUB-EXIT.
+           DISPLAY "SUB-SKIP".
+       SUB-2.
+           DISPLAY "SUB-SKIP2".
+       SUB-EXIT.
+           DISPLAY "SUB-EXIT".
+       MULTI-PROC.
+           DISPLAY "MULTI-1".
+           GO TO MULTI-3.
+       MULTI-2.
+           DISPLAY "MULTI-2".
+       MULTI-3.
+           DISPLAY "MULTI-3".
+       MULTI-EXIT.
+           DISPLAY "MULTI-EXIT".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+SUB-1
+SUB-EXIT
+MAIN-MID
+MULTI-1
+MULTI-3
+MULTI-EXIT
+MAIN-END
+])
+
+AT_CLEANUP
