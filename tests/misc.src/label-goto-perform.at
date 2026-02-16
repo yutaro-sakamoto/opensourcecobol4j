@@ -383,3 +383,286 @@ MAIN-END
 ])
 
 AT_CLEANUP
+
+AT_SETUP([Nested PERFORM paragraph])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-A.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-A.
+           DISPLAY "A-START".
+           PERFORM SUB-B.
+           DISPLAY "A-END".
+       SUB-B.
+           DISPLAY "B".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A-START
+B
+A-END
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([Nested PERFORM THRU])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-A THRU SUB-A-EXIT.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-A.
+           DISPLAY "A-START".
+           PERFORM SUB-B THRU SUB-B-EXIT.
+           DISPLAY "A-END".
+       SUB-A-EXIT.
+           DISPLAY "A-EXIT".
+       SUB-B.
+           DISPLAY "B-START".
+       SUB-B-EXIT.
+           DISPLAY "B-EXIT".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A-START
+B-START
+B-EXIT
+A-END
+A-EXIT
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([Nested PERFORM with inline VARYING])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-A.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-A.
+           DISPLAY "A-START".
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 3
+             DISPLAY "LOOP-" I
+           END-PERFORM.
+           DISPLAY "A-END".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A-START
+LOOP-01
+LOOP-02
+LOOP-03
+A-END
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM VARYING with nested PERFORM paragraph])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 2
+             DISPLAY "OUTER-" I
+             PERFORM SUB-A
+           END-PERFORM.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-A.
+           DISPLAY "A-" I.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+OUTER-01
+A-01
+OUTER-02
+A-02
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([PERFORM THRU VARYING with nested PERFORM])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM SUB-A THRU SUB-A-EXIT
+             VARYING I FROM 1 BY 1 UNTIL I > 2.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SUB-A.
+           DISPLAY "A-" I.
+           PERFORM SUB-B.
+           DISPLAY "A-DONE-" I.
+       SUB-A-EXIT.
+           DISPLAY "A-EXIT-" I.
+       SUB-B.
+           DISPLAY "B-" I.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A-01
+B-01
+A-DONE-01
+A-EXIT-01
+A-02
+B-02
+A-DONE-02
+A-EXIT-02
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([Nested PERFORM section])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-SEC SECTION.
+       MAIN-PARA.
+           DISPLAY "MAIN-START".
+           PERFORM SEC-A.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       SEC-A SECTION.
+       PARA-A1.
+           DISPLAY "A1".
+           PERFORM SEC-B.
+           DISPLAY "A2".
+       SEC-B SECTION.
+       PARA-B1.
+           DISPLAY "B1".
+       PARA-B2.
+           DISPLAY "B2".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A1
+B1
+B2
+A2
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([Three-level nested PERFORM])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM PROC-A.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+       PROC-A.
+           DISPLAY "A-START".
+           PERFORM PROC-B.
+           DISPLAY "A-END".
+       PROC-B.
+           DISPLAY "B-START".
+           PERFORM PROC-C.
+           DISPLAY "B-END".
+       PROC-C.
+           DISPLAY "C".
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+A-START
+B-START
+C
+B-END
+A-END
+MAIN-END
+])
+
+AT_CLEANUP
+
+AT_SETUP([Nested inline PERFORM VARYING])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 I PIC 9(2) VALUE 0.
+       01 J PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+       MAIN-PROC.
+           DISPLAY "MAIN-START".
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 2
+             DISPLAY "OUTER-" I
+             PERFORM VARYING J FROM 1 BY 1 UNTIL J > 2
+               DISPLAY "INNER-" I "-" J
+             END-PERFORM
+           END-PERFORM.
+           DISPLAY "MAIN-END".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[MAIN-START
+OUTER-01
+INNER-01-01
+INNER-01-02
+OUTER-02
+INNER-02-01
+INNER-02-02
+MAIN-END
+])
+
+AT_CLEANUP
