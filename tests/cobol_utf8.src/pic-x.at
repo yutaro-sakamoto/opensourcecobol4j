@@ -86,7 +86,6 @@ AT_CLEANUP
 
 AT_SETUP([Move with trunc and trimming 1])
 export LC_ALL=''
-AT_CHECK([${SKIP_TEST}])
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
