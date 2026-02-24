@@ -21,6 +21,7 @@ package jp.osscons.opensourcecobol.libcobj.call;
 import static org.junit.jupiter.api.Assertions.*;
 
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class CobolSystemRoutineTest {
@@ -369,12 +370,14 @@ class CobolSystemRoutineTest {
         assertEquals((byte) 1, result.getByte(0));
     }
 
+    @Disabled("Environment-dependent: executes real shell commands")
     @Test
     void testSYSTEM_String() {
         int result = CobolSystemRoutine.SYSTEM("echo test");
         assertEquals(0, result);
     }
 
+    @Disabled("Environment-dependent: executes real shell commands")
     @Test
     void testSYSTEM_InvalidCommand() {
         int result = CobolSystemRoutine.SYSTEM("command_that_does_not_exist_xyz123");
