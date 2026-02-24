@@ -4,90 +4,9 @@ opensource COBOL 4J で使用される環境変数について説明します。
 
 ## コンパイラ設定
 
-以下の環境変数は、`cobj` コマンド（COBOLからJavaへのコンパイラ）で使用されます。
-
-### COBCPY
-
-COPY句のファイル検索パスを指定します。
-
-- **形式**: パス区切り文字（`:`）で複数指定可
-- **例**: `COBCPY=/opt/cobol/copy:/usr/local/cobol/copy`
-- **用途**: COPY文で参照されるファイルの検索パスを追加します。
-
-### COB_CC
-
-Cコンパイラコマンドを指定します。
-
-- **デフォルト**: `gcc`
-- **例**: `COB_CC=clang`
-- **用途**: コンパイルプロセスで使用するCコンパイラを変更します。
-
-### COB_CONFIG_DIR
-
-コンパイラ設定ファイルのディレクトリを指定します。
-
-- **デフォルト**: `/usr/share/opensource-cobol-4j-<version>/config`
-- **例**: `COB_CONFIG_DIR=/opt/cobol/config`
-- **用途**: コンパイラの設定ファイル（`*.conf`）の検索先を変更します。
-
-### COB_COPY_DIR
-
-COPYファイルのディレクトリを指定します。
-
-- **デフォルト**: `/usr/share/opensource-cobol-4j-<version>/copy`
-- **例**: `COB_COPY_DIR=/opt/cobol/copy`
-- **用途**: COPY文で参照されるファイルのデフォルトディレクトリを変更します。
-
-### COB_JAVA_FLAGS
-
-Javaコンパイラ（javac）への追加フラグを指定します。
-
-- **デフォルト**: 空文字列
-- **例**: `COB_JAVA_FLAGS="-source 11 -target 11"`
-- **用途**: javacに追加のオプションを渡します。
-
-### COB_LDFLAGS
-
-リンカフラグを指定します。
-
-- **デフォルト**: 空文字列
-- **例**: `COB_LDFLAGS="-L/opt/lib"`
-- **用途**: リンク時に追加のフラグを渡します。
-
-### COB_LIBS
-
-リンカライブラリを指定します。
-
-- **デフォルト**: ビルド時に `configure` で設定される（例: `-L/usr/lib64 -lcob -lm`）
-- **例**: `COB_LIBS="-L/opt/lib -lcob -lm"`
-- **用途**: リンク時に使用するライブラリを指定します。
-
-### COB_LDADD
-
-追加リンカライブラリを指定します。`COB_LIBS` に追加される形で使用されます。
-
-- **例**: `COB_LDADD="-lpthread"`
-- **用途**: `COB_LIBS` に追加のライブラリを付加します。
-
-### COB_EBCDIC
-
-代替EBCDIC変換テーブルの使用を制御します。
-
-- **値**: `F` または `f` で始まる値で有効化
-- **例**: `COB_EBCDIC=F`
-- **用途**: 代替EBCDICテーブルを使用するCOBOLプログラムのコンパイルに使用します。
-
-### TMPDIR / TMP（コンパイラ側）
-
-コンパイル時の一時ディレクトリを指定します。
-
-- **優先順位**: `TMPDIR` > `TMP` > `/tmp`
-- **例**: `TMPDIR=/var/tmp/cobol`
-- **用途**: コンパイル時に生成される一時ファイルの格納先を変更します。
+準備中
 
 ## ランタイム設定
-
-以下の環境変数は、コンパイル後のプログラム実行時に使用されます。
 
 ### 一般設定
 
@@ -248,14 +167,6 @@ CALL文で呼び出されるJavaクラスのパッケージパスを指定しま
 ## 使用例
 
 ```bash
-# コンパイラ設定の例
-export COBCPY=/opt/cobol/copy
-export COB_CONFIG_DIR=/opt/cobol/config
-export COB_JAVA_FLAGS="-source 11 -target 11"
-
-# COBOLソースをコンパイル
-cobj MAINPROG.cbl
-
 # ランタイム設定の例
 export COB_DATE=2024/01/15
 export COB_TERMINAL_ENCODING=UTF-8
