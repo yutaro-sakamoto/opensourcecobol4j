@@ -288,11 +288,11 @@ actual-output.dat
 
 #### COB_SYNC
 
-Controls whether disk synchronization is performed after file operations.
+Controls whether a flush (writing out the buffer) is performed immediately after a successful WRITE, REWRITE, or DELETE statement.
 
-- **Value**: Enabled by `Y` or `y`
+- **Value**: Enabled by `Y` or `y` (performs flush), also enabled by `P` or `p`
 - **Example**: `COB_SYNC=Y`
-- **Purpose**: Use when you want to ensure data persistence.
+- **Purpose**: By flushing the buffer to disk after each write operation, data loss due to abnormal termination can be reduced. However, performance decreases because a flush occurs on every operation.
 
 #### COB_LS_NULLS
 
