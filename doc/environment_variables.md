@@ -592,16 +592,3 @@ $ COB_NIBBLE_C_UNSIGNED=Y java cobnibble
 Signed:   NUMERIC
 Unsigned: NUMERIC
 ```
-
-## Usage Examples
-
-```bash
-# Runtime settings example
-export COB_DATE=2024/01/15
-export COB_TERMINAL_ENCODING=UTF-8
-export COB_FILE_PATH=/data/cobol
-export DD_MASTER=/data/master.dat
-
-# Run the program
-java -cp libcobj.jar:. MAINPROG
-```

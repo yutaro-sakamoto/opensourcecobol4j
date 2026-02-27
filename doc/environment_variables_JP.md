@@ -592,16 +592,3 @@ $ COB_NIBBLE_C_UNSIGNED=Y java cobnibble
 Signed:   NUMERIC
 Unsigned: NUMERIC
 ```
-
-## 使用例
-
-```bash
-# ランタイム設定の例
-export COB_DATE=2024/01/15
-export COB_TERMINAL_ENCODING=UTF-8
-export COB_FILE_PATH=/data/cobol
-export DD_MASTER=/data/master.dat
-
-# プログラムを実行
-java -cp libcobj.jar:. MAINPROG
-```
