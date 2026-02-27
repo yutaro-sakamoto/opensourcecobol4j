@@ -296,9 +296,7 @@ Controls whether a flush (writing out the buffer) is performed immediately after
 
 #### COB_LS_NULLS
 
-Controls NULL character handling in line sequential files.
-
-- **Purpose**: Specifies how NULL characters are handled when reading/writing line sequential files.
+Under preparation.
 
 #### COB_LS_FIXED
 

@@ -296,9 +296,7 @@ WRITE文、REWRITE文、DELETE文が成功した直後にファイルのflush（
 
 #### COB_LS_NULLS
 
-行順編成ファイルでNULL文字の処理を制御します。
-
-- **用途**: 行順編成ファイルの読み書き時のNULL文字の扱いを指定します。
+準備中
 
 #### COB_LS_FIXED
 
