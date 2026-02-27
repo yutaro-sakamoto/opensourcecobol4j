@@ -520,11 +520,9 @@ Under preparation.
 
 #### COB_LIBRARY_PATH
 
-Specifies the classpath for searching programs called by CALL statements.
+An environment variable intended to specify search paths for programs called by CALL statements.
 
-- **Format**: Directory path (delimiter is system-dependent)
-- **Example**: `COB_LIBRARY_PATH=/opt/cobol/lib`
-- **Purpose**: Adds search paths for dynamically called programs.
+- **Note**: In the current implementation, the value is stored in an internal variable but is not referenced during program resolution, so it has no effect on behavior.
 
 #### COB_PACKAGE_PATH
 
