@@ -161,6 +161,7 @@ java [PROGRAM-ID]
 * [opensource COBOL 4J: Java変換解説](./doc/converted_Java_file_JP.md)
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [INDEXEDファイルのロックの仕様](./doc/specification-locking-indexed-file_JP.md)
+* [環境変数リファレンス](./doc/environment_variables_JP.md)
 
 ## 実装状況
 実装済み機能：
