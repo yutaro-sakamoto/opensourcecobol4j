@@ -11,8 +11,7 @@ PROJECT_ROOT   = ..
 COBJ           = $(PROJECT_ROOT)/.local_install/bin/cobj
 LIBCOBJ_JAR    = $(PROJECT_ROOT)/.local_install/lib/opensourcecobol4j/libcobj.jar
 CLASSPATH      = $(LIBCOBJ_JAR)
-COBJ_FLAGS     = -std=cobol2002 -debug -Wall
-COBJ_FLAGS_JP  = $(COBJ_FLAGS) -conf=$(PROJECT_ROOT)/config/jp-compat.conf
+COBJ_FLAGS     =
 JAVA_FLAGS     = -cp $(CLASSPATH):.
 
 PROGRAMS = cobdate cobverbose cobswitch cobfilepath ddfilename \
@@ -37,7 +36,7 @@ compile-cobverbose: cobverbose.cbl
 	$(COBJ) $(COBJ_FLAGS) cobverbose.cbl
 
 compile-cobswitch: cobswitch.cbl
-	$(COBJ) $(COBJ_FLAGS_JP) cobswitch.cbl
+	$(COBJ) $(COBJ_FLAGS) cobswitch.cbl
 
 compile-cobfilepath: cobfilepath.cbl
 	$(COBJ) $(COBJ_FLAGS) cobfilepath.cbl

@@ -2,16 +2,15 @@
        PROGRAM-ID.      cobswitch.
       *> Demonstrates COB_SWITCH_1~8 environment variables.
       *> COB_SWITCH_n=ON sets the initial value of SWITCH-n.
-      *> Requires jp-compat config for switch-no-mnemonic.
        ENVIRONMENT DIVISION.
        CONFIGURATION SECTION.
        SPECIAL-NAMES.
-           SWITCH-1
-             ON IS SWIT1-ON
-             OFF IS SWIT1-OFF
-           SWITCH-2
-             ON IS SWIT2-ON
-             OFF IS SWIT2-OFF.
+           SWITCH-1 IS SW1
+             ON STATUS IS SWIT1-ON
+             OFF STATUS IS SWIT1-OFF
+           SWITCH-2 IS SW2
+             ON STATUS IS SWIT2-ON
+             OFF STATUS IS SWIT2-OFF.
        DATA             DIVISION.
        WORKING-STORAGE  SECTION.
        PROCEDURE        DIVISION.
