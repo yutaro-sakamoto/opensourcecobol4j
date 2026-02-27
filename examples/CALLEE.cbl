@@ -1,5 +1,5 @@
        IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      callee.
+       PROGRAM-ID.      CALLEE.
       *> Called program for loadcaller.cbl example.
       *> Demonstrates COB_LOAD_CASE environment variable.
        PROCEDURE        DIVISION.

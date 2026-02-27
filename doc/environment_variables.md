@@ -516,48 +516,7 @@ Specifies the directory for temporary files used by sort operations and similar 
 
 #### COB_LOAD_CASE
 
-Controls case conversion of program names specified in CALL statements.
-
-- **Value**:
-  - `LOWER`: Convert to lowercase
-  - `UPPER`: Convert to uppercase
-- **Example**: `COB_LOAD_CASE=LOWER`
-- **Purpose**: Controls case conversion when searching for program names.
-
-**Sample Program**
-
-In this example, the caller program `loadcaller` calls the callee program `callee` using `CALL "callee"`. When `COB_LOAD_CASE=UPPER` is set, the program name in the CALL statement is converted to uppercase before searching.
-
-Caller (`loadcaller.cbl`):
-
-```cobol
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      loadcaller.
-       PROCEDURE        DIVISION.
-           CALL "callee"
-           END-CALL.
-           STOP RUN.
-```
-
-Callee (`CALLEE.cbl`):
-
-```cobol
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      callee.
-       PROCEDURE        DIVISION.
-           DISPLAY "CALLEE was called successfully.".
-           GOBACK.
-```
-
-Example run:
-
-```bash
-$ cobj CALLEE.cbl
-$ cobj loadcaller.cbl
-
-$ COB_LOAD_CASE=UPPER java loadcaller
-CALLEE was called successfully.
-```
+Under preparation.
 
 #### COB_LIBRARY_PATH
 

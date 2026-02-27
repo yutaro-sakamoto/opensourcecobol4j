@@ -516,48 +516,7 @@ $ cat TEST-REWRITE
 
 #### COB_LOAD_CASE
 
-CALL文で指定されるプログラム名の大文字・小文字変換を制御します。
-
-- **値**:
-  - `LOWER`: 小文字に変換
-  - `UPPER`: 大文字に変換
-- **例**: `COB_LOAD_CASE=LOWER`
-- **用途**: プログラム名の検索時のケース変換を制御します。
-
-**サンプルプログラム**
-
-呼び出し元プログラム `loadcaller` が `CALL "callee"` で呼び出し先プログラム `callee` を呼び出す例です。`COB_LOAD_CASE=UPPER` を設定すると、CALL文のプログラム名が大文字に変換されてから検索されます。
-
-呼び出し元 (`loadcaller.cbl`):
-
-```cobol
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      loadcaller.
-       PROCEDURE        DIVISION.
-           CALL "callee"
-           END-CALL.
-           STOP RUN.
-```
-
-呼び出し先 (`CALLEE.cbl`):
-
-```cobol
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      callee.
-       PROCEDURE        DIVISION.
-           DISPLAY "CALLEE was called successfully.".
-           GOBACK.
-```
-
-実行例:
-
-```bash
-$ cobj CALLEE.cbl
-$ cobj loadcaller.cbl
-
-$ COB_LOAD_CASE=UPPER java loadcaller
-CALLEE was called successfully.
-```
+準備中
 
 #### COB_LIBRARY_PATH
 

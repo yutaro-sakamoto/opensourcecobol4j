@@ -169,14 +169,18 @@ run-ocextcreates: compile-ocextcreates
 	@echo ""
 
 # --- 8. COB_LOAD_CASE ---
+# NOTE: COB_LOAD_CASE is currently non-functional (cobolInitCall is never called).
+# CALLEE.cbl has PROGRAM-ID CALLEE (uppercase), loadcaller.cbl calls "callee" (lowercase).
+# Without COB_LOAD_CASE, the call fails because "callee" != "CALLEE".
+# With COB_LOAD_CASE=UPPER, the call should succeed but currently also fails.
 run-loadcaller: compile-loadcaller
 	@echo "=========================================="
 	@echo " COB_LOAD_CASE"
 	@echo "=========================================="
-	@echo "--- Without COB_LOAD_CASE ---"
-	@java $(JAVA_FLAGS) loadcaller
-	@echo "--- With COB_LOAD_CASE=UPPER ---"
-	@COB_LOAD_CASE=UPPER java $(JAVA_FLAGS) loadcaller
+	@echo "--- Without COB_LOAD_CASE (expect failure) ---"
+	@java $(JAVA_FLAGS) loadcaller 2>/dev/null || echo "(Failed: program 'callee' not found)"
+	@echo "--- With COB_LOAD_CASE=UPPER (expect success, but currently non-functional) ---"
+	@COB_LOAD_CASE=UPPER java $(JAVA_FLAGS) loadcaller 2>/dev/null || echo "(Failed: COB_LOAD_CASE is currently non-functional)"
 	@echo ""
 
 # --- 9. COB_IO_ASSUME_REWRITE ---
