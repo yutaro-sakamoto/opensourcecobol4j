@@ -302,6 +302,7 @@ Under preparation.
 
 Controls whether line sequential files are treated as fixed-length.
 
+- **Value**: Enabled by `Y` or `y`
 - **Purpose**: Specifies how record length is handled for line sequential files.
 
 **Sample Program**
