@@ -355,7 +355,7 @@ public class CobolUtil {
                 if (size >= 0) {
                     CobolUtil.fileSeqBufferSize = size;
                 }
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ignored) {
                 // ignore invalid value
             }
         }
