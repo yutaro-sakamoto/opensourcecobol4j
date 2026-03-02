@@ -38,24 +38,20 @@ class FileIO {
     private boolean useStdIn = true;
     private boolean atEnd = false;
 
-    private static final boolean USE_READ_BUFFER = false;
-    private static final int READ_BUFFER_SIZE = 1024;
-    private int readBufferIndex;
-    private byte[] readBuffer;
-    private int readBufferEndIndex;
+    private static final int BUFFER_MODE_NONE = 0;
+    private static final int BUFFER_MODE_READ = 1;
+    private static final int BUFFER_MODE_WRITE = 2;
 
-    private int writeBufferSize = 0;
-    private int writeBufferEndIndex = 0;
-    private byte[] writeBuffer;
+    private int bufferMode = BUFFER_MODE_NONE;
+    private int bufferSize = 0;
+    private byte[] buffer;
+    private int bufferDataStart = 0;
+    private int bufferDataEnd = 0;
 
     /** TODO: 準備中 */
     FileIO() {
         this.useStdOut = true;
         this.useStdIn = true;
-
-        this.readBufferIndex = READ_BUFFER_SIZE;
-        this.readBuffer = new byte[READ_BUFFER_SIZE];
-        this.readBufferEndIndex = READ_BUFFER_SIZE;
     }
 
     /**
@@ -116,19 +112,78 @@ class FileIO {
      *
      * @param bufferSize TODO: 準備中
      */
-    void prepareWriteBuffer(int bufferSize) {
+    void prepareBuffer(int bufferSize) {
         if (bufferSize > 0) {
-            this.writeBufferSize = bufferSize;
-            this.writeBufferEndIndex = 0;
-            if (this.writeBuffer == null || this.writeBuffer.length < bufferSize) {
-                this.writeBuffer = new byte[bufferSize];
+            this.bufferSize = bufferSize;
+            this.bufferMode = BUFFER_MODE_NONE;
+            this.bufferDataStart = 0;
+            this.bufferDataEnd = 0;
+            if (this.buffer == null || this.buffer.length < bufferSize) {
+                this.buffer = new byte[bufferSize];
             }
         }
     }
 
-    private void destroyWriteBuffer() {
-        this.writeBufferSize = 0;
-        this.writeBufferEndIndex = 0;
+    private void destroyBuffer() {
+        this.bufferSize = 0;
+        this.bufferMode = BUFFER_MODE_NONE;
+        this.bufferDataStart = 0;
+        this.bufferDataEnd = 0;
+    }
+
+    private boolean flushWriteBuffer() {
+        if (bufferMode == BUFFER_MODE_WRITE && bufferDataEnd > 0 && bufferSize > 0) {
+            ByteBuffer bb = ByteBuffer.wrap(buffer, 0, bufferDataEnd);
+            if (!writeByteBuffer(bb)) {
+                return false;
+            }
+            bufferDataEnd = 0;
+        }
+        return true;
+    }
+
+    private int fillReadBuffer() throws IOException {
+        bufferDataStart = 0;
+        bufferDataEnd = 0;
+        ByteBuffer bb = ByteBuffer.wrap(buffer, 0, bufferSize);
+        int readBytes;
+        try {
+            readBytes = this.fc.read(bb);
+        } catch (NonReadableChannelException e) {
+            return -1;
+        }
+        if (readBytes <= 0) {
+            return -1;
+        }
+        bufferDataEnd = readBytes;
+        return readBytes;
+    }
+
+    private void transitionToRead() throws IOException {
+        if (bufferMode == BUFFER_MODE_WRITE) {
+            if (!flushWriteBuffer()) {
+                throw new IOException("Failed to flush write buffer");
+            }
+        }
+        if (bufferMode != BUFFER_MODE_READ) {
+            bufferMode = BUFFER_MODE_READ;
+            bufferDataStart = 0;
+            bufferDataEnd = 0;
+        }
+    }
+
+    private void transitionToWrite() throws IOException {
+        if (bufferMode == BUFFER_MODE_READ) {
+            int unread = bufferDataEnd - bufferDataStart;
+            if (unread > 0) {
+                this.fc.position(this.fc.position() - unread);
+            }
+        }
+        if (bufferMode != BUFFER_MODE_WRITE) {
+            bufferMode = BUFFER_MODE_WRITE;
+            bufferDataStart = 0;
+            bufferDataEnd = 0;
+        }
     }
 
     /**
@@ -144,6 +199,35 @@ class FileIO {
             System.err.println("read stdin not implmented");
             return 0;
         } else {
+            if (bufferSize > 0) {
+                try {
+                    transitionToRead();
+                    int offset = 0;
+                    int remaining = size;
+                    while (remaining > 0) {
+                        int available = bufferDataEnd - bufferDataStart;
+                        if (available <= 0) {
+                            if (fillReadBuffer() < 0) {
+                                this.atEnd = true;
+                                if (offset == 0) {
+                                    return 0;
+                                }
+                                return 1;
+                            }
+                            available = bufferDataEnd - bufferDataStart;
+                        }
+                        int toCopy = Math.min(remaining, available);
+                        System.arraycopy(buffer, bufferDataStart, bytes, offset, toCopy);
+                        bufferDataStart += toCopy;
+                        offset += toCopy;
+                        remaining -= toCopy;
+                    }
+                } catch (IOException e) {
+                    return 0;
+                }
+                return 1;
+            }
+
             int readSize;
             ByteBuffer data = ByteBuffer.wrap(bytes);
             try {
@@ -175,6 +259,29 @@ class FileIO {
             if (this.fc == null) {
                 throw new IOException();
             }
+            if (bufferSize > 0) {
+                transitionToRead();
+                int offset = 0;
+                int remaining = size;
+                while (remaining > 0) {
+                    int available = bufferDataEnd - bufferDataStart;
+                    if (available <= 0) {
+                        if (fillReadBuffer() < 0) {
+                            return offset;
+                        }
+                        available = bufferDataEnd - bufferDataStart;
+                    }
+                    int toCopy = Math.min(remaining, available);
+                    for (int i = 0; i < toCopy; ++i) {
+                        storage.setByte(offset + i, buffer[bufferDataStart + i]);
+                    }
+                    bufferDataStart += toCopy;
+                    offset += toCopy;
+                    remaining -= toCopy;
+                }
+                return size;
+            }
+
             int i = 0;
             try {
                 for (i = 0; i < size; ++i) {
@@ -201,17 +308,6 @@ class FileIO {
         return true;
     }
 
-    private boolean outputWriteBuffer() {
-        if (writeBufferEndIndex > 0 && writeBufferSize > 0) {
-            ByteBuffer bb = ByteBuffer.wrap(writeBuffer, 0, writeBufferEndIndex);
-            if (!writeByteBuffer(bb)) {
-                return false;
-            }
-            writeBufferEndIndex = 0;
-        }
-        return true;
-    }
-
     /**
      * TODO: 準備中
      *
@@ -223,18 +319,27 @@ class FileIO {
         if (this.fc == null) {
             return false;
         }
-        if (writeBufferSize > 0 && size <= writeBufferSize - writeBufferEndIndex) {
-            System.arraycopy(bytes, 0, writeBuffer, writeBufferEndIndex, size);
-            writeBufferEndIndex += size;
-            return true;
-        }
-        if (!outputWriteBuffer()) {
-            return false;
-        }
-        if (writeBufferSize > 0 && size <= writeBufferSize - writeBufferEndIndex) {
-            System.arraycopy(bytes, 0, writeBuffer, writeBufferEndIndex, size);
-            writeBufferEndIndex += size;
-            return true;
+        if (bufferSize > 0) {
+            try {
+                transitionToWrite();
+            } catch (IOException e) {
+                return false;
+            }
+            if (size <= bufferSize - bufferDataEnd) {
+                System.arraycopy(bytes, 0, buffer, bufferDataEnd, size);
+                bufferDataEnd += size;
+                return true;
+            }
+            if (!flushWriteBuffer()) {
+                return false;
+            }
+            if (size <= bufferSize - bufferDataEnd) {
+                System.arraycopy(bytes, 0, buffer, bufferDataEnd, size);
+                bufferDataEnd += size;
+                return true;
+            }
+            ByteBuffer bb = ByteBuffer.wrap(bytes, 0, size);
+            return writeByteBuffer(bb);
         }
         ByteBuffer bb = ByteBuffer.wrap(bytes, 0, size);
         return writeByteBuffer(bb);
@@ -251,22 +356,31 @@ class FileIO {
         if (this.fc == null) {
             return false;
         }
-        if (writeBufferSize > 0 && size <= writeBufferSize - writeBufferEndIndex) {
-            for (int i = 0; i < size; ++i) {
-                writeBuffer[writeBufferEndIndex + i] = storage.getByte(i);
+        if (bufferSize > 0) {
+            try {
+                transitionToWrite();
+            } catch (IOException e) {
+                return false;
             }
-            writeBufferEndIndex += size;
-            return true;
-        }
-        if (!outputWriteBuffer()) {
-            return false;
-        }
-        if (writeBufferSize > 0 && size <= writeBufferSize - writeBufferEndIndex) {
-            for (int i = 0; i < size; ++i) {
-                writeBuffer[writeBufferEndIndex + i] = storage.getByte(i);
+            if (size <= bufferSize - bufferDataEnd) {
+                for (int i = 0; i < size; ++i) {
+                    buffer[bufferDataEnd + i] = storage.getByte(i);
+                }
+                bufferDataEnd += size;
+                return true;
             }
-            writeBufferEndIndex += size;
-            return true;
+            if (!flushWriteBuffer()) {
+                return false;
+            }
+            if (size <= bufferSize - bufferDataEnd) {
+                for (int i = 0; i < size; ++i) {
+                    buffer[bufferDataEnd + i] = storage.getByte(i);
+                }
+                bufferDataEnd += size;
+                return true;
+            }
+            ByteBuffer bb = storage.getByteBuffer(size);
+            return writeByteBuffer(bb);
         }
         ByteBuffer bb = storage.getByteBuffer(size);
         return writeByteBuffer(bb);
@@ -282,16 +396,23 @@ class FileIO {
         if (this.fc == null) {
             return 0;
         }
-        if (writeBufferSize > 0 && 1 <= writeBufferSize - writeBufferEndIndex) {
-            writeBuffer[writeBufferEndIndex++] = val;
-            return val;
-        }
-        if (!outputWriteBuffer()) {
-            return -1;
-        }
-        if (writeBufferSize > 0 && 1 <= writeBufferSize - writeBufferEndIndex) {
-            writeBuffer[writeBufferEndIndex++] = val;
-            return val;
+        if (bufferSize > 0) {
+            try {
+                transitionToWrite();
+            } catch (IOException e) {
+                return -1;
+            }
+            if (1 <= bufferSize - bufferDataEnd) {
+                buffer[bufferDataEnd++] = val;
+                return val;
+            }
+            if (!flushWriteBuffer()) {
+                return -1;
+            }
+            if (1 <= bufferSize - bufferDataEnd) {
+                buffer[bufferDataEnd++] = val;
+                return val;
+            }
         }
         byte[] arr = {val};
         if (writeByteBuffer(ByteBuffer.wrap(arr))) {
@@ -310,40 +431,29 @@ class FileIO {
         if (this.fc == null) {
             return 0;
         }
-        if (USE_READ_BUFFER) {
-            if (readBufferIndex >= READ_BUFFER_SIZE) {
-                this.readBufferIndex = 0;
-                try {
-                    ByteBuffer bb = ByteBuffer.wrap(readBuffer);
-                    int readBytes = this.fc.read(bb);
-                    if (readBytes <= 0) {
-                        this.readBufferEndIndex = -1;
-                    } else {
-                        this.readBufferEndIndex = readBytes;
-                    }
-                } catch (IOException | NonReadableChannelException e) {
-                    return -1;
-                }
-            }
-
-            if (this.readBufferIndex >= this.readBufferEndIndex) {
-                return -1;
-            }
-
-            return readBuffer[readBufferIndex++];
-
-        } else {
+        if (bufferSize > 0) {
             try {
-                byte[] b = new byte[1];
-                ByteBuffer bb = ByteBuffer.wrap(b);
-                if (this.fc.read(bb) == 1) {
-                    return b[0];
-                } else {
-                    return -1;
+                transitionToRead();
+                if (bufferDataStart >= bufferDataEnd) {
+                    if (fillReadBuffer() < 0) {
+                        return -1;
+                    }
                 }
-            } catch (IOException | NonReadableChannelException e) {
+                return buffer[bufferDataStart++] & 0xFF;
+            } catch (IOException e) {
                 return -1;
             }
+        }
+        try {
+            byte[] b = new byte[1];
+            ByteBuffer bb = ByteBuffer.wrap(b);
+            if (this.fc.read(bb) == 1) {
+                return b[0] & 0xFF;
+            } else {
+                return -1;
+            }
+        } catch (IOException | NonReadableChannelException e) {
+            return -1;
         }
     }
 
@@ -351,8 +461,10 @@ class FileIO {
     void close() {
         if (!useStdOut && !useStdIn && this.fc != null) {
             try {
-                outputWriteBuffer();
-                destroyWriteBuffer();
+                if (bufferMode == BUFFER_MODE_WRITE) {
+                    flushWriteBuffer();
+                }
+                destroyBuffer();
                 this.fc.close();
             } catch (IOException e) {
                 return;
@@ -364,7 +476,9 @@ class FileIO {
     void flush() {
         if (!useStdOut) {
             try {
-                outputWriteBuffer();
+                if (bufferMode == BUFFER_MODE_WRITE) {
+                    flushWriteBuffer();
+                }
                 this.fc.force(false);
             } catch (IOException e) {
                 return;
@@ -388,16 +502,26 @@ class FileIO {
     boolean seek(long offset, int origin) {
         if (!useStdOut && !useStdIn) {
             try {
+                if (bufferMode == BUFFER_MODE_WRITE) {
+                    flushWriteBuffer();
+                }
                 switch (origin) {
                     case FileIO.SEEK_SET:
                         this.fc.position(offset);
                         break;
                     case FileIO.SEEK_CUR:
-                        this.fc.position(this.fc.position() + offset);
+                        long adjustment = 0;
+                        if (bufferMode == BUFFER_MODE_READ) {
+                            adjustment = bufferDataEnd - bufferDataStart;
+                        }
+                        this.fc.position(this.fc.position() + offset - adjustment);
                         break;
                     default:
                         return false;
                 }
+                bufferMode = BUFFER_MODE_NONE;
+                bufferDataStart = 0;
+                bufferDataEnd = 0;
             } catch (IOException e) {
                 return false;
             }
@@ -412,6 +536,12 @@ class FileIO {
     void rewind() {
         if (!useStdOut && !useStdIn) {
             try {
+                if (bufferMode == BUFFER_MODE_WRITE) {
+                    flushWriteBuffer();
+                }
+                bufferMode = BUFFER_MODE_NONE;
+                bufferDataStart = 0;
+                bufferDataEnd = 0;
                 this.fc.position(0L);
             } catch (IOException e) {
                 return;
