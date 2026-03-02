@@ -239,7 +239,8 @@ AT_DATA([prog.cbl], [
        INPUT-OUTPUT     SECTION.
        FILE-CONTROL.
        SELECT TEST-FILE ASSIGN "TESTMANY"
-           ORGANIZATION SEQUENTIAL.
+           ORGANIZATION SEQUENTIAL
+           FILE STATUS F-STATUS.
        DATA             DIVISION.
        FILE             SECTION.
        FD TEST-FILE.
@@ -248,6 +249,7 @@ AT_DATA([prog.cbl], [
        01 CTR           PIC 9(4) VALUE 0.
        01 READ-CTR      PIC 9(4) VALUE 0.
        01 F-STATUS      PIC X(2).
+       01 EOF-FLAG      PIC 9 VALUE 0.
        PROCEDURE        DIVISION.
            OPEN OUTPUT TEST-FILE.
            PERFORM 100 TIMES
@@ -258,13 +260,15 @@ AT_DATA([prog.cbl], [
            CLOSE TEST-FILE.
 
            MOVE 0 TO READ-CTR.
+           MOVE 0 TO EOF-FLAG.
            OPEN INPUT TEST-FILE.
-           PERFORM UNTIL EXIT
+           PERFORM UNTIL EOF-FLAG = 1
                READ TEST-FILE
                    AT END
-                       EXIT PERFORM
+                       MOVE 1 TO EOF-FLAG
+                   NOT AT END
+                       ADD 1 TO READ-CTR
                END-READ
-               ADD 1 TO READ-CTR
            END-PERFORM.
            CLOSE TEST-FILE.
            DISPLAY READ-CTR.
@@ -288,7 +292,8 @@ AT_DATA([prog.cbl], [
        INPUT-OUTPUT     SECTION.
        FILE-CONTROL.
        SELECT TEST-FILE ASSIGN "TESTLMNY"
-           ORGANIZATION LINE SEQUENTIAL.
+           ORGANIZATION LINE SEQUENTIAL
+           FILE STATUS F-STATUS.
        DATA             DIVISION.
        FILE             SECTION.
        FD TEST-FILE.
@@ -296,6 +301,8 @@ AT_DATA([prog.cbl], [
        WORKING-STORAGE  SECTION.
        01 CTR           PIC 9(4) VALUE 0.
        01 READ-CTR      PIC 9(4) VALUE 0.
+       01 F-STATUS      PIC X(2).
+       01 EOF-FLAG      PIC 9 VALUE 0.
        PROCEDURE        DIVISION.
            OPEN OUTPUT TEST-FILE.
            PERFORM 100 TIMES
@@ -306,13 +313,15 @@ AT_DATA([prog.cbl], [
            CLOSE TEST-FILE.
 
            MOVE 0 TO READ-CTR.
+           MOVE 0 TO EOF-FLAG.
            OPEN INPUT TEST-FILE.
-           PERFORM UNTIL EXIT
+           PERFORM UNTIL EOF-FLAG = 1
                READ TEST-FILE
                    AT END
-                       EXIT PERFORM
+                       MOVE 1 TO EOF-FLAG
+                   NOT AT END
+                       ADD 1 TO READ-CTR
                END-READ
-               ADD 1 TO READ-CTR
            END-PERFORM.
            CLOSE TEST-FILE.
            DISPLAY READ-CTR.
