@@ -38,15 +38,13 @@ class FileIO {
     private boolean useStdIn = true;
     private boolean atEnd = false;
 
-    private static final int BUFFER_MODE_NONE = 0;
-    private static final int BUFFER_MODE_READ = 1;
-    private static final int BUFFER_MODE_WRITE = 2;
-
-    private int bufferMode = BUFFER_MODE_NONE;
     private int bufferSize = 0;
     private byte[] buffer;
-    private int bufferDataStart = 0;
-    private int bufferDataEnd = 0;
+    private int bufferPos = 0;
+    private int bufferValidEnd = 0;
+    private long bufferFileOffset = 0;
+    private boolean bufferDirty = false;
+    private boolean bufferActive = false;
 
     /** TODO: 準備中 */
     FileIO() {
@@ -115,36 +113,55 @@ class FileIO {
     void prepareBuffer(int bufferSize) {
         if (bufferSize > 0) {
             this.bufferSize = bufferSize;
-            this.bufferMode = BUFFER_MODE_NONE;
-            this.bufferDataStart = 0;
-            this.bufferDataEnd = 0;
+            this.bufferActive = false;
+            this.bufferDirty = false;
+            this.bufferPos = 0;
+            this.bufferValidEnd = 0;
+            this.bufferFileOffset = 0;
             if (this.buffer == null || this.buffer.length < bufferSize) {
                 this.buffer = new byte[bufferSize];
             }
         }
     }
 
-    private void destroyBuffer() {
-        this.bufferSize = 0;
-        this.bufferMode = BUFFER_MODE_NONE;
-        this.bufferDataStart = 0;
-        this.bufferDataEnd = 0;
+    private long logicalPosition() throws IOException {
+        if (bufferActive) {
+            return bufferFileOffset + bufferPos;
+        }
+        return fc.position();
     }
 
-    private boolean flushWriteBuffer() {
-        if (bufferMode == BUFFER_MODE_WRITE && bufferDataEnd > 0 && bufferSize > 0) {
-            ByteBuffer bb = ByteBuffer.wrap(buffer, 0, bufferDataEnd);
+    private void deactivateBuffer() {
+        this.bufferActive = false;
+        this.bufferDirty = false;
+        this.bufferPos = 0;
+        this.bufferValidEnd = 0;
+        this.bufferFileOffset = 0;
+    }
+
+    private boolean flushBuffer() {
+        if (bufferDirty && bufferValidEnd > 0) {
+            try {
+                fc.position(bufferFileOffset);
+            } catch (IOException e) {
+                return false;
+            }
+            ByteBuffer bb = ByteBuffer.wrap(buffer, 0, bufferValidEnd);
             if (!writeByteBuffer(bb)) {
                 return false;
             }
-            bufferDataEnd = 0;
+            bufferDirty = false;
         }
         return true;
     }
 
     private int fillReadBuffer() throws IOException {
-        bufferDataStart = 0;
-        bufferDataEnd = 0;
+        long filePos = logicalPosition();
+        bufferActive = false;
+        bufferFileOffset = filePos;
+        bufferPos = 0;
+        bufferValidEnd = 0;
+        fc.position(filePos);
         ByteBuffer bb = ByteBuffer.wrap(buffer, 0, bufferSize);
         int readBytes;
         try {
@@ -155,35 +172,10 @@ class FileIO {
         if (readBytes <= 0) {
             return -1;
         }
-        bufferDataEnd = readBytes;
+        bufferValidEnd = readBytes;
+        bufferActive = true;
+        bufferDirty = false;
         return readBytes;
-    }
-
-    private void transitionToRead() throws IOException {
-        if (bufferMode == BUFFER_MODE_WRITE) {
-            if (!flushWriteBuffer()) {
-                throw new IOException("Failed to flush write buffer");
-            }
-        }
-        if (bufferMode != BUFFER_MODE_READ) {
-            bufferMode = BUFFER_MODE_READ;
-            bufferDataStart = 0;
-            bufferDataEnd = 0;
-        }
-    }
-
-    private void transitionToWrite() throws IOException {
-        if (bufferMode == BUFFER_MODE_READ) {
-            int unread = bufferDataEnd - bufferDataStart;
-            if (unread > 0) {
-                this.fc.position(this.fc.position() - unread);
-            }
-        }
-        if (bufferMode != BUFFER_MODE_WRITE) {
-            bufferMode = BUFFER_MODE_WRITE;
-            bufferDataStart = 0;
-            bufferDataEnd = 0;
-        }
     }
 
     /**
@@ -201,26 +193,32 @@ class FileIO {
         } else {
             if (bufferSize > 0) {
                 try {
-                    transitionToRead();
                     int offset = 0;
                     int remaining = size;
                     while (remaining > 0) {
-                        int available = bufferDataEnd - bufferDataStart;
-                        if (available <= 0) {
-                            if (fillReadBuffer() < 0) {
-                                this.atEnd = true;
-                                if (offset == 0) {
-                                    return 0;
-                                }
-                                return 1;
+                        if (bufferActive) {
+                            int available = bufferValidEnd - bufferPos;
+                            if (available > 0) {
+                                int toCopy = Math.min(remaining, available);
+                                System.arraycopy(buffer, bufferPos, bytes, offset, toCopy);
+                                bufferPos += toCopy;
+                                offset += toCopy;
+                                remaining -= toCopy;
+                                continue;
                             }
-                            available = bufferDataEnd - bufferDataStart;
                         }
-                        int toCopy = Math.min(remaining, available);
-                        System.arraycopy(buffer, bufferDataStart, bytes, offset, toCopy);
-                        bufferDataStart += toCopy;
-                        offset += toCopy;
-                        remaining -= toCopy;
+                        if (bufferDirty) {
+                            if (!flushBuffer()) {
+                                return 0;
+                            }
+                        }
+                        if (fillReadBuffer() < 0) {
+                            this.atEnd = true;
+                            if (offset == 0) {
+                                return 0;
+                            }
+                            return 1;
+                        }
                     }
                 } catch (IOException e) {
                     return 0;
@@ -260,24 +258,30 @@ class FileIO {
                 throw new IOException();
             }
             if (bufferSize > 0) {
-                transitionToRead();
                 int offset = 0;
                 int remaining = size;
                 while (remaining > 0) {
-                    int available = bufferDataEnd - bufferDataStart;
-                    if (available <= 0) {
-                        if (fillReadBuffer() < 0) {
+                    if (bufferActive) {
+                        int available = bufferValidEnd - bufferPos;
+                        if (available > 0) {
+                            int toCopy = Math.min(remaining, available);
+                            for (int i = 0; i < toCopy; ++i) {
+                                storage.setByte(offset + i, buffer[bufferPos + i]);
+                            }
+                            bufferPos += toCopy;
+                            offset += toCopy;
+                            remaining -= toCopy;
+                            continue;
+                        }
+                    }
+                    if (bufferDirty) {
+                        if (!flushBuffer()) {
                             return offset;
                         }
-                        available = bufferDataEnd - bufferDataStart;
                     }
-                    int toCopy = Math.min(remaining, available);
-                    for (int i = 0; i < toCopy; ++i) {
-                        storage.setByte(offset + i, buffer[bufferDataStart + i]);
+                    if (fillReadBuffer() < 0) {
+                        return offset;
                     }
-                    bufferDataStart += toCopy;
-                    offset += toCopy;
-                    remaining -= toCopy;
                 }
                 return size;
             }
@@ -308,6 +312,14 @@ class FileIO {
         return true;
     }
 
+    private void startNewBuffer(long filePos) {
+        bufferFileOffset = filePos;
+        bufferPos = 0;
+        bufferValidEnd = 0;
+        bufferActive = true;
+        bufferDirty = false;
+    }
+
     /**
      * TODO: 準備中
      *
@@ -321,22 +333,42 @@ class FileIO {
         }
         if (bufferSize > 0) {
             try {
-                transitionToWrite();
+                if (bufferActive) {
+                    if (bufferPos + size <= bufferSize) {
+                        System.arraycopy(bytes, 0, buffer, bufferPos, size);
+                        bufferPos += size;
+                        bufferValidEnd = Math.max(bufferValidEnd, bufferPos);
+                        bufferDirty = true;
+                        return true;
+                    }
+                    if (!flushBuffer()) {
+                        return false;
+                    }
+                    long filePos = bufferFileOffset + bufferPos;
+                    fc.position(filePos);
+                    startNewBuffer(filePos);
+                    if (size <= bufferSize) {
+                        System.arraycopy(bytes, 0, buffer, 0, size);
+                        bufferPos = size;
+                        bufferValidEnd = size;
+                        bufferDirty = true;
+                        return true;
+                    }
+                    deactivateBuffer();
+                    ByteBuffer bb = ByteBuffer.wrap(bytes, 0, size);
+                    return writeByteBuffer(bb);
+                }
+                startNewBuffer(fc.position());
+                if (size <= bufferSize) {
+                    System.arraycopy(bytes, 0, buffer, 0, size);
+                    bufferPos = size;
+                    bufferValidEnd = size;
+                    bufferDirty = true;
+                    return true;
+                }
+                deactivateBuffer();
             } catch (IOException e) {
                 return false;
-            }
-            if (size <= bufferSize - bufferDataEnd) {
-                System.arraycopy(bytes, 0, buffer, bufferDataEnd, size);
-                bufferDataEnd += size;
-                return true;
-            }
-            if (!flushWriteBuffer()) {
-                return false;
-            }
-            if (size <= bufferSize - bufferDataEnd) {
-                System.arraycopy(bytes, 0, buffer, bufferDataEnd, size);
-                bufferDataEnd += size;
-                return true;
             }
             ByteBuffer bb = ByteBuffer.wrap(bytes, 0, size);
             return writeByteBuffer(bb);
@@ -358,26 +390,48 @@ class FileIO {
         }
         if (bufferSize > 0) {
             try {
-                transitionToWrite();
+                if (bufferActive) {
+                    if (bufferPos + size <= bufferSize) {
+                        for (int i = 0; i < size; ++i) {
+                            buffer[bufferPos + i] = storage.getByte(i);
+                        }
+                        bufferPos += size;
+                        bufferValidEnd = Math.max(bufferValidEnd, bufferPos);
+                        bufferDirty = true;
+                        return true;
+                    }
+                    if (!flushBuffer()) {
+                        return false;
+                    }
+                    long filePos = bufferFileOffset + bufferPos;
+                    fc.position(filePos);
+                    startNewBuffer(filePos);
+                    if (size <= bufferSize) {
+                        for (int i = 0; i < size; ++i) {
+                            buffer[i] = storage.getByte(i);
+                        }
+                        bufferPos = size;
+                        bufferValidEnd = size;
+                        bufferDirty = true;
+                        return true;
+                    }
+                    deactivateBuffer();
+                    ByteBuffer bb = storage.getByteBuffer(size);
+                    return writeByteBuffer(bb);
+                }
+                startNewBuffer(fc.position());
+                if (size <= bufferSize) {
+                    for (int i = 0; i < size; ++i) {
+                        buffer[i] = storage.getByte(i);
+                    }
+                    bufferPos = size;
+                    bufferValidEnd = size;
+                    bufferDirty = true;
+                    return true;
+                }
+                deactivateBuffer();
             } catch (IOException e) {
                 return false;
-            }
-            if (size <= bufferSize - bufferDataEnd) {
-                for (int i = 0; i < size; ++i) {
-                    buffer[bufferDataEnd + i] = storage.getByte(i);
-                }
-                bufferDataEnd += size;
-                return true;
-            }
-            if (!flushWriteBuffer()) {
-                return false;
-            }
-            if (size <= bufferSize - bufferDataEnd) {
-                for (int i = 0; i < size; ++i) {
-                    buffer[bufferDataEnd + i] = storage.getByte(i);
-                }
-                bufferDataEnd += size;
-                return true;
             }
             ByteBuffer bb = storage.getByteBuffer(size);
             return writeByteBuffer(bb);
@@ -398,20 +452,33 @@ class FileIO {
         }
         if (bufferSize > 0) {
             try {
-                transitionToWrite();
+                if (bufferActive) {
+                    if (bufferPos < bufferSize) {
+                        buffer[bufferPos++] = val;
+                        bufferValidEnd = Math.max(bufferValidEnd, bufferPos);
+                        bufferDirty = true;
+                        return val;
+                    }
+                    if (!flushBuffer()) {
+                        return -1;
+                    }
+                    long filePos = bufferFileOffset + bufferPos;
+                    fc.position(filePos);
+                    startNewBuffer(filePos);
+                    buffer[0] = val;
+                    bufferPos = 1;
+                    bufferValidEnd = 1;
+                    bufferDirty = true;
+                    return val;
+                }
+                startNewBuffer(fc.position());
+                buffer[0] = val;
+                bufferPos = 1;
+                bufferValidEnd = 1;
+                bufferDirty = true;
+                return val;
             } catch (IOException e) {
                 return -1;
-            }
-            if (1 <= bufferSize - bufferDataEnd) {
-                buffer[bufferDataEnd++] = val;
-                return val;
-            }
-            if (!flushWriteBuffer()) {
-                return -1;
-            }
-            if (1 <= bufferSize - bufferDataEnd) {
-                buffer[bufferDataEnd++] = val;
-                return val;
             }
         }
         byte[] arr = {val};
@@ -433,13 +500,18 @@ class FileIO {
         }
         if (bufferSize > 0) {
             try {
-                transitionToRead();
-                if (bufferDataStart >= bufferDataEnd) {
-                    if (fillReadBuffer() < 0) {
+                if (bufferActive && bufferPos < bufferValidEnd) {
+                    return buffer[bufferPos++] & 0xFF;
+                }
+                if (bufferDirty) {
+                    if (!flushBuffer()) {
                         return -1;
                     }
                 }
-                return buffer[bufferDataStart++] & 0xFF;
+                if (fillReadBuffer() < 0) {
+                    return -1;
+                }
+                return buffer[bufferPos++] & 0xFF;
             } catch (IOException e) {
                 return -1;
             }
@@ -461,10 +533,9 @@ class FileIO {
     void close() {
         if (!useStdOut && !useStdIn && this.fc != null) {
             try {
-                if (bufferMode == BUFFER_MODE_WRITE) {
-                    flushWriteBuffer();
-                }
-                destroyBuffer();
+                flushBuffer();
+                deactivateBuffer();
+                this.bufferSize = 0;
                 this.fc.close();
             } catch (IOException e) {
                 return;
@@ -476,9 +547,7 @@ class FileIO {
     void flush() {
         if (!useStdOut) {
             try {
-                if (bufferMode == BUFFER_MODE_WRITE) {
-                    flushWriteBuffer();
-                }
+                flushBuffer();
                 this.fc.force(false);
             } catch (IOException e) {
                 return;
@@ -502,26 +571,31 @@ class FileIO {
     boolean seek(long offset, int origin) {
         if (!useStdOut && !useStdIn) {
             try {
-                if (bufferMode == BUFFER_MODE_WRITE) {
-                    flushWriteBuffer();
-                }
+                long targetPos;
                 switch (origin) {
                     case FileIO.SEEK_SET:
-                        this.fc.position(offset);
+                        targetPos = offset;
                         break;
                     case FileIO.SEEK_CUR:
-                        long adjustment = 0;
-                        if (bufferMode == BUFFER_MODE_READ) {
-                            adjustment = bufferDataEnd - bufferDataStart;
-                        }
-                        this.fc.position(this.fc.position() + offset - adjustment);
+                        targetPos = logicalPosition() + offset;
                         break;
                     default:
                         return false;
                 }
-                bufferMode = BUFFER_MODE_NONE;
-                bufferDataStart = 0;
-                bufferDataEnd = 0;
+
+                if (bufferActive) {
+                    long relativePos = targetPos - bufferFileOffset;
+                    if (relativePos >= 0 && relativePos <= bufferValidEnd) {
+                        bufferPos = (int) relativePos;
+                        return true;
+                    }
+                    if (!flushBuffer()) {
+                        return false;
+                    }
+                    deactivateBuffer();
+                }
+
+                this.fc.position(targetPos);
             } catch (IOException e) {
                 return false;
             }
@@ -535,17 +609,7 @@ class FileIO {
     /** TODO: 準備中 */
     void rewind() {
         if (!useStdOut && !useStdIn) {
-            try {
-                if (bufferMode == BUFFER_MODE_WRITE) {
-                    flushWriteBuffer();
-                }
-                bufferMode = BUFFER_MODE_NONE;
-                bufferDataStart = 0;
-                bufferDataEnd = 0;
-                this.fc.position(0L);
-            } catch (IOException e) {
-                return;
-            }
+            seek(0, SEEK_SET);
         }
     }
 
