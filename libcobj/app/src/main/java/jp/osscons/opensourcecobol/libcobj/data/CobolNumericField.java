@@ -907,6 +907,36 @@ public class CobolNumericField extends AbstractCobolField {
     }
 
     @Override
+    public int getDigitAt(int position) {
+        int scale = this.getAttribute().getScale();
+        int fieldSize = this.getFieldSize();
+        int firstDataIndex = this.getFirstDataIndex();
+
+        // 物理インデックスの計算
+        int i = (fieldSize - scale - 1) - position;
+        if (i < 0 || i >= fieldSize) {
+            return 0;
+        }
+
+        int physicalIndex = firstDataIndex + i;
+        int b = this.getDataStorage().getByte(physicalIndex) & 0xFF;
+
+        // 埋め込み符号の処理 (0x70以上の場合、0x40を引く)
+        CobolFieldAttribute attr = this.getAttribute();
+        if (attr.isFlagHaveSign() && !attr.isFlagSignSeparate()) {
+            int signIndex =
+                    attr.isFlagSignLeading()
+                            ? firstDataIndex
+                            : firstDataIndex + fieldSize - 1;
+            if (physicalIndex == signIndex && b >= 0x70) {
+                b -= 0x40;
+            }
+        }
+
+        return b - 0x30;
+    }
+
+    @Override
     public int numericCompareTo(AbstractCobolField field) {
         CobolFieldAttribute attr1 = this.getAttribute();
         CobolFieldAttribute attr2 = field.getAttribute();
@@ -980,13 +1010,26 @@ public class CobolNumericField extends AbstractCobolField {
                 }
             }
 
-            if (sign1 * sign2 >= 0) {
+            if (sign1 == sign2) {
                 return 0;
-            } else if (sign1 > 0) {
-                return 1;
-            } else {
-                return -1;
             }
+            // 符号が異なる場合、値がゼロなら等しい(-0 == +0)
+            // 全桁が等しいのでどちらか一方のフィールドだけ確認すればよい
+            boolean isZero = true;
+            for (int idx = firstIndex1; idx <= lastIndex1; idx++) {
+                byte b = d1.getByte(idx);
+                if (idx == signIndex1 && (b & 0xFF) >= 0x70) {
+                    b -= 0x40;
+                }
+                if (b != 0x30) {
+                    isZero = false;
+                    break;
+                }
+            }
+            if (isZero) {
+                return 0;
+            }
+            return sign1 > 0 ? 1 : -1;
         } else {
             return super.numericCompareTo(field);
         }

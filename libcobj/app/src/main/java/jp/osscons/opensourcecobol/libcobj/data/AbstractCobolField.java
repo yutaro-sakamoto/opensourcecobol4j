@@ -464,15 +464,67 @@ public abstract class AbstractCobolField {
     }
 
     /**
-     * TODO: 準備中
+     * 指定の10の累乗の位の桁(0~9)を返す。
+     * position=0は一の位、position=1は十の位、position=-1は小数第一位を表す。
+     * 範囲外の場合は0を返す。サブクラスでオーバーライドする。
      *
-     * @param field TODO: 準備中
-     * @return TODO: 準備中
+     * @param position 桁の位置(10の累乗)
+     * @return 該当桁の値(0~9)
+     */
+    public int getDigitAt(int position) {
+        return 0;
+    }
+
+    /**
+     * 数値フィールドの最上位桁の位置を返す。
+     *
+     * @return 最上位桁のposition値
+     */
+    public int getHighestDigitPosition() {
+        return this.getAttribute().getDigits() - this.getAttribute().getScale() - 1;
+    }
+
+    /**
+     * 数値フィールドの最下位桁の位置を返す。
+     *
+     * @return 最下位桁のposition値
+     */
+    public int getLowestDigitPosition() {
+        return -this.getAttribute().getScale();
+    }
+
+    /**
+     * thisと引数で与えられたフィールドとの数値比較を桁ごとに行う。
+     * BigDecimalを使わずに比較を実現する。
+     *
+     * @param field 比較対象のフィールド
+     * @return this&lt;fieldなら負の値、this==fieldなら0、this&gt;fieldなら正の値
      */
     public int numericCompareTo(AbstractCobolField field) {
-        CobolDecimal d1 = this.getDecimal();
-        CobolDecimal d2 = field.getDecimal();
-        return d1.compareTo(d2);
+        int s1 = this.getSign() < 0 ? -1 : 1;
+        int s2 = field.getSign() < 0 ? -1 : 1;
+        int high = Math.max(this.getHighestDigitPosition(), field.getHighestDigitPosition());
+        int low = Math.min(this.getLowestDigitPosition(), field.getLowestDigitPosition());
+
+        if (s1 == s2) {
+            // 同符号: 桁を比較し、符号を掛ける
+            for (int pos = high; pos >= low; pos--) {
+                int d1 = this.getDigitAt(pos);
+                int d2 = field.getDigitAt(pos);
+                if (d1 != d2) {
+                    return s1 * (d1 - d2);
+                }
+            }
+            return 0;
+        } else {
+            // 異符号: 非ゼロ桁があれば符号で判定、全てゼロなら等しい
+            for (int pos = high; pos >= low; pos--) {
+                if (this.getDigitAt(pos) != 0 || field.getDigitAt(pos) != 0) {
+                    return s1 > 0 ? 1 : -1;
+                }
+            }
+            return 0;
+        }
     }
 
     /**

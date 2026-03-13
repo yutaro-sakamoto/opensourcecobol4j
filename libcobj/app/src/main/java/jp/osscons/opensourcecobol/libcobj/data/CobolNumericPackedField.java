@@ -419,6 +419,25 @@ public class CobolNumericPackedField extends AbstractCobolField {
     }
 
     @Override
+    public int getDigitAt(int position) {
+        int digits = this.getAttribute().getDigits();
+        int scale = this.getAttribute().getScale();
+
+        // PP(scale < 0)の場合、格納桁数は digits + scale、それ以外は digits
+        int storedDigits = scale < 0 ? digits + scale : digits;
+
+        // 格納桁インデックス(MSBから0-based)
+        // getDigit(0)が最上位格納桁、getDigit(storedDigits-1)が最下位格納桁
+        int i = (storedDigits - 1 - scale) - position;
+
+        if (i < 0 || i >= storedDigits) {
+            return 0;
+        }
+
+        return this.getDigit(i);
+    }
+
+    @Override
     public CobolNumericField getNumericField() {
         int size = this.getAttribute().getDigits();
         int scale = this.getAttribute().getScale();
