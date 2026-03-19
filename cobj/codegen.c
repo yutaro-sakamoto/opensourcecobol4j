@@ -4019,20 +4019,20 @@ static int joutput_file_allocation(struct cb_file *f) {
   if (f->organization == COB_ORG_RELATIVE ||
       f->organization == COB_ORG_INDEXED) {
     if (f->global) {
-      joutput_line("private CobolFileKey[]\t%s%s = null;", CB_PREFIX_KEYS,
+      joutput_line("public CobolFileKey[]\t%s%s = null;", CB_PREFIX_KEYS,
                    f->cname);
     } else {
-      joutput_line("private CobolFileKey[]\t%s%s = null;", CB_PREFIX_KEYS,
+      joutput_line("public CobolFileKey[]\t%s%s = null;", CB_PREFIX_KEYS,
                    f->cname);
     }
   }
   if (f->global) {
-    joutput_line("private CobolFile\t\t%s%s = null;", CB_PREFIX_FILE, f->cname);
-    joutput_line("private byte[]\t%s%s_status = new byte[4];", CB_PREFIX_FILE,
+    joutput_line("public CobolFile\t\t%s%s = null;", CB_PREFIX_FILE, f->cname);
+    joutput_line("public byte[]\t%s%s_status = new byte[4];", CB_PREFIX_FILE,
                  f->cname);
   } else {
-    joutput_line("private CobolFile\t\t%s%s = null;", CB_PREFIX_FILE, f->cname);
-    joutput_line("private byte[]\t%s%s_status = new byte[4];", CB_PREFIX_FILE,
+    joutput_line("public CobolFile\t\t%s%s = null;", CB_PREFIX_FILE, f->cname);
+    joutput_line("public byte[]\t%s%s_status = new byte[4];", CB_PREFIX_FILE,
                  f->cname);
   }
   if (f->linage) {
@@ -5531,7 +5531,7 @@ static void joutput_init_method(struct cb_program *prog) {
   joutput_indent_level -= 2;
   joutput_line("}\n");
 
-  joutput_line("private void initAttr() {");
+  joutput_line("public void initAttr() {");
   joutput_indent_level += 2;
 
   /* CobolFieldAttribute型変数の初期化 */
@@ -5761,7 +5761,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
   if (prog->decimal_index_max) {
     joutput_line("/* Decimal structures */\n");
     for (i = 0; i < prog->decimal_index_max; i++) {
-      joutput_line("private CobolDecimal d%d;", i);
+      joutput_line("public CobolDecimal d%d;", i);
     }
     joutput("\n");
   }
@@ -5781,7 +5781,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
   /* Local indexes */
   for (i = 0; i < COB_MAX_SUBSCRIPTS; i++) {
     if (i_counters[i]) {
-      joutput_local("private int\t\ti%d;\n", i);
+      joutput_local("public int\t\ti%d;\n", i);
     }
   }
 
@@ -5826,7 +5826,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
       if (strcmp(blp->f->name, "RETURN-CODE") == 0) {
         joutput("public CobolDataStorage %s;", base_name);
       } else {
-        joutput("private CobolDataStorage %s;", base_name);
+        joutput("public CobolDataStorage %s;", base_name);
       }
       free(base_name);
       joutput("\t/* %s */\n", blp->f->name);
@@ -5838,7 +5838,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
         continue;
       }
       joutput_prefix();
-      joutput("private CobolDataStorage ");
+      joutput("public CobolDataStorage ");
       joutput_field_storage(entry->f, entry->top);
       joutput(";\n");
     }
@@ -5862,8 +5862,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
             "\n/* LINKAGE SECTION (Items not referenced by USING clause) */\n");
       }
       char *base_name = get_java_identifier_base(f);
-      joutput_line("private CobolDataStorage %s;  /* %s */", base_name,
-                   f->name);
+      joutput_line("public CobolDataStorage %s;  /* %s */", base_name, f->name);
       free(base_name);
     }
   }
@@ -5884,7 +5883,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
       }
       joutput_prefix();
       char *field_name = get_java_identifier_field(k->f);
-      joutput("private AbstractCobolField %s;", field_name);
+      joutput("public AbstractCobolField %s;", field_name);
       free(field_name);
       joutput("\t/* %s */\n", k->f->name);
     }
@@ -5892,8 +5891,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
     joutput_line("/* End of fields */\n\n");
   }
 
-  joutput_line("private static AbstractCobolField %snative;\n",
-               CB_PREFIX_FIELD);
+  joutput_line("public static AbstractCobolField %snative;\n", CB_PREFIX_FIELD);
 
   /* AbstractCobolField型変数の宣言(定数) */
   if (literal_cache) {
@@ -5901,7 +5899,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
     literal_cache = literal_list_reverse(literal_cache);
     for (m = literal_cache; m; m = m->next) {
       joutput_prefix();
-      joutput("private AbstractCobolField ");
+      joutput("public AbstractCobolField ");
       joutput_const_identifier(m);
       joutput(";\n");
     }
@@ -5913,7 +5911,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
     joutput_line("/* Attributes */\n");
     attr_cache = attr_list_reverse(attr_cache);
     for (j = attr_cache; j; j = j->next) {
-      joutput_line("private CobolFieldAttribute %s%d%s;", CB_PREFIX_ATTR, j->id,
+      joutput_line("public CobolFieldAttribute %s%d%s;", CB_PREFIX_ATTR, j->id,
                    j->suffix);
     }
     joutput("\n");
@@ -5935,7 +5933,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
       }
       if (!cached) {
         char *field_name = get_java_identifier_field(cp->field);
-        joutput_line("private AbstractCobolField %s;", field_name);
+        joutput_line("public AbstractCobolField %s;", field_name);
         free(field_name);
       }
       int in_base = 0;
@@ -5948,7 +5946,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
       }
       if (!in_base) {
         char *base_name = get_java_identifier_base(cp->field);
-        joutput_line("private CobolDataStorage %s;", base_name);
+        joutput_line("public CobolDataStorage %s;", base_name);
         free(base_name);
       }
     }
@@ -6401,13 +6399,13 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_indent_level += 2;
   joutput("\n");
 
-  joutput_line("private boolean initialized = false;");
-  joutput_line("private CobolModule module;");
-  joutput_line("private int entry;");
+  joutput_line("public boolean initialized = false;");
+  joutput_line("public CobolModule module;");
+  joutput_line("public int entry;");
   joutput("\n");
 
   // output_storage ("union cob_call_union\tcob_unifunc;\n\n");
-  joutput_line("private CobolRunnable cob_unifunc;\n");
+  joutput_line("public CobolRunnable cob_unifunc;\n");
 
   joutput("\n");
 
@@ -6468,7 +6466,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   if (has_external) {
     joutput_newline();
     joutput_line("/* EXTERNAL data initialization */");
-    joutput_line("private void initExternProc () {");
+    joutput_line("public void initExternProc () {");
     joutput_indent_level += 2;
     for (k = field_cache; k; k = k->next) {
       if (k->f->flag_item_external) {
@@ -6556,7 +6554,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
       i += joutput_file_allocation(CB_FILE(CB_VALUE(l)));
     }
     if (i) {
-      joutput_line("\nprivate static Linage lingptr;\n");
+      joutput_line("\npublic static Linage lingptr;\n");
     }
   }
   joutput("\n");
@@ -6565,7 +6563,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   struct cb_label_id_map *label;
   for (label = label_id_map_head; label; label = label->next) {
     joutput_prefix();
-    joutput("private final static int ");
+    joutput("public final static int ");
     joutput_label_variable_name(label->label_name, label->key, label->section);
     joutput(" = %d;\n", label->val);
   }
@@ -6578,7 +6576,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     for (clp = call_cache; clp; clp = clp->next) {
       // output_local ("static union cob_call_union\tcall_%s = { NULL };\n",
       // clp->callname);
-      joutput_line("private CobolRunnable call_%s = null;", clp->callname);
+      joutput_line("public CobolRunnable call_%s = null;", clp->callname);
     }
     // output_local ("\n");
   }
@@ -6614,7 +6612,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   /* Collating tables */
   if (gen_ebcdic) {
     joutput_indent("\n/* ASCII to EBCDIC translate table (restricted) */\n");
-    joutput_indent("private static final byte[] cob_a2e = {\n");
+    joutput_indent("public static final byte[] cob_a2e = {\n");
     joutput_indent_level += 2;
     if (alt_ebcdic) {
       joutput_indent("(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03, "
@@ -6755,7 +6753,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   }
   if (gen_full_ebcdic) {
     joutput_indent("\n/* ASCII to EBCDIC table */\n");
-    joutput_indent("private static final byte[] cob_ebcdic = {");
+    joutput_indent("public static final byte[] cob_ebcdic = {");
     joutput_indent_level += 2;
     joutput_indent("(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03, "
                    "(byte)0x37, (byte)0x2D, (byte)0x2E, (byte)0x2F,");
@@ -6827,7 +6825,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
 
     i = lookup_attr(COB_TYPE_ALPHANUMERIC, 0, 0, 0, NULL, 0);
     joutput("  ");
-    joutput("private static AbstractCobolField %sebcdic = "
+    joutput("public static AbstractCobolField %sebcdic = "
             "CobolFieldFactory.makeField(256, new "
             "CobolDataStorage(cob_ebcdic), %s%d%s);\n",
             CB_PREFIX_FIELD, CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
@@ -6835,7 +6833,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   }
   if (gen_ebcdic_ascii) {
     joutput_indent("\n/* EBCDIC to ASCII table */\n");
-    joutput_indent("private static final byte[] cob_ebcdic_ascii = {");
+    joutput_indent("public static final byte[] cob_ebcdic_ascii = {");
     joutput_indent_level += 2;
     joutput_indent("(byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03, "
                    "(byte)0xEC, (byte)0x09, (byte)0xCA, (byte)0x7F,");
@@ -6907,7 +6905,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
 
     i = lookup_attr(COB_TYPE_ALPHANUMERIC, 0, 0, 0, NULL, 0);
     joutput("  ");
-    joutput("private static AbstractCobolField %sebcdic_ascii = "
+    joutput("public static AbstractCobolField %sebcdic_ascii = "
             "CobolFieldFactory.makeField(256, new "
             "CobolDataStorage(cob_ebcdic_ascii), %s%d%s);\n",
             CB_PREFIX_FIELD, CB_PREFIX_ATTR, i, lookup_attr_suffix(i));
@@ -6915,7 +6913,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   }
   if (gen_native) {
     joutput_indent("\n/* NATIVE table */\n");
-    joutput_indent("private static final byte[] cob_native = {");
+    joutput_indent("public static final byte[] cob_native = {");
     joutput_indent_level += 2;
     joutput_indent("(byte)0, (byte)1, (byte)2, (byte)3, (byte)4, (byte)5, "
                    "(byte)6, (byte)7,");
