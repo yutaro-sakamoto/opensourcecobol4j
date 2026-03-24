@@ -77,7 +77,7 @@ public class CobolGroupField extends AbstractCobolField {
             this.dataStorage.setBytes(bytes, this.size);
         } else {
             this.dataStorage.setBytes(bytes, bytes.length);
-            this.dataStorage.fillBytes(bytes.length, (byte) 0x20, this.size);
+            this.dataStorage.fillBytes(bytes.length, (byte) 0x20, this.size - bytes.length);
         }
     }
 
