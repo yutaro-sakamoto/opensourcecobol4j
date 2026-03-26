@@ -2502,3 +2502,27 @@ AT_CHECK([java prog], [0],
 [30
 ])
 AT_CLEANUP
+
+AT_SETUP([moveFrom(byte@<:@@:>@)])
+AT_CHECK([cp ../../run.src/TestMoveFromBytes.java .])
+AT_CHECK([javac TestMoveFromBytes.java])
+AT_CHECK([java TestMoveFromBytes], [0],
+[TEST 01 byte array exact fit (5==5)              OK  EXPECT=(ABCDE) ACTUAL=(ABCDE)
+TEST 02 byte array longer than field (5>3)       OK  EXPECT=(ABC) ACTUAL=(ABC)
+TEST 03 byte array shorter than field (2<5)      OK  EXPECT=(AB   ) ACTUAL=(AB   )
+TEST 04 byte array empty (0<3)                   OK  EXPECT=(   ) ACTUAL=(   )
+TEST 05 byte array single byte (1==1)            OK  EXPECT=(X) ACTUAL=(X)
+TEST 06 byte array 1 byte into 5-byte field      OK  EXPECT=(X    ) ACTUAL=(X    )
+TEST 07 String exact fit (5==5)                  OK  EXPECT=(ABCDE) ACTUAL=(ABCDE)
+TEST 08 String shorter than field (2<5)          OK  EXPECT=(AB   ) ACTUAL=(AB   )
+TEST 09 String longer than field (5>3)           OK  EXPECT=(ABC) ACTUAL=(ABC)
+TEST 10 String empty (0<3)                       OK  EXPECT=(   ) ACTUAL=(   )
+TEST 11 String with spaces 'A B' into 5          OK  EXPECT=(A B  ) ACTUAL=(A B  )
+TEST 12 Overwrite: 'XXXXX' then 'AB'             OK  EXPECT=(AB   ) ACTUAL=(AB   )
+TEST 13 Overwrite: 10-byte then 2-byte           OK  EXPECT=(HI        ) ACTUAL=(HI        )
+TEST 14 Overwrite: 'AB' then '12345'             OK  EXPECT=(12345) ACTUAL=(12345)
+
+Result: 14/14 passed
+])
+
+AT_CLEANUP
