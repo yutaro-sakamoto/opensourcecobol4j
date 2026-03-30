@@ -825,14 +825,34 @@ static int is_call_parameter(const struct cb_field *f) {
   return 0;
 }
 
+static int is_dangling_linkage(const struct cb_field *f) {
+  struct cb_field *lf;
+  cb_tree p;
+  for (lf = current_prog->linkage_storage; lf; lf = lf->sister) {
+    if (f == lf) {
+      for (p = current_prog->parameter_list; p; p = CB_CHAIN(p)) {
+        if (f == cb_field(CB_VALUE(p))) {
+          return 0;
+        }
+      }
+      return 1;
+    }
+  }
+  return 0;
+}
+
+static int is_runtime_resolved_parent(const struct cb_field *f) {
+  return is_call_parameter(f) || is_dangling_linkage(f);
+}
+
 static int joutput_field_storage(struct cb_field *f, struct cb_field *top) {
-  int flag_call_parameter = is_call_parameter(top);
-  if (flag_call_parameter ||
+  int flag_runtime_resolved = is_runtime_resolved_parent(top);
+  if (flag_runtime_resolved ||
       (f->offset == 0 && strcmp(f->name, top->name) == 0)) {
     char *base_name = get_java_identifier_base(top);
     joutput(base_name);
     free(base_name);
-    return flag_call_parameter;
+    return flag_runtime_resolved;
   } else {
     char *base_name = get_java_identifier_base(f);
     joutput(base_name);
@@ -2849,12 +2869,14 @@ static void joutput_call(struct cb_call *p) {
         joutput_line("CobolDataStorage content_%d = new CobolDataStorage(8);",
                      (int)n);
       } else if (CB_CAST_P(x)) {
-        joutput_line("void *ptr_%d;", (int)n);
+        joutput_line("CobolDataStorage ptr_%d = new CobolDataStorage(8);",
+                     (int)n);
       }
       break;
     case CB_CALL_BY_CONTENT:
       if (CB_CAST_P(x)) {
-        joutput_line("void *ptr_%d;", (int)n);
+        joutput_line("CobolDataStorage ptr_%d = new CobolDataStorage(8);",
+                     (int)n);
       } else if (CB_TREE_TAG(x) != CB_TAG_INTRINSIC && x != cb_null &&
                  !(CB_CAST_P(x))) {
         joutput_prefix();
@@ -2890,17 +2912,17 @@ static void joutput_call(struct cb_call *p) {
         joutput("L);\n");
       } else if (CB_CAST_P(x)) {
         joutput_prefix();
-        joutput("ptr_%d = ", (int)n);
+        joutput("ptr_%d.set(", (int)n);
         joutput_integer(x);
-        joutput(";\n");
+        joutput(");\n");
       }
       break;
     case CB_CALL_BY_CONTENT:
       if (CB_CAST_P(x)) {
         joutput_prefix();
-        joutput("ptr_%d = ", (int)n);
+        joutput("ptr_%d.set(", (int)n);
         joutput_integer(x);
-        joutput(";\n");
+        joutput(");\n");
       } else if (CB_TREE_TAG(x) != CB_TAG_INTRINSIC) {
         if (CB_NUMERIC_LITERAL_P(x)) {
           joutput_prefix();
@@ -2951,6 +2973,9 @@ static void joutput_call(struct cb_call *p) {
         joutput("null");
         break;
       }
+      break;
+    case CB_TAG_CAST:
+      joutput("(AbstractCobolField) null");
       break;
     default:
       joutput("null");
@@ -3061,7 +3086,7 @@ static void joutput_call(struct cb_call *p) {
       } else if (CB_REFERENCE_P(x) && CB_FILE_P(cb_ref(x))) {
         joutput_param(cb_ref(x), -1);
       } else if (CB_CAST_P(x)) {
-        joutput("&ptr_%d", (int)n);
+        joutput("ptr_%d", (int)n);
       } else {
         int tmp_param_wrap_string_flag = param_wrap_string_flag;
         param_wrap_string_flag = 1;
@@ -3072,7 +3097,7 @@ static void joutput_call(struct cb_call *p) {
     case CB_CALL_BY_CONTENT:
       if (CB_TREE_TAG(x) != CB_TAG_INTRINSIC && x != cb_null) {
         if (CB_CAST_P(x)) {
-          joutput("&ptr_%d", (int)n);
+          joutput("ptr_%d", (int)n);
         } else {
           joutput("content_%d", (int)n);
         }
@@ -5349,7 +5374,7 @@ static void joutput_init_method(struct cb_program *prog) {
     int i;
     for (i = 0; i < data_storage_cache_count; ++i) {
       struct data_storage_list *entry = sorted_data_storage_cache[i];
-      if (is_call_parameter(entry->top) && entry->f != entry->top) {
+      if (is_runtime_resolved_parent(entry->top) && entry->f != entry->top) {
         continue;
       }
       joutput_prefix();
@@ -5834,7 +5859,7 @@ static void joutput_declare_member_variables(struct cb_program *prog,
 
     for (i = 0; i < data_storage_cache_count; ++i) {
       struct data_storage_list *entry = sorted_data_storage_cache[i];
-      if (is_call_parameter(entry->top) && entry->f != entry->top) {
+      if (is_runtime_resolved_parent(entry->top) && entry->f != entry->top) {
         continue;
       }
       joutput_prefix();
