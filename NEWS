@@ -2,6 +2,29 @@ NEWS - user visible changes				-*- outline -*-
 
 -----------------------------------------------------------------------
 
+* opensource COBOL 4J 1.1.19
+
+** New Features
+
+(1) Implemented POINTER type variables (#802, #808)
+(2) Implemented PROCEDURE DIVISION CHAINING (#796)
+  * Enables passing command-line arguments as parameters to COBOL programs
+(3) Fixed generated Java code for OCCURS DEPENDING ON (#799)
+(4) Added an error message for unimplemented MOVE statements that use ALPHABET in the SPECIAL NAMES paragraph (#807)
+
+** Bug Fixes
+
+(1) Fixed a bug when specifying the result of a function call as an argument of a CALL statement (#797)
+(2) Fixed the moveFrom method in the CobolGroup class (#813)
+
+** Documentation
+
+(1) Updated Javadoc comments for exception-related classes in libcobj.jar (#804)
+(2) Updated Javadoc comments for the CobolTerminal class in libcobj.jar (#811)
+(3) Updated README.md to document that compiling multiple programs at once reduces compilation time (#806)
+
+-----------------------------------------------------------------------
+
 * opensource COBOL 4J 1.1.18
 
 ** Bug Fixes
