@@ -1,9 +1,18 @@
+### New Features
+
+- Implemented POINTER type variables (#802, #808)
+- Implemented PROCEDURE DIVISION CHAINING (#796)
+  - Enables passing command-line arguments as parameters to COBOL programs
+- Fixed generated Java code for OCCURS DEPENDING ON (#799)
+- Added an error message for unimplemented MOVE statements that use ALPHABET in the SPECIAL NAMES paragraph (#807)
+
 ### Fixed
 
-* Fix a bug where full-width hyphens (ー) in SECTION names were not correctly converted to full-width underscores (＿) in generated Java code. (#788)
-* Fix bugs in Java code generation for VALUE ALL literal initialization. (#790)
+- Fixed a bug when specifying the result of a function call as an argument of a CALL statement (#797)
+- Fixed the moveFrom method in the CobolGroup class (#813)
 
 ### Documentation
 
-* Add documentation for environment variables referenced by the runtime. (#762)
-  * see doc/environment_variables.md or doc/environment_variables_JP.md
+- Updated Javadoc comments for exception-related classes in libcobj.jar (#804)
+- Updated Javadoc comments for the CobolTerminal class in libcobj.jar (#811)
+- Updated README.md to document that compiling multiple programs at once reduces compilation time (#806)
