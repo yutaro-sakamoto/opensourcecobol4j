@@ -1,0 +1,65 @@
+name: windows-test-autotest
+
+on:
+  workflow_call:
+    inputs:
+      test-name:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download libcobj.jar
+      uses: actions/download-artifact@v8
+      with:
+        name: libcobj.jar
+        path: libcobj/app/build/libs/
+
+    - name: Download cobj.exe
+      uses: actions/download-artifact@v8
+      with:
+        name: cobj.exe
+        path: win/x64/Release/
+
+    - name: Install Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
+    - name: Install opensource COBOL 4J
+      shell: pwsh
+      run: |
+        cd win
+        ./make-install.ps1
+        Copy-Item -Path "..\copy" -Destination "C:\opensourcecobol4j\copy" -Recurse
+
+    - name: Build axt
+      shell: cmd
+      run: |
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
+        cl /W3 /D_CRT_SECURE_NO_WARNINGS tests\axt.c /Fe:tests\axt.exe
+
+    # NOTE: axt on Windows executes AT_CHECK commands via cmd.exe (not sh).
+    # Test .at files that use Unix shell syntax (pipes, grep, sed, cat, etc.)
+    # will fail. If tests use such commands, they need Windows-compatible
+    # alternatives or a separate Windows test suite.
+    - name: Run tests ${{ inputs.test-name }}
+      shell: bash
+      working-directory: tests/
+      run: |
+        export CLASSPATH="C:/opensourcecobol4j/lib/libcobj.jar"
+        export PATH="$PATH:/c/opensourcecobol4j/bin:/c/opensourcecobol4j/config"
+        ./axt.exe -j 1 --env atlocal-win.env ${{ inputs.test-name }}.at
+
+    - name: Upload log files if tests fail
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.test-name }}-windows-log
+        path: tests/${{ inputs.test-name }}.dir/
