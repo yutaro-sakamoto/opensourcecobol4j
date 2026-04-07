@@ -10,7 +10,11 @@ AT_DATA([prog.cbl], [
 ])
 
 AT_CHECK([${COBJ} -C prog.cbl])
-AT_CHECK([test -e prog.java], [0])
-AT_CHECK([test "$(ls *.class *.jar 2> /dev/null)" = "" ], [0])
+
+# Check that prog.java was created
+AT_CHECK([if test "${AXT_PLATFORM}" = "windows"; then cmd.exe /c "if not exist prog.java exit 1"; else test -e prog.java; fi], [0])
+
+# Check that no .class or .jar files were created
+AT_CHECK([if test "${AXT_PLATFORM}" = "windows"; then cmd.exe /c "if exist *.class exit 1" && cmd.exe /c "if exist *.jar exit 1"; else test -z "$(ls *.class *.jar 2>/dev/null)"; fi], [0])
 
 AT_CLEANUP
