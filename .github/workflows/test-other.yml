@@ -76,7 +76,7 @@ jobs:
       - name: Run tests ${{ inputs.test-name }}
         working-directory: tests/
         run:
-          ./${{ inputs.test-name }}
+          ./${{ inputs.test-name }} -j
       
       - name: Upload log files if tests fail
         if: failure()
