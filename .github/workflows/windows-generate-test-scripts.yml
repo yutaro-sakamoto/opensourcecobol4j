@@ -1,0 +1,46 @@
+name: Generate test scripts for Windows
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential gettext autoconf bison flex
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v6
+
+      - name: Generate test scripts
+        run: |
+          ./configure
+          cd tests
+          make
+
+      - name: Upload test scripts
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-test-scripts
+          path: |
+            tests/syntax
+            tests/run
+            tests/run-O
+            tests/data-rep
+            tests/data-rep-O
+            tests/jp-compat
+            tests/command-line-options
+            tests/cobj-idx
+            tests/file-lock
+            tests/file-lock2
+            tests/misc
+            tests/atconfig
+            tests/package.m4

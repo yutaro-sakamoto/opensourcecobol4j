@@ -110,7 +110,7 @@ https://www.oracle.com/java/technologies/downloads/?er=221886#java8-windows
     Then, libcobj.jar will be created in `libcobj\app\build\libs\`.
 
 ### Place files in the appropriate location
-1. If you build in Debug mode, change the 5th line of win/make-install.ps1 from `\x64\Release\cobj.exe` to `\x64\Debug\cobj.exe`.
+1. If you build in Debug mode, change the 6th line of win/make-install.ps1 from `\x64\Release\cobj.exe` to `\x64\Debug\cobj.exe`.
 2. Open PowerShell
 3. Move to "win" directory and execute make-install.ps1.
     ```
@@ -124,6 +124,7 @@ https://www.oracle.com/java/technologies/downloads/?er=221886#java8-windows
     | cobj.exe | C:\opensourcecobol4j\bin |
     | libcobj.jar | C:\opensourcecobol4j\lib |
     | config files | C:\opensourcecobol4j\config |
+    | copy files | C:\opensourcecobol4j\copy |
 
 *  If you want to change the location of the files, modify make-install.ps1.
 
