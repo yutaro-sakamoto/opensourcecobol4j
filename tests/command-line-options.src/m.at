@@ -12,7 +12,7 @@ AT_DATA([prog.cbl], [
 AT_CHECK([touch hello.txt])
 
 AT_CHECK([${COBJ} -m prog.cbl])
-AT_CHECK([CLASSPATH=$CLASSPATH:./prog.jar java prog], [0],
+AT_CHECK([CLASSPATH="$CLASSPATH${PATHSEP}./prog.jar" java prog], [0],
 [HELLO
 ])
 
