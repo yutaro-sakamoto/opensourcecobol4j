@@ -58,6 +58,12 @@ jobs:
     - name: Run tests ${{ inputs.test-name }}
       shell: bash
       run: |
+        # Create a diff wrapper that strips trailing CR so CRLF output from
+        # Windows binaries compares equal to LF expected outputs.
+        mkdir -p /tmp/diff-wrapper
+        printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
+        chmod +x /tmp/diff-wrapper/diff
+        export PATH="/tmp/diff-wrapper:$PATH"
         export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./${{ inputs.test-name }}
