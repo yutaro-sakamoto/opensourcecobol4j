@@ -58,7 +58,7 @@ jobs:
     - name: Run tests ${{ inputs.test-name }}
       shell: bash
       run: |
-        export CLASSPATH="C:/opensourcecobol4j/lib/libcobj.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./${{ inputs.test-name }}
 

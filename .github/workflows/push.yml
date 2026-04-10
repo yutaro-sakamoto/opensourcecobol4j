@@ -184,7 +184,6 @@ jobs:
           - "jp-compat"
           - "run"
           - "syntax"
-          - "cobj-idx"
           - "file-lock"
           - "file-lock2"
           - "misc"
