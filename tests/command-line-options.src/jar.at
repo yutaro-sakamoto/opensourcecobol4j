@@ -30,56 +30,56 @@ AT_CHECK([${COBJ} --help | grep '@<:@-@:>@single@<:@-@:>@jar' > /dev/null], [0])
 
 AT_CHECK([mkdir tmp])
 
-AT_CHECK([cobj -jar prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -jar prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:./* prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -java-package=com.abc -jar prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -java-package=com.abc -jar prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:./* com.abc.prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -single-jar=hello.jar prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -single-jar=hello.jar prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:./* prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -single-jar=hello.jar -java-package=com.abc prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -single-jar=hello.jar -java-package=com.abc prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:./* com.abc.prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -o tmp -jar prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -o tmp -jar prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:tmp/* prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -o tmp -single-jar=hello.jar prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -o tmp -single-jar=hello.jar prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:tmp/* prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -o tmp -jar -java-package=com.abc prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -o tmp -jar -java-package=com.abc prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:tmp/* com.abc.prog], [0],
 [HELLO
 123
 ])
 
 AT_CHECK([rm -rf *.jar com tmp/*])
-AT_CHECK([cobj -o tmp -single-jar=hello.jar -java-package=com.abc prog.cbl sub.cbl])
+AT_CHECK([${COBJ} -o tmp -single-jar=hello.jar -java-package=com.abc prog.cbl sub.cbl])
 AT_CHECK([java -cp $CLASSPATH:tmp/* com.abc.prog], [0],
 [HELLO
 123

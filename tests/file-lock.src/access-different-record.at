@@ -95,14 +95,14 @@ for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
     sed -e "s/@OPERATION@/${operation}/" |\
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
     > prog1.cbl
-    cobj prog1.cbl
+    ${COBJ} prog1.cbl
 
     cat prog1.template.cbl |
     sed -e 's/@WRITE_RECORD@//' |\
     sed -e "s/@OPERATION@/${operation}/" |\
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1_FOR_WRITE@<:@${operation}@:>@}/" \
     > prog1.cbl
-    cobj prog1.cbl
+    ${COBJ} prog1.cbl
 done
 
 for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
@@ -110,7 +110,7 @@ for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
     sed -e "s/@OPERATION@/${operation}/" |\
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE2@<:@${operation}@:>@}/" \
     > prog2.cbl
-    cobj prog2.cbl
+    ${COBJ} prog2.cbl
 done
 
 function run_test() {

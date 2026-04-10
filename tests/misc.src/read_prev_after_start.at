@@ -108,7 +108,7 @@ AT_DATA([STARTTEST.cbl], [
       *--------------------<< END OF PROGRAM >>-----------------------*
 ])
 
-AT_CHECK([cobj STARTTEST.cbl])
+AT_CHECK([${COBJ} STARTTEST.cbl])
 AT_CHECK([java STARTTEST], [0],
 [2024011999999999
 202401191207326603000000002000360000110886
@@ -228,7 +228,7 @@ AT_DATA([prog.cbl],
          close f.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog], [0],
 [20
 10

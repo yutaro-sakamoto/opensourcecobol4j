@@ -49,7 +49,7 @@ AT_DATA([prog.cbl],[
           DISPLAY "NG"
        END-IF.
 ])
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog])
 
 AT_CLEANUP

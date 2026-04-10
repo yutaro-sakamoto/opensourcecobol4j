@@ -187,7 +187,7 @@ function run_test() {
     sed "s/@@id@@/${TEST_ID}/g" \
     > make_indexed_file${TEST_ID}.cbl
 
-    cobj ${PROGRAM_NAME_1}.cbl ${PROGRAM_NAME_2}.cbl make_indexed_file${TEST_ID}.cbl
+    ${COBJ} ${PROGRAM_NAME_1}.cbl ${PROGRAM_NAME_2}.cbl make_indexed_file${TEST_ID}.cbl
 
     java -Xlog:perf+memops=off make_indexed_file${TEST_ID}
 
@@ -364,7 +364,7 @@ AT_DATA([run.sh], [
 
 set -e
 
-COMPILER="cobj"
+COMPILER="${COBJ}"
 RUNNER="java -Xlog:perf+memops=off"
 
 rm -f file.dat shared1.dat shared2.dat

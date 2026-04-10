@@ -11,7 +11,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog], [0], [ì˙ñ{åÍÇÃï∂éöóÒ])
 
 AT_CLEANUP
@@ -30,7 +30,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog], [0], [ì˙ñ{åÍÇÃï∂éöóÒ])
 
 AT_CLEANUP
@@ -50,11 +50,11 @@ AT_DATA([prog.cob], [
 ])
 
 #TODO fix
-#AT_CHECK([cobj prog.cob], [0], [],
+#AT_CHECK([${COBJ} prog.cob], [0], [],
 #[prog.cob:8: Warning: Value size exceeds data size
 #prog.cob:6: Warning: 'F0' defined here as PIC X(6)
 #])
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog], [0], [ì˙ñ{åÍ])
 
 AT_CLEANUP
@@ -73,7 +73,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 8a ec 8a ec 8a ec 20
 ])
 
@@ -95,11 +95,11 @@ AT_DATA([prog.cob], [
 ])
 
 #TODO fix
-#AT_CHECK([cobj prog.cob], [0], [],
+#AT_CHECK([${COBJ} prog.cob], [0], [],
 #[prog.cob:8: Warning: Value size exceeds data size
 #prog.cob:6: Warning: 'F0' defined here as PIC X(7)
 #])
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 fa 96 7b 8c ea 82
 ])
 
@@ -120,7 +120,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 fa 96 7b 8c ea 82
 ])
 
@@ -140,7 +140,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ì˙ñ{åÍÇÃï∂éöóÒ  ])
 
 AT_CLEANUP
@@ -159,7 +159,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ ì˙ñ{åÍÇÃï∂éöóÒ])
 
 AT_CLEANUP
@@ -178,7 +178,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ì˙ñ{/íÜçë ï∂éö0])
 
 AT_CLEANUP
@@ -197,11 +197,11 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-#AT_CHECK([cobj prog.cob], [0], [], 
+#AT_CHECK([${COBJ} prog.cob], [0], [], 
 #[prog.cob:8: Warning: Value size exceeds data size
 #prog.cob:6: Warning: 'F0' defined here as PIC XX/XXBXX0
 #])
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ì˙/ñ{ íÜ0])
 
 AT_CLEANUP
@@ -220,7 +220,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ì˙/ñ{   0])
 
 AT_CLEANUP
@@ -239,7 +239,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ì˙ ñ{])
 
 AT_CLEANUP
@@ -258,7 +258,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 20 fa 96 7b
 ])
 
@@ -283,7 +283,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 fa 96
 ])
 
@@ -307,7 +307,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 93 fa 96
 ])
 
@@ -328,7 +328,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ï∂éöóÒ])
 
 AT_CLEANUP
@@ -347,7 +347,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ï∂éö])
 
 AT_CLEANUP
@@ -370,7 +370,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [éÑÇÃñºëOÇÕÇ†ÇËÇ‹ÇπÇÒ])
 
 AT_CLEANUP
@@ -393,7 +393,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0], [],
+AT_CHECK([${COBJ} prog.cob], [0], [],
 [prog.cob:12: Warning: F0 and 'Å¢' and FF have not same national type!
 prog.cob:12: Warning: F1 and 'Å¢' and FF have not same national type!
 prog.cob:12: Warning: F2 and 'Å¢' and FF have not same national type!
@@ -421,7 +421,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [åæÇ¶Ç‹ÇπÇÒéÑÇÃñºëOÇÕ])
 
 AT_CLEANUP
@@ -440,7 +440,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ÇPÇQÇRÇSÇOÇPÇQÇRÇSÇO])
 
 AT_CLEANUP
@@ -459,7 +459,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [ÇPÇQÇRÇSÇOÇPÇQÇRÇSÇO])
 
 AT_CLEANUP
@@ -479,7 +479,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog], [0], [02])
 
 AT_CLEANUP
@@ -500,7 +500,7 @@ AT_DATA([prog1.cob], [
             DISPLAY "ìåãû3".
 ])
 
-AT_CHECK([cobj prog1.cob])
+AT_CHECK([${COBJ} prog1.cob])
 AT_CHECK([grep 'ìåãû1' < prog1.java > /dev/null])
 AT_CHECK([grep 'ìåãû2' < prog1.java > /dev/null])
 AT_CHECK([grep 'ìåãû3' < prog1.java > /dev/null])
@@ -518,7 +518,7 @@ AT_DATA([prog2.cob], [
             DISPLAY "Å@3".
 ])
 
-AT_CHECK([cobj prog2.cob])
+AT_CHECK([${COBJ} prog2.cob])
 AT_CHECK([grep 'Å@1' < prog2.java > /dev/null])
 AT_CHECK([grep 'Å@2' < prog2.java > /dev/null])
 AT_CHECK([grep 'Å@3' < prog2.java > /dev/null])
@@ -536,7 +536,7 @@ AT_DATA([prog3.cob], [
             DISPLAY "Í§3".
 ])
 
-AT_CHECK([cobj prog3.cob])
+AT_CHECK([${COBJ} prog3.cob])
 AT_CHECK([grep 'Í§1' < prog3.java > /dev/null])
 AT_CHECK([grep 'Í§2' < prog3.java > /dev/null])
 AT_CHECK([grep 'Í§3' < prog3.java > /dev/null])
@@ -571,7 +571,7 @@ AT_DATA([prog.cbl], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 
 AT_CHECK([java prog                                 < ../../i18n_sjis.src/data/in-sjis.txt > out-none.txt])
 AT_CHECK([COB_TERMINAL_ENCODING=SHIFT_JIS java prog < ../../i18n_sjis.src/data/in-sjis.txt > out-sjis.txt])

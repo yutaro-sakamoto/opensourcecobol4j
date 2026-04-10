@@ -764,7 +764,7 @@ AT_DATA([prog.cbl], [
 AT_DATA([test.sh],
 [#!/bin/bash
 # Compile a COBOL source file
-cobj prog.cbl
+${COBJ} prog.cbl
 # The number of OK in the program output
 OK_COUNT=$(java prog | tee result.txt | grep OK | wc -l)
 # The number of EVALUATE statements in a COBOL source file
@@ -806,7 +806,7 @@ AT_DATA([prog2.cbl], [
 AT_DATA([test2.sh],
 [#!/bin/bash
 # Compile a COBOL source file
-cobj prog2.cbl
+${COBJ} prog2.cbl
 # The number of OK in the program output
 OK_COUNT=$(java prog2 | tee result.txt | grep OK | wc -l)
 # The number of EVALUATE statements in a COBOL source file
@@ -856,7 +856,7 @@ AT_DATA([pp.cbl], [
            GOBACK.
 
 ])
-AT_CHECK([cobj pp.cbl])
+AT_CHECK([${COBJ} pp.cbl])
 AT_CHECK([java pp], [0],
 [OK
 OK
@@ -935,7 +935,7 @@ AT_DATA([qq.cbl], [
            GOBACK.
 
 ])
-AT_CHECK([cobj ${CONF_JP_COMPAT} qq.cbl])
+AT_CHECK([${COBJ} ${CONF_JP_COMPAT} qq.cbl])
 AT_CHECK([java qq], [0],
 [OK
 OK
@@ -1015,7 +1015,7 @@ AT_DATA([rr.cbl],
            GOBACK.
 ])
 
-AT_CHECK([cobj rr.cbl])
+AT_CHECK([${COBJ} rr.cbl])
 AT_CHECK([java rr], [0],
 [OK1
 OK2

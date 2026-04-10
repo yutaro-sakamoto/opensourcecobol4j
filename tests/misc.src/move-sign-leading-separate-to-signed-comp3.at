@@ -382,7 +382,7 @@ AT_DATA([prog.cbl], [
       *****************************
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog], [0],
 [+0000000000015
 +0000000000015

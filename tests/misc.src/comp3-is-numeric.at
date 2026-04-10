@@ -77,7 +77,7 @@ AT_DATA([prog.cbl], [
          end-if.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog], [0],[])
 
 AT_CLEANUP
