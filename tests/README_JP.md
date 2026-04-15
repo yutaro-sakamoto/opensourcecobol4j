@@ -1,7 +1,11 @@
 makeコマンドを実行すると,下記のテストスクリプトが生成される
 
+* cobj-idx
+* cobol\_utf8
 * command-line-options
 * data-rep
+* file-lock
+* file-lock2
 * i18n\_sjis
 * i18n\_utf8
 * jp-compat

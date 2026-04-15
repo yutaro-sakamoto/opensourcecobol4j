@@ -12,7 +12,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本語の文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -34,7 +34,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本語の文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -56,7 +56,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本語' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -78,7 +78,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本語の文字列　　' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -100,7 +100,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '　　日本語の文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -121,7 +121,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本／中国　文字０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -144,7 +144,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '　　／　　　　　０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -167,7 +167,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本／中国　文字０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -189,7 +189,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '日本／中国　文字０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -211,7 +211,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n 'ＡＢＣ０１２３' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -233,7 +233,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob], [0])
+AT_CHECK([${COBJ} prog.cob], [0])
 AT_CHECK([java prog | od -tx1 -An | sed -e 's/  */ /g' -e 's/ *$//'], [0], [ 83 52 83 81 83 5f 83 52 81 5b 83 71 81 5b
 ])
 
@@ -254,7 +254,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '文字列' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -276,7 +276,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '文字' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -302,7 +302,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '私の名前はありません' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -328,7 +328,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '私の名前' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -354,7 +354,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '私の名前' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -381,7 +381,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '言えません私の名前は' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -403,7 +403,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '１２３４０１２３４０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -425,7 +425,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '１２３４０１２３４０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -447,7 +447,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '１２３４０１２３４０' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -470,7 +470,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '02' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -492,7 +492,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '゛ダ・ヴィンチ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -514,7 +514,7 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '゜ポンデリング' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
@@ -550,7 +550,7 @@ AT_DATA([prog.cob], [
            CLOSE TEST-FILE.
 ])
 
-AT_CHECK([cobj prog.cob])
+AT_CHECK([${COBJ} prog.cob])
 AT_CHECK([java prog > out1.txt])
 AT_CHECK([echo -n '縄文弥生古墳飛鳥奈良平安鎌倉室町江戸
 ' | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])

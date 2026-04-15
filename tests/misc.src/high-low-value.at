@@ -262,7 +262,7 @@ AT_DATA([prog.cbl], [
        STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog], [0],
 [TEST-DATA1-X < HIGH-VALUE-1-BYTE
 TEST-DATA2-X < HIGH-VALUE-1-BYTE

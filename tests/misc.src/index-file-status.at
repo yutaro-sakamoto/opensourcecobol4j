@@ -29,7 +29,7 @@ AT_DATA([prog.cbl], [
            CLOSE OUT-FILE1.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java prog], [0], 
 [10
 ])

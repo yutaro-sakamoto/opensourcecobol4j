@@ -102,7 +102,7 @@ Windows版のopensource COBOL 4JはVisual Studioに含まれるCLコンパイラ
     これにより、`libcobj\app\build\libs\`に"libcobj.jar"が作成される。
 
 ### ファイルを適切な位置に配置
-1. Debugモードでビルドした場合、`win/make-install.ps1`の5行目を`\x64\Release\cobj.exe`から`\x64\Debug\cobj.exe`に変更する。
+1. Debugモードでビルドした場合、`win/make-install.ps1`の6行目を`\x64\Release\cobj.exe`から`\x64\Debug\cobj.exe`に変更する。
 2. PowerShellを開く。
 3. ”win”ディレクトリに移動し、`make-install.ps1`を実行する。
     ```
@@ -115,6 +115,7 @@ Windows版のopensource COBOL 4JはVisual Studioに含まれるCLコンパイラ
     | cobj.exe | C:\opensourcecobol4j\bin |
     | libcobj.jar | C:\opensourcecobol4j\lib |
     | configファイル | C:\opensourcecobol4j\config |
+    | copyファイル | C:\opensourcecobol4j\copy |
 
 * ファイルの配置場所を変更したい場合は、`make-install.ps1`に記載してあるパスを編集してください。
 

@@ -102,14 +102,14 @@ for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
         sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
         > prog1.cbl
     fi
-    cobj prog1.cbl
+    ${COBJ} prog1.cbl
 done
 
 for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
     cat prog2.template.cbl |
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE2@<:@${operation}@:>@}/" \
     > prog2.cbl
-    cobj prog2.cbl
+    ${COBJ} prog2.cbl
 done
 
 
@@ -444,7 +444,7 @@ AT_DATA([run.sh], [
 
 AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
 AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
-AT_CHECK([cobj p1.cbl p2.cbl])
+AT_CHECK([${COBJ} p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
 # run a test
@@ -579,7 +579,7 @@ AT_DATA([run.sh], [
 
 AT_CHECK([cp ../../file-lock.src/module-sync/wait.java .])
 AT_CHECK([cp ../../file-lock.src/module-sync/setValue.java .])
-AT_CHECK([cobj p1.cbl p2.cbl])
+AT_CHECK([${COBJ} p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
 # run a test

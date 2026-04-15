@@ -119,6 +119,6 @@ AT_DATA([prog.cbl], [
            STOP RUN.
 ])
 
-AT_CHECK([cobj prog.cbl])
+AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([java -Xlog:perf+memops=off prog])
 AT_CLEANUP

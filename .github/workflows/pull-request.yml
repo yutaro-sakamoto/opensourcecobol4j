@@ -153,7 +153,7 @@ jobs:
   windows-build:
     needs: check-workflows
     uses: ./.github/workflows/windows-build.yml
-    with: 
+    with:
       upload-artifacts: true
 
   windows-test:
@@ -162,6 +162,28 @@ jobs:
        matrix:
          test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
     uses: ./.github/workflows/windows-test.yml
+    with:
+      test-name: ${{ matrix.test_name }}
+
+  windows-generate-test-scripts:
+    needs: check-workflows
+    uses: ./.github/workflows/windows-generate-test-scripts.yml
+
+  windows-test-other:
+    needs: [windows-build, windows-generate-test-scripts]
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name:
+          - "command-line-options"
+          - "data-rep"
+          - "jp-compat"
+          - "run"
+          - "syntax"
+          - "file-lock"
+          - "file-lock2"
+          - "misc"
+    uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
 

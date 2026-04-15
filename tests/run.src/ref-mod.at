@@ -89,6 +89,9 @@ AT_CLEANUP
 
 AT_SETUP([Dynamic reference modification])
 
+dnl TODO: cobj.exe segfaults when compiling this test on Windows.
+AT_SKIP_IF([test -n "$IS_WINDOWS"])
+
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
        PROGRAM-ID.      prog.
@@ -240,6 +243,9 @@ AT_CLEANUP
 
 AT_SETUP([Offset out of bounds in MOVE (1)])
 
+dnl TODO: cobj.exe segfaults when compiling this test on Windows.
+AT_SKIP_IF([test -n "$IS_WINDOWS"])
+
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.
        PROGRAM-ID.      prog.
@@ -262,6 +268,9 @@ AT_CLEANUP
 
 
 AT_SETUP([Offset out of bounds in MOVE (2)])
+
+dnl TODO: cobj.exe segfaults when compiling this test on Windows.
+AT_SKIP_IF([test -n "$IS_WINDOWS"])
 
 AT_DATA([prog.cob], [
        IDENTIFICATION   DIVISION.

@@ -19,7 +19,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> b
@@ -59,7 +59,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: 000
@@ -106,7 +106,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: -999
@@ -159,7 +159,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: -999.99
@@ -215,7 +215,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: 000
@@ -262,7 +262,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: -999
@@ -315,7 +315,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: -999.99
@@ -367,7 +367,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [<cobol> arg: abc
@@ -404,7 +404,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a 2>&1 | grep 'The index is out of range' > /dev/null], [0])
 AT_CLEANUP
@@ -462,7 +462,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a 2>&1 | grep 'jp.osscons.opensourcecobol.libcobj.ui.CobolResultSetException'], [0],
 [jp.osscons.opensourcecobol.libcobj.ui.CobolResultSetException: The result type is not 'double'
@@ -508,7 +508,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac -encoding SJIS a.java])
 AT_CHECK([java -Dfile.encoding=SJIS a], [0],
 [100
@@ -567,7 +567,7 @@ public class a {
 }
 ])
 
-AT_CHECK([cobj b.cbl])
+AT_CHECK([${COBJ} b.cbl])
 AT_CHECK([javac a.java])
 AT_CHECK([java a], [0],
 [-8

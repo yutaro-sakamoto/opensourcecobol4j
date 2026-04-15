@@ -32,6 +32,8 @@ CONF_LIMIT_TEST="-conf=${abs_top_builddir}/config/boundary-limit.conf"
 COBJ="${abs_top_builddir}/cobj/cobj"
 COBJ_IDX="${abs_top_builddir}/libcobj/bin/cobj-idx-test"
 RUN_MODULE="java"
+PATHSEP=":"
+export COBJ COBJ_IDX PATHSEP
 #COBCRUN="${abs_top_builddir}/bin/cobcrun"
 
 TEMPLATE="${abs_srcdir}/data-rep.src"

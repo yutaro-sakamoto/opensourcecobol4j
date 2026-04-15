@@ -93,7 +93,7 @@ for operation in "${PROGRAM1_OPERATIONS@<:@@@:>@}"; do
         sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE1@<:@${operation}@:>@}/" \
         > prog1.cbl
     fi
-    cobj prog1.cbl
+    ${COBJ} prog1.cbl
 done
 
 for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
@@ -101,7 +101,7 @@ for operation in "${PROGRAM2_OPERATIONS@<:@@@:>@}"; do
     sed -e "s/@OPERATION@/${operation}/" |\
     sed -e "s/@PROGRAM_ID@/${PROGRAM_ID_TABLE2@<:@${operation}@:>@}/" \
     > prog2.cbl
-    cobj prog2.cbl
+    ${COBJ} prog2.cbl
 done
 
 function run_test() {
