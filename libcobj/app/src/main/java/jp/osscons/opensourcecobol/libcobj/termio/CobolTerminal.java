@@ -259,7 +259,10 @@ public class CobolTerminal {
             CobolExceptionInfo.setException(CobolExceptionId.COB_EC_IMP_DISPLAY);
             return;
         }
-        CobolUtil.setEnv(CobolUtil.cobLocalEnv, f.getString());
+        // Strip trailing spaces and NULs so that PIC X(n) source fields do not
+        // leak padding into the environment variable value. Matches libcob's
+        // cob_field_to_string used by cob_display_env_value.
+        CobolUtil.setEnv(CobolUtil.cobLocalEnv, f.fieldToString(AbstractCobolField.charSetSJIS));
     }
 
     /**

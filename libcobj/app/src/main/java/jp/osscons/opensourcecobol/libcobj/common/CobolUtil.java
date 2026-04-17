@@ -632,10 +632,13 @@ public class CobolUtil {
      *
      * @param envVarName the name of an environment variable. The leading and trailing spaces are
      *     ignored.
-     * @param envVarValue the value of an environment variable to be set.
+     * @param envVarValue the value of an environment variable to be set. Trailing spaces and NUL
+     *     bytes are stripped to match libcob's {@code cob_field_to_string} behavior.
      */
     public static void setEnv(AbstractCobolField envVarName, AbstractCobolField envVarValue) {
-        CobolUtil.envVarTable.setProperty(envVarName.getString().trim(), envVarValue.getString());
+        CobolUtil.envVarTable.setProperty(
+                envVarName.getString().trim(),
+                envVarValue.fieldToString(AbstractCobolField.charSetSJIS));
     }
 
     /**
