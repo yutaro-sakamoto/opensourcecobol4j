@@ -636,6 +636,9 @@ public class CobolUtil {
      *     bytes are stripped to match libcob's {@code cob_field_to_string} behavior.
      */
     public static void setEnv(AbstractCobolField envVarName, AbstractCobolField envVarValue) {
+        // Name side uses String#trim() to drop both leading and trailing spaces, matching the
+        // behavior documented above. Value side uses fieldToString so only trailing spaces/NULs
+        // are stripped (leading spaces are meaningful in an environment value).
         CobolUtil.envVarTable.setProperty(
                 envVarName.getString().trim(),
                 envVarValue.fieldToString(AbstractCobolField.charSetSJIS));
