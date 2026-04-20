@@ -2165,8 +2165,7 @@ static int process_build_single_jar() {
   }
 
   snprintf(buff, COB_MEDIUM_BUFF, "cd %s && jar --create --file=%s %s%c*.class",
-           output_name_a, cb_single_jar_name, package_dir,
-           file_path_delimitor);
+           output_name_a, cb_single_jar_name, package_dir, file_path_delimitor);
   ret = process(buff);
   snprintf(buff, COB_MEDIUM_BUFF, "%s %s%c%s%c*.class", remove_cmd,
            output_name_a, file_path_delimitor, package_dir,
