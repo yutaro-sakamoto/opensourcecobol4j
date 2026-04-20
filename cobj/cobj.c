@@ -1847,7 +1847,12 @@ static int process_compile_all(void) {
   char buff[BUFF_SIZE];
   char buff2[COB_SMALL_BUFF];
   int ret = 0;
+#ifdef _WIN32
+  /* cmd.exe's internal `cd` misparses `./` as a switch, so use `.\\`. */
+  char current_dir[] = ".\\";
+#else
   char current_dir[] = "./";
+#endif
 
   char *output_name_a = output_name == NULL ? current_dir : output_name;
   char *java_source_dir_a =
@@ -2126,7 +2131,12 @@ static int process_build_single_jar() {
   char buff2[COB_SMALL_BUFF];
   int ret;
 
+#ifdef _WIN32
+  /* cmd.exe's internal `cd` misparses `./` as a switch, so use `.\\`. */
+  char *output_name_a = output_name == NULL ? (char *)".\\" : output_name;
+#else
   char *output_name_a = output_name == NULL ? (char *)"./" : output_name;
+#endif
   char *java_source_dir_a =
       java_source_dir == NULL ? (char *)"./" : java_source_dir;
 
