@@ -19,7 +19,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-%expect 146
+%expect 147
 
 %defines
 %verbose
@@ -305,6 +305,9 @@ setup_use_file (struct cb_file *fileptr)
 		fileptr->handler = current_section;
 	}
 }
+
+/* EXEC SQL helper - defined in esql.c */
+extern cb_tree cb_parse_exec_sql(const char *sql_text);
 
 %}
 
@@ -756,6 +759,8 @@ setup_use_file (struct cb_file *fileptr)
 %token YYYYDDD
 %token YYYYMMDD
 %token ZERO
+
+%token EXEC_SQL_STATEMENT	"EXEC SQL statement"
 
 %left '+' '-'
 %left '*' '/'
@@ -2611,6 +2616,20 @@ record_description_list_2:
 | record_description_list_2
   not_const_word data_description
 | record_description_list_2 '.'
+| record_description_list_2 exec_sql_data_statement
+| exec_sql_data_statement
+;
+
+exec_sql_data_statement:
+  EXEC_SQL_STATEMENT
+  {
+	/* Handle EXEC SQL in DATA DIVISION (BEGIN/END DECLARE SECTION, INCLUDE SQLCA) */
+	const char *sql_text = (const char *)CB_LITERAL ($1)->data;
+	/* BEGIN DECLARE SECTION and END DECLARE SECTION are no-ops */
+	/* INCLUDE SQLCA is handled by pplex via COPY */
+	/* Silently ignore these in data division */
+	(void)sql_text;
+  }
 ;
 
 data_description:
@@ -3933,6 +3952,7 @@ statement:
 | unstring_statement
 | use_statement
 | write_statement
+| exec_sql_statement
 | NEXT_SENTENCE
   {
 	if (cb_verify (cb_next_sentence_phrase, "NEXT SENTENCE")) {
@@ -7287,6 +7307,23 @@ _to:		| TO ;
 /* _upon:		| UPON ; */
 _when:		| WHEN ;
 _with:		| WITH ;
+
+/*
+ * EXEC SQL statement
+ */
+
+exec_sql_statement:
+  EXEC_SQL_STATEMENT
+  {
+	cb_tree sql_node;
+	BEGIN_STATEMENT ("EXEC SQL", 0);
+	sql_node = cb_parse_exec_sql ((char *)CB_LITERAL ($1)->data);
+	if (sql_node != cb_error_node) {
+		current_statement->body =
+			cb_list_add (current_statement->body, sql_node);
+	}
+  }
+;
 
 
 %%

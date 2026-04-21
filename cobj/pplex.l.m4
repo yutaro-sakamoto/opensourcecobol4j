@@ -136,7 +136,7 @@ WORD		([_0-9A-Z-]|{JPNWORD})+
 NUMRIC_LITERAL	[+-]?[0-9,.]*[0-9]
 ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
-%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE
+%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE
 
 %%
 
@@ -187,6 +187,18 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
   .*			{ cb_warning (_("PROCESS statement is ignored")); }
 }
 
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* EXEC SQL INCLUDE SQLCA END-EXEC -> include sqlca.cbl */
+	fputc ('\n', ppout);
+	ppcopy ("sqlca.cbl", NULL, NULL, NULL);
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL" {
+	/* Pass through EXEC SQL blocks to the main scanner */
+	ppecho ("EXEC SQL");
+	BEGIN ESQL_PASSTHRU_STATE;
+}
+
 "COPY"			{ BEGIN COPY_STATE; return COPY; }
 "INCLUDE"		{ BEGIN COPY_STATE; return COPY; }
 "REPLACE"		{ BEGIN COPY_STATE; return REPLACE; }
@@ -235,6 +247,20 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
   {NUMRIC_LITERAL} |
   {ALNUM_LITERAL} |
   .			{ pplval.s = strdup (yytext); return TOKEN; }
+}
+
+<ESQL_PASSTHRU_STATE>{
+  "END-EXEC" {
+	ppecho (" END-EXEC");
+	BEGIN INITIAL;
+  }
+  \n {
+	ppecho (" ");
+	cb_source_line++;
+  }
+  . {
+	ppecho (yytext);
+  }
 }
 
 <DATANAME_JOIN_STATE>{

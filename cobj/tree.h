@@ -87,6 +87,8 @@ enum cb_tag {
   CB_TAG_JAVA_BREAK,
 
   CB_TAG_SWITCH,
+
+  CB_TAG_EXEC_SQL, /* EXEC SQL statement */
 };
 
 enum cb_alphabet_name_type {
@@ -1204,6 +1206,87 @@ extern cb_tree cb_build_switch(cb_tree test, cb_tree case_tree);
 
 extern int cb_literal_to_int_for_switch_label(struct cb_literal *lit,
                                               int *result);
+
+/*
+ * EXEC SQL statement
+ */
+
+enum cb_sql_command {
+  CB_SQL_CONNECT,
+  CB_SQL_CONNECT_INFORMAL,
+  CB_SQL_CONNECT_SHORT,
+  CB_SQL_DISCONNECT,
+  CB_SQL_EXEC,
+  CB_SQL_EXEC_PARAMS,
+  CB_SQL_SELECT_INTO_ONE,
+  CB_SQL_SELECT_INTO_OCCURS,
+  CB_SQL_DECLARE_CURSOR,
+  CB_SQL_DECLARE_CURSOR_PARAMS,
+  CB_SQL_OPEN_CURSOR,
+  CB_SQL_OPEN_CURSOR_PARAMS,
+  CB_SQL_CLOSE_CURSOR,
+  CB_SQL_FETCH_ONE,
+  CB_SQL_FETCH_OCCURS,
+  CB_SQL_PREPARE,
+  CB_SQL_EXECUTE_PREPARED,
+  CB_SQL_COMMIT,
+  CB_SQL_ROLLBACK,
+};
+
+#define HVARTYPE_UNSIGNED_NUMERIC 1
+#define HVARTYPE_SIGNED_TRAILING_SEPARATE 2
+#define HVARTYPE_SIGNED_TRAILING_COMBINED 3
+#define HVARTYPE_SIGNED_LEADING_SEPARATE 4
+#define HVARTYPE_SIGNED_LEADING_COMBINED 5
+#define HVARTYPE_UNSIGNED_PACKED 8
+#define HVARTYPE_SIGNED_PACKED 9
+#define HVARTYPE_UNSIGNED_BINARY_NATIVE 13
+#define HVARTYPE_SIGNED_BINARY_NATIVE 14
+#define HVARTYPE_ALPHABETIC 16
+#define HVARTYPE_GROUP 22
+#define HVARTYPE_FLOAT 23
+#define HVARTYPE_NATIONAL 24
+#define HVARTYPE_ALPHANUMERIC_VARYING 30
+#define HVARTYPE_JAPANESE_VARYING 31
+
+struct cb_sql_host_var {
+  char *name;
+  cb_tree ref;
+  int hvar_type;
+  int length;
+  int scale;
+  struct cb_sql_host_var *next;
+};
+
+struct cb_exec_sql {
+  struct cb_tree_common common;
+  enum cb_sql_command command;
+  char *sql_text;
+  char *cursor_name;
+  char *prepare_name;
+  char *db_name;
+  struct cb_sql_host_var *host_list;
+  struct cb_sql_host_var *res_host_list;
+  int host_count;
+  int res_host_count;
+  int conn_use_other_db;
+  cb_tree sql_list;
+};
+
+#define CB_EXEC_SQL(x) (CB_TREE_CAST(CB_TAG_EXEC_SQL, struct cb_exec_sql, x))
+#define CB_EXEC_SQL_P(x) (CB_TREE_TAG(x) == CB_TAG_EXEC_SQL)
+
+extern cb_tree cb_build_exec_sql(enum cb_sql_command command, char *sql_text,
+                                 char *cursor_name, char *prepare_name,
+                                 char *db_name,
+                                 struct cb_sql_host_var *host_list,
+                                 int host_count,
+                                 struct cb_sql_host_var *res_host_list,
+                                 int res_host_count, int conn_use_other_db);
+extern struct cb_sql_host_var *cb_build_sql_host_var(char *name, cb_tree ref);
+extern struct cb_sql_host_var *
+cb_sql_host_var_list_add(struct cb_sql_host_var *list,
+                         struct cb_sql_host_var *item);
 
 /*
  * SORT
