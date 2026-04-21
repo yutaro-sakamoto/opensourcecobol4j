@@ -1,0 +1,9 @@
+AT_INIT(ESQL cobol data test)
+
+m4_include([numeric_signed_v.at])
+m4_include([numeric_v.at])
+m4_include([comp3.at])
+m4_include([comp3_signed.at])
+m4_include([alphanumeric.at])
+m4_include([japanese.at])
+m4_include([varying.at])

@@ -52,7 +52,7 @@ COMPILE_LIMIT_TEST="${COBJ} ${FLAGS_LIMIT_TEST}"
 COMPILE_ONLY="${COBJ} -fsyntax-only ${FLAGS}"
 COMPILE_ONLY_JP_COMPAT="${COBJ} -fsyntax-only ${FLAGS_JP_COMPAT}"
 COMPILE_ONLY_LIMIT_TEST="${COBJ} -fsyntax-only ${FLAGS_LIMIT_TEST}"
-COMPILE_MODULE="${COBJ} ${FLAGS}"
+COMPILE_MODULE="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"
 COMPILE_MODULE_JP_COMPAT="${COBJ} ${FLAGS_JP_COMPAT}"
 COMPILE_MODULE_LIMIT_TEST="${COBJ} ${FLAGS_LIMIT_TEST}"
 
@@ -69,3 +69,7 @@ export COB_HAS_ISAM
 export COB_SPLITKEY_FLAGS
 
 SKIP_TEST="exit 77"
+
+# ESQL test variables
+EMBED_DB_INFO="sh ${abs_srcdir}/embed_db_info.sh"
+COMPILE_MODULE_ESQL="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"
