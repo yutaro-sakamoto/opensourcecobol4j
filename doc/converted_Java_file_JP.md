@@ -448,6 +448,14 @@ libcobj.jarはopensource COBOL 4Jのランタイムであり、
 | --- | --- |
 | CobolTerminal.java | DISPLAY文やACCEPT文に関する処理を定義するクラス。 |
 
+### sqlディレクトリ
+`opensourcecobol4j/libcobj/src/jp/osscons/opensourcecobol/libcobj/sql`に格納されているソースコードについて説明する。
+このディレクトリには、EXEC SQL文（埋め込みSQL）に関連するクラスが定義される。
+
+| ファイル名 | 説明 |
+| --- | --- |
+| CobolSql.java | EXEC SQL文の実行時処理を定義するクラス。SQL接続、クエリ実行、カーソル操作、トランザクション制御等の機能を提供する。 |
+
 ### トップレベルディレクトリ
 `opensourcecobol4j/libcobj/src/jp/osscons/opensourcecobol/libcobj/`の直下に格納されているソースコードについて説明する。
 
