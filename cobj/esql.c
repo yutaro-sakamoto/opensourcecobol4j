@@ -218,8 +218,6 @@ cb_tree cb_parse_exec_sql(const char *sql_text) {
   const char *p;
   const char *rest;
   char sql_body[8192];
-  char cursor_name[256] = "";
-  char prepare_name[256] = "";
   char db_name[256] = "";
   struct cb_sql_host_var *host_list = NULL;
   struct cb_sql_host_var *res_host_list = NULL;
