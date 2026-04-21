@@ -3637,6 +3637,284 @@ static void joutput_switch(struct cb_switch *sw,
   joutput_line("}");
 }
 
+static void joutput_exec_sql_field_name(const char *cobol_name) {
+  char java_name[COB_SMALL_BUFF];
+  strcpy_identifier_cobol_to_java(java_name, cobol_name);
+  joutput("%s%s", CB_PREFIX_BASE, java_name);
+}
+
+static void joutput_exec_sql_host_var_ref(struct cb_sql_host_var *hv) {
+  joutput_exec_sql_field_name(hv->name);
+}
+
+static int joutput_exec_sql_host_var_size(struct cb_sql_host_var *hv) {
+  if (hv->ref) {
+    cb_tree resolved = cb_ref(hv->ref);
+    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+      return CB_FIELD(resolved)->size;
+    }
+  }
+  return 0;
+}
+
+static void joutput_exec_sql(struct cb_exec_sql *p) {
+  struct cb_sql_host_var *hv;
+
+  switch (p->command) {
+  case CB_SQL_CONNECT:
+    /* CONNECT :user IDENTIFIED BY :passwd USING :dbname */
+    if (p->conn_use_other_db) {
+      joutput_prefix();
+      joutput("CobolSql.idConnect(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput(", ");
+      joutput_exec_sql_field_name(p->db_name);
+      joutput(", %d", hv ? joutput_exec_sql_host_var_size(hv) : 0);
+      hv = p->host_list;
+      while (hv) {
+        joutput(", ");
+        joutput_exec_sql_host_var_ref(hv);
+        joutput(", %d", joutput_exec_sql_host_var_size(hv));
+        hv = hv->next;
+      }
+      joutput(");\n");
+    } else {
+      joutput_prefix();
+      joutput("CobolSql.connect(");
+      joutput_exec_sql_field_name("SQLCA");
+      hv = p->host_list;
+      while (hv) {
+        joutput(", ");
+        joutput_exec_sql_host_var_ref(hv);
+        joutput(", %d", joutput_exec_sql_host_var_size(hv));
+        hv = hv->next;
+      }
+      joutput(");\n");
+    }
+    break;
+
+  case CB_SQL_CONNECT_INFORMAL:
+    joutput_prefix();
+    joutput("CobolSql.connectInformal(");
+    joutput_exec_sql_field_name("SQLCA");
+    hv = p->host_list;
+    if (hv) {
+      joutput(", ");
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(", %d", joutput_exec_sql_host_var_size(hv));
+    }
+    joutput(");\n");
+    break;
+
+  case CB_SQL_CONNECT_SHORT:
+    joutput_prefix();
+    joutput("CobolSql.connectShort(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_DISCONNECT:
+    joutput_prefix();
+    joutput("CobolSql.disconnect(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_COMMIT:
+    joutput_prefix();
+    joutput("CobolSql.commit(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_ROLLBACK:
+    joutput_prefix();
+    joutput("CobolSql.rollback(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_EXEC:
+    joutput_prefix();
+    joutput("CobolSql.exec(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\");\n", p->sql_text);
+    break;
+
+  case CB_SQL_EXEC_PARAMS:
+    /* StartSQL, SetParams, ExecParams, EndSQL */
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    joutput("CobolSql.execParams(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", %d);\n", p->sql_text, p->host_count);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_SELECT_INTO_ONE:
+  case CB_SQL_SELECT_INTO_OCCURS:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    /* Input params */
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    /* Result params */
+    for (hv = p->res_host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setResultParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    if (p->command == CB_SQL_SELECT_INTO_OCCURS) {
+      joutput("CobolSql.execSelectIntoOccurs(");
+    } else {
+      joutput("CobolSql.execSelectIntoOne(");
+    }
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", %d, %d);\n", p->sql_text, p->host_count,
+            p->res_host_count);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_DECLARE_CURSOR:
+    joutput_prefix();
+    if (p->prepare_name && p->prepare_name[0]) {
+      /* DECLARE cursor CURSOR FOR prepared_name - handled at open time */
+      joutput("CobolSql.cursorDeclare(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput(", \"%s\", \"%s\");\n", p->cursor_name, p->prepare_name);
+    } else {
+      joutput("CobolSql.cursorDeclare(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput(", \"%s\", \"%s\");\n", p->cursor_name, p->sql_text);
+    }
+    break;
+
+  case CB_SQL_DECLARE_CURSOR_PARAMS:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    joutput("CobolSql.cursorDeclareParams(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", \"%s\", %d);\n", p->cursor_name, p->sql_text,
+            p->host_count);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_OPEN_CURSOR:
+    joutput_prefix();
+    joutput("CobolSql.cursorOpen(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\");\n", p->cursor_name);
+    break;
+
+  case CB_SQL_OPEN_CURSOR_PARAMS:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    joutput("CobolSql.cursorOpenParams(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", %d);\n", p->cursor_name, p->host_count);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_CLOSE_CURSOR:
+    joutput_prefix();
+    joutput("CobolSql.cursorClose(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\");\n", p->cursor_name);
+    break;
+
+  case CB_SQL_FETCH_ONE:
+  case CB_SQL_FETCH_OCCURS:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->res_host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setResultParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    if (p->command == CB_SQL_FETCH_OCCURS) {
+      joutput("CobolSql.cursorFetchOccurs(");
+    } else {
+      joutput("CobolSql.cursorFetchOne(");
+    }
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\");\n", p->cursor_name);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_PREPARE:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    joutput("CobolSql.prepare(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", ", p->prepare_name);
+    /* The query is in the first host variable */
+    if (p->host_list) {
+      joutput_exec_sql_host_var_ref(p->host_list);
+      joutput(", ");
+      joutput_exec_sql_host_var_ref(p->host_list);
+      joutput(".getSize()");
+    } else {
+      joutput("null, 0");
+    }
+    joutput(");\n");
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+
+  case CB_SQL_EXECUTE_PREPARED:
+    joutput_line("CobolSql.startSQL(%s);", "b_SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput_prefix();
+      joutput("CobolSql.setParam(%d, %d, %d, ", hv->hvar_type, hv->length,
+              hv->scale);
+      joutput_exec_sql_host_var_ref(hv);
+      joutput(");\n");
+    }
+    joutput_prefix();
+    joutput("CobolSql.execPrepare(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", %d);\n", p->prepare_name, p->host_count);
+    joutput_line("CobolSql.endSQL(%s);", "b_SQLCA");
+    break;
+  }
+}
+
 static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
   struct cb_statement *p;
   struct cb_label *lp;
@@ -3951,6 +4229,9 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     break;
   case CB_TAG_CALL:
     joutput_call(CB_CALL(x));
+    break;
+  case CB_TAG_EXEC_SQL:
+    joutput_exec_sql(CB_EXEC_SQL(x));
     break;
   case CB_TAG_GOTO:
     joutput_goto(CB_GOTO(x));
@@ -6410,6 +6691,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("import jp.osscons.opensourcecobol.libcobj.call.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.file.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.ui.*;");
+  joutput_line("import jp.osscons.opensourcecobol.libcobj.sql.*;");
   joutput_line("import java.util.Optional;");
   joutput("\n");
 

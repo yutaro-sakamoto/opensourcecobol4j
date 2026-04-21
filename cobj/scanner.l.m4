@@ -64,6 +64,12 @@ static int			inside_bracket = 0;
 static int			inside_repository = 0;
 struct cb_unget_buffer		*unget_buffer = NULL;
 
+/* ESQL state variables */
+#define ESQL_BUFF_SIZE 8192
+static char			*esql_buff = NULL;
+static size_t			esql_buff_len;
+static size_t			esql_buff_capacity;
+
 static int read_literal (int mark, enum cb_category);
 static int scan_x (char *text);
 static int scan_h (char *text);
@@ -74,7 +80,7 @@ static void count_lines (char *text);
 %}
 
 %s DECIMAL_IS_PERIOD DECIMAL_IS_COMMA
-%x PICTURE_STATE FUNCTION_STATE
+%x PICTURE_STATE FUNCTION_STATE ESQL_STATE
 
 ifdef(M4.I18N_UTF8,>>>>>
 U00_7F		[\x00-\x7F]
@@ -117,6 +123,41 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	}
 %}
 
+<ESQL_STATE>{
+  "END-EXEC" {
+	/* End of EXEC SQL block */
+	BEGIN INITIAL;
+	esql_buff[esql_buff_len] = '\0';
+	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
+	SET_LOCATION (yylval);
+	return EXEC_SQL_STATEMENT;
+  }
+  \n {
+	cb_source_line++;
+	if (esql_buff_len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	esql_buff[esql_buff_len++] = ' ';
+  }
+  [ \t]+ {
+	/* Collapse whitespace to single space */
+	if (esql_buff_len > 0 && esql_buff[esql_buff_len - 1] != ' ') {
+		if (esql_buff_len + 2 >= esql_buff_capacity) {
+			esql_buff_capacity *= 2;
+			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+		}
+		esql_buff[esql_buff_len++] = ' ';
+	}
+  }
+  . {
+	if (esql_buff_len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	esql_buff[esql_buff_len++] = yytext[0];
+  }
+}
 
 <*>\n {
 	cb_source_line++;
@@ -301,6 +342,18 @@ H\"[^\"\n]*\" {
 	/* H numeric literal */
 	cb_force_pid_literal = 0;
 	return scan_h (yytext + 2);
+}
+
+"EXEC"[ \t\n]+"SQL" {
+	/* Enter EXEC SQL state and collect SQL text */
+	count_lines (yytext);
+	if (!esql_buff) {
+		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
+		esql_buff_capacity = ESQL_BUFF_SIZE;
+	}
+	esql_buff_len = 0;
+	esql_buff[0] = '\0';
+	BEGIN ESQL_STATE;
 }
 
 "END"[ \t\n]+"PROGRAM" {

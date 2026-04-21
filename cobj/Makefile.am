@@ -19,7 +19,7 @@
 
 bin_PROGRAMS = cobj
 cobj_SOURCES = cobj.c cobj.h config.c tree.c tree.h reserved.c error.c \
-	parser.c parser.h scanner.c field.c typeck.c codegen.c \
+	parser.c parser.h scanner.c field.c typeck.c codegen.c esql.c \
 	ppparse.c ppparse.h pplex.c \
 	config.def flag.def warning.def exception.def system.def
 
