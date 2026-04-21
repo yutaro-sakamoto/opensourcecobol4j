@@ -1,0 +1,55 @@
+AT_SETUP([sql-variable-definition])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+      ******************************************************************
+       PROGRAM-ID.                 prog.
+      ******************************************************************
+       DATA                        DIVISION.
+      ******************************************************************
+       WORKING-STORAGE             SECTION.
+
+       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+
+       01 DB-ENDPOINT PIC X(120) VALUE "aaa".
+       01 DB-PASSWORD PIC X(120) VALUE "bbb".
+       01 DB-DATABASE PIC X(30) VALUE "ccc".
+       01 DB-USER PIC X(50) VALUE "ddd".
+       01 DB-PORT PIC X(5) VALUE "12345".
+
+       EXEC SQL END DECLARE SECTION END-EXEC.
+       EXEC SQL INCLUDE SQLCA END-EXEC.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>"
+             TO DBNAME.
+           MOVE  "<|DB_USER|>"
+             TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"
+             TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME 
+           END-EXEC.
+
+           EXEC SQL
+               DROP TABLE IF EXISTS EMP
+           END-EXEC.
+
+           EXEC SQL
+               DROP TABLE IF EXISTS EMP
+           END-EXEC.
+
+           EXEC SQL
+               DISCONNECT ALL
+           END-EXEC.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+AT_CHECK([${RUN_MODULE} prog], [0], [])
+
+AT_CLEANUP

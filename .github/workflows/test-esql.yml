@@ -1,0 +1,112 @@
+name: ESQL tests
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      configure-args:
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  CLASSPATH: ":/usr/lib/opensourcecobol4j/libcobj.jar"
+
+jobs:
+  test-esql:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.os }}
+
+    services:
+      postgres15:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: main_user
+          POSTGRES_DB: testdb
+          POSTGRES_HOST_AUTH_METHOD: 'trust'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Get the artifact name
+        run: echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install dependencies on Ubuntu 24.04
+        if: inputs.os == 'ubuntu:24.04'
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential curl
+
+      - name: Install dependencies on AlmaLinux 9
+        if: inputs.os == 'almalinux:9'
+        run: |
+          dnf -y update
+          dnf install -y gcc make diffutils curl
+
+      - name: Install opensource COBOL 4J
+        run: |
+          tar zxf opensourcecobol4j.tar.gz
+          mv opensourcecobol4j/* .
+          make install
+
+      - name: Download PostgreSQL JDBC driver
+        run: |
+          curl -L -o /usr/lib/opensourcecobol4j/postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.2.24.jre6.jar
+          echo "CLASSPATH=$CLASSPATH:/usr/lib/opensourcecobol4j/postgresql.jar" >> "$GITHUB_ENV"
+
+      - name: Setup DB info
+        working-directory: tests/
+        run: cp ../.github/workflows/db-settings/embed_db_info_postgresql_15.sh embed_db_info.sh
+
+      - name: Run ESQL basic tests
+        working-directory: tests/
+        run: ./esql-basic
+
+      - name: Run ESQL SQLCA tests
+        working-directory: tests/
+        run: ./esql-sqlca
+
+      - name: Run ESQL cobol data tests
+        working-directory: tests/
+        run: ./esql-cobol-data
+
+      - name: Run ESQL misc tests
+        working-directory: tests/
+        run: ./esql-misc
+
+      - name: Run ESQL sql data tests
+        working-directory: tests/
+        run: ./esql-sql-data
+
+      - name: Upload test logs if tests fail
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: esql-test-${{ env.ARTIFACT_NAME }}-log
+          path: |
+            tests/esql-basic.dir/
+            tests/esql-sqlca.dir/
+            tests/esql-cobol-data.dir/
+            tests/esql-misc.dir/
+            tests/esql-sql-data.dir/
