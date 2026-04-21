@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
+/** Wraps a JDBC Connection with a COBOL connection identifier. */
 public class SqlConnection {
 
     private String id;
@@ -16,20 +17,40 @@ public class SqlConnection {
         this.conn = conn;
     }
 
+    /**
+     * Get the connection identifier.
+     *
+     * @return the connection ID string
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Get the underlying JDBC connection.
+     *
+     * @return the JDBC Connection
+     */
     public Connection getConnection() {
         return conn;
     }
 
+    /**
+     * Close the underlying JDBC connection if it is open.
+     *
+     * @throws SQLException if a database access error occurs
+     */
     public void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             conn.close();
         }
     }
 
+    /**
+     * Begin a new transaction by executing a SQL BEGIN statement.
+     *
+     * @throws SQLException if a database access error occurs
+     */
     public void beginTransaction() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             Statement stmt = conn.createStatement();

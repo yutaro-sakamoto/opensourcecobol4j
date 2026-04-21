@@ -125,6 +125,7 @@
     <ClCompile Include="..\..\cobj\codegen.c" />
     <ClCompile Include="..\..\cobj\config.c" />
     <ClCompile Include="..\..\cobj\error.c" />
+    <ClCompile Include="..\..\cobj\esql.c" />
     <ClCompile Include="..\..\cobj\field.c" />
     <ClCompile Include="..\..\cobj\parser.c" />
     <ClCompile Include="..\..\cobj\pplex.c" />

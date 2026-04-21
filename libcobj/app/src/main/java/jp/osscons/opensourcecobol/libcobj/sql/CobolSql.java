@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
+/** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
 public class CobolSql {
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
@@ -19,6 +20,17 @@ public class CobolSql {
     // -------------------------------------------------------
     // Connection
     // -------------------------------------------------------
+    /**
+     * Establish a database connection using separate user, password, and dbname parameters.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param user user name storage
+     * @param userLen byte length of user
+     * @param passwd password storage
+     * @param passwdLen byte length of passwd
+     * @param dbname database name storage
+     * @param dbnameLen byte length of dbname
+     */
     public static void connect(
             CobolDataStorage sqlca,
             CobolDataStorage user,
@@ -42,6 +54,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Establish a database connection using a "user/passwd@dbname" format string.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param connInfo connection info storage in "user/passwd@dbname" format
+     * @param len byte length of connInfo
+     */
     public static void connectInformal(CobolDataStorage sqlca, CobolDataStorage connInfo, int len) {
         try {
             String info = storageToString(connInfo, len);
@@ -80,6 +99,11 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Establish a database connection using only environment variable defaults.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     */
     public static void connectShort(CobolDataStorage sqlca) {
         try {
             SqlConnection conn = SqlConnection.connect(null, null, null);
@@ -92,6 +116,11 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Disconnect the default database connection after committing.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     */
     public static void disconnect(CobolDataStorage sqlca) {
         try {
             SqlConnection conn = SqlState.getDefaultConnection();
@@ -118,6 +147,12 @@ public class CobolSql {
     // -------------------------------------------------------
     // Simple SQL execution (no host vars)
     // -------------------------------------------------------
+    /**
+     * Execute a SQL statement with no host variable parameters.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param query the SQL query string
+     */
     public static void exec(CobolDataStorage sqlca, String query) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -153,6 +188,13 @@ public class CobolSql {
     // -------------------------------------------------------
     // Parameterized SQL execution
     // -------------------------------------------------------
+    /**
+     * Execute a parameterized SQL statement with COBOL host variable bindings.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param query the SQL query string with '?' placeholders
+     * @param params the COBOL host variable parameters
+     */
     public static void execWithParams(CobolDataStorage sqlca, String query, SqlParam... params) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -194,6 +236,14 @@ public class CobolSql {
     // -------------------------------------------------------
     // SELECT INTO
     // -------------------------------------------------------
+    /**
+     * Execute a SELECT INTO statement, writing results back to COBOL host variables.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param query the SELECT query string
+     * @param inputParams input host variable parameters (WHERE clause bindings)
+     * @param resultParams output host variables to receive selected column values
+     */
     public static void selectInto(
             CobolDataStorage sqlca, String query, SqlParam[] inputParams, SqlParam[] resultParams) {
         try {
@@ -209,40 +259,45 @@ public class CobolSql {
                 return;
             }
 
+            Statement stmtToClose = null;
             ResultSet rs;
-            if (inputParams != null && inputParams.length > 0) {
-                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt);
-                for (int i = 0; i < inputParams.length; i++) {
-                    CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
+            try {
+                if (inputParams != null && inputParams.length > 0) {
+                    PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+                    ParameterMetaData metaData = getParameterMetaData(pstmt);
+                    for (int i = 0; i < inputParams.length; i++) {
+                        CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
+                    }
+                    pstmt.execute();
+                    rs = pstmt.getResultSet();
+                } else {
+                    stmtToClose = conn.createStatement();
+                    stmtToClose.execute(query);
+                    rs = stmtToClose.getResultSet();
                 }
-                pstmt.execute();
-                rs = pstmt.getResultSet();
-            } else {
-                Statement stmt = conn.createStatement();
-                stmt.execute(query);
-                rs = stmt.getResultSet();
-            }
 
-            if (rs == null || !rs.next()) {
-                SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
-                if (rs != null) rs.close();
-                return;
-            }
+                if (rs == null || !rs.next()) {
+                    SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+                    if (rs != null) rs.close();
+                    return;
+                }
 
-            if (resultParams != null) {
-                int columnCount = rs.getMetaData().getColumnCount();
-                for (int i = 0; i < resultParams.length && i < columnCount; i++) {
-                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                    if (value != null) {
-                        CobolDataConverter.stringToCobol(resultParams[i], value);
-                    } else {
-                        resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                if (resultParams != null) {
+                    int columnCount = rs.getMetaData().getColumnCount();
+                    for (int i = 0; i < resultParams.length && i < columnCount; i++) {
+                        byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                        if (value != null) {
+                            CobolDataConverter.stringToCobol(resultParams[i], value);
+                        } else {
+                            resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                        }
                     }
                 }
+                rs.close();
+                SqlCA.setSuccess(sqlca);
+            } finally {
+                if (stmtToClose != null) stmtToClose.close();
             }
-            rs.close();
-            SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
         }
@@ -251,6 +306,13 @@ public class CobolSql {
     // -------------------------------------------------------
     // Cursor operations
     // -------------------------------------------------------
+    /**
+     * Declare a SQL cursor with no parameters.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name
+     * @param query the SQL query for the cursor
+     */
     public static void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
         try {
             if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
@@ -271,6 +333,14 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Declare a SQL cursor with host variable parameters.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name
+     * @param query the SQL query for the cursor
+     * @param params host variable parameters to bind when the cursor is opened
+     */
     public static void declareCursorWithParams(
             CobolDataStorage sqlca, String cursorName, String query, SqlParam... params) {
         try {
@@ -293,6 +363,12 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Open a previously declared cursor.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name to open
+     */
     public static void openCursor(CobolDataStorage sqlca, String cursorName) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -316,6 +392,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Open a previously declared cursor with host variable parameters.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name to open
+     * @param params host variable parameters for the cursor query
+     */
     public static void openCursorWithParams(
             CobolDataStorage sqlca, String cursorName, SqlParam... params) {
         try {
@@ -340,6 +423,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Fetch the next row from an open cursor into COBOL host variables.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name to fetch from
+     * @param resultParams output host variables to receive column values
+     */
     public static void fetchCursor(
             CobolDataStorage sqlca, String cursorName, SqlParam... resultParams) {
         try {
@@ -368,6 +458,12 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Close an open cursor.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the cursor name to close
+     */
     public static void closeCursor(CobolDataStorage sqlca, String cursorName) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -394,6 +490,14 @@ public class CobolSql {
     // -------------------------------------------------------
     // Prepared statements
     // -------------------------------------------------------
+    /**
+     * Prepare a SQL statement, replacing COBOL host variable references with '?' placeholders.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param stmtName the name to assign to the prepared statement
+     * @param queryStorage COBOL storage containing the SQL query text
+     * @param queryLen byte length of the query
+     */
     public static void prepare(
             CobolDataStorage sqlca, String stmtName, CobolDataStorage queryStorage, int queryLen) {
         try {
@@ -438,6 +542,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Execute a previously prepared statement.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param stmtName the name of the prepared statement
+     * @param params host variable parameters to bind
+     */
     public static void executePrepared(
             CobolDataStorage sqlca, String stmtName, SqlParam... params) {
         try {
@@ -465,6 +576,11 @@ public class CobolSql {
     // -------------------------------------------------------
     // Transaction
     // -------------------------------------------------------
+    /**
+     * Commit the current transaction on the default connection and begin a new one.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     */
     public static void commit(CobolDataStorage sqlca) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -487,6 +603,11 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Roll back the current transaction on the default connection and begin a new one.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     */
     public static void rollback(CobolDataStorage sqlca) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
@@ -512,6 +633,19 @@ public class CobolSql {
     // -------------------------------------------------------
     // AT database variants (ID prefixed)
     // -------------------------------------------------------
+    /**
+     * Establish a named database connection (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     * @param user user name storage
+     * @param userLen byte length of user
+     * @param passwd password storage
+     * @param passwdLen byte length of passwd
+     * @param dbname database name storage
+     * @param dbnameLen byte length of dbname
+     */
     public static void idConnect(
             CobolDataStorage sqlca,
             CobolDataStorage atdb,
@@ -539,6 +673,14 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Execute a SQL statement on a named connection (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     * @param query the SQL query string
+     */
     public static void idExec(
             CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen, String query) {
         try {
@@ -572,6 +714,16 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Execute a parameterized SQL statement on a named connection (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     * @param query the SQL query string with '?' placeholders
+     * @param nParams the expected number of parameters
+     * @param params the COBOL host variable parameters
+     */
     public static void idExecParams(
             CobolDataStorage sqlca,
             CobolDataStorage atdb,
@@ -612,6 +764,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Disconnect a named connection after committing (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     */
     public static void idDisconnect(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
@@ -635,6 +794,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Commit the current transaction on a named connection (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     */
     public static void idCommit(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
@@ -658,6 +824,13 @@ public class CobolSql {
         }
     }
 
+    /**
+     * Roll back the current transaction on a named connection (AT db-name variant).
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param atdb connection identifier storage
+     * @param atdbLen byte length of atdb
+     */
     public static void idRollback(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);

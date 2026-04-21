@@ -6,14 +6,31 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/** Represents a SQL cursor for iterating over query results in COBOL embedded SQL. */
 public class SqlCursor {
 
+    /** Cursor name used in DECLARE/OPEN/FETCH/CLOSE statements. */
     String name;
+
+    /** SQL query associated with this cursor. */
     String query;
+
+    /** Number of host variable parameters in the query. */
     int nParams;
+
+    /** Whether this cursor is currently open. */
     boolean isOpened;
+
+    /** Host variable parameters bound at DECLARE time. */
     SqlParam[] params;
 
+    /**
+     * Create a new cursor descriptor.
+     *
+     * @param name the cursor name
+     * @param query the SQL query for this cursor
+     * @param nParams the number of host variable parameters
+     */
     public SqlCursor(String name, String query, int nParams) {
         this.name = name;
         this.query = query;
@@ -22,6 +39,13 @@ public class SqlCursor {
         this.params = null;
     }
 
+    /**
+     * Open this cursor by executing a DECLARE CURSOR statement.
+     *
+     * @param conn the JDBC connection
+     * @param openParams host variable parameters for the query, or null to use stored params
+     * @throws SQLException if a database access error occurs
+     */
     public void open(Connection conn, SqlParam[] openParams) throws SQLException {
         String command = "DECLARE " + name + " CURSOR FOR " + query;
 
@@ -58,6 +82,14 @@ public class SqlCursor {
         isOpened = true;
     }
 
+    /**
+     * Fetch the next row from this cursor and write results to COBOL host variables.
+     *
+     * @param conn the JDBC connection
+     * @param resultParams output host variables to receive column values
+     * @return true if a row was fetched, false if no more rows
+     * @throws SQLException if a database access error occurs
+     */
     public boolean fetch(Connection conn, SqlParam[] resultParams) throws SQLException {
         String fetchSql = "FETCH FORWARD 1 FROM " + name;
         Statement stmt = conn.createStatement();
@@ -90,6 +122,12 @@ public class SqlCursor {
         }
     }
 
+    /**
+     * Close this cursor by executing a CLOSE statement.
+     *
+     * @param conn the JDBC connection
+     * @throws SQLException if a database access error occurs
+     */
     public void close(Connection conn) throws SQLException {
         Statement stmt = conn.createStatement();
         try {
