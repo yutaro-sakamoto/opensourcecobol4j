@@ -3644,6 +3644,14 @@ static void joutput_exec_sql_field_name(const char *cobol_name) {
 }
 
 static void joutput_exec_sql_host_var_ref(struct cb_sql_host_var *hv) {
+  if (hv->ref) {
+    cb_tree resolved = cb_ref(hv->ref);
+    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+      joutput_base(CB_FIELD(resolved));
+      return;
+    }
+  }
+  /* Fallback: use simple name */
   joutput_exec_sql_field_name(hv->name);
 }
 
