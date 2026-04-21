@@ -57,7 +57,15 @@ tests/run
 tests/file-lock
 tests/file-lock2
 tests/*.log
+tests/*.dir/
+tests/run-O
+tests/data-rep-O
 tests/syntax
+tests/esql-basic
+tests/esql-sqlca
+tests/esql-cobol-data
+tests/esql-misc
+tests/esql-sql-data
 tests/cobol85/*/*.class
 tests/cobol85/*/*.java
 tests/cobol85/*/*.out
