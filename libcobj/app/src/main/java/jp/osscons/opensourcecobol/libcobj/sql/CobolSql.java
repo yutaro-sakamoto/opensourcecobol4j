@@ -1,99 +1,24 @@
 package jp.osscons.opensourcecobol.libcobj.sql;
 
-import java.nio.ByteBuffer;
-import jp.osscons.opensourcecobol.libcobj.call.CobolResolve;
-import jp.osscons.opensourcecobol.libcobj.call.CobolRunnable;
+import java.nio.charset.Charset;
+import java.sql.Connection;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
-import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
 public class CobolSql {
 
-    private static CobolRunnable resolveRunner(String name) {
-        try {
-            return CobolResolve.resolve(null, name);
-        } catch (CobolRuntimeException e) {
-            throw new RuntimeException("Failed to resolve ESQL runtime: " + name, e);
-        }
-    }
+    private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
+    private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
+            new ConcurrentHashMap<>();
 
-    private static int callRunner(String name, CobolDataStorage... args) {
-        CobolRunnable runner = resolveRunner(name);
-        return runner.run(args);
-    }
-
-    private static CobolDataStorage intToStorage(int value) {
-        CobolDataStorage s = new CobolDataStorage(4);
-        byte[] bytes = ByteBuffer.allocate(4).putInt(value).array();
-        s.setBytes(bytes, 4);
-        return s;
-    }
-
-    private static CobolDataStorage stringToNullTerminated(String str) {
-        byte[] data = str.getBytes();
-        CobolDataStorage s = new CobolDataStorage(data.length + 1);
-        s.setBytes(data, data.length);
-        s.setByte(data.length, (byte) 0);
-        return s;
-    }
-
-    public static void startSQL(CobolDataStorage sqlca) {
-        callRunner("OCESQLStartSQL");
-    }
-
-    public static void endSQL(CobolDataStorage sqlca) {
-        callRunner("OCESQLEndSQL");
-    }
-
-    public static void setParam(int type, int length, int scale, CobolDataStorage data) {
-        callRunner(
-                "OCESQLSetSQLParams",
-                intToStorage(type),
-                intToStorage(length),
-                intToStorage(scale),
-                data);
-    }
-
-    public static void setResultParam(int type, int length, int scale, CobolDataStorage data) {
-        callRunner(
-                "OCESQLSetResultParams",
-                intToStorage(type),
-                intToStorage(length),
-                intToStorage(scale),
-                data);
-    }
-
-    public static void exec(CobolDataStorage sqlca, String query) {
-        CobolDataStorage queryStorage = stringToNullTerminated(query);
-        callRunner("OCESQLExec", sqlca, queryStorage);
-    }
-
-    public static void execParams(CobolDataStorage sqlca, String query, int nParams) {
-        CobolDataStorage queryStorage = stringToNullTerminated(query);
-        callRunner("OCESQLExecParams", sqlca, queryStorage, intToStorage(nParams));
-    }
-
-    public static void execSelectIntoOne(
-            CobolDataStorage sqlca, String query, int nParams, int nResults) {
-        CobolDataStorage queryStorage = stringToNullTerminated(query);
-        callRunner(
-                "OCESQLExecSelectIntoOne",
-                sqlca,
-                queryStorage,
-                intToStorage(nParams),
-                intToStorage(nResults));
-    }
-
-    public static void execSelectIntoOccurs(
-            CobolDataStorage sqlca, String query, int nParams, int nResults) {
-        CobolDataStorage queryStorage = stringToNullTerminated(query);
-        callRunner(
-                "OCESQLExecSelectIntoOccurs",
-                sqlca,
-                queryStorage,
-                intToStorage(nParams),
-                intToStorage(nResults));
-    }
-
+    // -------------------------------------------------------
+    // Connection
+    // -------------------------------------------------------
     public static void connect(
             CobolDataStorage sqlca,
             CobolDataStorage user,
@@ -102,98 +27,491 @@ public class CobolSql {
             int passwdLen,
             CobolDataStorage dbname,
             int dbnameLen) {
-        callRunner(
-                "OCESQLConnect",
-                sqlca,
-                user,
-                intToStorage(userLen),
-                passwd,
-                intToStorage(passwdLen),
-                dbname,
-                intToStorage(dbnameLen));
+        try {
+            String userStr = storageToString(user, userLen);
+            String passwdStr = storageToString(passwd, passwdLen);
+            String dbnameStr = storageToString(dbname, dbnameLen);
+
+            SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
+            SqlState.addConnection(conn.getId(), conn);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
+        }
     }
 
-    public static void connectInformal(CobolDataStorage sqlca, CobolDataStorage user, int userLen) {
-        callRunner("OCESQLConnectInformal", sqlca, user, intToStorage(userLen));
+    public static void connectInformal(CobolDataStorage sqlca, CobolDataStorage connInfo, int len) {
+        try {
+            String info = storageToString(connInfo, len);
+            if (info == null || info.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", "Connection info is NULL");
+                return;
+            }
+
+            // Parse "user/passwd@dbname" format
+            String user = null;
+            String passwd = null;
+            String dbname = null;
+
+            int atIdx = info.lastIndexOf('@');
+            String rest = info;
+            if (atIdx >= 0) {
+                dbname = info.substring(atIdx + 1);
+                rest = info.substring(0, atIdx);
+            }
+
+            int slashIdx = rest.indexOf('/');
+            if (slashIdx >= 0) {
+                user = rest.substring(0, slashIdx);
+                passwd = rest.substring(slashIdx + 1);
+            } else {
+                user = rest;
+            }
+
+            SqlConnection conn = SqlConnection.connect(user, passwd, dbname);
+            SqlState.addConnection(conn.getId(), conn);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
+        }
     }
 
     public static void connectShort(CobolDataStorage sqlca) {
-        callRunner("OCESQLConnectShort", sqlca);
+        try {
+            SqlConnection conn = SqlConnection.connect(null, null, null);
+            SqlState.addConnection(conn.getId(), conn);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
+        }
     }
 
     public static void disconnect(CobolDataStorage sqlca) {
-        callRunner("OCESQLDisconnect", sqlca);
+        try {
+            SqlConnection conn = SqlState.getDefaultConnection();
+            if (conn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            // Commit before disconnect
+            try {
+                Statement stmt = conn.getConnection().createStatement();
+                stmt.execute("COMMIT");
+                stmt.close();
+            } catch (SQLException ignored) {
+                // Ignore commit errors on disconnect
+            }
+            conn.close();
+            SqlState.removeConnection(conn.getId());
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    public static void cursorDeclare(CobolDataStorage sqlca, String cursorName, String query) {
-        callRunner(
-                "OCESQLCursorDeclare",
-                sqlca,
-                stringToNullTerminated(cursorName),
-                stringToNullTerminated(query));
+    // -------------------------------------------------------
+    // Simple SQL execution (no host vars)
+    // -------------------------------------------------------
+    public static void exec(CobolDataStorage sqlca, String query) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute(query);
+            } finally {
+                stmt.close();
+            }
+
+            SqlCA.setSuccess(sqlca);
+
+            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
+                SqlState.clearCursors();
+                sqlConn.beginTransaction();
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    public static void cursorDeclareParams(
-            CobolDataStorage sqlca, String cursorName, String query, int nParams) {
-        callRunner(
-                "OCESQLCursorDeclareParams",
-                sqlca,
-                stringToNullTerminated(cursorName),
-                stringToNullTerminated(query),
-                intToStorage(nParams));
+    // -------------------------------------------------------
+    // Parameterized SQL execution
+    // -------------------------------------------------------
+    public static void execWithParams(CobolDataStorage sqlca, String query, SqlParam... params) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+            try {
+                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                if (params != null) {
+                    for (int i = 0; i < params.length; i++) {
+                        CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
+                    }
+                }
+                pstmt.execute();
+            } catch (SQLException e) {
+                throw e;
+            }
+
+            SqlCA.setSuccess(sqlca);
+
+            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
+                SqlState.clearCursors();
+                sqlConn.beginTransaction();
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    public static void cursorOpen(CobolDataStorage sqlca, String cursorName) {
-        callRunner("OCESQLCursorOpen", sqlca, stringToNullTerminated(cursorName));
+    // -------------------------------------------------------
+    // SELECT INTO
+    // -------------------------------------------------------
+    public static void selectInto(
+            CobolDataStorage sqlca, String query, SqlParam[] inputParams, SqlParam[] resultParams) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            ResultSet rs;
+            if (inputParams != null && inputParams.length > 0) {
+                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                for (int i = 0; i < inputParams.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
+                }
+                pstmt.execute();
+                rs = pstmt.getResultSet();
+            } else {
+                Statement stmt = conn.createStatement();
+                stmt.execute(query);
+                rs = stmt.getResultSet();
+            }
+
+            if (rs == null || !rs.next()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+                if (rs != null) rs.close();
+                return;
+            }
+
+            if (resultParams != null) {
+                int columnCount = rs.getMetaData().getColumnCount();
+                for (int i = 0; i < resultParams.length && i < columnCount; i++) {
+                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                    if (value != null) {
+                        CobolDataConverter.stringToCobol(resultParams[i], value);
+                    } else {
+                        resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                    }
+                }
+            }
+            rs.close();
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    public static void cursorOpenParams(CobolDataStorage sqlca, String cursorName, int nParams) {
-        callRunner(
-                "OCESQLCursorOpenParams",
-                sqlca,
-                stringToNullTerminated(cursorName),
-                intToStorage(nParams));
+    // -------------------------------------------------------
+    // Cursor operations
+    // -------------------------------------------------------
+    public static void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
+        try {
+            if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
+                return;
+            }
+            SqlCursor existing = SqlState.getCursor(cursorName);
+            if (existing != null && existing.isOpened) {
+                SqlCA.setError(
+                        sqlca, SqlCA.ECPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
+                return;
+            }
+            SqlCursor cursor = new SqlCursor(cursorName, query, 0);
+            SqlState.addCursor(cursorName, cursor);
+            SqlCA.setSuccess(sqlca);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
+        }
     }
 
-    public static void cursorFetchOne(CobolDataStorage sqlca, String cursorName) {
-        callRunner("OCESQLCursorFetchOne", sqlca, stringToNullTerminated(cursorName));
+    public static void declareCursorWithParams(
+            CobolDataStorage sqlca, String cursorName, String query, SqlParam... params) {
+        try {
+            if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
+                return;
+            }
+            SqlCursor existing = SqlState.getCursor(cursorName);
+            if (existing != null && existing.isOpened) {
+                SqlCA.setError(
+                        sqlca, SqlCA.ECPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
+                return;
+            }
+            SqlCursor cursor = new SqlCursor(cursorName, query, params != null ? params.length : 0);
+            cursor.params = params;
+            SqlState.addCursor(cursorName, cursor);
+            SqlCA.setSuccess(sqlca);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
+        }
     }
 
-    public static void cursorFetchOccurs(CobolDataStorage sqlca, String cursorName) {
-        callRunner("OCESQLCursorFetchOccurs", sqlca, stringToNullTerminated(cursorName));
+    public static void openCursor(CobolDataStorage sqlca, String cursorName) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            SqlCursor cursor = SqlState.getCursor(cursorName);
+            if (cursor == null) {
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not found: " + cursorName);
+                return;
+            }
+            cursor.open(sqlConn.getConnection(), null);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    public static void cursorClose(CobolDataStorage sqlca, String cursorName) {
-        callRunner("OCESQLCursorClose", sqlca, stringToNullTerminated(cursorName));
+    public static void openCursorWithParams(
+            CobolDataStorage sqlca, String cursorName, SqlParam... params) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            SqlCursor cursor = SqlState.getCursor(cursorName);
+            if (cursor == null) {
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not found: " + cursorName);
+                return;
+            }
+            cursor.open(sqlConn.getConnection(), params);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
+    public static void fetchCursor(
+            CobolDataStorage sqlca, String cursorName, SqlParam... resultParams) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            SqlCursor cursor = SqlState.getCursor(cursorName);
+            if (cursor == null) {
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not found: " + cursorName);
+                return;
+            }
+            boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams);
+            if (hasRow) {
+                SqlCA.setSuccess(sqlca);
+            } else {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data");
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
+    }
+
+    public static void closeCursor(CobolDataStorage sqlca, String cursorName) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            SqlCursor cursor = SqlState.getCursor(cursorName);
+            if (cursor == null) {
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not found: " + cursorName);
+                return;
+            }
+            cursor.close(sqlConn.getConnection());
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
+    }
+
+    // -------------------------------------------------------
+    // Prepared statements
+    // -------------------------------------------------------
     public static void prepare(
             CobolDataStorage sqlca, String stmtName, CobolDataStorage queryStorage, int queryLen) {
-        callRunner(
-                "OCESQLPrepare",
-                sqlca,
-                stringToNullTerminated(stmtName),
-                queryStorage,
-                intToStorage(queryLen));
+        try {
+            if (stmtName == null || stmtName.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty statement name");
+                return;
+            }
+            String query;
+            if (queryStorage != null && queryLen > 0) {
+                byte[] bytes = queryStorage.getByteArray(0, queryLen);
+                query = new String(bytes, SHIFT_JIS).trim();
+            } else {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            // Count and replace host variable placeholders
+            int nParams = 0;
+            StringBuilder replaced = new StringBuilder();
+            for (int i = 0; i < query.length(); i++) {
+                char c = query.charAt(i);
+                if (c == ':' && i + 1 < query.length() && Character.isLetter(query.charAt(i + 1))) {
+                    nParams++;
+                    replaced.append('?');
+                    i++;
+                    while (i < query.length()
+                            && query.charAt(i) != ' '
+                            && query.charAt(i) != ','
+                            && query.charAt(i) != ')') {
+                        i++;
+                    }
+                    i--;
+                } else {
+                    replaced.append(c);
+                }
+            }
+
+            SqlState.addPrepared(stmtName, replaced.toString(), nParams);
+            SqlCA.setSuccess(sqlca);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
+        }
     }
 
-    public static void execPrepare(CobolDataStorage sqlca, String stmtName, int nParams) {
-        callRunner(
-                "OCESQLExecPrepare",
-                sqlca,
-                stringToNullTerminated(stmtName),
-                intToStorage(nParams));
+    public static void executePrepared(
+            CobolDataStorage sqlca, String stmtName, SqlParam... params) {
+        try {
+            String[] prepared = SqlState.getPrepared(stmtName);
+            if (prepared == null) {
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_INVALID_STMT,
+                        "26000",
+                        "Statement not found: " + stmtName);
+                return;
+            }
+
+            String query = prepared[0];
+            if (params != null && params.length > 0) {
+                execWithParams(sqlca, query, params);
+            } else {
+                exec(sqlca, query);
+            }
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
+        }
     }
 
+    // -------------------------------------------------------
+    // Transaction
+    // -------------------------------------------------------
     public static void commit(CobolDataStorage sqlca) {
-        callRunner("OCESQLCommit", sqlca);
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute("COMMIT");
+            } finally {
+                stmt.close();
+            }
+            SqlCA.setSuccess(sqlca);
+            SqlState.clearCursors();
+            sqlConn.beginTransaction();
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
     public static void rollback(CobolDataStorage sqlca) {
-        callRunner("OCESQLRollback", sqlca);
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute("ROLLBACK");
+            } finally {
+                stmt.close();
+            }
+            SqlCA.setSuccess(sqlca);
+            SqlState.clearCursors();
+            sqlConn.beginTransaction();
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
-    /* AT database variants (ID prefixed) */
+    // -------------------------------------------------------
+    // AT database variants (ID prefixed)
+    // -------------------------------------------------------
     public static void idConnect(
             CobolDataStorage sqlca,
             CobolDataStorage atdb,
@@ -204,45 +522,196 @@ public class CobolSql {
             int passwdLen,
             CobolDataStorage dbname,
             int dbnameLen) {
-        callRunner(
-                "OCESQLIDConnect",
-                sqlca,
-                atdb,
-                intToStorage(atdbLen),
-                user,
-                intToStorage(userLen),
-                passwd,
-                intToStorage(passwdLen),
-                dbname,
-                intToStorage(dbnameLen));
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            String userStr = storageToString(user, userLen);
+            String passwdStr = storageToString(passwd, passwdLen);
+            String dbnameStr = storageToString(dbname, dbnameLen);
+
+            SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
+            String connId = atdbStr != null && !atdbStr.isEmpty() ? atdbStr : conn.getId();
+            SqlState.addConnection(connId, conn);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        } catch (Exception e) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
+        }
     }
 
     public static void idExec(
             CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen, String query) {
-        callRunner(
-                "OCESQLIDExec", sqlca, atdb, intToStorage(atdbLen), stringToNullTerminated(query));
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            SqlConnection sqlConn = SqlState.getConnection(atdbStr);
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute(query);
+            } finally {
+                stmt.close();
+            }
+            SqlCA.setSuccess(sqlca);
+
+            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
+                SqlState.clearCursors();
+                sqlConn.beginTransaction();
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
     public static void idExecParams(
-            CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen, String query, int nParams) {
-        callRunner(
-                "OCESQLIDExecParams",
-                sqlca,
-                atdb,
-                intToStorage(atdbLen),
-                stringToNullTerminated(query),
-                intToStorage(nParams));
+            CobolDataStorage sqlca,
+            CobolDataStorage atdb,
+            int atdbLen,
+            String query,
+            int nParams,
+            SqlParam... params) {
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            SqlConnection sqlConn = SqlState.getConnection(atdbStr);
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+            ParameterMetaData metaData = getParameterMetaData(pstmt);
+            if (params != null) {
+                for (int i = 0; i < params.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
+                }
+            }
+            pstmt.execute();
+            SqlCA.setSuccess(sqlca);
+
+            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
+                SqlState.clearCursors();
+                sqlConn.beginTransaction();
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
     public static void idDisconnect(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
-        callRunner("OCESQLIDDisconnect", sqlca, atdb, intToStorage(atdbLen));
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            SqlConnection conn = SqlState.getConnection(atdbStr);
+            if (conn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
+                return;
+            }
+            try {
+                Statement stmt = conn.getConnection().createStatement();
+                stmt.execute("COMMIT");
+                stmt.close();
+            } catch (SQLException ignored) {
+                // Ignore commit errors on disconnect
+            }
+            conn.close();
+            SqlState.removeConnection(atdbStr);
+            SqlCA.setSuccess(sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
     public static void idCommit(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
-        callRunner("OCESQLIDCommit", sqlca, atdb, intToStorage(atdbLen));
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            SqlConnection sqlConn = SqlState.getConnection(atdbStr);
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute("COMMIT");
+            } finally {
+                stmt.close();
+            }
+            SqlCA.setSuccess(sqlca);
+            SqlState.clearCursors();
+            sqlConn.beginTransaction();
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
     }
 
     public static void idRollback(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
-        callRunner("OCESQLIDRollback", sqlca, atdb, intToStorage(atdbLen));
+        try {
+            String atdbStr = storageToString(atdb, atdbLen);
+            SqlConnection sqlConn = SqlState.getConnection(atdbStr);
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            Statement stmt = conn.createStatement();
+            try {
+                stmt.execute("ROLLBACK");
+            } finally {
+                stmt.close();
+            }
+            SqlCA.setSuccess(sqlca);
+            SqlState.clearCursors();
+            sqlConn.beginTransaction();
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
+    }
+
+    // -------------------------------------------------------
+    // Helper methods
+    // -------------------------------------------------------
+    private static String storageToString(CobolDataStorage storage, int len) {
+        if (storage == null || len <= 0) {
+            return null;
+        }
+        byte[] bytes = storage.getByteArray(0, len);
+        return new String(bytes, SHIFT_JIS);
+    }
+
+    private static PreparedStatement getOrCreatePreparedStatement(Connection conn, String query)
+            throws SQLException {
+        String cacheKey =
+                Integer.toHexString(conn.hashCode()) + "-" + Integer.toHexString(query.hashCode());
+        return stmtCache.computeIfAbsent(
+                cacheKey,
+                k -> {
+                    try {
+                        return conn.prepareStatement(query);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    private static ParameterMetaData getParameterMetaData(PreparedStatement pstmt) {
+        try {
+            return pstmt.getParameterMetaData();
+        } catch (SQLException e) {
+            return null;
+        }
     }
 }
