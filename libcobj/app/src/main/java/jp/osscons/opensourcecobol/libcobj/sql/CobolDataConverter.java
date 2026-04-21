@@ -197,7 +197,7 @@ public class CobolDataConverter {
         }
 
         String result = removeLeadingZeros(realData, false);
-        if (isNegative && !result.equals("0")) {
+        if (isNegative && !"0".equals(result)) {
             return "-" + result;
         }
         return result;
@@ -252,7 +252,7 @@ public class CobolDataConverter {
         }
 
         String result = removeLeadingZeros(realData, false);
-        if (isNegative && !result.equals("0")) {
+        if (isNegative && !"0".equals(result)) {
             return "-" + result;
         }
         return result;
@@ -320,7 +320,7 @@ public class CobolDataConverter {
                 tmpData[intPartLen + 1 + i] = digits[digits.length + scale + i];
             }
             String noZeros = removeLeadingZeros(tmpData, false);
-            if (isNegative && !noZeros.equals("0")) {
+            if (isNegative && !"0".equals(noZeros)) {
                 return "-" + noZeros;
             }
             return noZeros;
@@ -332,7 +332,7 @@ public class CobolDataConverter {
         }
 
         String result = removeLeadingZeros(tmpData, false);
-        if (isNegative && !result.equals("0")) {
+        if (isNegative && !"0".equals(result)) {
             return "-" + result;
         }
         return result;
@@ -463,7 +463,7 @@ public class CobolDataConverter {
             digits = new String(data, i, data.length - i);
         }
 
-        if (hasLeadingSign && data.length > 0 && data[0] == (byte) '-' && !digits.equals("0")) {
+        if (hasLeadingSign && data.length > 0 && data[0] == (byte) '-' && !"0".equals(digits)) {
             return "-" + digits;
         }
         return digits;
@@ -983,32 +983,42 @@ public class CobolDataConverter {
                 case Types.LONGNVARCHAR:
                     {
                         String s = rs.getString(columnIndex);
-                        if (s == null) return null;
+                        if (s == null) {
+                            return null;
+                        }
                         return s.getBytes(SHIFT_JIS);
                     }
                 case Types.DECIMAL:
                 case Types.NUMERIC:
                     {
                         BigDecimal bd = rs.getBigDecimal(columnIndex);
-                        if (bd == null) return null;
+                        if (bd == null) {
+                            return null;
+                        }
                         return bd.toString().getBytes();
                     }
                 case Types.TIMESTAMP:
                     {
                         java.sql.Timestamp ts = rs.getTimestamp(columnIndex);
-                        if (ts == null) return null;
+                        if (ts == null) {
+                            return null;
+                        }
                         return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(ts).getBytes();
                     }
                 case Types.DATE:
                     {
                         java.sql.Date d = rs.getDate(columnIndex);
-                        if (d == null) return null;
+                        if (d == null) {
+                            return null;
+                        }
                         return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(d).getBytes();
                     }
                 case Types.TIME:
                     {
                         java.sql.Time t = rs.getTime(columnIndex);
-                        if (t == null) return null;
+                        if (t == null) {
+                            return null;
+                        }
                         return t.toString().getBytes();
                     }
                 case Types.TINYINT:
@@ -1034,17 +1044,23 @@ public class CobolDataConverter {
                 case Types.ROWID:
                     {
                         java.sql.RowId rowId = rs.getRowId(columnIndex);
-                        if (rowId == null) return null;
+                        if (rowId == null) {
+                            return null;
+                        }
                         return rowId.toString().getBytes();
                     }
                 default:
                     {
                         String s = rs.getString(columnIndex);
-                        if (s == null) return null;
+                        if (s == null) {
+                            return null;
+                        }
                         return s.getBytes(SHIFT_JIS);
                     }
             }
-            if (rs.wasNull()) return null;
+            if (rs.wasNull()) {
+                return null;
+            }
             return strValue.getBytes();
         } catch (Exception e) {
             return null;
