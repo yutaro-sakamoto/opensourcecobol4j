@@ -11,14 +11,12 @@ public class SqlCA {
     public static final int SQLERRMC_LEN = 70;
 
     // Offsets within the SQLCA structure (total 133 bytes)
-    private static final int OFFSET_SQLCAID = 0; // 8 bytes
-    private static final int OFFSET_SQLCABC = 8; // 4 bytes (int)
+    // OFFSET_SQLCAID (0), OFFSET_SQLCABC (8), OFFSET_SQLERRP (88), OFFSET_SQLWARN (120)
+    // are defined in the SQLCA spec but not currently used in code.
     private static final int OFFSET_SQLCODE = 12; // 4 bytes (int)
     private static final int OFFSET_SQLERRML = 16; // 2 bytes (short)
     private static final int OFFSET_SQLERRMC = 18; // 70 bytes
-    private static final int OFFSET_SQLERRP = 88; // 8 bytes
     private static final int OFFSET_SQLERRD = 96; // 24 bytes (6 ints)
-    private static final int OFFSET_SQLWARN = 120; // 8 bytes
     private static final int OFFSET_SQLSTATE = 128; // 5 bytes
 
     /** No error. */
@@ -124,7 +122,9 @@ public class SqlCA {
      * @param code the SQLCODE value to set
      */
     public static void setCode(CobolDataStorage sqlca, int code) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         sqlca.getSubDataStorage(OFFSET_SQLCODE).set(code);
     }
 
@@ -135,7 +135,9 @@ public class SqlCA {
      * @return the current SQLCODE value, or 0 if sqlca is null
      */
     public static int getCode(CobolDataStorage sqlca) {
-        if (sqlca == null) return 0;
+        if (sqlca == null) {
+            return 0;
+        }
         return ByteBuffer.wrap(sqlca.getByteArray(OFFSET_SQLCODE, 4)).getInt();
     }
 
@@ -146,7 +148,9 @@ public class SqlCA {
      * @param state the SQLSTATE string (e.g. "00000")
      */
     public static void setState(CobolDataStorage sqlca, String state) {
-        if (sqlca == null || state == null) return;
+        if (sqlca == null || state == null) {
+            return;
+        }
         byte[] stateBytes = state.getBytes();
         for (int i = 0; i < 5; i++) {
             if (i < stateBytes.length) {
@@ -164,7 +168,9 @@ public class SqlCA {
      * @param message the error message (truncated to {@link #SQLERRMC_LEN} bytes)
      */
     public static void setErrmc(CobolDataStorage sqlca, String message) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         if (message == null) {
             clearErrmc(sqlca);
             return;
@@ -191,7 +197,9 @@ public class SqlCA {
      * @param value the integer value to set
      */
     public static void setErrd(CobolDataStorage sqlca, int index, int value) {
-        if (sqlca == null || index < 0 || index >= 6) return;
+        if (sqlca == null || index < 0 || index >= 6) {
+            return;
+        }
         sqlca.getSubDataStorage(OFFSET_SQLERRD + index * 4).set(value);
     }
 
@@ -201,7 +209,9 @@ public class SqlCA {
      * @param sqlca the SQLCA data storage
      */
     public static void clearErrmc(CobolDataStorage sqlca) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         sqlca.getSubDataStorage(OFFSET_SQLERRML).set((short) 0);
         for (int i = 0; i < SQLERRMC_LEN; i++) {
             sqlca.setByte(OFFSET_SQLERRMC + i, (byte) 0);
@@ -214,7 +224,9 @@ public class SqlCA {
      * @param sqlca the SQLCA data storage
      */
     public static void setSuccess(CobolDataStorage sqlca) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         setCode(sqlca, ECPG_NO_ERROR);
         setState(sqlca, "00000");
         clearErrmc(sqlca);
@@ -229,7 +241,9 @@ public class SqlCA {
      * @param message the error message
      */
     public static void setError(CobolDataStorage sqlca, int code, String state, String message) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         setCode(sqlca, code);
         setState(sqlca, state);
         setErrmc(sqlca, message);
@@ -242,7 +256,9 @@ public class SqlCA {
      * @param e the SQL exception
      */
     public static void setResultFromException(CobolDataStorage sqlca, SQLException e) {
-        if (sqlca == null) return;
+        if (sqlca == null) {
+            return;
+        }
         String sqlState = e.getSQLState();
         if (sqlState == null) {
             sqlState = "     ";

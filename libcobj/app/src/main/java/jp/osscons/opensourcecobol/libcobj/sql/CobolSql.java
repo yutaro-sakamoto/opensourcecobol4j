@@ -129,10 +129,8 @@ public class CobolSql {
                 return;
             }
             // Commit before disconnect
-            try {
-                Statement stmt = conn.getConnection().createStatement();
+            try (Statement stmt = conn.getConnection().createStatement()) {
                 stmt.execute("COMMIT");
-                stmt.close();
             } catch (SQLException ignored) {
                 // Ignore commit errors on disconnect
             }
@@ -167,11 +165,8 @@ public class CobolSql {
                 return;
             }
 
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute(query);
-            } finally {
-                stmt.close();
             }
 
             SqlCA.setSuccess(sqlca);
@@ -259,26 +254,20 @@ public class CobolSql {
                 return;
             }
 
-            Statement stmtToClose = null;
-            ResultSet rs;
-            try {
-                if (inputParams != null && inputParams.length > 0) {
-                    PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                    ParameterMetaData metaData = getParameterMetaData(pstmt);
-                    for (int i = 0; i < inputParams.length; i++) {
-                        CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
-                    }
-                    pstmt.execute();
-                    rs = pstmt.getResultSet();
-                } else {
-                    stmtToClose = conn.createStatement();
-                    stmtToClose.execute(query);
-                    rs = stmtToClose.getResultSet();
+            if (inputParams != null && inputParams.length > 0) {
+                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                for (int i = 0; i < inputParams.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
+                pstmt.execute();
+                ResultSet rs = pstmt.getResultSet();
 
                 if (rs == null || !rs.next()) {
                     SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
-                    if (rs != null) rs.close();
+                    if (rs != null) {
+                        rs.close();
+                    }
                     return;
                 }
 
@@ -295,8 +284,33 @@ public class CobolSql {
                 }
                 rs.close();
                 SqlCA.setSuccess(sqlca);
-            } finally {
-                if (stmtToClose != null) stmtToClose.close();
+            } else {
+                try (Statement stmtToClose = conn.createStatement()) {
+                    stmtToClose.execute(query);
+                    ResultSet rs = stmtToClose.getResultSet();
+
+                    if (rs == null || !rs.next()) {
+                        SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+                        if (rs != null) {
+                            rs.close();
+                        }
+                        return;
+                    }
+
+                    if (resultParams != null) {
+                        int columnCount = rs.getMetaData().getColumnCount();
+                        for (int i = 0; i < resultParams.length && i < columnCount; i++) {
+                            byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                            if (value != null) {
+                                CobolDataConverter.stringToCobol(resultParams[i], value);
+                            } else {
+                                resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                            }
+                        }
+                    }
+                    rs.close();
+                    SqlCA.setSuccess(sqlca);
+                }
             }
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
@@ -589,11 +603,8 @@ public class CobolSql {
                 return;
             }
             Connection conn = sqlConn.getConnection();
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("COMMIT");
-            } finally {
-                stmt.close();
             }
             SqlCA.setSuccess(sqlca);
             SqlState.clearCursors();
@@ -616,11 +627,8 @@ public class CobolSql {
                 return;
             }
             Connection conn = sqlConn.getConnection();
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("ROLLBACK");
-            } finally {
-                stmt.close();
             }
             SqlCA.setSuccess(sqlca);
             SqlState.clearCursors();
@@ -697,11 +705,8 @@ public class CobolSql {
                 return;
             }
 
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute(query);
-            } finally {
-                stmt.close();
             }
             SqlCA.setSuccess(sqlca);
 
@@ -779,10 +784,8 @@ public class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection: " + atdbStr);
                 return;
             }
-            try {
-                Statement stmt = conn.getConnection().createStatement();
+            try (Statement stmt = conn.getConnection().createStatement()) {
                 stmt.execute("COMMIT");
-                stmt.close();
             } catch (SQLException ignored) {
                 // Ignore commit errors on disconnect
             }
@@ -810,11 +813,8 @@ public class CobolSql {
                 return;
             }
             Connection conn = sqlConn.getConnection();
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("COMMIT");
-            } finally {
-                stmt.close();
             }
             SqlCA.setSuccess(sqlca);
             SqlState.clearCursors();
@@ -840,11 +840,8 @@ public class CobolSql {
                 return;
             }
             Connection conn = sqlConn.getConnection();
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("ROLLBACK");
-            } finally {
-                stmt.close();
             }
             SqlCA.setSuccess(sqlca);
             SqlState.clearCursors();

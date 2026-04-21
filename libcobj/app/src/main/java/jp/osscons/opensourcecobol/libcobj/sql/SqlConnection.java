@@ -53,11 +53,8 @@ public class SqlConnection {
      */
     public void beginTransaction() throws SQLException {
         if (conn != null && !conn.isClosed()) {
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute("BEGIN");
-            } finally {
-                stmt.close();
             }
         }
     }
@@ -95,9 +92,15 @@ public class SqlConnection {
 
     static SqlConnection connect(String user, String passwd, String dbname) throws SQLException {
         // Strip trailing spaces (COBOL padding)
-        if (user != null) user = stripTrailingSpaces(user);
-        if (passwd != null) passwd = stripTrailingSpaces(passwd);
-        if (dbname != null) dbname = stripTrailingSpaces(dbname);
+        if (user != null) {
+            user = stripTrailingSpaces(user);
+        }
+        if (passwd != null) {
+            passwd = stripTrailingSpaces(passwd);
+        }
+        if (dbname != null) {
+            dbname = stripTrailingSpaces(dbname);
+        }
 
         // Environment variable fallbacks
         if (dbname == null || dbname.isEmpty()) {
@@ -139,7 +142,9 @@ public class SqlConnection {
     }
 
     private static String stripTrailingSpaces(String str) {
-        if (str == null) return null;
+        if (str == null) {
+            return null;
+        }
         int end = str.indexOf(' ');
         if (end <= 0) {
             return str;

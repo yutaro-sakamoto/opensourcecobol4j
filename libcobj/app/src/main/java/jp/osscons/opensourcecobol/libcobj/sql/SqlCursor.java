@@ -50,33 +50,24 @@ public class SqlCursor {
         String command = "DECLARE " + name + " CURSOR FOR " + query;
 
         if (openParams != null && openParams.length > 0) {
-            PreparedStatement pstmt = conn.prepareStatement(command);
-            try {
+            try (PreparedStatement pstmt = conn.prepareStatement(command)) {
                 java.sql.ParameterMetaData metaData = pstmt.getParameterMetaData();
                 for (int i = 0; i < openParams.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, openParams[i]);
                 }
                 pstmt.execute();
-            } finally {
-                pstmt.close();
             }
         } else if (this.params != null && this.params.length > 0) {
-            PreparedStatement pstmt = conn.prepareStatement(command);
-            try {
+            try (PreparedStatement pstmt = conn.prepareStatement(command)) {
                 java.sql.ParameterMetaData metaData = pstmt.getParameterMetaData();
                 for (int i = 0; i < this.params.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, this.params[i]);
                 }
                 pstmt.execute();
-            } finally {
-                pstmt.close();
             }
         } else {
-            Statement stmt = conn.createStatement();
-            try {
+            try (Statement stmt = conn.createStatement()) {
                 stmt.execute(command);
-            } finally {
-                stmt.close();
             }
         }
         isOpened = true;
@@ -92,15 +83,16 @@ public class SqlCursor {
      */
     public boolean fetch(Connection conn, SqlParam[] resultParams) throws SQLException {
         String fetchSql = "FETCH FORWARD 1 FROM " + name;
-        Statement stmt = conn.createStatement();
-        try {
+        try (Statement stmt = conn.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
             if (!hasResult) {
                 return false;
             }
             ResultSet rs = stmt.getResultSet();
             if (rs == null || !rs.next()) {
-                if (rs != null) rs.close();
+                if (rs != null) {
+                    rs.close();
+                }
                 return false;
             }
 
@@ -117,8 +109,6 @@ public class SqlCursor {
             }
             rs.close();
             return true;
-        } finally {
-            stmt.close();
         }
     }
 
@@ -129,11 +119,8 @@ public class SqlCursor {
      * @throws SQLException if a database access error occurs
      */
     public void close(Connection conn) throws SQLException {
-        Statement stmt = conn.createStatement();
-        try {
+        try (Statement stmt = conn.createStatement()) {
             stmt.execute("CLOSE " + name);
-        } finally {
-            stmt.close();
         }
         isOpened = false;
     }
