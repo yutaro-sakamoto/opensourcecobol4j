@@ -4,8 +4,10 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
+/** Manages the SQLCA (SQL Communication Area) structure for COBOL embedded SQL. */
 public class SqlCA {
 
+    /** Maximum length of the SQLERRMC error message field. */
     public static final int SQLERRMC_LEN = 70;
 
     // Offsets within the SQLCA structure (total 133 bytes)
@@ -19,50 +21,130 @@ public class SqlCA {
     private static final int OFFSET_SQLWARN = 120; // 8 bytes
     private static final int OFFSET_SQLSTATE = 128; // 5 bytes
 
-    // Error code constants (from ConstValues.scala)
+    /** No error. */
     public static final int ECPG_NO_ERROR = 0;
+
+    /** Row not found (SQLSTATE 02000). */
     public static final int ECPG_NOT_FOUND = 100;
+
+    /** Out of memory. */
     public static final int ECPG_OUT_OF_MEMORY = -12;
+
+    /** Unsupported feature. */
     public static final int ECPG_UNSUPPORTED = -200;
+
+    /** Too many host variable arguments. */
     public static final int ECPG_TOO_MANY_ARGUMENTS = -201;
+
+    /** Too few host variable arguments. */
     public static final int ECPG_TOO_FEW_ARGUMENTS = -202;
+
+    /** Too many matching rows. */
     public static final int ECPG_TOO_MANY_MATCHES = -203;
+
+    /** Data format error. */
     public static final int ECPG_DATA_FORMAT_ERROR = -204;
+
+    /** Empty query or statement. */
     public static final int ECPG_EMPTY = -212;
+
+    /** Missing indicator variable. */
     public static final int ECPG_MISSING_INDICATOR = -213;
+
+    /** No active connection. */
     public static final int ECPG_NO_CONN = -220;
+
+    /** Not connected. */
     public static final int ECPG_NOT_CONN = -221;
+
+    /** Invalid prepared statement. */
     public static final int ECPG_INVALID_STMT = -230;
+
+    /** Informix-compatible duplicate key error. */
     public static final int ECPG_INFORMIX_DUPLICATE_KEY = -239;
+
+    /** Unknown descriptor. */
     public static final int ECPG_UNKNOWN_DESCRIPTOR = -240;
+
+    /** Invalid descriptor index. */
     public static final int ECPG_INVALID_DESCRIPTOR_INDEX = -241;
+
+    /** Unknown descriptor item. */
     public static final int ECPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
+
+    /** Variable is not numeric. */
     public static final int ECPG_VAR_NOT_NUMERIC = -243;
+
+    /** Variable is not character type. */
     public static final int ECPG_VAR_NOT_CHAR = -244;
+
+    /** Informix-compatible subselect returned more than one row. */
     public static final int ECPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
+
+    /** PostgreSQL backend error. */
     public static final int ECPG_PGSQL = -400;
+
+    /** Transaction error. */
     public static final int ECPG_TRANS = -401;
+
+    /** Connection error. */
     public static final int ECPG_CONNECT = -402;
+
+    /** Duplicate key violation. */
     public static final int ECPG_DUPLICATE_KEY = -403;
+
+    /** Subselect returned more than one row. */
     public static final int ECPG_SUBSELECT_NOT_ONE = -404;
+
+    /** Unknown cursor (portal). */
     public static final int ECPG_WARNING_UNKNOWN_PORTAL = -602;
+
+    /** Already in a transaction. */
     public static final int ECPG_WARNING_IN_TRANSACTION = -603;
+
+    /** No active transaction. */
     public static final int ECPG_WARNING_NO_TRANSACTION = -604;
+
+    /** Cursor (portal) already exists. */
     public static final int ECPG_WARNING_PORTAL_EXISTS = -605;
+
+    /** Lock error. */
     public static final int ECPG_LOCK_ERROR = -606;
+
+    /** JDD (Java Database Driver) error. */
     public static final int ECPG_JDD_ERROR = -607;
+
+    /** Unrecognized error. */
     public static final int ECPG_UNKNOWN_ERROR = -9999;
 
+    /**
+     * Set the SQLCODE field in the SQLCA structure.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param code the SQLCODE value to set
+     */
     public static void setCode(CobolDataStorage sqlca, int code) {
         if (sqlca == null) return;
         sqlca.getSubDataStorage(OFFSET_SQLCODE).set(code);
     }
 
+    /**
+     * Get the SQLCODE field from the SQLCA structure.
+     *
+     * @param sqlca the SQLCA data storage
+     * @return the current SQLCODE value, or 0 if sqlca is null
+     */
     public static int getCode(CobolDataStorage sqlca) {
         if (sqlca == null) return 0;
         return ByteBuffer.wrap(sqlca.getByteArray(OFFSET_SQLCODE, 4)).getInt();
     }
 
+    /**
+     * Set the 5-character SQLSTATE field in the SQLCA structure.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param state the SQLSTATE string (e.g. "00000")
+     */
     public static void setState(CobolDataStorage sqlca, String state) {
         if (sqlca == null || state == null) return;
         byte[] stateBytes = state.getBytes();
@@ -75,6 +157,12 @@ public class SqlCA {
         }
     }
 
+    /**
+     * Set the SQLERRMC error message field in the SQLCA structure.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param message the error message (truncated to {@link #SQLERRMC_LEN} bytes)
+     */
     public static void setErrmc(CobolDataStorage sqlca, String message) {
         if (sqlca == null) return;
         if (message == null) {
@@ -95,11 +183,23 @@ public class SqlCA {
         }
     }
 
+    /**
+     * Set one of the six SQLERRD diagnostic values.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param index the SQLERRD index (0-5)
+     * @param value the integer value to set
+     */
     public static void setErrd(CobolDataStorage sqlca, int index, int value) {
         if (sqlca == null || index < 0 || index >= 6) return;
         sqlca.getSubDataStorage(OFFSET_SQLERRD + index * 4).set(value);
     }
 
+    /**
+     * Clear the SQLERRMC and SQLERRML fields in the SQLCA structure.
+     *
+     * @param sqlca the SQLCA data storage
+     */
     public static void clearErrmc(CobolDataStorage sqlca) {
         if (sqlca == null) return;
         sqlca.getSubDataStorage(OFFSET_SQLERRML).set((short) 0);
@@ -108,6 +208,11 @@ public class SqlCA {
         }
     }
 
+    /**
+     * Set the SQLCA to indicate successful completion (SQLCODE=0, SQLSTATE="00000").
+     *
+     * @param sqlca the SQLCA data storage
+     */
     public static void setSuccess(CobolDataStorage sqlca) {
         if (sqlca == null) return;
         setCode(sqlca, ECPG_NO_ERROR);
@@ -115,6 +220,14 @@ public class SqlCA {
         clearErrmc(sqlca);
     }
 
+    /**
+     * Set the SQLCA to indicate an error with the given code, state, and message.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param code the SQLCODE error code
+     * @param state the 5-character SQLSTATE
+     * @param message the error message
+     */
     public static void setError(CobolDataStorage sqlca, int code, String state, String message) {
         if (sqlca == null) return;
         setCode(sqlca, code);
@@ -122,6 +235,12 @@ public class SqlCA {
         setErrmc(sqlca, message);
     }
 
+    /**
+     * Populate the SQLCA from a SQLException, mapping the SQLSTATE to an ECPG error code.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param e the SQL exception
+     */
     public static void setResultFromException(CobolDataStorage sqlca, SQLException e) {
         if (sqlca == null) return;
         String sqlState = e.getSQLState();
@@ -136,6 +255,12 @@ public class SqlCA {
         setError(sqlca, code, sqlState, message);
     }
 
+    /**
+     * Map a 5-character SQLSTATE string to the corresponding ECPG error code.
+     *
+     * @param sqlState the SQLSTATE string
+     * @return the ECPG error code constant
+     */
     public static int sqlStateToCode(String sqlState) {
         if (sqlState == null) {
             return ECPG_UNKNOWN_ERROR;

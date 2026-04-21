@@ -12,28 +12,64 @@ import java.sql.Types;
 import java.text.SimpleDateFormat;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
+/** Converts between COBOL host variable storage and Java/JDBC types. */
 public class CobolDataConverter {
 
+    /** Unsigned numeric display (USAGE DISPLAY, no sign). */
     public static final int TYPE_UNSIGNED_NUMERIC = 1;
+
+    /** Signed numeric with trailing separate sign character. */
     public static final int TYPE_SIGNED_TRAILING_SEPARATE = 2;
+
+    /** Signed numeric with trailing combined (overpunch) sign. */
     public static final int TYPE_SIGNED_TRAILING_COMBINED = 3;
+
+    /** Signed numeric with leading separate sign character. */
     public static final int TYPE_SIGNED_LEADING_SEPARATE = 4;
+
+    /** Signed numeric with leading combined (overpunch) sign. */
     public static final int TYPE_SIGNED_LEADING_COMBINED = 5;
+
+    /** Unsigned packed-decimal (COMP-3, no sign nibble). */
     public static final int TYPE_UNSIGNED_PACKED = 8;
+
+    /** Signed packed-decimal (COMP-3). */
     public static final int TYPE_SIGNED_PACKED = 9;
+
+    /** Unsigned binary native (COMP-5, big-endian). */
     public static final int TYPE_UNSIGNED_BINARY_NATIVE = 13;
+
+    /** Signed binary native (COMP-5, big-endian). */
     public static final int TYPE_SIGNED_BINARY_NATIVE = 14;
+
+    /** Alphabetic (PIC A). */
     public static final int TYPE_ALPHABETIC = 16;
+
+    /** Group item (treated as alphanumeric). */
     public static final int TYPE_GROUP = 22;
+
+    /** Floating-point double (COMP-2). */
     public static final int TYPE_FLOAT = 23;
+
+    /** National character (PIC N). */
     public static final int TYPE_NATIONAL = 24;
+
+    /** Alphanumeric varying-length string. */
     public static final int TYPE_ALPHANUMERIC_VARYING = 30;
+
+    /** Japanese (DBCS) varying-length string. */
     public static final int TYPE_JAPANESE_VARYING = 31;
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
     private static final int SIGN_LENGTH = 1;
     private static final int OCDB_VARCHAR_HEADER_BYTE = 4;
 
+    /**
+     * Convert a COBOL host variable to its string representation for SQL binding.
+     *
+     * @param param the COBOL host variable descriptor
+     * @return the string representation, or empty string if param is null
+     */
     public static String cobolToString(SqlParam param) {
         if (param == null || param.storage == null) {
             return "";
@@ -436,6 +472,12 @@ public class CobolDataConverter {
     // -------------------------------------------------------
     // stringToCobol: Write SQL result data back to COBOL storage
     // -------------------------------------------------------
+    /**
+     * Write SQL result data back into COBOL host variable storage.
+     *
+     * @param param the target COBOL host variable descriptor
+     * @param resultData the raw byte data from the SQL result
+     */
     public static void stringToCobol(SqlParam param, byte[] resultData) {
         if (param == null || param.storage == null || resultData == null) {
             return;
@@ -840,6 +882,15 @@ public class CobolDataConverter {
     // -------------------------------------------------------
     // setParam: Bind COBOL value to PreparedStatement
     // -------------------------------------------------------
+    /**
+     * Bind a COBOL host variable value to a JDBC PreparedStatement parameter.
+     *
+     * @param stmt the JDBC prepared statement
+     * @param index the 1-based parameter index
+     * @param metaData parameter metadata for type inference (may be null)
+     * @param param the COBOL host variable to bind
+     * @throws SQLException if a JDBC error occurs
+     */
     public static void setParam(
             PreparedStatement stmt, int index, ParameterMetaData metaData, SqlParam param)
             throws SQLException {
@@ -910,9 +961,15 @@ public class CobolDataConverter {
     // -------------------------------------------------------
     // getValueFromResultSet: Extract column value as SHIFT-JIS bytes
     // -------------------------------------------------------
-    private static final SimpleDateFormat dateFormatter =
-            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    /**
+     * Extract a column value from a ResultSet as SHIFT-JIS encoded bytes.
+     *
+     * @param rs the JDBC result set positioned on the current row
+     * @param columnIndex the 1-based column index
+     * @return the column value as a byte array, or null if the value is SQL NULL
+     */
     public static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) {
         try {
             int colType = rs.getMetaData().getColumnType(columnIndex);
@@ -940,13 +997,13 @@ public class CobolDataConverter {
                     {
                         java.sql.Timestamp ts = rs.getTimestamp(columnIndex);
                         if (ts == null) return null;
-                        return dateFormatter.format(ts).getBytes();
+                        return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(ts).getBytes();
                     }
                 case Types.DATE:
                     {
                         java.sql.Date d = rs.getDate(columnIndex);
                         if (d == null) return null;
-                        return dateFormatter.format(d).getBytes();
+                        return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(d).getBytes();
                     }
                 case Types.TIME:
                     {
