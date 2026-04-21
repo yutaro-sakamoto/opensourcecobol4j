@@ -1287,6 +1287,7 @@ extern struct cb_sql_host_var *cb_build_sql_host_var(char *name, cb_tree ref);
 extern struct cb_sql_host_var *
 cb_sql_host_var_list_add(struct cb_sql_host_var *list,
                          struct cb_sql_host_var *item);
+extern cb_tree cb_parse_exec_sql(const char *sql_text);
 
 /*
  * SORT

@@ -306,9 +306,6 @@ setup_use_file (struct cb_file *fileptr)
 	}
 }
 
-/* EXEC SQL helper - defined in esql.c */
-extern cb_tree cb_parse_exec_sql(const char *sql_text);
-
 %}
 
 %token TOKEN_EOF 0 "end of file"
