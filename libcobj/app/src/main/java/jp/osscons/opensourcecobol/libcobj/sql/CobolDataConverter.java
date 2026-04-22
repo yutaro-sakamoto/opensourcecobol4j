@@ -965,6 +965,10 @@ public class CobolDataConverter {
             PreparedStatement stmt, int index, ParameterMetaData metaData, AbstractCobolField field)
             throws SQLException {
         String str = cobolToString(field);
+        if (metaData == null) {
+            stmt.setString(index, str);
+            return;
+        }
         int paramType;
         try {
             paramType = metaData.getParameterType(index);
