@@ -143,6 +143,49 @@ static void resolve_host_var_type(struct cb_sql_host_var *hv) {
 /*
  * Resolve all host variable types in a list.
  */
+/*
+ * Expand GROUP host variables into their children.
+ * For SELECT INTO with OCCURS GROUP, we need individual child fields.
+ * Returns a new list with GROUP items replaced by their children.
+ */
+static struct cb_sql_host_var *
+expand_group_host_vars(struct cb_sql_host_var *list, int *count) {
+  struct cb_sql_host_var *result = NULL;
+  struct cb_sql_host_var *hv;
+  int new_count = 0;
+
+  for (hv = list; hv; hv = hv->next) {
+    cb_tree resolved = hv->ref ? cb_ref(hv->ref) : NULL;
+    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+      struct cb_field *f = CB_FIELD(resolved);
+      if (f->children) {
+        /* GROUP field: expand into children */
+        struct cb_field *child;
+        for (child = f->children; child; child = child->sister) {
+          cb_tree child_ref = cb_build_field_reference(child, NULL);
+          struct cb_sql_host_var *new_hv =
+              cb_build_sql_host_var(strdup(child->name), child_ref);
+          resolve_host_var_type(new_hv);
+          result = cb_sql_host_var_list_add(result, new_hv);
+          new_count++;
+        }
+        continue;
+      }
+    }
+    /* Non-GROUP: keep as-is */
+    resolve_host_var_type(hv);
+    struct cb_sql_host_var *copy = cb_build_sql_host_var(hv->name, hv->ref);
+    copy->hvar_type = hv->hvar_type;
+    copy->length = hv->length;
+    copy->scale = hv->scale;
+    result = cb_sql_host_var_list_add(result, copy);
+    new_count++;
+  }
+
+  *count = new_count;
+  return result;
+}
+
 static void resolve_host_var_list(struct cb_sql_host_var *list) {
   struct cb_sql_host_var *hv;
   for (hv = list; hv; hv = hv->next) {
@@ -204,7 +247,16 @@ build_and_resolve_exec_sql(enum cb_sql_command command, char *sql_text,
                            struct cb_sql_host_var *res_host_list,
                            int res_host_count, int conn_use_other_db) {
   resolve_host_var_list(host_list);
-  resolve_host_var_list(res_host_list);
+  resolve_host_var_list(host_list);
+  /* Expand GROUP result host vars into children for SELECT INTO */
+  if (command == CB_SQL_SELECT_INTO_ONE ||
+      command == CB_SQL_SELECT_INTO_OCCURS) {
+    int new_res_count = 0;
+    res_host_list = expand_group_host_vars(res_host_list, &new_res_count);
+    res_host_count = new_res_count;
+  } else {
+    resolve_host_var_list(res_host_list);
+  }
   return cb_build_exec_sql(command, sql_text, cursor_name, prepare_name,
                            db_name, host_list, host_count, res_host_list,
                            res_host_count, conn_use_other_db);
