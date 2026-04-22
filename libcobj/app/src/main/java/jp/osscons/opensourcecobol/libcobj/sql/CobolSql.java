@@ -10,6 +10,7 @@ import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
 /** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
 public class CobolSql {
@@ -241,6 +242,75 @@ public class CobolSql {
      * @param inputParams input host variable parameters (WHERE clause bindings)
      * @param resultParams output host variables to receive selected column values
      */
+    private static void processSelectIntoResults(
+            ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
+            throws SQLException {
+        if (rs == null || !rs.next()) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+            if (rs != null) {
+                rs.close();
+            }
+            return;
+        }
+
+        if (resultParams == null || resultParams.length == 0) {
+            rs.close();
+            SqlCA.setSuccess(sqlca);
+            return;
+        }
+
+        // Check if this is a GROUP OCCURS pattern (single GROUP result field, multiple rows)
+        if (resultParams.length == 1
+                && resultParams[0].getAttribute().getType() == CobolFieldAttribute.COB_TYPE_GROUP) {
+            AbstractCobolField groupField = resultParams[0];
+            int elementSize = groupField.getSize();
+            CobolDataStorage baseStorage = groupField.getDataStorage();
+            int columnCount = rs.getMetaData().getColumnCount();
+            int rowIndex = 0;
+
+            do {
+                // Write each column into the correct position within the element
+                int colOffset = 0;
+                for (int col = 1; col <= columnCount; col++) {
+                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, col);
+                    int colSize = rs.getMetaData().getColumnDisplaySize(col);
+                    CobolDataStorage elementStorage =
+                            baseStorage.getSubDataStorage(rowIndex * elementSize + colOffset);
+                    if (value != null) {
+                        // Pad or truncate to column size
+                        if (value.length >= colSize) {
+                            elementStorage.memcpy(value, colSize);
+                        } else {
+                            elementStorage.memset((byte) ' ', colSize);
+                            elementStorage.memcpy(value, value.length);
+                        }
+                    } else {
+                        elementStorage.memset((byte) 0, colSize);
+                    }
+                    colOffset += colSize;
+                }
+                rowIndex++;
+            } while (rs.next());
+            rs.close();
+            SqlCA.setErrd(sqlca, 2, rowIndex);
+            SqlCA.setSuccess(sqlca);
+            return;
+        }
+
+        // Single row: write columns to individual result fields
+        int columnCount = rs.getMetaData().getColumnCount();
+        for (int i = 0; i < resultParams.length && i < columnCount; i++) {
+            byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+            if (value != null) {
+                CobolDataConverter.stringToCobol(resultParams[i], value);
+            } else {
+                resultParams[i].getDataStorage().memset((byte) 0, resultParams[i].getSize());
+            }
+        }
+        rs.close();
+        SqlCA.setSuccess(sqlca);
+    }
+
     public static void selectInto(
             CobolDataStorage sqlca,
             String query,
@@ -259,6 +329,7 @@ public class CobolSql {
                 return;
             }
 
+            ResultSet rs;
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
                 ParameterMetaData metaData = getParameterMetaData(pstmt);
@@ -266,61 +337,13 @@ public class CobolSql {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
                 pstmt.execute();
-                ResultSet rs = pstmt.getResultSet();
-
-                if (rs == null || !rs.next()) {
-                    SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
-                    if (rs != null) {
-                        rs.close();
-                    }
-                    return;
-                }
-
-                if (resultParams != null) {
-                    int columnCount = rs.getMetaData().getColumnCount();
-                    for (int i = 0; i < resultParams.length && i < columnCount; i++) {
-                        byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                        if (value != null) {
-                            CobolDataConverter.stringToCobol(resultParams[i], value);
-                        } else {
-                            resultParams[i]
-                                    .getDataStorage()
-                                    .memset((byte) 0, resultParams[i].getSize());
-                        }
-                    }
-                }
-                rs.close();
-                SqlCA.setSuccess(sqlca);
+                rs = pstmt.getResultSet();
             } else {
-                try (Statement stmtToClose = conn.createStatement()) {
-                    stmtToClose.execute(query);
-                    ResultSet rs = stmtToClose.getResultSet();
-
-                    if (rs == null || !rs.next()) {
-                        SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
-                        if (rs != null) {
-                            rs.close();
-                        }
-                        return;
-                    }
-
-                    if (resultParams != null) {
-                        int columnCount = rs.getMetaData().getColumnCount();
-                        for (int i = 0; i < resultParams.length && i < columnCount; i++) {
-                            byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                            if (value != null) {
-                                CobolDataConverter.stringToCobol(resultParams[i], value);
-                            } else {
-                                resultParams[i]
-                                        .getDataStorage()
-                                        .memset((byte) 0, resultParams[i].getSize());
-                            }
-                        }
-                    }
-                    rs.close();
-                    SqlCA.setSuccess(sqlca);
-                }
+                Statement stmt = conn.createStatement();
+                stmt.execute(query);
+                rs = stmt.getResultSet();
             }
+            processSelectIntoResults(rs, resultParams, sqlca);
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
         }
@@ -532,7 +555,19 @@ public class CobolSql {
                     && queryField.getDataStorage() != null
                     && queryField.getSize() > 0) {
                 byte[] bytes = queryField.getDataStorage().getByteArray(0, queryField.getSize());
-                query = new String(bytes, SHIFT_JIS).trim();
+                String rawStr = new String(bytes, SHIFT_JIS);
+                // VARYING structure: leading numeric length field followed by data
+                // Detect by checking if the string starts with digits
+                int dataStart = 0;
+                while (dataStart < rawStr.length() && Character.isDigit(rawStr.charAt(dataStart))) {
+                    dataStart++;
+                }
+                if (dataStart > 0 && dataStart < rawStr.length()) {
+                    // Skip the numeric length prefix
+                    query = rawStr.substring(dataStart).trim();
+                } else {
+                    query = rawStr.trim();
+                }
             } else {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;

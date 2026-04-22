@@ -1,10 +1,8 @@
-# Database Settings
 DB_NAME=testdb
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=main_user
 DB_PASSWORD=password
-
 TEMP_FILE=$(mktemp)
 cat $1 |
 sed -e "s/<|DB_NAME|>/${DB_NAME}/g" |
