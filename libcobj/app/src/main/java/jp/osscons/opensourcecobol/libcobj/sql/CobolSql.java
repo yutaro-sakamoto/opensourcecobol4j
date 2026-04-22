@@ -19,6 +19,10 @@ public final class CobolSql {
     private CobolSql() {}
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
+    private static final String SQL_SAVEPOINT = "SAVEPOINT oc_save";
+    private static final String SQL_RELEASE_SAVEPOINT = "RELEASE SAVEPOINT oc_save";
+    private static final String SQL_ROLLBACK_SAVEPOINT = "ROLLBACK TO oc_save";
+
     private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
             new ConcurrentHashMap<>();
 
@@ -170,8 +174,21 @@ public final class CobolSql {
                 return;
             }
 
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_SAVEPOINT);
+            }
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(query);
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_RELEASE_SAVEPOINT);
+                }
+            } catch (SQLException e) {
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
+                } catch (SQLException ignored) {
+                    // Ignore rollback errors
+                }
+                throw e;
             }
 
             SqlCA.setSuccess(sqlca);
@@ -210,8 +227,11 @@ public final class CobolSql {
                 return;
             }
 
-            PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_SAVEPOINT);
+            }
             try {
+                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
                 ParameterMetaData metaData = getParameterMetaData(pstmt);
                 if (params != null) {
                     for (int i = 0; i < params.length; i++) {
@@ -219,7 +239,15 @@ public final class CobolSql {
                     }
                 }
                 pstmt.execute();
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_RELEASE_SAVEPOINT);
+                }
             } catch (SQLException e) {
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
+                } catch (SQLException ignored) {
+                    // Ignore rollback errors
+                }
                 throw e;
             }
 
@@ -253,7 +281,9 @@ public final class CobolSql {
             CobolDataStorage sqlca)
             throws SQLException {
         if (rs == null || !rs.next()) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
+            SqlCA.setState(sqlca, "02000");
+            SqlCA.clearErrmc(sqlca);
             if (rs != null) {
                 rs.close();
             }
@@ -288,7 +318,9 @@ public final class CobolSql {
             ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
         if (rs == null || !rs.next()) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
+            SqlCA.setState(sqlca, "02000");
+            SqlCA.clearErrmc(sqlca);
             if (rs != null) {
                 rs.close();
             }
@@ -595,7 +627,9 @@ public final class CobolSql {
             if (hasRow) {
                 SqlCA.setSuccess(sqlca);
             } else {
-                SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data");
+                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
+                SqlCA.setState(sqlca, "02000");
+                SqlCA.clearErrmc(sqlca);
             }
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
