@@ -1270,6 +1270,8 @@ struct cb_exec_sql {
   int host_count;
   int res_host_count;
   int conn_use_other_db;
+  int occurs_size; /* OCCURS element stride (bytes) for SELECT INTO OCCURS */
+  int occurs_max;  /* OCCURS max count */
   cb_tree sql_list;
 };
 

@@ -534,15 +534,39 @@ public class CobolDataConverter {
      * @param field the target COBOL host variable field
      * @param resultData the raw byte data from the SQL result
      */
+    /**
+     * Write SQL result data to a specific COBOL storage location.
+     * Used for OCCURS arrays where the storage offset varies per row.
+     *
+     * @param field the COBOL field (for type resolution)
+     * @param storage the target storage location
+     * @param length the field byte length
+     * @param resultData the SQL result data as bytes
+     */
+    public static void stringToCobolRaw(
+            AbstractCobolField field, CobolDataStorage storage, int length, byte[] resultData) {
+        if (field == null || storage == null || resultData == null) {
+            return;
+        }
+        int scale = field.getAttribute().getScale();
+        int hvarType = resolveHvarType(field);
+        stringToCobolInternal(hvarType, length, scale, storage, resultData);
+    }
+
     public static void stringToCobol(AbstractCobolField field, byte[] resultData) {
         if (field == null || field.getDataStorage() == null || resultData == null) {
             return;
         }
-        int length = field.getSize();
-        int scale = field.getAttribute().getScale();
-        CobolDataStorage storage = field.getDataStorage();
-        int hvarType = resolveHvarType(field);
+        stringToCobolInternal(
+                resolveHvarType(field),
+                field.getSize(),
+                field.getAttribute().getScale(),
+                field.getDataStorage(),
+                resultData);
+    }
 
+    private static void stringToCobolInternal(
+            int hvarType, int length, int scale, CobolDataStorage storage, byte[] resultData) {
         switch (hvarType) {
             case TYPE_UNSIGNED_NUMERIC:
                 writeUnsignedNumeric(length, scale, storage, resultData);

@@ -1,12 +1,8 @@
 AT_INIT(ESQL SQLCA test)
 
-dnl TODO: connect-disconnect requires exact error code/exit code behavior matching
-dnl m4_include([connect-disconnect.at])
+m4_include([connect-disconnect.at])
 m4_include([insert-select-update-delete.at])
 m4_include([open-fetch-close.at])
-dnl TODO: prepare-execute requires VARYING structure support
-dnl m4_include([prepare-execute.at])
-dnl TODO: fetch-loop close(invalid) error code differs
-dnl m4_include([fetch-loop.at])
-dnl TODO: errml-errmc has NullPointerException in CobolDataConverter.setParam
-dnl m4_include([errml-errmc.at])
+m4_include([prepare-execute.at])
+m4_include([fetch-loop.at])
+m4_include([errml-errmc.at])

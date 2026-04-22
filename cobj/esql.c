@@ -248,18 +248,50 @@ build_and_resolve_exec_sql(enum cb_sql_command command, char *sql_text,
                            int res_host_count, int conn_use_other_db) {
   resolve_host_var_list(host_list);
   resolve_host_var_list(host_list);
+  int occurs_size = 0;
+  int occurs_max = 0;
   /* Expand GROUP result host vars into children for SELECT INTO */
   if (command == CB_SQL_SELECT_INTO_ONE ||
       command == CB_SQL_SELECT_INTO_OCCURS) {
+    /* Detect OCCURS info from the original GROUP field before expansion */
+    if (res_host_list && res_host_list->ref) {
+      cb_tree resolved = cb_ref(res_host_list->ref);
+      if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+        struct cb_field *f = CB_FIELD(resolved);
+        if (f->flag_occurs && f->occurs_max > 1) {
+          occurs_size = f->size;
+          occurs_max = f->occurs_max;
+          command = CB_SQL_SELECT_INTO_OCCURS;
+        } else if (f->children) {
+          /* GROUP without OCCURS: check children for OCCURS */
+          struct cb_field *child;
+          for (child = f->children; child; child = child->sister) {
+            if (child->flag_occurs && child->occurs_max > 1) {
+              occurs_size = child->size;
+              occurs_max = child->occurs_max;
+              command = CB_SQL_SELECT_INTO_OCCURS;
+              /* Use the OCCURS child's children as result fields */
+              f = child;
+              break;
+            }
+          }
+        }
+      }
+    }
     int new_res_count = 0;
     res_host_list = expand_group_host_vars(res_host_list, &new_res_count);
     res_host_count = new_res_count;
   } else {
     resolve_host_var_list(res_host_list);
   }
-  return cb_build_exec_sql(command, sql_text, cursor_name, prepare_name,
-                           db_name, host_list, host_count, res_host_list,
-                           res_host_count, conn_use_other_db);
+  {
+    cb_tree node = cb_build_exec_sql(
+        command, sql_text, cursor_name, prepare_name, db_name, host_list,
+        host_count, res_host_list, res_host_count, conn_use_other_db);
+    CB_EXEC_SQL(node)->occurs_size = occurs_size;
+    CB_EXEC_SQL(node)->occurs_max = occurs_max;
+    return node;
+  }
 }
 
 /*
