@@ -242,6 +242,45 @@ public class CobolSql {
      * @param inputParams input host variable parameters (WHERE clause bindings)
      * @param resultParams output host variables to receive selected column values
      */
+    private static void fetchOccursRows(
+            ResultSet rs,
+            AbstractCobolField[] resultParams,
+            int occursSize,
+            int occursMax,
+            CobolDataStorage sqlca)
+            throws SQLException {
+        if (rs == null || !rs.next()) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_NOT_FOUND, "02000", "No data found");
+            if (rs != null) {
+                rs.close();
+            }
+            return;
+        }
+        int rowCount = 0;
+        do {
+            if (rowCount >= occursMax) {
+                break;
+            }
+            int storageOffset = rowCount * occursSize;
+            for (int i = 0; i < resultParams.length; i++) {
+                byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                CobolDataStorage fieldStorage =
+                        resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
+                int fieldSize = resultParams[i].getSize();
+                if (value != null) {
+                    CobolDataConverter.stringToCobolRaw(
+                            resultParams[i], fieldStorage, fieldSize, value);
+                } else {
+                    fieldStorage.memset((byte) 0, fieldSize);
+                }
+            }
+            rowCount++;
+        } while (rs.next());
+        rs.close();
+        SqlCA.setErrd(sqlca, 2, rowCount);
+        SqlCA.setSuccess(sqlca);
+    }
+
     private static void processSelectIntoResults(
             ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
@@ -329,7 +368,6 @@ public class CobolSql {
                 return;
             }
 
-            ResultSet rs;
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
                 ParameterMetaData metaData = getParameterMetaData(pstmt);
@@ -337,13 +375,62 @@ public class CobolSql {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
                 pstmt.execute();
-                rs = pstmt.getResultSet();
+                processSelectIntoResults(pstmt.getResultSet(), resultParams, sqlca);
             } else {
-                Statement stmt = conn.createStatement();
-                stmt.execute(query);
-                rs = stmt.getResultSet();
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(query);
+                    processSelectIntoResults(stmt.getResultSet(), resultParams, sqlca);
+                }
             }
-            processSelectIntoResults(rs, resultParams, sqlca);
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
+    }
+
+    /**
+     * Execute a SELECT INTO statement for OCCURS arrays, writing multiple rows.
+     *
+     * @param sqlca the SQLCA data storage
+     * @param query the SELECT query string
+     * @param inputParams input host variable parameters
+     * @param resultParams output host variables (one OCCURS element's fields)
+     * @param occursSize bytes per OCCURS element (stride)
+     * @param occursMax maximum number of OCCURS elements
+     */
+    public static void selectIntoOccurs(
+            CobolDataStorage sqlca,
+            String query,
+            AbstractCobolField[] inputParams,
+            AbstractCobolField[] resultParams,
+            int occursSize,
+            int occursMax) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            if (query == null || query.isEmpty()) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+
+            if (inputParams != null && inputParams.length > 0) {
+                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                for (int i = 0; i < inputParams.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
+                }
+                pstmt.execute();
+                fetchOccursRows(pstmt.getResultSet(), resultParams, occursSize, occursMax, sqlca);
+            } else {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(query);
+                    fetchOccursRows(
+                            stmt.getResultSet(), resultParams, occursSize, occursMax, sqlca);
+                }
+            }
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
         }

@@ -2603,6 +2603,8 @@ cb_tree cb_build_exec_sql(enum cb_sql_command command, char *sql_text,
   p->res_host_list = res_host_list;
   p->res_host_count = res_host_count;
   p->conn_use_other_db = conn_use_other_db;
+  p->occurs_size = 0;
+  p->occurs_max = 0;
   p->sql_list = NULL;
   return CB_TREE(p);
 }
