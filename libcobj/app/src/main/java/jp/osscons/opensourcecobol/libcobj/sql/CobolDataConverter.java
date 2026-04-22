@@ -124,7 +124,9 @@ public final class CobolDataConverter {
             return "";
         }
         int length = field.getSize();
-        int scale = field.getAttribute().getScale();
+        // AbstractCobolField scale is positive (e.g. 2 for V99),
+        // but internal conversion uses negative power (e.g. -2)
+        int scale = -field.getAttribute().getScale();
         CobolDataStorage storage = field.getDataStorage();
         int hvarType = resolveHvarType(field);
 
@@ -551,7 +553,7 @@ public final class CobolDataConverter {
         if (field == null || storage == null || resultData == null) {
             return;
         }
-        int scale = field.getAttribute().getScale();
+        int scale = -field.getAttribute().getScale();
         int hvarType = resolveHvarType(field);
         stringToCobolInternal(hvarType, length, scale, storage, resultData);
     }
@@ -569,7 +571,7 @@ public final class CobolDataConverter {
         stringToCobolInternal(
                 resolveHvarType(field),
                 field.getSize(),
-                field.getAttribute().getScale(),
+                -field.getAttribute().getScale(),
                 field.getDataStorage(),
                 resultData);
     }

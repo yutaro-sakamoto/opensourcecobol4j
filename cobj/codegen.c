@@ -3766,6 +3766,16 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     break;
 
   case CB_SQL_SELECT_INTO_ONE:
+    joutput_prefix();
+    joutput("CobolSql.selectInto(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", ", p->sql_text);
+    joutput_sql_field_array(p->host_list);
+    joutput(", ");
+    joutput_sql_field_array(p->res_host_list);
+    joutput(");\n");
+    break;
+
   case CB_SQL_SELECT_INTO_OCCURS:
     joutput_prefix();
     joutput("CobolSql.selectIntoOccurs(");
