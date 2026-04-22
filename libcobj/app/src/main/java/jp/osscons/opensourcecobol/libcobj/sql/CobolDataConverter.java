@@ -126,9 +126,18 @@ public final class CobolDataConverter {
         int length = field.getSize();
         // AbstractCobolField scale is positive (e.g. 2 for V99),
         // but internal conversion uses negative power (e.g. -2)
-        int scale = -field.getAttribute().getScale();
+        // V99 → getScale()=2 → power=-2; PP → getScale()=-2 → power=0 (PP ignored)
+        int scale = Math.min(0, -field.getAttribute().getScale());
         CobolDataStorage storage = field.getDataStorage();
         int hvarType = resolveHvarType(field);
+
+        // For packed decimal, use digit count instead of byte size.
+        // Exclude PP digits (negative scale) since ocesql didn't count them.
+        int rawScale = field.getAttribute().getScale();
+        int packedLength = field.getAttribute().getDigits();
+        if (rawScale < 0) {
+            packedLength += rawScale; // subtract PP digits (rawScale is negative)
+        }
 
         switch (hvarType) {
             case TYPE_UNSIGNED_NUMERIC:
@@ -142,9 +151,9 @@ public final class CobolDataConverter {
             case TYPE_SIGNED_LEADING_COMBINED:
                 return readSignedLeadingCombined(length, scale, storage);
             case TYPE_UNSIGNED_PACKED:
-                return readUnsignedPacked(length, scale, storage);
+                return readUnsignedPacked(packedLength, scale, storage);
             case TYPE_SIGNED_PACKED:
-                return readSignedPacked(length, scale, storage);
+                return readSignedPacked(packedLength, scale, storage);
             case TYPE_UNSIGNED_BINARY_NATIVE:
                 return readUnsignedBinaryNative(length, scale, storage);
             case TYPE_SIGNED_BINARY_NATIVE:
@@ -482,7 +491,7 @@ public final class CobolDataConverter {
     }
 
     private static String readNational(int length, int scale, CobolDataStorage storage) {
-        byte[] data = storage.getByteArray(0, length * 2);
+        byte[] data = storage.getByteArray(0, length);
         return new String(data, SHIFT_JIS);
     }
 
@@ -553,8 +562,17 @@ public final class CobolDataConverter {
         if (field == null || storage == null || resultData == null) {
             return;
         }
-        int scale = -field.getAttribute().getScale();
+        // V99 → getScale()=2 → power=-2; PP → getScale()=-2 → power=0 (PP ignored)
+        int scale = Math.min(0, -field.getAttribute().getScale());
         int hvarType = resolveHvarType(field);
+        // For packed decimal, use digit count (excluding PP) instead of byte size
+        if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
+            length = field.getAttribute().getDigits();
+            int rawScale = field.getAttribute().getScale();
+            if (rawScale < 0) {
+                length += rawScale;
+            }
+        }
         stringToCobolInternal(hvarType, length, scale, storage, resultData);
     }
 
@@ -568,9 +586,19 @@ public final class CobolDataConverter {
         if (field == null || field.getDataStorage() == null || resultData == null) {
             return;
         }
+        int hvarType = resolveHvarType(field);
+        int length = field.getSize();
+        // For packed decimal, use digit count (excluding PP) instead of byte size
+        if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
+            length = field.getAttribute().getDigits();
+            int rawScale = field.getAttribute().getScale();
+            if (rawScale < 0) {
+                length += rawScale;
+            }
+        }
         stringToCobolInternal(
-                resolveHvarType(field),
-                field.getSize(),
+                hvarType,
+                length,
                 -field.getAttribute().getScale(),
                 field.getDataStorage(),
                 resultData);
@@ -932,11 +960,12 @@ public final class CobolDataConverter {
     }
 
     private static void writeNational(int length, int scale, CobolDataStorage storage, byte[] str) {
-        for (int j = 0; j < length; j++) {
-            storage.setByte(j * 2, (byte) 0x30);
-            storage.setByte(j * 2 + 1, (byte) 0x00);
+        // length is already byte size (e.g. 10 for PIC N(5))
+        for (int j = 0; j < length; j += 2) {
+            storage.setByte(j, (byte) 0x30);
+            storage.setByte(j + 1, (byte) 0x00);
         }
-        int copyLen = Math.min(length * 2, str.length);
+        int copyLen = Math.min(length, str.length);
         storage.memcpy(str, copyLen);
     }
 
