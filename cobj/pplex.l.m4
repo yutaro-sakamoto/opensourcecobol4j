@@ -136,7 +136,7 @@ WORD		([_0-9A-Z-]|{JPNWORD})+
 NUMRIC_LITERAL	[+-]?[0-9,.]*[0-9]
 ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
-%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE
+%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE
 
 %%
 
@@ -193,6 +193,11 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	ppcopy ("sqlca.cbl", NULL, NULL, NULL);
 }
 
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
+	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
+	BEGIN ESQL_INCLUDE_STATE;
+}
+
 "EXEC"({ZENSPC}|[ ])+"SQL" {
 	/* Pass through EXEC SQL blocks to the main scanner */
 	ppecho ("EXEC SQL");
@@ -247,6 +252,20 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
   {NUMRIC_LITERAL} |
   {ALNUM_LITERAL} |
   .			{ pplval.s = strdup (yytext); return TOKEN; }
+}
+
+<ESQL_INCLUDE_STATE>{
+  [ \t\n]+ { if (yytext[0] == '\n') cb_source_line++; }
+  "END-EXEC"({ZENSPC}|[ ])*"."? {
+	BEGIN INITIAL;
+  }
+  {WORD} {
+	/* Got the filename to include, copy it, then wait for END-EXEC */
+	char *fname = strdup(yytext);
+	fputc ('\n', ppout);
+	ppcopy (fname, NULL, NULL, NULL);
+	free (fname);
+  }
 }
 
 <ESQL_PASSTHRU_STATE>{
