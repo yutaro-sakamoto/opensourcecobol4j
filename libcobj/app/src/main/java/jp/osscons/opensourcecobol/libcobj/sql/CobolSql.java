@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentHashMap;
+import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
@@ -190,7 +191,8 @@ public class CobolSql {
      * @param query the SQL query string with '?' placeholders
      * @param params the COBOL host variable parameters
      */
-    public static void execWithParams(CobolDataStorage sqlca, String query, SqlParam... params) {
+    public static void execWithParams(
+            CobolDataStorage sqlca, String query, AbstractCobolField... params) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
@@ -240,7 +242,10 @@ public class CobolSql {
      * @param resultParams output host variables to receive selected column values
      */
     public static void selectInto(
-            CobolDataStorage sqlca, String query, SqlParam[] inputParams, SqlParam[] resultParams) {
+            CobolDataStorage sqlca,
+            String query,
+            AbstractCobolField[] inputParams,
+            AbstractCobolField[] resultParams) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
@@ -278,7 +283,9 @@ public class CobolSql {
                         if (value != null) {
                             CobolDataConverter.stringToCobol(resultParams[i], value);
                         } else {
-                            resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                            resultParams[i]
+                                    .getDataStorage()
+                                    .memset((byte) 0, resultParams[i].getSize());
                         }
                     }
                 }
@@ -304,7 +311,9 @@ public class CobolSql {
                             if (value != null) {
                                 CobolDataConverter.stringToCobol(resultParams[i], value);
                             } else {
-                                resultParams[i].storage.memset((byte) 0, resultParams[i].length);
+                                resultParams[i]
+                                        .getDataStorage()
+                                        .memset((byte) 0, resultParams[i].getSize());
                             }
                         }
                     }
@@ -356,7 +365,7 @@ public class CobolSql {
      * @param params host variable parameters to bind when the cursor is opened
      */
     public static void declareCursorWithParams(
-            CobolDataStorage sqlca, String cursorName, String query, SqlParam... params) {
+            CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField... params) {
         try {
             if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
@@ -414,7 +423,7 @@ public class CobolSql {
      * @param params host variable parameters for the cursor query
      */
     public static void openCursorWithParams(
-            CobolDataStorage sqlca, String cursorName, SqlParam... params) {
+            CobolDataStorage sqlca, String cursorName, AbstractCobolField... params) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
@@ -445,7 +454,7 @@ public class CobolSql {
      * @param resultParams output host variables to receive column values
      */
     public static void fetchCursor(
-            CobolDataStorage sqlca, String cursorName, SqlParam... resultParams) {
+            CobolDataStorage sqlca, String cursorName, AbstractCobolField... resultParams) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
@@ -509,19 +518,20 @@ public class CobolSql {
      *
      * @param sqlca the SQLCA data storage for status reporting
      * @param stmtName the name to assign to the prepared statement
-     * @param queryStorage COBOL storage containing the SQL query text
-     * @param queryLen byte length of the query
+     * @param queryField COBOL field containing the SQL query text
      */
     public static void prepare(
-            CobolDataStorage sqlca, String stmtName, CobolDataStorage queryStorage, int queryLen) {
+            CobolDataStorage sqlca, String stmtName, AbstractCobolField queryField) {
         try {
             if (stmtName == null || stmtName.isEmpty()) {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty statement name");
                 return;
             }
             String query;
-            if (queryStorage != null && queryLen > 0) {
-                byte[] bytes = queryStorage.getByteArray(0, queryLen);
+            if (queryField != null
+                    && queryField.getDataStorage() != null
+                    && queryField.getSize() > 0) {
+                byte[] bytes = queryField.getDataStorage().getByteArray(0, queryField.getSize());
                 query = new String(bytes, SHIFT_JIS).trim();
             } else {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
@@ -564,7 +574,7 @@ public class CobolSql {
      * @param params host variable parameters to bind
      */
     public static void executePrepared(
-            CobolDataStorage sqlca, String stmtName, SqlParam... params) {
+            CobolDataStorage sqlca, String stmtName, AbstractCobolField... params) {
         try {
             String[] prepared = SqlState.getPrepared(stmtName);
             if (prepared == null) {
@@ -735,7 +745,7 @@ public class CobolSql {
             int atdbLen,
             String query,
             int nParams,
-            SqlParam... params) {
+            AbstractCobolField... params) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
             SqlConnection sqlConn = SqlState.getConnection(atdbStr);
