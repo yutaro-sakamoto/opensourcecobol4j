@@ -5,7 +5,10 @@ import java.sql.SQLException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /** Manages the SQLCA (SQL Communication Area) structure for COBOL embedded SQL. */
-public class SqlCA {
+public final class SqlCA {
+
+    /** Private constructor to prevent instantiation of utility class. */
+    private SqlCA() {}
 
     /** Maximum length of the SQLERRMC error message field. */
     public static final int SQLERRMC_LEN = 70;

@@ -15,7 +15,10 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
 /** Converts between COBOL host variable storage and Java/JDBC types. */
-public class CobolDataConverter {
+public final class CobolDataConverter {
+
+    /** Private constructor to prevent instantiation of utility class. */
+    private CobolDataConverter() {}
 
     /** Unsigned numeric display (USAGE DISPLAY, no sign). */
     public static final int TYPE_UNSIGNED_NUMERIC = 1;
@@ -553,6 +556,12 @@ public class CobolDataConverter {
         stringToCobolInternal(hvarType, length, scale, storage, resultData);
     }
 
+    /**
+     * Write SQL result data back to a COBOL host variable field.
+     *
+     * @param field the target COBOL field
+     * @param resultData the SQL result data as bytes
+     */
     public static void stringToCobol(AbstractCobolField field, byte[] resultData) {
         if (field == null || field.getDataStorage() == null || resultData == null) {
             return;

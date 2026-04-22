@@ -13,7 +13,10 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
 /** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
-public class CobolSql {
+public final class CobolSql {
+
+    /** Private constructor to prevent instantiation of utility class. */
+    private CobolSql() {}
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
     private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
@@ -350,6 +353,14 @@ public class CobolSql {
         SqlCA.setSuccess(sqlca);
     }
 
+    /**
+     * Execute a SELECT INTO statement, writing results back to COBOL host variables.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param query the SELECT query string
+     * @param inputParams input host variable parameters (WHERE clause bindings)
+     * @param resultParams output host variables to receive selected column values
+     */
     public static void selectInto(
             CobolDataStorage sqlca,
             String query,

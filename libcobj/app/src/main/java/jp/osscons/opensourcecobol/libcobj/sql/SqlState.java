@@ -4,7 +4,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Global registry for SQL connections, cursors, and prepared statements. */
-public class SqlState {
+public final class SqlState {
+
+    /** Private constructor to prevent instantiation of utility class. */
+    private SqlState() {}
 
     private static Map<String, SqlConnection> connections = new HashMap<>();
     private static Map<String, SqlCursor> cursors = new HashMap<>();
