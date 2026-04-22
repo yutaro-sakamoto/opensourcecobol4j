@@ -2,9 +2,8 @@ AT_INIT(ESQL cobol data test)
 
 m4_include([numeric_signed_v.at])
 m4_include([numeric_v.at])
-dnl TODO: comp3 PP fields have different BCD layout between ocesql and opensourcecobol4j PIC parser
-dnl m4_include([comp3.at])
-dnl m4_include([comp3_signed.at])
+m4_include([comp3.at])
+m4_include([comp3_signed.at])
 m4_include([alphanumeric.at])
 m4_include([japanese.at])
 dnl TODO: varying requires VARYING structure expansion in compiler
