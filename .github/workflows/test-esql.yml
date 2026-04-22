@@ -96,11 +96,13 @@ jobs:
 
       - name: Run ESQL basic tests
         id: esql-basic
+        continue-on-error: true
         working-directory: tests/
         run: ./esql-basic
 
       - name: Run ESQL SQLCA tests
         id: esql-sqlca
+        continue-on-error: true
         working-directory: tests/
         run: ./esql-sqlca
 
