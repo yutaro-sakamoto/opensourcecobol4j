@@ -3665,27 +3665,43 @@ static int joutput_exec_sql_host_var_size(struct cb_sql_host_var *hv) {
   return 0;
 }
 
-/* Helper: output a SqlParam constructor for a host variable */
-static void joutput_sql_param(struct cb_sql_host_var *hv) {
-  joutput("new SqlParam(%d, %d, %d, ", hv->hvar_type, hv->length, hv->scale);
-  joutput_exec_sql_host_var_ref(hv);
-  joutput(")");
+/* Helper: output f_FIELD reference for a host variable.
+ * Uses joutput_param which automatically registers the field
+ * in field_cache, ensuring the f_ declaration is generated. */
+static void joutput_sql_field_ref(struct cb_sql_host_var *hv) {
+  if (hv->ref) {
+    cb_tree resolved = cb_ref(hv->ref);
+    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+      struct cb_field *f = CB_FIELD(resolved);
+      /* Ensure count > 0 so joutput_param registers the field */
+      if (f->count == 0) {
+        f->count = 1;
+      }
+      joutput_param(hv->ref, 0);
+      return;
+    }
+  }
+  /* Fallback */
+  char java_name[COB_SMALL_BUFF];
+  strcpy_identifier_cobol_to_java(java_name, hv->name);
+  joutput("%s%s", CB_PREFIX_FIELD, java_name);
 }
 
-/* Helper: output a SqlParam[] array literal */
-static void joutput_sql_param_array(struct cb_sql_host_var *list) {
+/* Helper: output an AbstractCobolField[] array literal */
+static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   struct cb_sql_host_var *hv;
   int first;
   if (!list) {
-    joutput("new SqlParam[0]");
+    joutput("new AbstractCobolField[0]");
     return;
   }
-  joutput("new SqlParam[]{");
+  joutput("new AbstractCobolField[]{");
   first = 1;
   for (hv = list; hv; hv = hv->next) {
-    if (!first)
+    if (!first) {
       joutput(", ");
-    joutput_sql_param(hv);
+    }
+    joutput_sql_field_ref(hv);
     first = 0;
   }
   joutput("}");
@@ -3744,7 +3760,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput(", \"%s\"", p->sql_text);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_sql_param(hv);
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;
@@ -3755,9 +3771,9 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput("CobolSql.selectInto(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s\", ", p->sql_text);
-    joutput_sql_param_array(p->host_list);
+    joutput_sql_field_array(p->host_list);
     joutput(", ");
-    joutput_sql_param_array(p->res_host_list);
+    joutput_sql_field_array(p->res_host_list);
     joutput(");\n");
     break;
 
@@ -3779,7 +3795,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput(", \"%s\", \"%s\"", p->cursor_name, p->sql_text);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_sql_param(hv);
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;
@@ -3798,7 +3814,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput(", \"%s\"", p->cursor_name);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_sql_param(hv);
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;
@@ -3818,7 +3834,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput(", \"%s\"", p->cursor_name);
     for (hv = p->res_host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_sql_param(hv);
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;
@@ -3829,10 +3845,9 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s\", ", p->prepare_name);
     if (p->host_list) {
-      joutput_exec_sql_host_var_ref(p->host_list);
-      joutput(", %d", joutput_exec_sql_host_var_size(p->host_list));
+      joutput_sql_field_ref(p->host_list);
     } else {
-      joutput("null, 0");
+      joutput("null");
     }
     joutput(");\n");
     break;
@@ -3844,7 +3859,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput(", \"%s\"", p->prepare_name);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_sql_param(hv);
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;

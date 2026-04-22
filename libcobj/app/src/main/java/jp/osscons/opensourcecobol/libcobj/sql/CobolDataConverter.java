@@ -10,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
+import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
 /** Converts between COBOL host variable storage and Java/JDBC types. */
 public class CobolDataConverter {
@@ -65,65 +67,114 @@ public class CobolDataConverter {
     private static final int OCDB_VARCHAR_HEADER_BYTE = 4;
 
     /**
-     * Convert a COBOL host variable to its string representation for SQL binding.
+     * Resolve the internal HVARTYPE constant from an AbstractCobolField's attributes.
      *
-     * @param param the COBOL host variable descriptor
-     * @return the string representation, or empty string if param is null
+     * @param field the COBOL field
+     * @return the HVARTYPE constant for internal dispatch
      */
-    public static String cobolToString(SqlParam param) {
-        if (param == null || param.storage == null) {
-            return "";
-        }
-        switch (param.type) {
-            case TYPE_UNSIGNED_NUMERIC:
-                return readUnsignedNumeric(param);
-            case TYPE_SIGNED_TRAILING_SEPARATE:
-                return readSignedTrailingSeparate(param);
-            case TYPE_SIGNED_TRAILING_COMBINED:
-                return readSignedTrailingCombined(param);
-            case TYPE_SIGNED_LEADING_SEPARATE:
-                return readSignedLeadingSeparate(param);
-            case TYPE_SIGNED_LEADING_COMBINED:
-                return readSignedLeadingCombined(param);
-            case TYPE_UNSIGNED_PACKED:
-                return readUnsignedPacked(param);
-            case TYPE_SIGNED_PACKED:
-                return readSignedPacked(param);
-            case TYPE_UNSIGNED_BINARY_NATIVE:
-                return readUnsignedBinaryNative(param);
-            case TYPE_SIGNED_BINARY_NATIVE:
-                return readSignedBinaryNative(param);
-            case TYPE_ALPHABETIC:
-            case TYPE_GROUP:
-                return readAlphanumeric(param);
-            case TYPE_FLOAT:
-                return readFloat(param);
-            case TYPE_NATIONAL:
-                return readNational(param);
-            case TYPE_ALPHANUMERIC_VARYING:
-                return readAlphanumericVarying(param);
-            case TYPE_JAPANESE_VARYING:
-                return readJapaneseVarying(param);
+    private static int resolveHvarType(AbstractCobolField field) {
+        CobolFieldAttribute attr = field.getAttribute();
+        int type = attr.getType();
+        boolean hasSign = attr.isFlagHaveSign();
+        boolean signSep = attr.isFlagSignSeparate();
+        boolean signLead = attr.isFlagSignLeading();
+
+        switch (type) {
+            case CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY:
+                if (!hasSign) {
+                    return TYPE_UNSIGNED_NUMERIC;
+                }
+                if (signSep && signLead) {
+                    return TYPE_SIGNED_LEADING_SEPARATE;
+                }
+                if (signSep) {
+                    return TYPE_SIGNED_TRAILING_SEPARATE;
+                }
+                if (signLead) {
+                    return TYPE_SIGNED_LEADING_COMBINED;
+                }
+                return TYPE_SIGNED_TRAILING_COMBINED;
+            case CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED:
+                return hasSign ? TYPE_SIGNED_PACKED : TYPE_UNSIGNED_PACKED;
+            case CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY:
+                return hasSign ? TYPE_SIGNED_BINARY_NATIVE : TYPE_UNSIGNED_BINARY_NATIVE;
+            case CobolFieldAttribute.COB_TYPE_NUMERIC_FLOAT:
+            case CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE:
+                return TYPE_FLOAT;
+            case CobolFieldAttribute.COB_TYPE_NATIONAL:
+                return TYPE_NATIONAL;
+            case CobolFieldAttribute.COB_TYPE_GROUP:
+                return TYPE_GROUP;
             default:
-                return readAlphanumeric(param);
+                return TYPE_ALPHABETIC;
         }
     }
 
-    private static String readUnsignedNumeric(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length);
+    /**
+     * Convert a COBOL host variable to its string representation for SQL binding.
+     *
+     * @param field the COBOL host variable field
+     * @return the string representation, or empty string if field is null
+     */
+    public static String cobolToString(AbstractCobolField field) {
+        if (field == null || field.getDataStorage() == null) {
+            return "";
+        }
+        int length = field.getSize();
+        int scale = field.getAttribute().getScale();
+        CobolDataStorage storage = field.getDataStorage();
+        int hvarType = resolveHvarType(field);
+
+        switch (hvarType) {
+            case TYPE_UNSIGNED_NUMERIC:
+                return readUnsignedNumeric(length, scale, storage);
+            case TYPE_SIGNED_TRAILING_SEPARATE:
+                return readSignedTrailingSeparate(length, scale, storage);
+            case TYPE_SIGNED_TRAILING_COMBINED:
+                return readSignedTrailingCombined(length, scale, storage);
+            case TYPE_SIGNED_LEADING_SEPARATE:
+                return readSignedLeadingSeparate(length, scale, storage);
+            case TYPE_SIGNED_LEADING_COMBINED:
+                return readSignedLeadingCombined(length, scale, storage);
+            case TYPE_UNSIGNED_PACKED:
+                return readUnsignedPacked(length, scale, storage);
+            case TYPE_SIGNED_PACKED:
+                return readSignedPacked(length, scale, storage);
+            case TYPE_UNSIGNED_BINARY_NATIVE:
+                return readUnsignedBinaryNative(length, scale, storage);
+            case TYPE_SIGNED_BINARY_NATIVE:
+                return readSignedBinaryNative(length, scale, storage);
+            case TYPE_ALPHABETIC:
+            case TYPE_GROUP:
+                return readAlphanumeric(length, scale, storage);
+            case TYPE_FLOAT:
+                return readFloat(length, scale, storage);
+            case TYPE_NATIONAL:
+                return readNational(length, scale, storage);
+            case TYPE_ALPHANUMERIC_VARYING:
+                return readAlphanumericVarying(length, scale, storage);
+            case TYPE_JAPANESE_VARYING:
+                return readJapaneseVarying(length, scale, storage);
+            default:
+                return readAlphanumeric(length, scale, storage);
+        }
+    }
+
+    private static String readUnsignedNumeric(int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length);
         int realDataLength;
-        if (param.scale < 0) {
-            realDataLength = param.length + 1;
+        if (scale < 0) {
+            realDataLength = length + 1;
         } else {
-            realDataLength = param.length + param.scale;
+            realDataLength = length + scale;
         }
 
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
-        System.arraycopy(data, 0, realData, 0, param.length);
+        System.arraycopy(data, 0, realData, 0, length);
 
-        if (param.scale < 0) {
-            int pointIndex = realDataLength + param.scale - 1;
+        if (scale < 0) {
+            int pointIndex = realDataLength + scale - 1;
             if (pointIndex > 0 && pointIndex < realDataLength) {
                 for (int i = realDataLength - 1; i > pointIndex; i--) {
                     realData[i] = realData[i - 1];
@@ -135,30 +186,31 @@ public class CobolDataConverter {
         return removeLeadingZeros(realData, false);
     }
 
-    private static String readSignedTrailingCombined(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length);
+    private static String readSignedTrailingCombined(
+            int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length);
 
         int realDataLength;
-        if (param.scale < 0) {
-            realDataLength = SIGN_LENGTH + param.length + 1;
+        if (scale < 0) {
+            realDataLength = SIGN_LENGTH + length + 1;
         } else {
-            realDataLength = SIGN_LENGTH + param.length + param.scale;
+            realDataLength = SIGN_LENGTH + length + scale;
         }
 
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
-        System.arraycopy(data, 0, realData, SIGN_LENGTH, param.length);
+        System.arraycopy(data, 0, realData, SIGN_LENGTH, length);
 
-        byte signByte = realData[param.length + SIGN_LENGTH - 1];
+        byte signByte = realData[length + SIGN_LENGTH - 1];
         boolean isNegative = false;
         if ((signByte & 0xFF) >= 0x70 && (signByte & 0xFF) <= 0x79) {
             isNegative = true;
             realData[0] = (byte) '-';
-            realData[param.length + SIGN_LENGTH - 1] = (byte) ((signByte & 0xFF) - 0x40);
+            realData[length + SIGN_LENGTH - 1] = (byte) ((signByte & 0xFF) - 0x40);
         }
 
-        if (param.scale < 0) {
-            int pointIndex = realDataLength + param.scale - 1;
+        if (scale < 0) {
+            int pointIndex = realDataLength + scale - 1;
             if (pointIndex > 0 && pointIndex < realDataLength) {
                 for (int i = realDataLength - 1; i > pointIndex; i--) {
                     realData[i] = realData[i - 1];
@@ -170,24 +222,25 @@ public class CobolDataConverter {
         return removeLeadingZeros(realData, isNegative);
     }
 
-    private static String readSignedTrailingSeparate(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length);
-        boolean isNegative = data[param.length - 1] == (byte) '-';
-        int digitLen = param.length - 1;
+    private static String readSignedTrailingSeparate(
+            int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length);
+        boolean isNegative = data[length - 1] == (byte) '-';
+        int digitLen = length - 1;
 
         int realDataLength;
-        if (param.scale < 0) {
+        if (scale < 0) {
             realDataLength = digitLen + 1;
         } else {
-            realDataLength = digitLen + param.scale;
+            realDataLength = digitLen + scale;
         }
 
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
         System.arraycopy(data, 0, realData, 0, digitLen);
 
-        if (param.scale < 0) {
-            int pointIndex = realDataLength + param.scale - 1;
+        if (scale < 0) {
+            int pointIndex = realDataLength + scale - 1;
             if (pointIndex > 0 && pointIndex < realDataLength) {
                 for (int i = realDataLength - 1; i > pointIndex; i--) {
                     realData[i] = realData[i - 1];
@@ -203,26 +256,28 @@ public class CobolDataConverter {
         return result;
     }
 
-    private static String readSignedLeadingSeparate(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length + 1);
+    private static String readSignedLeadingSeparate(
+            int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length + 1);
         String rawStr = new String(data);
 
-        if (param.scale < 0) {
-            int splitAt = param.length + param.scale;
+        if (scale < 0) {
+            int splitAt = length + scale;
             String fst = rawStr.substring(0, splitAt);
             String snd = rawStr.substring(splitAt);
             return fst + "." + snd;
         } else {
             StringBuilder sb = new StringBuilder(rawStr);
-            for (int i = 0; i < param.scale; i++) {
+            for (int i = 0; i < scale; i++) {
                 sb.append('0');
             }
             return sb.toString();
         }
     }
 
-    private static String readSignedLeadingCombined(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length);
+    private static String readSignedLeadingCombined(
+            int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length);
         boolean isNegative = false;
         byte firstByte = data[0];
         if ((firstByte & 0xFF) >= 0x70 && (firstByte & 0xFF) <= 0x79) {
@@ -231,18 +286,18 @@ public class CobolDataConverter {
         }
 
         int realDataLength;
-        if (param.scale < 0) {
-            realDataLength = param.length + 1;
+        if (scale < 0) {
+            realDataLength = length + 1;
         } else {
-            realDataLength = param.length + param.scale;
+            realDataLength = length + scale;
         }
 
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
-        System.arraycopy(data, 0, realData, 0, param.length);
+        System.arraycopy(data, 0, realData, 0, length);
 
-        if (param.scale < 0) {
-            int pointIndex = realDataLength + param.scale - 1;
+        if (scale < 0) {
+            int pointIndex = realDataLength + scale - 1;
             if (pointIndex > 0 && pointIndex < realDataLength) {
                 for (int i = realDataLength - 1; i > pointIndex; i--) {
                     realData[i] = realData[i - 1];
@@ -258,18 +313,18 @@ public class CobolDataConverter {
         return result;
     }
 
-    private static String readUnsignedPacked(SqlParam param) {
-        int len = (param.length / 2) + 1;
-        byte[] digits = unpackBcd(param.storage, param.length, len);
-        return formatPackedResult(digits, param.length, param.scale, false);
+    private static String readUnsignedPacked(int length, int scale, CobolDataStorage storage) {
+        int len = (length / 2) + 1;
+        byte[] digits = unpackBcd(storage, length, len);
+        return formatPackedResult(digits, length, scale, false);
     }
 
-    private static String readSignedPacked(SqlParam param) {
-        int len = (param.length / 2) + 1;
-        byte lastByte = param.storage.getByte(len - 1);
+    private static String readSignedPacked(int length, int scale, CobolDataStorage storage) {
+        int len = (length / 2) + 1;
+        byte lastByte = storage.getByte(len - 1);
         boolean isNegative = (lastByte & 0x0F) == 0x0D;
-        byte[] digits = unpackBcd(param.storage, param.length, len);
-        return formatPackedResult(digits, param.length, param.scale, isNegative);
+        byte[] digits = unpackBcd(storage, length, len);
+        return formatPackedResult(digits, length, scale, isNegative);
     }
 
     private static byte[] unpackBcd(CobolDataStorage storage, int length, int len) {
@@ -338,11 +393,12 @@ public class CobolDataConverter {
         return result;
     }
 
-    private static String readUnsignedBinaryNative(SqlParam param) {
-        ByteBuffer bb = ByteBuffer.wrap(param.storage.getByteArray(0, param.length));
+    private static String readUnsignedBinaryNative(
+            int length, int scale, CobolDataStorage storage) {
+        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, length));
         bb.order(ByteOrder.BIG_ENDIAN);
         long value;
-        switch (param.length) {
+        switch (length) {
             case 1:
                 value = bb.get() & 0xFFL;
                 break;
@@ -362,11 +418,11 @@ public class CobolDataConverter {
         return Long.toString(value);
     }
 
-    private static String readSignedBinaryNative(SqlParam param) {
-        ByteBuffer bb = ByteBuffer.wrap(param.storage.getByteArray(0, param.length));
+    private static String readSignedBinaryNative(int length, int scale, CobolDataStorage storage) {
+        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, length));
         bb.order(ByteOrder.BIG_ENDIAN);
         long value;
-        switch (param.length) {
+        switch (length) {
             case 1:
                 value = bb.get();
                 break;
@@ -384,18 +440,18 @@ public class CobolDataConverter {
                 break;
         }
         String str = Long.toString(value);
-        if (param.scale < 0) {
+        if (scale < 0) {
             boolean neg = value < 0;
             String abs = neg ? str.substring(1) : str;
-            if (abs.length() <= -param.scale) {
+            if (abs.length() <= -scale) {
                 StringBuilder sb = new StringBuilder("0.");
-                for (int i = 0; i < -param.scale - abs.length(); i++) {
+                for (int i = 0; i < -scale - abs.length(); i++) {
                     sb.append('0');
                 }
                 sb.append(abs);
                 return neg ? "-" + sb.toString() : sb.toString();
             } else {
-                int pointPos = abs.length() + param.scale;
+                int pointPos = abs.length() + scale;
                 String result = abs.substring(0, pointPos) + "." + abs.substring(pointPos);
                 return neg ? "-" + result : result;
             }
@@ -403,8 +459,8 @@ public class CobolDataConverter {
         return str;
     }
 
-    private static String readAlphanumeric(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length);
+    private static String readAlphanumeric(int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length);
         String str = new String(data, SHIFT_JIS);
         int end = str.length();
         while (end > 0 && str.charAt(end - 1) == ' ') {
@@ -413,33 +469,33 @@ public class CobolDataConverter {
         return str.substring(0, end);
     }
 
-    private static String readFloat(SqlParam param) {
-        ByteBuffer bb = ByteBuffer.wrap(param.storage.getByteArray(0, 8));
+    private static String readFloat(int length, int scale, CobolDataStorage storage) {
+        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, 8));
         bb.order(ByteOrder.BIG_ENDIAN);
         double value = bb.getDouble();
         return Double.toString(value);
     }
 
-    private static String readNational(SqlParam param) {
-        byte[] data = param.storage.getByteArray(0, param.length * 2);
+    private static String readNational(int length, int scale, CobolDataStorage storage) {
+        byte[] data = storage.getByteArray(0, length * 2);
         return new String(data, SHIFT_JIS);
     }
 
-    private static String readAlphanumericVarying(SqlParam param) {
+    private static String readAlphanumericVarying(int length, int scale, CobolDataStorage storage) {
         int lenSize = 0;
         for (int i = 0; i < OCDB_VARCHAR_HEADER_BYTE; i++) {
-            lenSize = lenSize * 256 + (param.storage.getByte(i) & 0xFF);
+            lenSize = lenSize * 256 + (storage.getByte(i) & 0xFF);
         }
-        byte[] data = param.storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, lenSize);
+        byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, lenSize);
         return new String(data, SHIFT_JIS);
     }
 
-    private static String readJapaneseVarying(SqlParam param) {
+    private static String readJapaneseVarying(int length, int scale, CobolDataStorage storage) {
         int charCount = 0;
         for (int i = 0; i < OCDB_VARCHAR_HEADER_BYTE; i++) {
-            charCount = charCount * 256 + (param.storage.getByte(i) & 0xFF);
+            charCount = charCount * 256 + (storage.getByte(i) & 0xFF);
         }
-        byte[] data = param.storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, charCount * 2);
+        byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, charCount * 2);
         return new String(data, SHIFT_JIS);
     }
 
@@ -475,63 +531,69 @@ public class CobolDataConverter {
     /**
      * Write SQL result data back into COBOL host variable storage.
      *
-     * @param param the target COBOL host variable descriptor
+     * @param field the target COBOL host variable field
      * @param resultData the raw byte data from the SQL result
      */
-    public static void stringToCobol(SqlParam param, byte[] resultData) {
-        if (param == null || param.storage == null || resultData == null) {
+    public static void stringToCobol(AbstractCobolField field, byte[] resultData) {
+        if (field == null || field.getDataStorage() == null || resultData == null) {
             return;
         }
-        switch (param.type) {
+        int length = field.getSize();
+        int scale = field.getAttribute().getScale();
+        CobolDataStorage storage = field.getDataStorage();
+        int hvarType = resolveHvarType(field);
+
+        switch (hvarType) {
             case TYPE_UNSIGNED_NUMERIC:
-                writeUnsignedNumeric(param, resultData);
+                writeUnsignedNumeric(length, scale, storage, resultData);
                 break;
             case TYPE_SIGNED_TRAILING_COMBINED:
-                writeSignedTrailingCombined(param, resultData);
+                writeSignedTrailingCombined(length, scale, storage, resultData);
                 break;
             case TYPE_SIGNED_TRAILING_SEPARATE:
-                writeSignedTrailingSeparate(param, resultData);
+                writeSignedTrailingSeparate(length, scale, storage, resultData);
                 break;
             case TYPE_SIGNED_LEADING_SEPARATE:
-                writeSignedLeadingSeparate(param, resultData);
+                writeSignedLeadingSeparate(length, scale, storage, resultData);
                 break;
             case TYPE_SIGNED_LEADING_COMBINED:
-                writeSignedLeadingCombined(param, resultData);
+                writeSignedLeadingCombined(length, scale, storage, resultData);
                 break;
             case TYPE_UNSIGNED_PACKED:
-                writeUnsignedPacked(param, resultData);
+                writeUnsignedPacked(length, scale, storage, resultData);
                 break;
             case TYPE_SIGNED_PACKED:
-                writeSignedPacked(param, resultData);
+                writeSignedPacked(length, scale, storage, resultData);
                 break;
             case TYPE_ALPHABETIC:
             case TYPE_GROUP:
-                writeAlphanumeric(param, resultData);
+                writeAlphanumeric(length, scale, storage, resultData);
                 break;
             case TYPE_NATIONAL:
-                writeNational(param, resultData);
+                writeNational(length, scale, storage, resultData);
                 break;
             case TYPE_ALPHANUMERIC_VARYING:
-                writeAlphanumericVarying(param, resultData);
+                writeAlphanumericVarying(length, scale, storage, resultData);
                 break;
             case TYPE_JAPANESE_VARYING:
-                writeJapaneseVarying(param, resultData);
+                writeJapaneseVarying(length, scale, storage, resultData);
                 break;
             case TYPE_UNSIGNED_BINARY_NATIVE:
             case TYPE_SIGNED_BINARY_NATIVE:
-                writeAlphanumeric(param, resultData);
+                writeAlphanumeric(length, scale, storage, resultData);
                 break;
             case TYPE_FLOAT:
-                writeAlphanumeric(param, resultData);
+                writeAlphanumeric(length, scale, storage, resultData);
                 break;
             default:
-                writeAlphanumeric(param, resultData);
+                writeAlphanumeric(length, scale, storage, resultData);
                 break;
         }
     }
 
-    private static void writeUnsignedNumeric(SqlParam param, byte[] str) {
-        byte[] finalBuf = new byte[param.length];
+    private static void writeUnsignedNumeric(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
         int valueFirstIndex = isNegative ? 1 : 0;
@@ -540,35 +602,36 @@ public class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        if (param.scale >= 0) {
+        if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + param.scale);
+                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
                 if (pos >= 0 && pos < finalBuf.length) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = param.length + param.scale - 1;
+            int fi = length + scale - 1;
             int si = indexOfDecimalPoint - 1;
             while (fi >= 0 && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = param.length + param.scale;
+            fi = length + scale;
             si = indexOfDecimalPoint + 1;
-            while (fi < param.length && si < str.length) {
+            while (fi < length && si < str.length) {
                 finalBuf[fi] = str[si];
                 fi++;
                 si++;
             }
         }
 
-        param.storage.memcpy(finalBuf, finalBuf.length);
+        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedTrailingCombined(SqlParam param, byte[] str) {
-        byte[] finalBuf = new byte[param.length];
+    private static void writeSignedTrailingCombined(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
         int valueFirstIndex = isNegative ? 1 : 0;
@@ -577,24 +640,24 @@ public class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        if (param.scale >= 0) {
+        if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + param.scale);
+                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
                 if (pos >= 0 && pos < finalBuf.length) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = param.length + param.scale - 1;
+            int fi = length + scale - 1;
             int si = indexOfDecimalPoint - 1;
             while (fi >= 0 && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = param.length + param.scale;
+            fi = length + scale;
             si = indexOfDecimalPoint + 1;
-            while (fi < param.length && si < str.length) {
+            while (fi < length && si < str.length) {
                 finalBuf[fi] = str[si];
                 fi++;
                 si++;
@@ -605,11 +668,12 @@ public class CobolDataConverter {
             int last = finalBuf.length - 1;
             finalBuf[last] = (byte) ((finalBuf[last] & 0xFF) + 0x40);
         }
-        param.storage.memcpy(finalBuf, finalBuf.length);
+        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedTrailingSeparate(SqlParam param, byte[] str) {
-        byte[] finalBuf = new byte[param.length];
+    private static void writeSignedTrailingSeparate(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
         int valueFirstIndex = isNegative ? 1 : 0;
@@ -617,24 +681,24 @@ public class CobolDataConverter {
         if (indexOfDecimalPoint < 0) {
             indexOfDecimalPoint = str.length;
         }
-        int digitLen = param.length - 1;
+        int digitLen = length - 1;
 
-        if (param.scale >= 0) {
+        if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + digitLen - (indexOfDecimalPoint + param.scale);
+                int pos = i + digitLen - (indexOfDecimalPoint + scale);
                 if (pos >= 0 && pos < digitLen) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = digitLen + param.scale - 1;
+            int fi = digitLen + scale - 1;
             int si = indexOfDecimalPoint - 1;
             while (fi >= 0 && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = digitLen + param.scale;
+            fi = digitLen + scale;
             si = indexOfDecimalPoint + 1;
             while (fi < digitLen && si < str.length) {
                 finalBuf[fi] = str[si];
@@ -643,12 +707,13 @@ public class CobolDataConverter {
             }
         }
 
-        finalBuf[param.length - 1] = isNegative ? (byte) '-' : (byte) '+';
-        param.storage.memcpy(finalBuf, finalBuf.length);
+        finalBuf[length - 1] = isNegative ? (byte) '-' : (byte) '+';
+        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedLeadingSeparate(SqlParam param, byte[] str) {
-        byte[] finalBuf = new byte[param.length];
+    private static void writeSignedLeadingSeparate(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
         int valueFirstIndex = isNegative ? 1 : 0;
@@ -657,24 +722,24 @@ public class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        if (param.scale >= 0) {
+        if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + param.scale);
+                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
                 if (pos >= 0 && pos < finalBuf.length) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = param.length + param.scale;
+            int fi = length + scale;
             int si = indexOfDecimalPoint - 1;
             while (fi >= 1 && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = param.length + param.scale + 1;
+            fi = length + scale + 1;
             si = indexOfDecimalPoint + 1;
-            while (fi < param.length && si < str.length) {
+            while (fi < length && si < str.length) {
                 finalBuf[fi] = str[si];
                 fi++;
                 si++;
@@ -682,11 +747,12 @@ public class CobolDataConverter {
         }
 
         finalBuf[0] = isNegative ? (byte) '-' : (byte) '+';
-        param.storage.memcpy(finalBuf, finalBuf.length);
+        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedLeadingCombined(SqlParam param, byte[] str) {
-        byte[] finalBuf = new byte[param.length];
+    private static void writeSignedLeadingCombined(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
         int valueFirstIndex = isNegative ? 1 : 0;
@@ -695,24 +761,24 @@ public class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        if (param.scale >= 0) {
+        if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + param.scale);
+                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
                 if (pos >= 0 && pos < finalBuf.length) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = param.length + param.scale - 1;
+            int fi = length + scale - 1;
             int si = indexOfDecimalPoint - 1;
             while (fi >= 0 && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = param.length + param.scale;
+            fi = length + scale;
             si = indexOfDecimalPoint + 1;
-            while (fi < param.length && si < str.length) {
+            while (fi < length && si < str.length) {
                 finalBuf[fi] = str[si];
                 fi++;
                 si++;
@@ -722,10 +788,11 @@ public class CobolDataConverter {
         if (isNegative) {
             finalBuf[0] = (byte) ((finalBuf[0] & 0xFF) + 0x40);
         }
-        param.storage.memcpy(finalBuf, finalBuf.length);
+        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeUnsignedPacked(SqlParam param, byte[] str) {
+    private static void writeUnsignedPacked(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
         int strStartIndex = 0;
         if (str.length > 0 && (str[0] == (byte) '+' || str[0] == (byte) '-')) {
             strStartIndex = 1;
@@ -734,13 +801,13 @@ public class CobolDataConverter {
         if (strPointIndex < 0) {
             strPointIndex = str.length;
         }
-        int dataPointIndex = param.length + param.scale;
-        int realDataLength = (param.length / 2) + 1;
+        int dataPointIndex = length + scale;
+        int realDataLength = (length / 2) + 1;
 
-        param.storage.memset((byte) 0, realDataLength);
-        param.storage.setByte(realDataLength - 1, (byte) 0x0F);
+        storage.memset((byte) 0, realDataLength);
+        storage.setByte(realDataLength - 1, (byte) 0x0F);
 
-        for (int i = 0; i < param.length; i++) {
+        for (int i = 0; i < length; i++) {
             int strIndex = i - dataPointIndex + strPointIndex;
             if (strIndex >= strPointIndex) {
                 strIndex += 1;
@@ -751,15 +818,16 @@ public class CobolDataConverter {
             } else {
                 digit = (byte) '0';
             }
-            int[] result = getPackedIndexAndByte(param.length, i, digit);
+            int[] result = getPackedIndexAndByte(length, i, digit);
             int idx = result[0];
             byte byteValue = (byte) result[1];
-            byte b = param.storage.getByte(idx);
-            param.storage.setByte(idx, (byte) (b | byteValue));
+            byte b = storage.getByte(idx);
+            storage.setByte(idx, (byte) (b | byteValue));
         }
     }
 
-    private static void writeSignedPacked(SqlParam param, byte[] str) {
+    private static void writeSignedPacked(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
         int strStartIndex = 0;
         int sign = 1;
         if (str.length > 0 && str[0] == (byte) '-') {
@@ -772,17 +840,17 @@ public class CobolDataConverter {
         if (strPointIndex < 0) {
             strPointIndex = str.length;
         }
-        int dataPointIndex = param.length + param.scale;
-        int realDataLength = (param.length / 2) + 1;
+        int dataPointIndex = length + scale;
+        int realDataLength = (length / 2) + 1;
 
-        param.storage.memset((byte) 0, realDataLength);
+        storage.memset((byte) 0, realDataLength);
         if (sign > 0) {
-            param.storage.setByte(realDataLength - 1, (byte) 0x0C);
+            storage.setByte(realDataLength - 1, (byte) 0x0C);
         } else {
-            param.storage.setByte(realDataLength - 1, (byte) 0x0D);
+            storage.setByte(realDataLength - 1, (byte) 0x0D);
         }
 
-        for (int i = 0; i < param.length; i++) {
+        for (int i = 0; i < length; i++) {
             int strIndex = i - dataPointIndex + strPointIndex;
             if (strIndex >= strPointIndex) {
                 strIndex += 1;
@@ -793,11 +861,11 @@ public class CobolDataConverter {
             } else {
                 digit = (byte) '0';
             }
-            int[] result = getPackedIndexAndByte(param.length, i, digit);
+            int[] result = getPackedIndexAndByte(length, i, digit);
             int idx = result[0];
             byte byteValue = (byte) result[1];
-            byte b = param.storage.getByte(idx);
-            param.storage.setByte(idx, (byte) (b | byteValue));
+            byte b = storage.getByte(idx);
+            storage.setByte(idx, (byte) (b | byteValue));
         }
     }
 
@@ -818,55 +886,57 @@ public class CobolDataConverter {
         }
     }
 
-    private static void writeAlphanumeric(SqlParam param, byte[] str) {
-        if (str.length >= param.length) {
-            param.storage.memcpy(str, param.length);
+    private static void writeAlphanumeric(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
+        if (str.length >= length) {
+            storage.memcpy(str, length);
         } else {
-            param.storage.memset((byte) ' ', param.length);
-            param.storage.memcpy(str, str.length);
+            storage.memset((byte) ' ', length);
+            storage.memcpy(str, str.length);
         }
     }
 
-    private static void writeNational(SqlParam param, byte[] str) {
-        for (int j = 0; j < param.length; j++) {
-            param.storage.setByte(j * 2, (byte) 0x30);
-            param.storage.setByte(j * 2 + 1, (byte) 0x00);
+    private static void writeNational(int length, int scale, CobolDataStorage storage, byte[] str) {
+        for (int j = 0; j < length; j++) {
+            storage.setByte(j * 2, (byte) 0x30);
+            storage.setByte(j * 2 + 1, (byte) 0x00);
         }
-        int copyLen = Math.min(param.length * 2, str.length);
-        param.storage.memcpy(str, copyLen);
+        int copyLen = Math.min(length * 2, str.length);
+        storage.memcpy(str, copyLen);
     }
 
-    private static void writeAlphanumericVarying(SqlParam param, byte[] str) {
+    private static void writeAlphanumericVarying(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
         byte[] lengthBytes = new byte[4];
-        if (str.length >= param.length) {
-            ByteBuffer.wrap(lengthBytes).putInt(param.length);
-            param.storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            param.storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, param.length);
+        if (str.length >= length) {
+            ByteBuffer.wrap(lengthBytes).putInt(length);
+            storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length);
         } else {
             ByteBuffer.wrap(lengthBytes).putInt(str.length);
-            param.storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', param.length);
-            param.storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            param.storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
+            storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', length);
+            storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
         }
     }
 
-    private static void writeJapaneseVarying(SqlParam param, byte[] str) {
+    private static void writeJapaneseVarying(
+            int length, int scale, CobolDataStorage storage, byte[] str) {
         byte[] lengthBytes = new byte[4];
-        if (str.length >= param.length * 2) {
-            ByteBuffer.wrap(lengthBytes).putInt(param.length);
-            param.storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            param.storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, param.length * 2);
+        if (str.length >= length * 2) {
+            ByteBuffer.wrap(lengthBytes).putInt(length);
+            storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length * 2);
         } else {
-            int length = param.length;
             byte[] fillPair = new byte[] {(byte) 0x81, (byte) 0x40};
             for (int i = OCDB_VARCHAR_HEADER_BYTE;
                     i < OCDB_VARCHAR_HEADER_BYTE + length * 2 - 1;
                     i += 2) {
-                param.storage.memcpy(i, fillPair, 2);
+                storage.memcpy(i, fillPair, 2);
             }
             ByteBuffer.wrap(lengthBytes).putInt(str.length / 2);
-            param.storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            param.storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
+            storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
         }
     }
 
@@ -888,13 +958,13 @@ public class CobolDataConverter {
      * @param stmt the JDBC prepared statement
      * @param index the 1-based parameter index
      * @param metaData parameter metadata for type inference (may be null)
-     * @param param the COBOL host variable to bind
+     * @param field the COBOL host variable field to bind
      * @throws SQLException if a JDBC error occurs
      */
     public static void setParam(
-            PreparedStatement stmt, int index, ParameterMetaData metaData, SqlParam param)
+            PreparedStatement stmt, int index, ParameterMetaData metaData, AbstractCobolField field)
             throws SQLException {
-        String str = cobolToString(param);
+        String str = cobolToString(field);
         int paramType;
         try {
             paramType = metaData.getParameterType(index);
