@@ -3849,7 +3849,6 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     break;
 
   case CB_SQL_FETCH_ONE:
-  case CB_SQL_FETCH_OCCURS:
     joutput_prefix();
     joutput("CobolSql.fetchCursor(");
     joutput_exec_sql_field_name("SQLCA");
@@ -3859,6 +3858,15 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
       joutput_sql_field_ref(hv);
     }
     joutput(");\n");
+    break;
+
+  case CB_SQL_FETCH_OCCURS:
+    joutput_prefix();
+    joutput("CobolSql.fetchCursorOccurs(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\", ", excp_current_program_id, p->cursor_name);
+    joutput_sql_field_array(p->res_host_list);
+    joutput(", %d, %d);\n", p->occurs_size, p->occurs_max);
     break;
 
   case CB_SQL_PREPARE:
