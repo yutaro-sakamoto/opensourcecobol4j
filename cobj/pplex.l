@@ -115,6 +115,8 @@ static int esql_declare_line_len = 0;
 
 static char *esql_include_fname = NULL;
 static int esql_include_return_state = 0; /* 0=INITIAL, 1=ESQL_DECLARE_STATE */
+static int esql_passthru_in_quote = 0;
+static int esql_passthru_active = 0;
 
 static void process_declare_line(const char *line) {
 	char *upper_line;
@@ -281,6 +283,8 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 "EXEC"({ZENSPC}|[ ])+"SQL" {
 	/* Pass through EXEC SQL blocks to the main scanner */
 	ppecho ("EXEC SQL");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 1;
 	BEGIN ESQL_PASSTHRU_STATE;
 }
 
@@ -369,6 +373,8 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 		esql_declare_line_len = 0;
 	}
 	ppecho ("EXEC SQL");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 1;
 	BEGIN ESQL_PASSTHRU_STATE;
   }
   \n {
@@ -410,17 +416,30 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 <ESQL_PASSTHRU_STATE>{
   "END-EXEC"({ZENSPC}|[ ])*"." {
 	ppecho (" END-EXEC.");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 0;
 	BEGIN INITIAL;
   }
   "END-EXEC" {
 	ppecho (" END-EXEC");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 0;
 	BEGIN INITIAL;
   }
   \n {
-	ppecho (" ");
+	if (!esql_passthru_in_quote) {
+		ppecho (" ");
+	}
 	cb_source_line++;
   }
+  "''" {
+	/* Escaped single quote inside SQL literal: stay in quote */
+	ppecho ("''");
+  }
   . {
+	if (yytext[0] == '\'') {
+		esql_passthru_in_quote = !esql_passthru_in_quote;
+	}
 	ppecho (yytext);
   }
 }
@@ -1410,8 +1429,10 @@ start:
 		}
 	} else {
 		/* normal line */
-		quotation_mark = 0;
-		consecutive_quotation = 0;
+		if (!esql_passthru_active) {
+			quotation_mark = 0;
+			consecutive_quotation = 0;
+		}
 	}
 
 	/* check if string literal is to be continued */

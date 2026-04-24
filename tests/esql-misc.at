@@ -5,5 +5,4 @@ m4_include([include.at])
 dnl TODO: fetch-sqlca requires SQLERRD(3) row count and cursor fetch fixes
 dnl m4_include([fetch-sqlca.at])
 m4_include([compile.at])
-dnl TODO: sql-convert multi-line SQL literal has newline-to-space issue
-dnl m4_include([sql-convert.at])
+m4_include([sql-convert.at])
