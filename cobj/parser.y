@@ -19,7 +19,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-%expect 147
+%expect 148
 
 %defines
 %verbose
@@ -2627,6 +2627,11 @@ exec_sql_data_statement:
 	/* Silently ignore these in data division */
 	(void)sql_text;
   }
+| EXEC_SQL_STATEMENT '.'
+  {
+	const char *sql_text = (const char *)CB_LITERAL ($1)->data;
+	(void)sql_text;
+  }
 ;
 
 data_description:
@@ -2807,6 +2812,7 @@ data_description_clause:
 | value_clause
 | renames_clause
 | any_length_clause
+| varying_clause
 | error
 ;
 
@@ -3230,6 +3236,15 @@ any_length_clause:
 	} else {
 		current_field->flag_any_length = 1;
 	}
+  }
+;
+
+/* VARYING clause */
+
+varying_clause:
+  VARYING
+  {
+	current_field->flag_varying = 1;
   }
 ;
 

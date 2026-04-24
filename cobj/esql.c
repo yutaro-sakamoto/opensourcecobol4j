@@ -79,6 +79,17 @@ static void resolve_host_var_type(struct cb_sql_host_var *hv) {
   hv->length = f->size;
   hv->scale = f->pic ? f->pic->scale : 0;
 
+  /* VARYING field: detect from flag */
+  if (f->flag_varying) {
+    struct cb_field *arr = f->children ? f->children->sister : NULL;
+    if (arr && arr->pic && arr->pic->category == CB_CATEGORY_NATIONAL) {
+      hv->hvar_type = HVARTYPE_JAPANESE_VARYING;
+    } else {
+      hv->hvar_type = HVARTYPE_ALPHANUMERIC_VARYING;
+    }
+    return;
+  }
+
   /* Determine HVARTYPE based on usage and picture */
   switch (f->usage) {
   case CB_USAGE_PACKED:
@@ -111,8 +122,24 @@ static void resolve_host_var_type(struct cb_sql_host_var *hv) {
   case CB_USAGE_DISPLAY:
   default:
     if (f->children) {
-      /* GROUP item */
-      hv->hvar_type = HVARTYPE_GROUP;
+      /* Check for VARYING pattern: GROUP with LEN (COMP-5) + ARR (X/N) */
+      struct cb_field *child1 = f->children;
+      struct cb_field *child2 = child1 ? child1->sister : NULL;
+      if (child1 && child2 && !child2->sister &&
+          (child1->usage == CB_USAGE_BINARY ||
+           child1->usage == CB_USAGE_COMP_5) &&
+          child2->pic) {
+        if (child2->pic->category == CB_CATEGORY_ALPHANUMERIC ||
+            child2->pic->category == CB_CATEGORY_ALPHABETIC) {
+          hv->hvar_type = HVARTYPE_ALPHANUMERIC_VARYING;
+        } else if (child2->pic->category == CB_CATEGORY_NATIONAL) {
+          hv->hvar_type = HVARTYPE_JAPANESE_VARYING;
+        } else {
+          hv->hvar_type = HVARTYPE_GROUP;
+        }
+      } else {
+        hv->hvar_type = HVARTYPE_GROUP;
+      }
     } else if (f->pic) {
       if (f->pic->category == CB_CATEGORY_NUMERIC ||
           f->pic->category == CB_CATEGORY_NUMERIC_EDITED) {

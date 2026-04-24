@@ -107,6 +107,17 @@ public final class CobolDataConverter {
             case CobolFieldAttribute.COB_TYPE_NATIONAL:
                 return TYPE_NATIONAL;
             case CobolFieldAttribute.COB_TYPE_GROUP:
+                if (field.getSize() > OCDB_VARCHAR_HEADER_BYTE && field.getDataStorage() != null) {
+                    int lenVal =
+                            java.nio.ByteBuffer.wrap(
+                                            field.getDataStorage()
+                                                    .getByteArray(0, OCDB_VARCHAR_HEADER_BYTE))
+                                    .getInt();
+                    int dataSize = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
+                    if (lenVal >= 0 && lenVal <= dataSize) {
+                        return TYPE_ALPHANUMERIC_VARYING;
+                    }
+                }
                 return TYPE_GROUP;
             default:
                 return TYPE_ALPHABETIC;
@@ -971,14 +982,18 @@ public final class CobolDataConverter {
 
     private static void writeAlphanumericVarying(
             int length, int scale, CobolDataStorage storage, byte[] str) {
+        int dataLen = length - OCDB_VARCHAR_HEADER_BYTE;
+        if (dataLen <= 0) {
+            return;
+        }
         byte[] lengthBytes = new byte[4];
-        if (str.length >= length) {
-            ByteBuffer.wrap(lengthBytes).putInt(length);
+        if (str.length >= dataLen) {
+            ByteBuffer.wrap(lengthBytes).putInt(dataLen);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, dataLen);
         } else {
             ByteBuffer.wrap(lengthBytes).putInt(str.length);
-            storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', length);
+            storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', dataLen);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
             storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
         }

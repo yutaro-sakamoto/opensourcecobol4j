@@ -624,7 +624,8 @@ struct cb_field {
   unsigned int flag_is_pdiv_parm : 1;  /* is PROC DIV USING */
   unsigned int flag_local_alloced : 1; /* LOCAL storage is allocated */
   unsigned int flag_no_init : 1;       /* no initialize unless used */
-  unsigned int flag_spare : 5;
+  unsigned int flag_varying : 1;       /* VARYING */
+  unsigned int flag_spare : 4;
 };
 
 #define CB_FIELD(x) (CB_TREE_CAST(CB_TAG_FIELD, struct cb_field, x))
