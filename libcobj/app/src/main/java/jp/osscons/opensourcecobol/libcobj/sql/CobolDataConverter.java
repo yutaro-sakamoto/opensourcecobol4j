@@ -107,16 +107,11 @@ public final class CobolDataConverter {
             case CobolFieldAttribute.COB_TYPE_NATIONAL:
                 return TYPE_NATIONAL;
             case CobolFieldAttribute.COB_TYPE_GROUP:
-                if (field.getSize() > OCDB_VARCHAR_HEADER_BYTE && field.getDataStorage() != null) {
-                    int lenVal =
-                            java.nio.ByteBuffer.wrap(
-                                            field.getDataStorage()
-                                                    .getByteArray(0, OCDB_VARCHAR_HEADER_BYTE))
-                                    .getInt();
-                    int dataSize = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
-                    if (lenVal >= 0 && lenVal <= dataSize) {
-                        return TYPE_ALPHANUMERIC_VARYING;
+                if (attr.isFlagVarying()) {
+                    if ((attr.getFlags() & CobolFieldAttribute.COB_FLAG_NATIONAL_VARYING) != 0) {
+                        return TYPE_JAPANESE_VARYING;
                     }
+                    return TYPE_ALPHANUMERIC_VARYING;
                 }
                 return TYPE_GROUP;
             default:
@@ -141,6 +136,11 @@ public final class CobolDataConverter {
         int scale = Math.min(0, -field.getAttribute().getScale());
         CobolDataStorage storage = field.getDataStorage();
         int hvarType = resolveHvarType(field);
+
+        // For VARYING, length = ARR size (total - 4 byte header)
+        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+            length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
+        }
 
         // For packed decimal, use digit count instead of byte size.
         // Exclude PP digits (negative scale) since ocesql didn't count them.
@@ -576,6 +576,10 @@ public final class CobolDataConverter {
         // V99 → getScale()=2 → power=-2; PP → getScale()=-2 → power=0 (PP ignored)
         int scale = Math.min(0, -field.getAttribute().getScale());
         int hvarType = resolveHvarType(field);
+        // For VARYING, length = ARR size
+        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+            length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
+        }
         // For packed decimal, use digit count (excluding PP) instead of byte size
         if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
             length = field.getAttribute().getDigits();
@@ -606,6 +610,10 @@ public final class CobolDataConverter {
             if (rawScale < 0) {
                 length += rawScale;
             }
+        }
+        // For VARYING, length = ARR size (total - 4 byte header)
+        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+            length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
         stringToCobolInternal(
                 hvarType,

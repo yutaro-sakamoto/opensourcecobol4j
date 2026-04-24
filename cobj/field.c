@@ -1023,6 +1023,42 @@ void cb_validate_field(struct cb_field *f) {
     cb_validate_field(arr_field);
   }
 
+  /* Auto-detect VARYING pattern from pplex expansion (recursive) */
+  {
+    struct cb_field *child;
+    for (child = f->children; child; child = child->sister) {
+      if (!child->flag_varying && child->children && !child->pic) {
+        struct cb_field *c1 = child->children;
+        struct cb_field *c2 = c1 ? c1->sister : NULL;
+        if (c1 && c2 && !c2->sister &&
+            (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
+            c2->usage == CB_USAGE_DISPLAY && c2->pic) {
+          size_t nlen = strlen(child->name);
+          if (strlen(c1->name) == nlen + 4 &&
+              strncasecmp(c1->name, child->name, nlen) == 0 &&
+              strcasecmp(c1->name + nlen, "-LEN") == 0) {
+            child->flag_varying = 1;
+          }
+        }
+      }
+    }
+    /* Also check the field itself (for 01-level VARYING) */
+    if (!f->flag_varying && f->children && !f->pic) {
+      struct cb_field *c1 = f->children;
+      struct cb_field *c2 = c1 ? c1->sister : NULL;
+      if (c1 && c2 && !c2->sister &&
+          (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
+          c2->usage == CB_USAGE_DISPLAY && c2->pic) {
+        size_t nlen = strlen(f->name);
+        if (strlen(c1->name) == nlen + 4 &&
+            strncasecmp(c1->name, f->name, nlen) == 0 &&
+            strcasecmp(c1->name + nlen, "-LEN") == 0) {
+          f->flag_varying = 1;
+        }
+      }
+    }
+  }
+
   /* setup parameters */
   if (f->storage == CB_STORAGE_LOCAL || f->storage == CB_STORAGE_LINKAGE ||
       f->flag_item_based) {

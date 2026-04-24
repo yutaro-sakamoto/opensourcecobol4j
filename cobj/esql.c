@@ -129,6 +129,8 @@ static void resolve_host_var_type(struct cb_sql_host_var *hv) {
           (child1->usage == CB_USAGE_BINARY ||
            child1->usage == CB_USAGE_COMP_5) &&
           child2->pic) {
+        /* Mark as VARYING so CobolDataConverter can detect it */
+        f->flag_varying = 1;
         if (child2->pic->category == CB_CATEGORY_ALPHANUMERIC ||
             child2->pic->category == CB_CATEGORY_ALPHABETIC) {
           hv->hvar_type = HVARTYPE_ALPHANUMERIC_VARYING;
