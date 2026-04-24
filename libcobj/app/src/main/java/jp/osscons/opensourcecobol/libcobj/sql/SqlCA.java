@@ -293,6 +293,8 @@ public final class SqlCA {
                 return ECPG_EMPTY;
             case "08001":
             case "08003":
+            case "28P01":
+            case "28000":
                 return ECPG_CONNECT;
             case "08007":
                 return ECPG_TRANS;
