@@ -6,5 +6,4 @@ m4_include([comp3.at])
 m4_include([comp3_signed.at])
 m4_include([alphanumeric.at])
 m4_include([japanese.at])
-dnl TODO: varying requires VARYING structure expansion in compiler
-dnl m4_include([varying.at])
+m4_include([varying.at])
