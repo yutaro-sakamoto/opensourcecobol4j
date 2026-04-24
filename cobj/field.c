@@ -1029,8 +1029,8 @@ void cb_validate_field(struct cb_field *f) {
     for (child = f->children; child; child = child->sister) {
       if (!child->flag_varying && child->children && !child->pic) {
         struct cb_field *c1 = child->children;
-        struct cb_field *c2 = c1 ? c1->sister : NULL;
-        if (c1 && c2 && !c2->sister &&
+        struct cb_field *c2 = c1->sister;
+        if (c2 && !c2->sister &&
             (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
             c2->usage == CB_USAGE_DISPLAY && c2->pic) {
           size_t nlen = strlen(child->name);
@@ -1045,8 +1045,8 @@ void cb_validate_field(struct cb_field *f) {
     /* Also check the field itself (for 01-level VARYING) */
     if (!f->flag_varying && f->children && !f->pic) {
       struct cb_field *c1 = f->children;
-      struct cb_field *c2 = c1 ? c1->sister : NULL;
-      if (c1 && c2 && !c2->sister &&
+      struct cb_field *c2 = c1->sister;
+      if (c2 && !c2->sister &&
           (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
           c2->usage == CB_USAGE_DISPLAY && c2->pic) {
         size_t nlen = strlen(f->name);

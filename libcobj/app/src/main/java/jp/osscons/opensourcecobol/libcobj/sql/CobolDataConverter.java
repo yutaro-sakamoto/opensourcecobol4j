@@ -990,18 +990,17 @@ public final class CobolDataConverter {
 
     private static void writeAlphanumericVarying(
             int length, int scale, CobolDataStorage storage, byte[] str) {
-        int dataLen = length - OCDB_VARCHAR_HEADER_BYTE;
-        if (dataLen <= 0) {
+        if (length <= 0) {
             return;
         }
         byte[] lengthBytes = new byte[4];
-        if (str.length >= dataLen) {
-            ByteBuffer.wrap(lengthBytes).putInt(dataLen);
+        if (str.length >= length) {
+            ByteBuffer.wrap(lengthBytes).putInt(length);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, dataLen);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length);
         } else {
             ByteBuffer.wrap(lengthBytes).putInt(str.length);
-            storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', dataLen);
+            storage.memset(OCDB_VARCHAR_HEADER_BYTE, (byte) ' ', length);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
             storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
         }
@@ -1010,14 +1009,14 @@ public final class CobolDataConverter {
     private static void writeJapaneseVarying(
             int length, int scale, CobolDataStorage storage, byte[] str) {
         byte[] lengthBytes = new byte[4];
-        if (str.length >= length * 2) {
-            ByteBuffer.wrap(lengthBytes).putInt(length);
+        if (str.length >= length) {
+            ByteBuffer.wrap(lengthBytes).putInt(length / 2);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
-            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length * 2);
+            storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length);
         } else {
             byte[] fillPair = new byte[] {(byte) 0x81, (byte) 0x40};
             for (int i = OCDB_VARCHAR_HEADER_BYTE;
-                    i < OCDB_VARCHAR_HEADER_BYTE + length * 2 - 1;
+                    i < OCDB_VARCHAR_HEADER_BYTE + length - 1;
                     i += 2) {
                 storage.memcpy(i, fillPair, 2);
             }
