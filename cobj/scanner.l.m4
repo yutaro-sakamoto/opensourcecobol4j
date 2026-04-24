@@ -69,6 +69,7 @@ struct cb_unget_buffer		*unget_buffer = NULL;
 static char			*esql_buff = NULL;
 static size_t			esql_buff_len;
 static size_t			esql_buff_capacity;
+static int			esql_in_quote = 0;
 
 static int read_literal (int mark, enum cb_category);
 static int scan_x (char *text);
@@ -127,6 +128,7 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
   "END-EXEC" {
 	/* End of EXEC SQL block */
 	BEGIN INITIAL;
+	esql_in_quote = 0;
 	esql_buff[esql_buff_len] = '\0';
 	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
 	SET_LOCATION (yylval);
@@ -134,15 +136,9 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
   }
   \n {
 	cb_source_line++;
-	if (esql_buff_len + 2 >= esql_buff_capacity) {
-		esql_buff_capacity *= 2;
-		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
-	}
-	esql_buff[esql_buff_len++] = ' ';
-  }
-  [ \t]+ {
-	/* Collapse whitespace to single space */
-	if (esql_buff_len > 0 && esql_buff[esql_buff_len - 1] != ' ') {
+	if (esql_in_quote) {
+		/* Inside string literal: don't add space for newline */
+	} else {
 		if (esql_buff_len + 2 >= esql_buff_capacity) {
 			esql_buff_capacity *= 2;
 			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
@@ -150,10 +146,38 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 		esql_buff[esql_buff_len++] = ' ';
 	}
   }
+  [ \t]+ {
+	if (esql_in_quote) {
+		/* Inside string literal: preserve whitespace as-is */
+		size_t len = strlen(yytext);
+		while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+			esql_buff_capacity *= 2;
+			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+		}
+		memcpy(esql_buff + esql_buff_len, yytext, len);
+		esql_buff_len += len;
+	} else {
+		/* Outside: collapse whitespace to single space */
+		if (esql_buff_len > 0 && esql_buff[esql_buff_len - 1] != ' ') {
+			if (esql_buff_len + 2 >= esql_buff_capacity) {
+				esql_buff_capacity *= 2;
+				esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+			}
+			esql_buff[esql_buff_len++] = ' ';
+		}
+	}
+  }
   . {
 	if (esql_buff_len + 2 >= esql_buff_capacity) {
 		esql_buff_capacity *= 2;
 		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	if (yytext[0] == '\'') {
+		if (esql_in_quote && esql_buff_len > 0 && esql_buff[esql_buff_len - 1] == '\'') {
+			/* Escaped quote ('') inside literal: stay in quote */
+		} else {
+			esql_in_quote = !esql_in_quote;
+		}
 	}
 	esql_buff[esql_buff_len++] = yytext[0];
   }
@@ -353,6 +377,7 @@ H\"[^\"\n]*\" {
 	}
 	esql_buff_len = 0;
 	esql_buff[0] = '\0';
+	esql_in_quote = 0;
 	BEGIN ESQL_STATE;
 }
 
