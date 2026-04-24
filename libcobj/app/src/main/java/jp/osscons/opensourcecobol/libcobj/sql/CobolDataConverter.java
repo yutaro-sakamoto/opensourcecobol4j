@@ -130,9 +130,7 @@ public final class CobolDataConverter {
             return "";
         }
         int length = field.getSize();
-        // AbstractCobolField scale is positive (e.g. 2 for V99),
-        // but internal conversion uses negative power (e.g. -2)
-        // V99 → getScale()=2 → power=-2; PP → getScale()=-2 → power=0 (PP ignored)
+        // V99 → getScale()=2 → scale=-2; PP → getScale()=-2 → scale=0 (for non-packed)
         int scale = Math.min(0, -field.getAttribute().getScale());
         CobolDataStorage storage = field.getDataStorage();
         int hvarType = resolveHvarType(field);
@@ -143,10 +141,12 @@ public final class CobolDataConverter {
         }
 
         // For packed decimal, use digit count instead of byte size.
-        // Exclude PP digits (negative scale) since ocesql didn't count them.
+        // Exclude PP digits (negative scale) since they are not physically stored.
         int rawScale = field.getAttribute().getScale();
         int packedLength = field.getAttribute().getDigits();
+        int ppCount = 0;
         if (rawScale < 0) {
+            ppCount = -rawScale;
             packedLength += rawScale; // subtract PP digits (rawScale is negative)
         }
 
@@ -162,9 +162,10 @@ public final class CobolDataConverter {
             case TYPE_SIGNED_LEADING_COMBINED:
                 return readSignedLeadingCombined(length, scale, storage);
             case TYPE_UNSIGNED_PACKED:
-                return readUnsignedPacked(packedLength, scale, storage);
+                return appendTrailingZeros(
+                        readUnsignedPacked(packedLength, scale, storage), ppCount);
             case TYPE_SIGNED_PACKED:
-                return readSignedPacked(packedLength, scale, storage);
+                return appendTrailingZeros(readSignedPacked(packedLength, scale, storage), ppCount);
             case TYPE_UNSIGNED_BINARY_NATIVE:
                 return readUnsignedBinaryNative(length, scale, storage);
             case TYPE_SIGNED_BINARY_NATIVE:
@@ -350,6 +351,20 @@ public final class CobolDataConverter {
         boolean isNegative = (lastByte & 0x0F) == 0x0D;
         byte[] digits = unpackBcd(storage, length, len);
         return formatPackedResult(digits, length, scale, isNegative);
+    }
+
+    private static String appendTrailingZeros(String value, int count) {
+        if (count <= 0) {
+            return value;
+        }
+        // Insert zeros before the sign if negative, otherwise append
+        boolean neg = value.startsWith("-");
+        String abs = neg ? value.substring(1) : value;
+        StringBuilder sb = new StringBuilder(abs);
+        for (int i = 0; i < count; i++) {
+            sb.append('0');
+        }
+        return neg ? "-" + sb.toString() : sb.toString();
     }
 
     private static byte[] unpackBcd(CobolDataStorage storage, int length, int len) {
@@ -573,7 +588,6 @@ public final class CobolDataConverter {
         if (field == null || storage == null || resultData == null) {
             return;
         }
-        // V99 → getScale()=2 → power=-2; PP → getScale()=-2 → power=0 (PP ignored)
         int scale = Math.min(0, -field.getAttribute().getScale());
         int hvarType = resolveHvarType(field);
         // For VARYING, length = ARR size
@@ -582,10 +596,12 @@ public final class CobolDataConverter {
         }
         // For packed decimal, use digit count (excluding PP) instead of byte size
         if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
-            length = field.getAttribute().getDigits();
             int rawScale = field.getAttribute().getScale();
+            length = field.getAttribute().getDigits();
             if (rawScale < 0) {
                 length += rawScale;
+                // PP: strip trailing zeros from SQL result, use positive scale for alignment
+                resultData = stripTrailingDigits(resultData, -rawScale);
             }
         }
         stringToCobolInternal(hvarType, length, scale, storage, resultData);
@@ -605,10 +621,12 @@ public final class CobolDataConverter {
         int length = field.getSize();
         // For packed decimal, use digit count (excluding PP) instead of byte size
         if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
-            length = field.getAttribute().getDigits();
             int rawScale = field.getAttribute().getScale();
+            length = field.getAttribute().getDigits();
             if (rawScale < 0) {
                 length += rawScale;
+                // PP: strip trailing zeros from SQL result
+                resultData = stripTrailingDigits(resultData, -rawScale);
             }
         }
         // For VARYING, length = ARR size (total - 4 byte header)
@@ -1024,6 +1042,43 @@ public final class CobolDataConverter {
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
             storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, str.length);
         }
+    }
+
+    /**
+     * Strip trailing digits from a numeric string for PP (scaling position) fields. For example,
+     * "999900" with count=2 becomes "9999". Handles optional leading sign.
+     */
+    private static byte[] stripTrailingDigits(byte[] data, int count) {
+        if (count <= 0 || data.length == 0) {
+            return data;
+        }
+        // Find the end of numeric content (skip sign at front if present)
+        int start = 0;
+        if (data[0] == (byte) '-' || data[0] == (byte) '+') {
+            start = 1;
+        }
+        // Find decimal point position
+        int dotPos = indexOf(data, (byte) '.');
+        int endPos = dotPos >= 0 ? dotPos : data.length;
+        // Strip 'count' digits from the integer part (before decimal)
+        int intDigits = endPos - start;
+        if (count >= intDigits) {
+            // All integer digits would be stripped; return "0" with sign
+            if (start > 0) {
+                return new byte[] {data[0], (byte) '0'};
+            }
+            return new byte[] {(byte) '0'};
+        }
+        int newEnd = endPos - count;
+        byte[] result = new byte[start + (newEnd - start) + (data.length - endPos)];
+        if (start > 0) {
+            result[0] = data[0];
+        }
+        System.arraycopy(data, start, result, start, newEnd - start);
+        if (dotPos >= 0) {
+            System.arraycopy(data, endPos, result, newEnd, data.length - endPos);
+        }
+        return result;
     }
 
     private static int indexOf(byte[] arr, byte target) {
