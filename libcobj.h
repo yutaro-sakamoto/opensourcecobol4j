@@ -415,6 +415,8 @@ extern "C" {
 #define COB_FLAG_BINARY_SWAP		0x20
 #define COB_FLAG_REAL_BINARY		0x40
 #define COB_FLAG_IS_POINTER		0x80
+#define COB_FLAG_VARYING		0x100
+#define COB_FLAG_NATIONAL_VARYING	0x200
 
 #define COB_FIELD_HAVE_SIGN(f)		((f)->attr->flags & COB_FLAG_HAVE_SIGN)
 #define COB_FIELD_SIGN_SEPARATE(f)	((f)->attr->flags & COB_FLAG_SIGN_SEPARATE)

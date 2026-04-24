@@ -1161,11 +1161,20 @@ static void joutput_attr(cb_tree x) {
       switch (type) {
       case COB_TYPE_GROUP:
       case COB_TYPE_ALPHANUMERIC:
+        flags = 0;
         if (f->flag_justified) {
-          id = lookup_attr(type, 0, 0, COB_FLAG_JUSTIFIED, NULL, 0);
-        } else {
-          id = lookup_attr(type, 0, 0, 0, NULL, 0);
+          flags |= COB_FLAG_JUSTIFIED;
         }
+        if (f->flag_varying) {
+          flags |= COB_FLAG_VARYING;
+          /* Check if the ARR child is NATIONAL */
+          struct cb_field *arr_child = f->children ? f->children->sister : NULL;
+          if (arr_child && arr_child->pic &&
+              arr_child->pic->category == CB_CATEGORY_NATIONAL) {
+            flags |= COB_FLAG_NATIONAL_VARYING;
+          }
+        }
+        id = lookup_attr(type, 0, 0, flags, NULL, 0);
         break;
       default:
         if (f->pic->have_sign) {
@@ -5560,6 +5569,8 @@ static void joutput_flags(int flags) {
   HANDLE_FLAG(COB_FLAG_BINARY_SWAP)
   HANDLE_FLAG(COB_FLAG_REAL_BINARY)
   HANDLE_FLAG(COB_FLAG_IS_POINTER)
+  HANDLE_FLAG(COB_FLAG_VARYING)
+  HANDLE_FLAG(COB_FLAG_NATIONAL_VARYING)
 
   if (indent_increased) {
     joutput_indent_level -= 2;
