@@ -614,8 +614,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 	(yy_hold_char) = *yy_cp; \
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
-#define YY_NUM_RULES 115
-#define YY_END_OF_BUFFER 116
+#define YY_NUM_RULES 116
+#define YY_END_OF_BUFFER 117
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -626,84 +626,84 @@ struct yy_trans_info
 static const flex_int16_t yy_accept[806] =
     {   0,
         0,    0,   16,   16,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,  116,  114,   89,   90,
-      114,  114,   92,   93,  114,  114,  114,  111,  110,  111,
-      114,  111,  111,  111,  111,  111,  111,  111,  111,  111,
-      111,  111,  111,  114,  114,   90,   12,   13,  109,  114,
+        0,    0,    0,    0,    0,    0,  117,  115,   90,   91,
+      115,  115,   93,   94,  115,  115,  115,  112,  111,  112,
+      115,  112,  112,  112,  112,  112,  112,  112,  112,  112,
+      112,  112,  112,  115,  115,   91,   12,   13,  110,  115,
        16,   15,   16,   12,   13,   48,   24,   25,   48,   48,
        28,   29,   48,   48,   48,   45,   26,   45,   48,   48,
        45,   45,   45,   45,   45,   45,   45,   45,   45,   45,
        45,   48,   48,   12,   13,   55,   49,   50,   55,   55,
        55,   55,   55,   52,   55,   52,   55,   55,   52,   55,
 
-       55,   12,   13,   76,   71,   72,   76,   76,   76,   76,
-       76,   73,   76,   73,   76,   73,   73,   73,   73,   76,
-       76,   12,   13,   67,   66,   67,   67,   12,   13,  115,
-       61,  115,   63,   63,  115,  115,   12,   13,   60,   59,
-       60,   60,   12,   13,   90,    0,    0,  113,    0,    1,
-        0,  112,   89,   91,    0,  111,  111,    0,    0,   90,
-        0,  111,  111,  111,  111,  111,  111,  111,  111,  111,
-      111,  111,  111,  111,  111,  111,  111,  111,  111,  111,
-      111,  111,  111,  111,   90,  109,    0,   12,    1,   13,
-      109,   16,    1,   12,    1,   13,   25,    0,    0,   47,
+       55,   12,   13,   77,   72,   73,   77,   77,   77,   77,
+       77,   74,   77,   74,   77,   74,   74,   74,   74,   77,
+       77,   12,   13,   68,   67,   68,   68,   12,   13,  116,
+       62,  116,   64,   64,  116,  116,   12,   13,   61,   60,
+       61,   61,   12,   13,   91,    0,    0,  114,    0,    1,
+        0,  113,   90,   92,    0,  112,  112,    0,    0,   91,
+        0,  112,  112,  112,  112,  112,  112,  112,  112,  112,
+      112,  112,  112,  112,  112,  112,  112,  112,  112,  112,
+      112,  112,  112,  112,   91,  110,    0,   12,    1,   13,
+      110,   16,    1,   12,    1,   13,   25,    0,    0,   47,
 
         0,    0,   46,   24,   45,   45,    0,    0,   27,   40,
        30,   31,   45,   45,   32,   45,   45,   45,   45,   50,
         0,    0,   54,    0,    0,   53,   49,   52,   52,    0,
-        0,   51,   72,    0,    0,   75,    0,    0,   74,   71,
-       73,   73,    0,    0,   73,   73,   73,    0,   61,   63,
-        0,    0,   63,    0,    1,  111,  111,    0,    0,  111,
-      111,  111,  111,  111,  111,  111,  111,  111,  111,  111,
-        0,  111,    0,  111,  111,    0,    0,  111,  111,  111,
-      111,  111,  111,  111,  111,    0,    0,  111,    1,    1,
+        0,   51,   73,    0,    0,   76,    0,    0,   75,   72,
+       74,   74,    0,    0,   74,   74,   74,    0,   62,   64,
+        0,    0,   64,    0,    1,  112,  112,    0,    0,  112,
+      112,  112,  112,  112,  112,  112,  112,  112,  112,  112,
+        0,  112,    0,  112,  112,    0,    0,  112,  112,  112,
+      112,  112,  112,  112,  112,    0,    0,  112,    1,    1,
         1,   45,   45,   33,   45,   45,   45,   45,   45,   45,
 
-       73,   73,   73,    0,   63,    0,    0,    0,    0,    0,
-      105,    0,  111,  111,   21,  111,  111,  111,    0,    0,
-      111,  111,  111,  111,  111,    0,    0,  111,  111,  111,
-       96,    0,  111,  111,  111,  111,  111,  111,  111,  111,
-      111,  111,  108,    0,  111,   45,   45,   45,   45,   45,
-       45,   45,   45,   68,   73,   73,    0,   63,    0,   98,
-        0,   97,    0,  111,  111,    0,    0,  111,   85,    0,
-        0,    0,  111,    0,    0,  111,    0,    0,  111,    0,
-      111,  111,  111,    0,    0,  111,  111,  111,  111,  111,
-      111,   86,   87,   88,  111,    0,    0,  111,   45,   45,
+       74,   74,   74,    0,   64,    0,    0,    0,    0,    0,
+      106,    0,  112,  112,   21,  112,  112,  112,    0,    0,
+      112,  112,  112,  112,  112,    0,    0,  112,  112,  112,
+       97,    0,  112,  112,  112,  112,  112,  112,  112,  112,
+      112,  112,  109,    0,  112,   45,   45,   45,   45,   45,
+       45,   45,   45,   69,   74,   74,    0,   64,    0,   99,
+        0,   98,    0,  112,  112,    0,    0,  112,   86,    0,
+        0,    0,  112,    0,    0,  112,    0,    0,  112,    0,
+      112,  112,  112,    0,    0,  112,  112,  112,  112,  112,
+      112,   87,   88,   89,  112,    0,    0,  112,   45,   45,
 
-       45,   45,   45,   45,   45,   45,   73,   73,    0,   63,
-        0,    0,   78,  111,    0,    0,  111,  111,  111,   85,
-        0,    0,  111,    0,    0,    0,    0,  107,    0,  111,
-        0,  111,  111,  111,  106,    0,  111,  111,  111,  111,
-      111,  111,  111,   86,   87,   88,  111,  100,    0,    0,
-      111,    0,   45,   45,   41,   45,   45,   42,   45,   45,
-       73,   73,    0,   63,    0,  111,    0,  111,  111,  111,
-        0,    0,  111,    0,  101,    0,  111,    0,  111,   22,
-      111,  111,   14,  111,  111,   83,   23,  111,  111,   94,
+       45,   45,   45,   45,   45,   45,   74,   74,    0,   64,
+        0,    0,   79,  112,    0,    0,  112,  112,  112,   86,
+        0,    0,  112,    0,    0,    0,    0,  108,    0,  112,
+        0,  112,  112,  112,  107,    0,  112,  112,  112,  112,
+      112,  112,  112,   87,   88,   89,  112,  101,    0,    0,
+      112,    0,   45,   45,   41,   45,   45,   42,   45,   45,
+       74,   74,    0,   64,    0,  112,    0,  112,  112,  112,
+        0,    0,  112,    0,  102,    0,  112,    0,  112,   22,
+      112,  112,   14,  112,  112,   84,   23,  112,  112,   95,
         0,    0,    0,   39,   37,   45,   45,   45,   45,   45,
 
-       45,   69,   70,    0,   63,    0,  111,    0,  111,  111,
-      111,    0,    0,  111,   20,  111,    0,  111,  111,  111,
-      111,  111,   84,    0,    0,   95,    0,   45,   35,   45,
-       45,   34,   38,   65,   62,   58,    0,    0,    0,  111,
-      111,  111,    0,    0,  111,    0,    0,    0,  111,    0,
-        0,  111,  111,  111,  111,   77,   99,    0,   43,   36,
-       44,    0,   64,    0,   62,   62,    0,    0,    0,  102,
-        0,    0,    0,    0,  111,  111,  111,    0,    0,  111,
-        0,    0,    0,    0,  111,    0,  111,  111,    0,    0,
-        5,    0,    0,    0,    0,    0,    0,  111,  111,  111,
+       45,   70,   71,    0,   64,    0,  112,    0,  112,  112,
+      112,    0,    0,  112,   20,  112,    0,  112,  112,  112,
+      112,  112,   85,    0,    0,   96,    0,   45,   35,   45,
+       45,   34,   38,   66,   63,   59,    0,    0,    0,  112,
+      112,  112,    0,    0,  112,    0,    0,    0,  112,    0,
+        0,  112,  112,  112,  112,   78,  100,    0,   43,   36,
+       44,    0,   65,    0,   63,   63,    0,    0,    0,  103,
+        0,    0,    0,    0,  112,  112,  112,    0,    0,  112,
+        0,    0,    0,    0,  112,    0,  112,  112,    0,    0,
+        5,    0,    0,    0,    0,    0,    0,  112,  112,  112,
 
-        0,   10,  111,    0,    0,    0,    6,    0,  111,  111,
-        0,    0,    0,    0,    0,    0,    0,    0,  111,  111,
-       79,   11,    0,    0,    0,    0,    0,    0,    3,    0,
-      111,   82,    0,    0,    0,    0,    0,    8,   81,   80,
-        0,    0,    0,    0,    0,  111,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,  111,    0,    0,    0,
+        0,   10,  112,    0,    0,    0,    6,    0,  112,  112,
+        0,    0,    0,    0,    0,    0,    0,    0,  112,  112,
+       80,   11,    0,    0,    0,    0,    0,    0,    3,    0,
+      112,   83,    0,    0,    0,    0,    0,    8,   82,   81,
+        0,    0,    0,    0,    0,  112,    0,    0,    0,    0,
+        0,    0,    0,    0,    0,    0,  112,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,   19,    0,    0,
-        0,    0,    0,    0,  103,    0,    0,    0,    0,    0,
+        0,    0,    0,   58,  104,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
 
         0,    4,    0,    0,    9,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,  104,    7,    0,    0,    0,
+        0,    0,    0,    0,    0,  105,    7,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    2,    0,    0,    0,    0,    0,
@@ -1965,6 +1965,9 @@ static void switch_to_buffer (const int lineno, const char *filename,
 static char esql_declare_line[1024];
 static int esql_declare_line_len = 0;
 
+static char *esql_include_fname = NULL;
+static int esql_include_return_state = 0; /* 0=INITIAL, 1=ESQL_DECLARE_STATE */
+
 static void process_declare_line(const char *line) {
 	char *upper_line;
 	const char *varying_pos;
@@ -2046,9 +2049,9 @@ static void process_declare_line(const char *line) {
 	free(upper_line);
 }
 
-#line 2050 "pplex.c"
+#line 2053 "pplex.c"
 
-#line 2052 "pplex.c"
+#line 2055 "pplex.c"
 
 #define INITIAL 0
 #define PROCESS_STATE 1
@@ -2267,13 +2270,13 @@ YY_DECL
 		}
 
 	{
-#line 210 "pplex.l"
+#line 213 "pplex.l"
 
 
 
 
 
-#line 2277 "pplex.c"
+#line 2280 "pplex.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2329,14 +2332,14 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 215 "pplex.l"
+#line 218 "pplex.l"
 {
 	ppecho (" ");
 }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 219 "pplex.l"
+#line 222 "pplex.l"
 {
 	identification_division_line_number = cb_source_line;
 	ppecho ("IDENTIFICATION DIVISION.");
@@ -2344,32 +2347,32 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 223 "pplex.l"
+#line 226 "pplex.l"
 { ppecho ("ID DIVISION."); }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 224 "pplex.l"
+#line 227 "pplex.l"
 { ppecho ("FUNCTION DIVISION."); }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 225 "pplex.l"
+#line 228 "pplex.l"
 { ppecho (yytext); return PROGRAM_ID; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 226 "pplex.l"
+#line 229 "pplex.l"
 { ppecho (yytext); return FUNCTION_ID; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 227 "pplex.l"
+#line 230 "pplex.l"
 { ppecho ("ENVIRONMENT DIVISION"); return ENVIRONMENT_DIVISION; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 228 "pplex.l"
+#line 231 "pplex.l"
 {
 	position_in_source_code = POSITION_AFTER_WORKING_STORAGE;
 	ppecho ("DATA DIVISION");
@@ -2378,7 +2381,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 233 "pplex.l"
+#line 236 "pplex.l"
 {
 	if(copy_stack->next == NULL) {
 		procedure_division_line_number = cb_source_line;
@@ -2390,19 +2393,19 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 241 "pplex.l"
+#line 244 "pplex.l"
 { ppecho ("END PROGRAM"); return END_PROGRAM; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 242 "pplex.l"
+#line 245 "pplex.l"
 { ppecho ("END FUNCTION"); return END_FUNCTION; }
 	YY_BREAK
 case 12:
-#line 245 "pplex.l"
+#line 248 "pplex.l"
 case 13:
 YY_RULE_SETUP
-#line 245 "pplex.l"
+#line 248 "pplex.l"
 {
 	ppecho (" ");
 	if (cb_source_format != CB_FORMAT_FIXED) {
@@ -2412,25 +2415,25 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 252 "pplex.l"
+#line 255 "pplex.l"
 { BEGIN PROCESS_STATE; }
 	YY_BREAK
 
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 255 "pplex.l"
+#line 258 "pplex.l"
 { BEGIN INITIAL; unput ('\n'); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 256 "pplex.l"
+#line 259 "pplex.l"
 { cb_warning (_("PROCESS statement is ignored")); }
 	YY_BREAK
 
 case 17:
 YY_RULE_SETUP
-#line 259 "pplex.l"
+#line 262 "pplex.l"
 {
 	ppecho ("EXEC SQL BEGIN DECLARE SECTION END-EXEC.\n");
 	esql_declare_line_len = 0;
@@ -2440,7 +2443,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 266 "pplex.l"
+#line 269 "pplex.l"
 {
 	/* EXEC SQL INCLUDE SQLCA END-EXEC -> include sqlca.cbl */
 	fputc ('\n', ppout);
@@ -2449,15 +2452,16 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 272 "pplex.l"
+#line 275 "pplex.l"
 {
 	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
+	esql_include_return_state = 0;
 	BEGIN ESQL_INCLUDE_STATE;
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 277 "pplex.l"
+#line 281 "pplex.l"
 {
 	/* Pass through EXEC SQL blocks to the main scanner */
 	ppecho ("EXEC SQL");
@@ -2466,129 +2470,129 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 283 "pplex.l"
+#line 287 "pplex.l"
 { BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 284 "pplex.l"
+#line 288 "pplex.l"
 { BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 285 "pplex.l"
+#line 289 "pplex.l"
 { BEGIN COPY_STATE; return REPLACE; }
 	YY_BREAK
 
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 288 "pplex.l"
+#line 292 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 289 "pplex.l"
+#line 293 "pplex.l"
 { /* ignore */ }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 290 "pplex.l"
+#line 294 "pplex.l"
 { BEGIN INITIAL; return '.'; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 291 "pplex.l"
+#line 295 "pplex.l"
 { BEGIN PSEUDO_STATE; return EQEQ; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 292 "pplex.l"
+#line 296 "pplex.l"
 { return '('; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 293 "pplex.l"
+#line 297 "pplex.l"
 { return ')'; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 294 "pplex.l"
+#line 298 "pplex.l"
 { return BY; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 295 "pplex.l"
+#line 299 "pplex.l"
 { return IN; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 296 "pplex.l"
+#line 300 "pplex.l"
 { return OF; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 297 "pplex.l"
+#line 301 "pplex.l"
 { return OFF; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 298 "pplex.l"
+#line 302 "pplex.l"
 { return SUPPRESS; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 299 "pplex.l"
+#line 303 "pplex.l"
 { return PRINTING; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 300 "pplex.l"
+#line 304 "pplex.l"
 { return REPLACING; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 301 "pplex.l"
+#line 305 "pplex.l"
 { return LEADING; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 302 "pplex.l"
+#line 306 "pplex.l"
 { return TRAILING; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 303 "pplex.l"
+#line 307 "pplex.l"
 { return JOINING; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 304 "pplex.l"
+#line 308 "pplex.l"
 { return AS; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 305 "pplex.l"
+#line 309 "pplex.l"
 { return PREFIX; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 306 "pplex.l"
+#line 310 "pplex.l"
 { return SUFFIX; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 307 "pplex.l"
+#line 311 "pplex.l"
 { return PREFIXING; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 308 "pplex.l"
+#line 312 "pplex.l"
 { return SUFFIXING; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 309 "pplex.l"
+#line 313 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2596,12 +2600,12 @@ YY_RULE_SETUP
 			  pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 case 46:
-#line 315 "pplex.l"
+#line 319 "pplex.l"
 case 47:
-#line 316 "pplex.l"
+#line 320 "pplex.l"
 case 48:
 YY_RULE_SETUP
-#line 316 "pplex.l"
+#line 320 "pplex.l"
 { pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 
@@ -2609,22 +2613,22 @@ YY_RULE_SETUP
 case 49:
 /* rule 49 can match eol */
 YY_RULE_SETUP
-#line 320 "pplex.l"
+#line 324 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 321 "pplex.l"
+#line 325 "pplex.l"
 { pplval.s = strdup (" "); return TOKEN; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 322 "pplex.l"
+#line 326 "pplex.l"
 { BEGIN COPY_STATE; return EQEQ; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 323 "pplex.l"
+#line 327 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2632,19 +2636,19 @@ YY_RULE_SETUP
 			  pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 case 53:
-#line 329 "pplex.l"
+#line 333 "pplex.l"
 case 54:
-#line 330 "pplex.l"
+#line 334 "pplex.l"
 case 55:
 YY_RULE_SETUP
-#line 330 "pplex.l"
+#line 334 "pplex.l"
 { pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 
 
 case 56:
 YY_RULE_SETUP
-#line 334 "pplex.l"
+#line 338 "pplex.l"
 {
 	if (esql_declare_line_len > 0) {
 		esql_declare_line[esql_declare_line_len] = '\0';
@@ -2657,7 +2661,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 343 "pplex.l"
+#line 347 "pplex.l"
 {
 	if (esql_declare_line_len > 0) {
 		esql_declare_line[esql_declare_line_len] = '\0';
@@ -2670,7 +2674,20 @@ YY_RULE_SETUP
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 352 "pplex.l"
+#line 356 "pplex.l"
+{
+	if (esql_declare_line_len > 0) {
+		esql_declare_line[esql_declare_line_len] = '\0';
+		process_declare_line(esql_declare_line);
+		esql_declare_line_len = 0;
+	}
+	esql_include_return_state = 1;
+	BEGIN ESQL_INCLUDE_STATE;
+  }
+	YY_BREAK
+case 59:
+YY_RULE_SETUP
+#line 365 "pplex.l"
 {
 	if (esql_declare_line_len > 0) {
 		esql_declare_line[esql_declare_line_len] = '\0';
@@ -2681,10 +2698,10 @@ YY_RULE_SETUP
 	BEGIN ESQL_PASSTHRU_STATE;
   }
 	YY_BREAK
-case 59:
-/* rule 59 can match eol */
+case 60:
+/* rule 60 can match eol */
 YY_RULE_SETUP
-#line 361 "pplex.l"
+#line 374 "pplex.l"
 {
 	esql_declare_line[esql_declare_line_len] = '\0';
 	process_declare_line(esql_declare_line);
@@ -2692,9 +2709,9 @@ YY_RULE_SETUP
 	cb_source_line++;
   }
 	YY_BREAK
-case 60:
+case 61:
 YY_RULE_SETUP
-#line 367 "pplex.l"
+#line 380 "pplex.l"
 {
 	if (esql_declare_line_len < (int)sizeof(esql_declare_line) - 2) {
 		esql_declare_line[esql_declare_line_len++] = yytext[0];
@@ -2703,95 +2720,104 @@ YY_RULE_SETUP
 	YY_BREAK
 
 
-case 61:
-/* rule 61 can match eol */
-YY_RULE_SETUP
-#line 375 "pplex.l"
-{ if (yytext[0] == '\n') cb_source_line++; }
-	YY_BREAK
 case 62:
+/* rule 62 can match eol */
 YY_RULE_SETUP
-#line 376 "pplex.l"
-{
-	BEGIN INITIAL;
-  }
+#line 388 "pplex.l"
+{ if (yytext[0] == '\n') cb_source_line++; }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 379 "pplex.l"
+#line 389 "pplex.l"
 {
-	/* Got the filename to include, copy it, then wait for END-EXEC */
-	char *fname = strdup(yytext);
-	fputc ('\n', ppout);
-	ppcopy (fname, NULL, NULL, NULL);
-	free (fname);
+	if (esql_include_return_state == 1) {
+		BEGIN ESQL_DECLARE_STATE;
+	} else {
+		BEGIN INITIAL;
+	}
+	if (esql_include_fname) {
+		fputc ('\n', ppout);
+		ppcopy (esql_include_fname, NULL, NULL, NULL);
+		free (esql_include_fname);
+		esql_include_fname = NULL;
+	}
+  }
+	YY_BREAK
+case 64:
+YY_RULE_SETUP
+#line 402 "pplex.l"
+{
+	/* Save the filename; ppcopy is deferred until END-EXEC */
+	if (!esql_include_fname) {
+		esql_include_fname = strdup(yytext);
+	}
   }
 	YY_BREAK
 
 
-case 64:
+case 65:
 YY_RULE_SETUP
-#line 389 "pplex.l"
+#line 411 "pplex.l"
 {
 	ppecho (" END-EXEC.");
 	BEGIN INITIAL;
   }
 	YY_BREAK
-case 65:
+case 66:
 YY_RULE_SETUP
-#line 393 "pplex.l"
+#line 415 "pplex.l"
 {
 	ppecho (" END-EXEC");
 	BEGIN INITIAL;
   }
 	YY_BREAK
-case 66:
-/* rule 66 can match eol */
+case 67:
+/* rule 67 can match eol */
 YY_RULE_SETUP
-#line 397 "pplex.l"
+#line 419 "pplex.l"
 {
 	ppecho (" ");
 	cb_source_line++;
   }
 	YY_BREAK
-case 67:
+case 68:
 YY_RULE_SETUP
-#line 401 "pplex.l"
+#line 423 "pplex.l"
 {
 	ppecho (yytext);
   }
 	YY_BREAK
 
 
-case 68:
-YY_RULE_SETUP
-#line 407 "pplex.l"
-{ suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
-	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 408 "pplex.l"
+#line 429 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 409 "pplex.l"
-{ suppress_echo = 0; BEGIN COPY_STATE; return REPLACE; }
+#line 430 "pplex.l"
+{ suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 71:
-/* rule 71 can match eol */
 YY_RULE_SETUP
-#line 410 "pplex.l"
-{ ECHO; cb_source_line++; }
+#line 431 "pplex.l"
+{ suppress_echo = 0; BEGIN COPY_STATE; return REPLACE; }
 	YY_BREAK
 case 72:
+/* rule 72 can match eol */
 YY_RULE_SETUP
-#line 411 "pplex.l"
-{ ppecho (" "); }
+#line 432 "pplex.l"
+{ ECHO; cb_source_line++; }
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-#line 412 "pplex.l"
+#line 433 "pplex.l"
+{ ppecho (" "); }
+	YY_BREAK
+case 74:
+YY_RULE_SETUP
+#line 434 "pplex.l"
 {
 	BEGIN INITIAL;
 	if (!strcasecmp (yytext, "FILLER")) {
@@ -2806,19 +2832,19 @@ YY_RULE_SETUP
 	}
   }
 	YY_BREAK
-case 74:
-#line 426 "pplex.l"
 case 75:
-#line 427 "pplex.l"
+#line 448 "pplex.l"
 case 76:
+#line 449 "pplex.l"
+case 77:
 YY_RULE_SETUP
-#line 427 "pplex.l"
+#line 449 "pplex.l"
 { suppress_echo = 0; BEGIN INITIAL; ppecho (yytext); }
 	YY_BREAK
 
-case 77:
+case 78:
 YY_RULE_SETUP
-#line 430 "pplex.l"
+#line 452 "pplex.l"
 {
 	suppress_echo = (omit_data_redef_name) ? 1 : 0;
 	ppecho (yytext);
@@ -2828,21 +2854,21 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 78:
-#line 440 "pplex.l"
 case 79:
-#line 441 "pplex.l"
+#line 462 "pplex.l"
 case 80:
-#line 442 "pplex.l"
+#line 463 "pplex.l"
 case 81:
-#line 443 "pplex.l"
+#line 464 "pplex.l"
 case 82:
-#line 444 "pplex.l"
+#line 465 "pplex.l"
 case 83:
-#line 445 "pplex.l"
+#line 466 "pplex.l"
 case 84:
+#line 467 "pplex.l"
+case 85:
 YY_RULE_SETUP
-#line 445 "pplex.l"
+#line 467 "pplex.l"
 {
 	/* these words are treated as comments */
 	if (cb_verify (cb_author_paragraph, yytext)) {
@@ -2859,15 +2885,15 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 85:
-#line 462 "pplex.l"
 case 86:
-#line 463 "pplex.l"
+#line 484 "pplex.l"
 case 87:
-#line 464 "pplex.l"
+#line 485 "pplex.l"
 case 88:
+#line 486 "pplex.l"
+case 89:
 YY_RULE_SETUP
-#line 464 "pplex.l"
+#line 486 "pplex.l"
 {
 	/* these words are comments in IBM COBOL */
 	if (cb_verify (cb_eject_statement, yytext)) {
@@ -2877,20 +2903,20 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 89:
-/* rule 89 can match eol */
-YY_RULE_SETUP
-#line 473 "pplex.l"
-{ ppecho ("\n"); cb_source_line++; }
-	YY_BREAK
 case 90:
+/* rule 90 can match eol */
 YY_RULE_SETUP
-#line 475 "pplex.l"
-{ ppecho (" "); }
+#line 495 "pplex.l"
+{ ppecho ("\n"); cb_source_line++; }
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 477 "pplex.l"
+#line 497 "pplex.l"
+{ ppecho (" "); }
+	YY_BREAK
+case 92:
+YY_RULE_SETUP
+#line 499 "pplex.l"
 {
 	if (inside_bracket) {
 		ppecho (", ");
@@ -2899,17 +2925,17 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 92:
+case 93:
 YY_RULE_SETUP
-#line 485 "pplex.l"
+#line 507 "pplex.l"
 {
 	inside_bracket++;
 	ppecho ("(");
 }
 	YY_BREAK
-case 93:
+case 94:
 YY_RULE_SETUP
-#line 490 "pplex.l"
+#line 512 "pplex.l"
 {
 	if (inside_bracket) {
 		inside_bracket--;
@@ -2917,52 +2943,52 @@ YY_RULE_SETUP
 	ppecho (")");
 }
 	YY_BREAK
-case 94:
-/* rule 94 can match eol */
-#line 498 "pplex.l"
 case 95:
 /* rule 95 can match eol */
-#line 499 "pplex.l"
+#line 520 "pplex.l"
 case 96:
 /* rule 96 can match eol */
-#line 500 "pplex.l"
+#line 521 "pplex.l"
 case 97:
 /* rule 97 can match eol */
-#line 501 "pplex.l"
+#line 522 "pplex.l"
 case 98:
 /* rule 98 can match eol */
-#line 502 "pplex.l"
+#line 523 "pplex.l"
 case 99:
 /* rule 99 can match eol */
-#line 503 "pplex.l"
+#line 524 "pplex.l"
 case 100:
 /* rule 100 can match eol */
-#line 504 "pplex.l"
+#line 525 "pplex.l"
 case 101:
 /* rule 101 can match eol */
-#line 505 "pplex.l"
+#line 526 "pplex.l"
 case 102:
 /* rule 102 can match eol */
-#line 506 "pplex.l"
+#line 527 "pplex.l"
 case 103:
 /* rule 103 can match eol */
-#line 507 "pplex.l"
+#line 528 "pplex.l"
 case 104:
 /* rule 104 can match eol */
-#line 508 "pplex.l"
+#line 529 "pplex.l"
 case 105:
 /* rule 105 can match eol */
-#line 509 "pplex.l"
+#line 530 "pplex.l"
 case 106:
 /* rule 106 can match eol */
-#line 510 "pplex.l"
+#line 531 "pplex.l"
 case 107:
 /* rule 107 can match eol */
-#line 511 "pplex.l"
+#line 532 "pplex.l"
 case 108:
 /* rule 108 can match eol */
+#line 533 "pplex.l"
+case 109:
+/* rule 109 can match eol */
 YY_RULE_SETUP
-#line 511 "pplex.l"
+#line 533 "pplex.l"
 {
 	/* each numeric is not a level-number */
 	char *p, *pcrnt;
@@ -2985,9 +3011,9 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 109:
+case 110:
 YY_RULE_SETUP
-#line 533 "pplex.l"
+#line 555 "pplex.l"
 {
 	char *p = yytext;
 	cobc_mbspc2ascii (yytext);
@@ -3004,30 +3030,30 @@ YY_RULE_SETUP
 	}
 }
 	YY_BREAK
-case 110:
+case 111:
 YY_RULE_SETUP
-#line 549 "pplex.l"
+#line 571 "pplex.l"
 {
 	ppecho (yytext);
 	return yytext[0];
 }
 	YY_BREAK
-case 111:
+case 112:
 YY_RULE_SETUP
-#line 554 "pplex.l"
+#line 576 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
 #endif /*I18N_UTF8*/
 			  ppecho (yytext); }
 	YY_BREAK
-case 112:
-#line 560 "pplex.l"
 case 113:
-#line 561 "pplex.l"
+#line 582 "pplex.l"
 case 114:
+#line 583 "pplex.l"
+case 115:
 YY_RULE_SETUP
-#line 561 "pplex.l"
+#line 583 "pplex.l"
 { ppecho (yytext); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -3038,7 +3064,7 @@ case YY_STATE_EOF(DATANAME_JOIN_STATE):
 case YY_STATE_EOF(ESQL_PASSTHRU_STATE):
 case YY_STATE_EOF(ESQL_INCLUDE_STATE):
 case YY_STATE_EOF(ESQL_DECLARE_STATE):
-#line 563 "pplex.l"
+#line 585 "pplex.l"
 {
 	struct copy_info *p;
 
@@ -3080,12 +3106,12 @@ case YY_STATE_EOF(ESQL_DECLARE_STATE):
 	free (p);
 }
 	YY_BREAK
-case 115:
+case 116:
 YY_RULE_SETUP
-#line 604 "pplex.l"
+#line 626 "pplex.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 3089 "pplex.c"
+#line 3115 "pplex.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -4092,7 +4118,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 604 "pplex.l"
+#line 626 "pplex.l"
 
 
 void
