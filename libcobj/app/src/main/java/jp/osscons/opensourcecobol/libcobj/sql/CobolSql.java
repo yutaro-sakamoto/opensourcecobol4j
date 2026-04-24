@@ -195,6 +195,10 @@ public final class CobolSql {
                 }
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute(query);
+                    int updateCount = stmt.getUpdateCount();
+                    if (updateCount >= 0) {
+                        SqlCA.setErrd(sqlca, 2, updateCount);
+                    }
                     try (Statement sp = conn.createStatement()) {
                         sp.execute(SQL_RELEASE_SAVEPOINT);
                     }
@@ -250,6 +254,10 @@ public final class CobolSql {
                     }
                 }
                 pstmt.execute();
+                int updateCount = pstmt.getUpdateCount();
+                if (updateCount >= 0) {
+                    SqlCA.setErrd(sqlca, 2, updateCount);
+                }
                 try (Statement sp = conn.createStatement()) {
                     sp.execute(SQL_RELEASE_SAVEPOINT);
                 }
@@ -572,7 +580,22 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
-            cursor.open(sqlConn.getConnection(), null);
+            Connection conn = sqlConn.getConnection();
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_SAVEPOINT);
+            }
+            try {
+                cursor.open(conn, null);
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_RELEASE_SAVEPOINT);
+                }
+            } catch (SQLException e) {
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
+                } catch (SQLException ignored) {
+                }
+                throw e;
+            }
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
@@ -626,7 +649,7 @@ public final class CobolSql {
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
-            if (cursor == null) {
+            if (cursor == null || !cursor.isOpened) {
                 SqlCA.setError(
                         sqlca,
                         SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
@@ -647,6 +670,71 @@ public final class CobolSql {
         }
     }
 
+    public static void fetchCursorOccurs(
+            CobolDataStorage sqlca,
+            String cursorName,
+            AbstractCobolField[] resultParams,
+            int occursSize,
+            int occursMax) {
+        try {
+            SqlConnection sqlConn = SqlState.getDefaultConnection();
+            if (sqlConn == null) {
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+                return;
+            }
+            SqlCursor cursor = SqlState.getCursor(cursorName);
+            if (cursor == null || !cursor.isOpened) {
+                SqlCA.setErrd(sqlca, 2, 0);
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not found: " + cursorName);
+                return;
+            }
+            Connection conn = sqlConn.getConnection();
+            String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursor.name;
+            try (Statement stmt = conn.createStatement()) {
+                boolean hasResult = stmt.execute(fetchSql);
+                if (!hasResult || stmt.getResultSet() == null) {
+                    SqlCA.setSuccess(sqlca);
+                    return;
+                }
+                ResultSet rs = stmt.getResultSet();
+                if (!rs.next()) {
+                    rs.close();
+                    SqlCA.setSuccess(sqlca);
+                    return;
+                }
+                int rowCount = 0;
+                do {
+                    if (rowCount >= occursMax) {
+                        break;
+                    }
+                    int storageOffset = rowCount * occursSize;
+                    for (int i = 0; i < resultParams.length; i++) {
+                        byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                        CobolDataStorage fieldStorage =
+                                resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
+                        int fieldSize = resultParams[i].getSize();
+                        if (value != null) {
+                            CobolDataConverter.stringToCobolRaw(
+                                    resultParams[i], fieldStorage, fieldSize, value);
+                        } else {
+                            fieldStorage.memset((byte) 0, fieldSize);
+                        }
+                    }
+                    rowCount++;
+                } while (rs.next());
+                rs.close();
+                SqlCA.setErrd(sqlca, 2, rowCount);
+                SqlCA.setSuccess(sqlca);
+            }
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+        }
+    }
+
     /**
      * Close an open cursor.
      *
@@ -661,7 +749,7 @@ public final class CobolSql {
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
-            if (cursor == null) {
+            if (cursor == null || !cursor.isOpened) {
                 SqlCA.setError(
                         sqlca,
                         SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
