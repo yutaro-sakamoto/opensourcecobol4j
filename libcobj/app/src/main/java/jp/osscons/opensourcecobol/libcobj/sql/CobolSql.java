@@ -670,6 +670,15 @@ public final class CobolSql {
         }
     }
 
+    /**
+     * Fetch multiple rows from a cursor into OCCURS array fields.
+     *
+     * @param sqlca the SQLCA data storage for status reporting
+     * @param cursorName the name of the cursor to fetch from
+     * @param resultParams the result parameter fields (one per column)
+     * @param occursSize the byte size of each OCCURS element
+     * @param occursMax the maximum number of rows to fetch
+     */
     public static void fetchCursorOccurs(
             CobolDataStorage sqlca,
             String cursorName,
@@ -694,15 +703,9 @@ public final class CobolSql {
             }
             Connection conn = sqlConn.getConnection();
             String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursor.name;
-            try (Statement stmt = conn.createStatement()) {
-                boolean hasResult = stmt.execute(fetchSql);
-                if (!hasResult || stmt.getResultSet() == null) {
-                    SqlCA.setSuccess(sqlca);
-                    return;
-                }
-                ResultSet rs = stmt.getResultSet();
+            try (Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(fetchSql)) {
                 if (!rs.next()) {
-                    rs.close();
                     SqlCA.setSuccess(sqlca);
                     return;
                 }
@@ -726,7 +729,6 @@ public final class CobolSql {
                     }
                     rowCount++;
                 } while (rs.next());
-                rs.close();
                 SqlCA.setErrd(sqlca, 2, rowCount);
                 SqlCA.setSuccess(sqlca);
             }
