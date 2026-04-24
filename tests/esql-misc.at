@@ -1,8 +1,7 @@
 AT_INIT(ESQL misc test)
 
 m4_include([long-sql.at])
-dnl TODO: include requires general EXEC SQL INCLUDE file support
-dnl m4_include([include.at])
+m4_include([include.at])
 dnl TODO: fetch-sqlca requires SQLERRD(3) row count and cursor fetch fixes
 dnl m4_include([fetch-sqlca.at])
 m4_include([compile.at])

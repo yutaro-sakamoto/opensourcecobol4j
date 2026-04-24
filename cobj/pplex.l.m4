@@ -113,6 +113,9 @@ static void switch_to_buffer (const int lineno, const char *filename,
 static char esql_declare_line[1024];
 static int esql_declare_line_len = 0;
 
+static char *esql_include_fname = NULL;
+static int esql_include_return_state = 0; /* 0=INITIAL, 1=ESQL_DECLARE_STATE */
+
 static void process_declare_line(const char *line) {
 	char *upper_line;
 	const char *varying_pos;
@@ -286,6 +289,7 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
 	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
+	esql_include_return_state = 0;
 	BEGIN ESQL_INCLUDE_STATE;
 }
 
@@ -364,6 +368,15 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	fputc ('\n', ppout);
 	ppcopy ("sqlca.cbl", NULL, NULL, NULL);
   }
+  "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
+	if (esql_declare_line_len > 0) {
+		esql_declare_line[esql_declare_line_len] = '\0';
+		process_declare_line(esql_declare_line);
+		esql_declare_line_len = 0;
+	}
+	esql_include_return_state = 1;
+	BEGIN ESQL_INCLUDE_STATE;
+  }
   "EXEC"({ZENSPC}|[ ])+"SQL" {
 	if (esql_declare_line_len > 0) {
 		esql_declare_line[esql_declare_line_len] = '\0';
@@ -389,14 +402,23 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 <ESQL_INCLUDE_STATE>{
   [ \t\n]+ { if (yytext[0] == '\n') cb_source_line++; }
   "END-EXEC"({ZENSPC}|[ ])*"."? {
-	BEGIN INITIAL;
+	if (esql_include_return_state == 1) {
+		BEGIN ESQL_DECLARE_STATE;
+	} else {
+		BEGIN INITIAL;
+	}
+	if (esql_include_fname) {
+		fputc ('\n', ppout);
+		ppcopy (esql_include_fname, NULL, NULL, NULL);
+		free (esql_include_fname);
+		esql_include_fname = NULL;
+	}
   }
   {WORD} {
-	/* Got the filename to include, copy it, then wait for END-EXEC */
-	char *fname = strdup(yytext);
-	fputc ('\n', ppout);
-	ppcopy (fname, NULL, NULL, NULL);
-	free (fname);
+	/* Save the filename; ppcopy is deferred until END-EXEC */
+	if (!esql_include_fname) {
+		esql_include_fname = strdup(yytext);
+	}
   }
 }
 
