@@ -174,28 +174,39 @@ public final class CobolSql {
                 return;
             }
 
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_SAVEPOINT);
-            }
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute(query);
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_RELEASE_SAVEPOINT);
-                }
-            } catch (SQLException e) {
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
-                } catch (SQLException ignored) {
-                    // Ignore rollback errors
-                }
-                throw e;
-            }
+            String trimmed = query.trim();
+            boolean isTxnControl =
+                    "COMMIT".equalsIgnoreCase(trimmed)
+                            || "ROLLBACK".equalsIgnoreCase(trimmed)
+                            || "BEGIN".equalsIgnoreCase(trimmed);
 
-            SqlCA.setSuccess(sqlca);
-
-            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
-                SqlState.clearCursors();
-                sqlConn.beginTransaction();
+            if (isTxnControl) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(query);
+                }
+                SqlCA.setSuccess(sqlca);
+                if ("COMMIT".equalsIgnoreCase(trimmed) || "ROLLBACK".equalsIgnoreCase(trimmed)) {
+                    SqlState.clearCursors();
+                    sqlConn.beginTransaction();
+                }
+            } else {
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_SAVEPOINT);
+                }
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(query);
+                    try (Statement sp = conn.createStatement()) {
+                        sp.execute(SQL_RELEASE_SAVEPOINT);
+                    }
+                } catch (SQLException e) {
+                    try (Statement sp = conn.createStatement()) {
+                        sp.execute(SQL_ROLLBACK_SAVEPOINT);
+                    } catch (SQLException ignored) {
+                        // Ignore rollback errors
+                    }
+                    throw e;
+                }
+                SqlCA.setSuccess(sqlca);
             }
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
@@ -232,7 +243,7 @@ public final class CobolSql {
             }
             try {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
                 if (params != null) {
                     for (int i = 0; i < params.length; i++) {
                         CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
@@ -413,7 +424,7 @@ public final class CobolSql {
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
                 for (int i = 0; i < inputParams.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
@@ -461,7 +472,7 @@ public final class CobolSql {
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt);
+                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
                 for (int i = 0; i < inputParams.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
@@ -928,7 +939,7 @@ public final class CobolSql {
             }
 
             PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-            ParameterMetaData metaData = getParameterMetaData(pstmt);
+            ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
             if (params != null) {
                 for (int i = 0; i < params.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
@@ -1054,10 +1065,23 @@ public final class CobolSql {
                 });
     }
 
-    private static ParameterMetaData getParameterMetaData(PreparedStatement pstmt) {
+    private static ParameterMetaData getParameterMetaData(
+            PreparedStatement pstmt, Connection conn) {
         try {
             return pstmt.getParameterMetaData();
         } catch (SQLException e) {
+            // getParameterMetaData may abort the PostgreSQL transaction
+            // (e.g., if the table does not exist). Recover via savepoint.
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_ROLLBACK_SAVEPOINT);
+            } catch (SQLException ignored) {
+                // Ignore
+            }
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_SAVEPOINT);
+            } catch (SQLException ignored) {
+                // Ignore
+            }
             return null;
         }
     }

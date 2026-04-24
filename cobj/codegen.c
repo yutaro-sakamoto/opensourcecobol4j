@@ -3801,9 +3801,11 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput("CobolSql.declareCursor(");
     joutput_exec_sql_field_name("SQLCA");
     if (p->prepare_name && p->prepare_name[0]) {
-      joutput(", \"%s\", \"%s\");\n", p->cursor_name, p->prepare_name);
+      joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
+              p->cursor_name, p->prepare_name);
     } else {
-      joutput(", \"%s\", \"%s\");\n", p->cursor_name, p->sql_text);
+      joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
+              p->cursor_name, p->sql_text);
     }
     break;
 
@@ -3811,7 +3813,8 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.declareCursorWithParams(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\", \"%s\"", p->cursor_name, p->sql_text);
+    joutput(", \"%s_%s\", \"%s\"", excp_current_program_id, p->cursor_name,
+            p->sql_text);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
       joutput_sql_field_ref(hv);
@@ -3823,14 +3826,14 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.openCursor(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\");\n", p->cursor_name);
+    joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
     break;
 
   case CB_SQL_OPEN_CURSOR_PARAMS:
     joutput_prefix();
     joutput("CobolSql.openCursorWithParams(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\"", p->cursor_name);
+    joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
       joutput_sql_field_ref(hv);
@@ -3842,7 +3845,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.closeCursor(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\");\n", p->cursor_name);
+    joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
     break;
 
   case CB_SQL_FETCH_ONE:
@@ -3850,7 +3853,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.fetchCursor(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\"", p->cursor_name);
+    joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
     for (hv = p->res_host_list; hv; hv = hv->next) {
       joutput(", ");
       joutput_sql_field_ref(hv);
