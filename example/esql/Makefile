@@ -4,7 +4,8 @@
 -include db-config.sh
 
 COBJ = cobj
-COPY_DIR = /usr/lib/opensourcecobol4j/copy
+# Auto-detect the COPY directory from cobj's install location
+COPY_DIR = $(shell dirname $$(which $(COBJ)))/../share/opensource-cobol-4j-*/copy
 
 # Replace database placeholders in a COBOL source file.
 # Usage: $(call embed_db_info,filename)
