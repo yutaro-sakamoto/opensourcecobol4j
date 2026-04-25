@@ -96,6 +96,7 @@ tasks.withType<Jar>().configureEach {
 
 tasks.withType<ShadowJar> {
     archiveClassifier.set("")
+    mergeServiceFiles()
 }
 
 tasks.test {
