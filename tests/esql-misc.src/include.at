@@ -82,7 +82,6 @@ AT_DATA([prog.cbl], [
        EXEC SQL INCLUDE DECLARE-SECTION END-EXEC.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************

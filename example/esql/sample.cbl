@@ -18,7 +18,6 @@
        WORKING-STORAGE             SECTION.
 
       * SQL Communication Area
-       EXEC SQL INCLUDE SQLCA END-EXEC.
 
       * Host variables for database connection
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.

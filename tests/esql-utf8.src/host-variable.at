@@ -37,7 +37,6 @@ AT_DATA([INSERTTBL.cbl], [
          03  給与                   PIC S9(04) VALUE ZERO.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************
@@ -167,7 +166,6 @@ AT_DATA([FETCHTBL.cbl], [
        01  従業員数                 PIC  9(04).
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************

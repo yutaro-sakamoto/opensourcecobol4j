@@ -22,7 +22,6 @@ AT_DATA([prog.cbl], [
        01 COUNTER PIC 9(7) VALUE ZERO.
        01 LOOP-MAX PIC 9(7) VALUE 30.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************

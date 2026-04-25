@@ -117,6 +117,33 @@ static char *esql_include_fname = NULL;
 static int esql_include_return_state = 0; /* 0=INITIAL, 1=ESQL_DECLARE_STATE */
 static int esql_passthru_in_quote = 0;
 static int esql_passthru_active = 0;
+static int sqlca_included = 0;
+static int esql_seen = 0;
+
+static void emit_sqlca_inline(void) {
+	if (sqlca_included) return;
+	sqlca_included = 1;
+	fputs ("01 SQLCA GLOBAL.\n", ppout);
+	fputs (" 05 SQLCAID PIC X(8).\n", ppout);
+	fputs (" 05 SQLCABC PIC S9(9) COMP-5.\n", ppout);
+	fputs (" 05 SQLCODE PIC S9(9) COMP-5.\n", ppout);
+	fputs (" 05 SQLERRM.\n", ppout);
+	fputs (" 49 SQLERRML PIC S9(4) COMP-5.\n", ppout);
+	fputs (" 49 SQLERRMC PIC X(70).\n", ppout);
+	fputs (" 05 SQLERRP PIC X(8).\n", ppout);
+	fputs (" 05 SQLERRD OCCURS 6 TIMES\n", ppout);
+	fputs (" PIC S9(9) COMP-5.\n", ppout);
+	fputs (" 05 SQLWARN.\n", ppout);
+	fputs (" 10 SQLWARN0 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN1 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN2 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN3 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN4 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN5 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN6 PIC X(1).\n", ppout);
+	fputs (" 10 SQLWARN7 PIC X(1).\n", ppout);
+	fputs (" 05 SQLSTATE PIC X(5).\n", ppout);
+}
 
 static void process_declare_line(const char *line) {
 	char *upper_line;
@@ -238,9 +265,15 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "IDENTIFICATION"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."	{
 	identification_division_line_number = cb_source_line;
+	sqlca_included = 0;
+	esql_seen = 0;
 	ppecho ("IDENTIFICATION DIVISION.");
 }
-"ID"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."			{ ppecho ("ID DIVISION."); }
+"ID"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."			{
+	sqlca_included = 0;
+	esql_seen = 0;
+	ppecho ("ID DIVISION.");
+}
 "FUNCTION"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."		{ ppecho ("FUNCTION DIVISION."); }
 "PROGRAM-ID"					{ ppecho (yytext); return PROGRAM_ID; }
 "FUNCTION-ID"					{ ppecho (yytext); return FUNCTION_ID; }
@@ -254,6 +287,9 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	if(copy_stack->next == NULL) {
 		procedure_division_line_number = cb_source_line;
 		position_in_source_code = POSITION_AFTER_PROCEDURE_DIVISION;
+	}
+	if (esql_seen && !sqlca_included) {
+		emit_sqlca_inline();
 	}
 	ppecho ("PROCEDURE DIVISION");
 	return PROCEDURE_DIVISION;
@@ -277,6 +313,7 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"BEGIN"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	esql_seen = 1;
 	ppecho ("EXEC SQL BEGIN DECLARE SECTION END-EXEC.\n");
 	esql_declare_line_len = 0;
 	esql_declare_line[0] = '\0';
@@ -285,8 +322,13 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
 	/* EXEC SQL INCLUDE SQLCA END-EXEC -> include sqlca.cbl */
-	fputc ('\n', ppout);
-	ppcopy ("sqlca.cbl", NULL, NULL, NULL);
+	if (!sqlca_included) {
+		sqlca_included = 1;
+		fputc ('\n', ppout);
+		ppcopy ("sqlca.cbl", NULL, NULL, NULL);
+	} else {
+		fputc ('\n', ppout);
+	}
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
@@ -297,6 +339,7 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "EXEC"({ZENSPC}|[ ])+"SQL" {
 	/* Pass through EXEC SQL blocks to the main scanner */
+	esql_seen = 1;
 	ppecho ("EXEC SQL");
 	esql_passthru_in_quote = 0;
 	esql_passthru_active = 1;
@@ -369,8 +412,13 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 		process_declare_line(esql_declare_line);
 		esql_declare_line_len = 0;
 	}
-	fputc ('\n', ppout);
-	ppcopy ("sqlca.cbl", NULL, NULL, NULL);
+	if (!sqlca_included) {
+		sqlca_included = 1;
+		fputc ('\n', ppout);
+		ppcopy ("sqlca.cbl", NULL, NULL, NULL);
+	} else {
+		fputc ('\n', ppout);
+	}
   }
   "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
 	if (esql_declare_line_len > 0) {
