@@ -69,13 +69,13 @@ jobs:
       - name: Configure database settings
         working-directory: example/esql/
         run: |
-          cat > db-config.sh << 'EOF'
-DB_NAME=testdb
-DB_HOST=postgres15
-DB_PORT=5432
-DB_USER=main_user
-DB_PASSWORD=password
-EOF
+          printf '%s\n' \
+            'DB_NAME=testdb' \
+            'DB_HOST=postgres15' \
+            'DB_PORT=5432' \
+            'DB_USER=main_user' \
+            'DB_PASSWORD=password' \
+            > db-config.sh
 
       - name: Run ESQL examples
         working-directory: example/esql/
