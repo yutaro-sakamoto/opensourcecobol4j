@@ -282,11 +282,11 @@ cb_tree esql_build_and_resolve(enum cb_sql_command command, char *sql_text,
  * Returns a cb_exec_sql AST node.
  */
 cb_tree cb_parse_exec_sql(const char *sql_text) {
-  esql_scanner_reset();
   esql_parser_init();
   esql_parsed_result = cb_error_node;
 
   YY_BUFFER_STATE buf = esql__scan_string(sql_text);
+  esql_scanner_reset();
   if (esql_parse() != 0) {
     esql_parsed_result = cb_error_node;
   }
