@@ -25,47 +25,64 @@ class SqlConnectionTest {
 
     @Test
     void testBuildJdbcUrl_Null() {
-        assertEquals("jdbc:postgresql://localhost:5432/", SqlConnection.buildJdbcUrl(null));
+        assertEquals(
+                "jdbc:postgresql://localhost:5432/",
+                SqlConnection.buildJdbcUrl(null),
+                "Null input should produce default URL");
     }
 
     @Test
     void testBuildJdbcUrl_Empty() {
-        assertEquals("jdbc:postgresql://localhost:5432/", SqlConnection.buildJdbcUrl(""));
+        assertEquals(
+                "jdbc:postgresql://localhost:5432/",
+                SqlConnection.buildJdbcUrl(""),
+                "Empty input should produce default URL");
     }
 
     @Test
     void testBuildJdbcUrl_DbNameOnly() {
-        assertEquals("jdbc:postgresql://localhost/mydb", SqlConnection.buildJdbcUrl("mydb"));
+        assertEquals(
+                "jdbc:postgresql://localhost/mydb",
+                SqlConnection.buildJdbcUrl("mydb"),
+                "DB name only should use localhost");
     }
 
     @Test
     void testBuildJdbcUrl_DbNameAtHost() {
-        assertEquals("jdbc:postgresql://myhost/mydb", SqlConnection.buildJdbcUrl("mydb@myhost"));
+        assertEquals(
+                "jdbc:postgresql://myhost/mydb",
+                SqlConnection.buildJdbcUrl("mydb@myhost"),
+                "Should parse host from db@host format");
     }
 
     @Test
     void testBuildJdbcUrl_DbNameAtHostWithPort() {
         assertEquals(
                 "jdbc:postgresql://myhost:5433/mydb",
-                SqlConnection.buildJdbcUrl("mydb@myhost:5433"));
+                SqlConnection.buildJdbcUrl("mydb@myhost:5433"),
+                "Should parse host and port from db@host:port format");
     }
 
     @Test
     void testBuildJdbcUrl_DbNameAtEmptyHostWithPort() {
         assertEquals(
-                "jdbc:postgresql://localhost:5433/mydb", SqlConnection.buildJdbcUrl("mydb@:5433"));
+                "jdbc:postgresql://localhost:5433/mydb",
+                SqlConnection.buildJdbcUrl("mydb@:5433"),
+                "Empty host should default to localhost");
     }
 
     @Test
     void testBuildJdbcUrl_DbNameAtHostNoPort() {
         assertEquals(
-                "jdbc:postgresql://server1/testdb", SqlConnection.buildJdbcUrl("testdb@server1"));
+                "jdbc:postgresql://server1/testdb",
+                SqlConnection.buildJdbcUrl("testdb@server1"),
+                "Should parse host without port");
     }
 
     @Test
     void testBuildJdbcUrl_MultipleAtSigns() {
         String result = SqlConnection.buildJdbcUrl("a@b@c");
-        assertEquals("jdbc:postgresql://c/a@b", result);
+        assertEquals("jdbc:postgresql://c/a@b", result, "Should split on last @ sign");
     }
 
     // ---------- Constructor and getters ----------
@@ -73,13 +90,13 @@ class SqlConnectionTest {
     @Test
     void testGetId() {
         SqlConnection conn = new SqlConnection("myid", null);
-        assertEquals("myid", conn.getId());
+        assertEquals("myid", conn.getId(), "getId should return the connection id");
     }
 
     @Test
     void testGetConnection_Null() {
         SqlConnection conn = new SqlConnection("id", null);
-        assertNull(conn.getConnection());
+        assertNull(conn.getConnection(), "getConnection should return null when created with null");
     }
 
     // ---------- close() with real connection ----------
@@ -87,29 +104,32 @@ class SqlConnectionTest {
     @Test
     void testClose_NullConnection() throws Exception {
         SqlConnection conn = new SqlConnection("id", null);
-        assertDoesNotThrow(() -> conn.close());
+        assertDoesNotThrow(() -> conn.close(), "close with null connection should not throw");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testClose_RealConnection() throws Exception {
         Connection realConn =
                 DriverManager.getConnection(
                         postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        assertFalse(realConn.isClosed());
+        assertFalse(realConn.isClosed(), "Connection should be open before close");
         SqlConnection conn = new SqlConnection("id", realConn);
         conn.close();
-        assertTrue(realConn.isClosed());
+        assertTrue(realConn.isClosed(), "Connection should be closed after close");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testClose_AlreadyClosedRealConnection() throws Exception {
         Connection realConn =
                 DriverManager.getConnection(
                         postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         realConn.close();
-        assertTrue(realConn.isClosed());
+        assertTrue(realConn.isClosed(), "Connection should be already closed");
         SqlConnection conn = new SqlConnection("id", realConn);
-        assertDoesNotThrow(() -> conn.close());
+        assertDoesNotThrow(
+                () -> conn.close(), "Closing already-closed connection should not throw");
     }
 
     // ---------- beginTransaction() with real connection ----------
@@ -117,16 +137,21 @@ class SqlConnectionTest {
     @Test
     void testBeginTransaction_NullConnection() throws Exception {
         SqlConnection conn = new SqlConnection("id", null);
-        assertDoesNotThrow(() -> conn.beginTransaction());
+        assertDoesNotThrow(
+                () -> conn.beginTransaction(),
+                "beginTransaction with null connection should not throw");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testBeginTransaction_RealConnection() throws Exception {
         Connection realConn =
                 DriverManager.getConnection(
                         postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         SqlConnection conn = new SqlConnection("id", realConn);
-        assertDoesNotThrow(() -> conn.beginTransaction());
+        assertDoesNotThrow(
+                () -> conn.beginTransaction(),
+                "beginTransaction should not throw on real connection");
         // Verify we can execute statements after BEGIN
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("SELECT 1");
@@ -142,42 +167,52 @@ class SqlConnectionTest {
         realConn.close();
         SqlConnection conn = new SqlConnection("id", realConn);
         // Should not throw - checks isClosed() first
-        assertDoesNotThrow(() -> conn.beginTransaction());
+        assertDoesNotThrow(
+                () -> conn.beginTransaction(),
+                "beginTransaction on closed connection should not throw");
     }
 
     // ---------- stripTrailingSpaces via reflection ----------
 
     @Test
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void testStripTrailingSpaces_Null() throws Exception {
         Method m = SqlConnection.class.getDeclaredMethod("stripTrailingSpaces", String.class);
         m.setAccessible(true);
-        assertNull(m.invoke(null, (String) null));
+        assertNull(m.invoke(null, (String) null), "stripTrailingSpaces of null should return null");
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void testStripTrailingSpaces_NoSpaces() throws Exception {
         Method m = SqlConnection.class.getDeclaredMethod("stripTrailingSpaces", String.class);
         m.setAccessible(true);
-        assertEquals("hello", m.invoke(null, "hello"));
+        assertEquals(
+                "hello",
+                m.invoke(null, "hello"),
+                "String without trailing spaces should be unchanged");
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void testStripTrailingSpaces_WithSpaces() throws Exception {
         Method m = SqlConnection.class.getDeclaredMethod("stripTrailingSpaces", String.class);
         m.setAccessible(true);
-        assertEquals("hello", m.invoke(null, "hello   "));
+        assertEquals("hello", m.invoke(null, "hello   "), "Trailing spaces should be stripped");
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void testStripTrailingSpaces_LeadingSpace() throws Exception {
         Method m = SqlConnection.class.getDeclaredMethod("stripTrailingSpaces", String.class);
         m.setAccessible(true);
-        assertEquals(" hello", m.invoke(null, " hello"));
+        assertEquals(" hello", m.invoke(null, " hello"), "Leading spaces should be preserved");
     }
 
     // ---------- connect() with real PostgreSQL ----------
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testConnect_RealPostgres() throws Exception {
         String dbSpec =
                 "testdb@"
@@ -186,10 +221,13 @@ class SqlConnectionTest {
                         + postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
         SqlConnection conn =
                 SqlConnection.connect(postgres.getUsername(), postgres.getPassword(), dbSpec);
-        assertNotNull(conn);
-        assertNotNull(conn.getConnection());
-        assertFalse(conn.getConnection().isClosed());
-        assertEquals("OCDB_DEFAULT_DBNAME", conn.getId());
+        assertNotNull(conn, "SqlConnection should not be null after connect");
+        assertNotNull(conn.getConnection(), "JDBC connection should not be null");
+        assertFalse(conn.getConnection().isClosed(), "Connection should be open");
+        assertEquals(
+                "OCDB_DEFAULT_DBNAME",
+                conn.getId(),
+                "Default connection id should be OCDB_DEFAULT_DBNAME");
         conn.close();
     }
 
@@ -200,6 +238,9 @@ class SqlConnectionTest {
                         + postgres.getHost()
                         + ":"
                         + postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
-        assertThrows(Exception.class, () -> SqlConnection.connect("bad_user", "bad_pass", dbSpec));
+        assertThrows(
+                Exception.class,
+                () -> SqlConnection.connect("bad_user", "bad_pass", dbSpec),
+                "Invalid credentials should throw an exception");
     }
 }
