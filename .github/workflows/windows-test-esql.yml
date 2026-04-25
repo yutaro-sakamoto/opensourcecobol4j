@@ -39,11 +39,6 @@ jobs:
         cd win
         ./make-install.ps1
 
-    - name: Download PostgreSQL JDBC driver
-      shell: bash
-      run: |
-        curl -L -o "C:/opensourcecobol4j/lib/postgresql.jar" https://jdbc.postgresql.org/download/postgresql-42.2.24.jre6.jar
-
     - name: Start PostgreSQL
       shell: pwsh
       run: |
@@ -90,7 +85,7 @@ jobs:
         printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
         chmod +x /tmp/diff-wrapper/diff
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-basic
 
@@ -98,7 +93,7 @@ jobs:
       shell: bash
       run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-sqlca
 
@@ -106,7 +101,7 @@ jobs:
       shell: bash
       run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-cobol-data
 
@@ -114,7 +109,7 @@ jobs:
       shell: bash
       run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-misc
 
@@ -122,7 +117,7 @@ jobs:
       shell: bash
       run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-sql-data
 
@@ -130,7 +125,7 @@ jobs:
       shell: bash
       run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar;C:/opensourcecobol4j/lib/postgresql.jar"
+        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-utf8
 

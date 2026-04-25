@@ -66,11 +66,6 @@ jobs:
           mv opensourcecobol4j/* .
           make install
 
-      - name: Download PostgreSQL JDBC driver
-        run: |
-          curl -L -o /usr/lib/opensourcecobol4j/postgresql.jar https://jdbc.postgresql.org/download/postgresql-42.2.24.jre6.jar
-          echo "CLASSPATH=$CLASSPATH:/usr/lib/opensourcecobol4j/postgresql.jar" >> "$GITHUB_ENV"
-
       - name: Setup DB info
         working-directory: tests/
         run: |

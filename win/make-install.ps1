@@ -7,3 +7,4 @@ copy .\x64\Release\cobj.exe C:\opensourcecobol4j\bin\
 copy ..\libcobj\app\build\libs\libcobj.jar C:\opensourcecobol4j\lib\
 copy ..\config\*.conf C:\opensourcecobol4j\config\
 copy ..\copy\*.cpy C:\opensourcecobol4j\copy\
+copy ..\copy\*.cbl C:\opensourcecobol4j\copy\
