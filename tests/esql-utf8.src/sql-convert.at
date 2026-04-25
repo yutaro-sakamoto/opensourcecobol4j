@@ -22,7 +22,6 @@ AT_DATA([prog.cbl], [
          03  EMP-SALARY            PIC S9(04) VALUE ZERO.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************
@@ -173,7 +172,6 @@ AT_DATA([prog.cbl], [
          03  EMP-SALARY            PIC S9(04) VALUE ZERO.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************
@@ -321,7 +319,6 @@ AT_DATA([prog.cbl], [
        01  MSG-DATA                PIC  X(105) VALUE SPACE.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************
@@ -455,7 +452,6 @@ AT_DATA([prog.cbl], [
        01  MSG-DATA                PIC  X(105) VALUE SPACE.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************
@@ -589,7 +585,6 @@ AT_DATA([prog.cbl], [
        01  MSG-DATA                PIC  X(428) VALUE SPACE.
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
       ******************************************************************
        PROCEDURE                   DIVISION.
       ******************************************************************

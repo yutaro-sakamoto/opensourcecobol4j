@@ -30,8 +30,6 @@ opensource COBOL 4Jは、COBOLプログラムからPostgreSQLデータベース�
        01  EMP-NAME  PIC X(20).
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
-
        PROCEDURE                   DIVISION.
            EXEC SQL
                CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
@@ -93,13 +91,11 @@ SQL文で使用するホスト変数は、`EXEC SQL BEGIN DECLARE SECTION END-EX
        EXEC SQL END DECLARE SECTION END-EXEC.
 ```
 
-### INCLUDE SQLCA
+### SQLCA（SQL通信領域）
 
-```cobol
-       EXEC SQL INCLUDE SQLCA END-EXEC.
-```
+SQLCAは、`EXEC SQL` 文を使用するプログラムで自動的に定義されます。各SQL文の実行後に `SQLCODE`、`SQLSTATE`、`SQLERRMC` などの診断フィールドが利用可能になります。
 
-SQL通信領域（SQLCA）をインクルードします。各SQL文の実行後に `SQLCODE`、`SQLSTATE`、`SQLERRMC` などの診断フィールドが利用可能になります。
+後方互換性のため、`EXEC SQL INCLUDE SQLCA END-EXEC` は引き続き使用できますが、記述する必要はありません。
 
 ### SELECT INTO
 
@@ -271,7 +267,7 @@ cobj -I /usr/lib/opensourcecobol4j/copy program.cbl
 java program
 ```
 
-`-I` フラグは、COPYファイル（SQLCAを含む）が格納されているディレクトリを指定します。
+`-I` フラグは、COPYファイルが格納されているディレクトリを指定します。
 
 ## 制限事項
 

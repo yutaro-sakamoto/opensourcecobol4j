@@ -15,7 +15,6 @@
        DATA                        DIVISION.
        WORKING-STORAGE             SECTION.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
 
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.

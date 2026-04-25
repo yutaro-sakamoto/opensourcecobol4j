@@ -30,8 +30,6 @@ Below is a minimal COBOL program that connects to PostgreSQL, inserts a row, rea
        01  EMP-NAME  PIC X(20).
        EXEC SQL END DECLARE SECTION END-EXEC.
 
-       EXEC SQL INCLUDE SQLCA END-EXEC.
-
        PROCEDURE                   DIVISION.
            EXEC SQL
                CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
@@ -93,13 +91,11 @@ Host variables used in SQL statements must be declared between `EXEC SQL BEGIN D
        EXEC SQL END DECLARE SECTION END-EXEC.
 ```
 
-### INCLUDE SQLCA
+### SQLCA (SQL Communication Area)
 
-```cobol
-       EXEC SQL INCLUDE SQLCA END-EXEC.
-```
+The SQLCA is automatically defined when a program uses `EXEC SQL` statements. It provides `SQLCODE`, `SQLSTATE`, `SQLERRMC`, and other diagnostic fields that are updated after each SQL statement.
 
-This includes the SQL Communication Area (SQLCA), which provides `SQLCODE`, `SQLSTATE`, `SQLERRMC`, and other diagnostic fields after each SQL statement.
+For backward compatibility, `EXEC SQL INCLUDE SQLCA END-EXEC` is still accepted but is no longer required.
 
 ### SELECT INTO
 
@@ -271,7 +267,7 @@ cobj -I /usr/lib/opensourcecobol4j/copy program.cbl
 java program
 ```
 
-The `-I` flag specifies the directory containing COPY files (including SQLCA).
+The `-I` flag specifies the directory containing COPY files.
 
 ## Limitations
 
