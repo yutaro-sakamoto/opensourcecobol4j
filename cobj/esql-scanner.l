@@ -8,6 +8,7 @@
 %option caseless
 %option prefix="esql_"
 %option stack
+%option noyy_top_state
 
 %{
 #include <string.h>
