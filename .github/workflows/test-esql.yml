@@ -124,14 +124,22 @@ jobs:
         working-directory: tests/
         run: ./esql-sql-data
 
+      - name: Run ESQL UTF-8 tests
+        id: esql-utf8
+        if: contains(inputs.configure-args, '--enable-utf8')
+        continue-on-error: true
+        working-directory: tests/
+        run: ./esql-utf8
+
       - name: Upload test logs if tests fail
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: esql-test-${{ env.ARTIFACT_NAME }}-log
+          name: esql-test-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}-log
           path: |
             tests/esql-basic.dir/
             tests/esql-sqlca.dir/
             tests/esql-cobol-data.dir/
             tests/esql-misc.dir/
             tests/esql-sql-data.dir/
+            tests/esql-utf8.dir/
