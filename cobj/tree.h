@@ -1291,6 +1291,12 @@ extern struct cb_sql_host_var *
 cb_sql_host_var_list_add(struct cb_sql_host_var *list,
                          struct cb_sql_host_var *item);
 extern cb_tree cb_parse_exec_sql(const char *sql_text);
+extern cb_tree
+esql_build_and_resolve(enum cb_sql_command command, char *sql_text,
+                       char *cursor_name, char *prepare_name, char *db_name,
+                       struct cb_sql_host_var *host_list, int host_count,
+                       struct cb_sql_host_var *res_host_list,
+                       int res_host_count, int conn_use_other_db);
 
 /*
  * SORT
