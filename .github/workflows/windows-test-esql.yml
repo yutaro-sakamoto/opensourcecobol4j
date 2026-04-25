@@ -49,11 +49,9 @@ jobs:
       run: |
         $pgDir = (Get-ChildItem "C:\Program Files\PostgreSQL" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
         $pgBin = "$pgDir\bin"
-        $pgData = "$pgDir\data"
-        # Start the pre-installed PostgreSQL service
-        & "$pgBin\pg_ctl.exe" start -D "$pgData" -l "$pgDir\log.txt" -w
-        # Create user and database
-        & "$pgBin\psql.exe" -U postgres -c "CREATE USER main_user WITH PASSWORD 'password' CREATEDB"
+        $pgData = "$env:RUNNER_TEMP\pgdata"
+        & "$pgBin\initdb.exe" -D "$pgData" -U main_user --auth=trust --encoding=UTF8
+        & "$pgBin\pg_ctl.exe" start -D "$pgData" -l "$env:RUNNER_TEMP\pglog.txt" -w
         & "$pgBin\createdb.exe" -U main_user testdb
         echo "$pgBin" >> $env:GITHUB_PATH
 
