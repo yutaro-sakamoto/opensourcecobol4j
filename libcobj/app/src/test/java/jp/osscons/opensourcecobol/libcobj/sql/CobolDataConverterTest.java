@@ -42,10 +42,10 @@ class CobolDataConverterTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("DROP TABLE IF EXISTS conv_test");
-        }
         if (conn != null && !conn.isClosed()) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("DROP TABLE IF EXISTS conv_test");
+            }
             conn.close();
         }
     }
@@ -70,7 +70,7 @@ class CobolDataConverterTest {
         byte[] data = "1234".getBytes();
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals("1234", CobolDataConverter.cobolToString(field), "Unsigned numeric 1234");
     }
 
     @Test
@@ -78,7 +78,10 @@ class CobolDataConverterTest {
         byte[] data = "123456".getBytes();
         AbstractCobolField field =
                 makeField(6, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 6, 2, 0);
-        assertEquals("1234.56", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "1234.56",
+                CobolDataConverter.cobolToString(field),
+                "Unsigned numeric with scale should insert decimal point");
     }
 
     @Test
@@ -86,7 +89,8 @@ class CobolDataConverterTest {
         byte[] data = "0012".getBytes();
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
-        assertEquals("12", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "12", CobolDataConverter.cobolToString(field), "Leading zeros should be stripped");
     }
 
     @Test
@@ -94,7 +98,7 @@ class CobolDataConverterTest {
         byte[] data = "0000".getBytes();
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
-        assertEquals("0", CobolDataConverter.cobolToString(field));
+        assertEquals("0", CobolDataConverter.cobolToString(field), "All zeros should produce 0");
     }
 
     // ============================================================
@@ -112,7 +116,10 @@ class CobolDataConverterTest {
                         4,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "1234",
+                CobolDataConverter.cobolToString(field),
+                "Positive signed trailing combined");
     }
 
     @Test
@@ -126,7 +133,10 @@ class CobolDataConverterTest {
                         4,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "-1234",
+                CobolDataConverter.cobolToString(field),
+                "Negative signed trailing combined");
     }
 
     // ============================================================
@@ -145,7 +155,10 @@ class CobolDataConverterTest {
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "1234",
+                CobolDataConverter.cobolToString(field),
+                "Positive signed trailing separate");
     }
 
     @Test
@@ -160,7 +173,10 @@ class CobolDataConverterTest {
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "-1234",
+                CobolDataConverter.cobolToString(field),
+                "Negative signed trailing separate");
     }
 
     // ============================================================
@@ -180,7 +196,10 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
-        assertEquals("+1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "+1234",
+                CobolDataConverter.cobolToString(field),
+                "Positive signed leading separate");
     }
 
     @Test
@@ -196,7 +215,10 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "-1234",
+                CobolDataConverter.cobolToString(field),
+                "Negative signed leading separate");
     }
 
     // ============================================================
@@ -215,7 +237,10 @@ class CobolDataConverterTest {
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "1234",
+                CobolDataConverter.cobolToString(field),
+                "Positive signed leading combined");
     }
 
     @Test
@@ -230,7 +255,10 @@ class CobolDataConverterTest {
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "-1234",
+                CobolDataConverter.cobolToString(field),
+                "Negative signed leading combined");
     }
 
     // ============================================================
@@ -249,7 +277,7 @@ class CobolDataConverterTest {
                         5,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals("1234", CobolDataConverter.cobolToString(field), "Signed packed positive");
     }
 
     @Test
@@ -263,7 +291,7 @@ class CobolDataConverterTest {
                         5,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals("-1234", CobolDataConverter.cobolToString(field), "Signed packed negative");
     }
 
     @Test
@@ -271,7 +299,7 @@ class CobolDataConverterTest {
         byte[] data = new byte[] {(byte) 0x12, (byte) 0x3F};
         AbstractCobolField field =
                 makeField(2, data, CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED, 3, 0, 0);
-        assertEquals("123", CobolDataConverter.cobolToString(field));
+        assertEquals("123", CobolDataConverter.cobolToString(field), "Unsigned packed");
     }
 
     // ============================================================
@@ -284,7 +312,7 @@ class CobolDataConverterTest {
         ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putShort((short) 1234);
         AbstractCobolField field =
                 makeField(2, data, CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 4, 0, 0);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals("1234", CobolDataConverter.cobolToString(field), "Unsigned binary 2 bytes");
     }
 
     @Test
@@ -299,7 +327,7 @@ class CobolDataConverterTest {
                         9,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-5678", CobolDataConverter.cobolToString(field));
+        assertEquals("-5678", CobolDataConverter.cobolToString(field), "Signed binary 4 bytes");
     }
 
     // ============================================================
@@ -311,12 +339,18 @@ class CobolDataConverterTest {
         byte[] data = "Hello     ".getBytes();
         AbstractCobolField field =
                 makeField(10, data, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
-        assertEquals("Hello", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "Hello",
+                CobolDataConverter.cobolToString(field),
+                "Alphanumeric should trim trailing spaces");
     }
 
     @Test
     void testCobolToString_Null() {
-        assertEquals("", CobolDataConverter.cobolToString(null));
+        assertEquals(
+                "",
+                CobolDataConverter.cobolToString(null),
+                "Null field should produce empty string");
     }
 
     // ============================================================
@@ -326,10 +360,10 @@ class CobolDataConverterTest {
     @Test
     void testCobolToString_Float() {
         byte[] data = new byte[8];
-        ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putDouble(3.14);
+        ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putDouble(2.75);
         AbstractCobolField field =
                 makeField(8, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE, 0, 0, 0);
-        assertEquals("3.14", CobolDataConverter.cobolToString(field));
+        assertEquals("2.75", CobolDataConverter.cobolToString(field), "Double field conversion");
     }
 
     // ============================================================
@@ -337,6 +371,7 @@ class CobolDataConverterTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testRoundTrip_UnsignedNumeric() throws Exception {
         byte[] original = "0042".getBytes();
         AbstractCobolField field =
@@ -347,15 +382,15 @@ class CobolDataConverterTest {
                 conn.prepareStatement("INSERT INTO conv_test (val) VALUES (?) RETURNING id")) {
             ps.setString(1, strVal);
             try (ResultSet rs = ps.executeQuery()) {
-                assertTrue(rs.next());
+                assertTrue(rs.next(), "INSERT should return a row");
                 int id = rs.getInt(1);
 
                 try (Statement stmt = conn.createStatement();
                         ResultSet rs2 =
                                 stmt.executeQuery("SELECT val FROM conv_test WHERE id = " + id)) {
-                    assertTrue(rs2.next());
+                    assertTrue(rs2.next(), "SELECT should return a row");
                     byte[] resultData = CobolDataConverter.getValueFromResultSet(rs2, 1);
-                    assertNotNull(resultData);
+                    assertNotNull(resultData, "Result data should not be null");
 
                     byte[] storage = new byte[4];
                     AbstractCobolField outField =
@@ -367,13 +402,17 @@ class CobolDataConverterTest {
                                     0,
                                     0);
                     CobolDataConverter.stringToCobol(outField, resultData);
-                    assertArrayEquals(original, outField.getDataStorage().getByteArray(0, 4));
+                    assertArrayEquals(
+                            original,
+                            outField.getDataStorage().getByteArray(0, 4),
+                            "Round-trip should preserve unsigned numeric data");
                 }
             }
         }
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testRoundTrip_SignedTrailingCombined() throws Exception {
         byte[] original = new byte[] {'0', '1', '2', (byte) 0x73};
         AbstractCobolField field =
@@ -385,21 +424,21 @@ class CobolDataConverterTest {
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String strVal = CobolDataConverter.cobolToString(field);
-        assertEquals("-123", strVal);
+        assertEquals("-123", strVal, "Signed trailing combined should produce -123");
 
         try (PreparedStatement ps =
                 conn.prepareStatement("INSERT INTO conv_test (val) VALUES (?) RETURNING id")) {
             ps.setString(1, strVal);
             try (ResultSet rs = ps.executeQuery()) {
-                assertTrue(rs.next());
+                assertTrue(rs.next(), "INSERT should return a row");
                 int id = rs.getInt(1);
 
                 try (Statement stmt = conn.createStatement();
                         ResultSet rs2 =
                                 stmt.executeQuery("SELECT val FROM conv_test WHERE id = " + id)) {
-                    assertTrue(rs2.next());
+                    assertTrue(rs2.next(), "SELECT should return a row");
                     byte[] resultData = CobolDataConverter.getValueFromResultSet(rs2, 1);
-                    assertNotNull(resultData);
+                    assertNotNull(resultData, "Result data should not be null");
 
                     byte[] storage = new byte[4];
                     AbstractCobolField outField =
@@ -411,33 +450,37 @@ class CobolDataConverterTest {
                                     0,
                                     CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
                     CobolDataConverter.stringToCobol(outField, resultData);
-                    assertArrayEquals(original, outField.getDataStorage().getByteArray(0, 4));
+                    assertArrayEquals(
+                            original,
+                            outField.getDataStorage().getByteArray(0, 4),
+                            "Round-trip should preserve signed trailing combined data");
                 }
             }
         }
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testRoundTrip_Alphanumeric() throws Exception {
         byte[] original = "Hello     ".getBytes();
         AbstractCobolField field =
                 makeField(10, original, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
         String strVal = CobolDataConverter.cobolToString(field);
-        assertEquals("Hello", strVal);
+        assertEquals("Hello", strVal, "Alphanumeric should trim to Hello");
 
         try (PreparedStatement ps =
                 conn.prepareStatement("INSERT INTO conv_test (val) VALUES (?) RETURNING id")) {
             ps.setString(1, strVal);
             try (ResultSet rs = ps.executeQuery()) {
-                assertTrue(rs.next());
+                assertTrue(rs.next(), "INSERT should return a row");
                 int id = rs.getInt(1);
 
                 try (Statement stmt = conn.createStatement();
                         ResultSet rs2 =
                                 stmt.executeQuery("SELECT val FROM conv_test WHERE id = " + id)) {
-                    assertTrue(rs2.next());
+                    assertTrue(rs2.next(), "SELECT should return a row");
                     byte[] resultData = CobolDataConverter.getValueFromResultSet(rs2, 1);
-                    assertNotNull(resultData);
+                    assertNotNull(resultData, "Result data should not be null");
 
                     byte[] storage = new byte[10];
                     AbstractCobolField outField =
@@ -450,7 +493,10 @@ class CobolDataConverterTest {
                                     0);
                     CobolDataConverter.stringToCobol(outField, resultData);
                     byte[] written = outField.getDataStorage().getByteArray(0, 10);
-                    assertEquals("Hello     ", new String(written));
+                    assertEquals(
+                            "Hello     ",
+                            new String(written),
+                            "Round-trip should preserve alphanumeric data with padding");
                 }
             }
         }
@@ -461,6 +507,7 @@ class CobolDataConverterTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_IntegerType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -479,8 +526,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT id FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(42, rs.getInt(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(42, rs.getInt(1), "Inserted integer value should be 42");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -489,6 +536,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_VarcharType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -507,8 +555,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT name FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals("Hello", rs.getString(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals("Hello", rs.getString(1), "Inserted varchar value should be Hello");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -517,6 +565,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_NullMetadata() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -535,8 +584,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals("1234", rs.getString(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals("1234", rs.getString(1), "Value with null metadata should be 1234");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -545,6 +594,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_DecimalType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -563,8 +613,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(1234.56, rs.getDouble(1), 0.001);
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(1234.56, rs.getDouble(1), 0.001, "Decimal value should be 1234.56");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -577,6 +627,7 @@ class CobolDataConverterTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_VarcharColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -586,10 +637,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals("Hello", new String(result));
+            assertNotNull(result, "Result should not be null");
+            assertEquals("Hello", new String(result), "Varchar value should be Hello");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -598,6 +649,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_IntegerColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -607,10 +659,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals("42", new String(result));
+            assertNotNull(result, "Result should not be null");
+            assertEquals("42", new String(result), "Integer value should be 42");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -619,6 +671,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_DecimalColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -628,10 +681,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals("123.45", new String(result));
+            assertNotNull(result, "Result should not be null");
+            assertEquals("123.45", new String(result), "Decimal value should be 123.45");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -640,6 +693,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_NullValue() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -649,9 +703,9 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNull(result);
+            assertNull(result, "NULL column should return null");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -660,6 +714,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_BigIntColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -669,10 +724,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals("9999999999", new String(result));
+            assertNotNull(result, "Result should not be null");
+            assertEquals("9999999999", new String(result), "BigInt value should match");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -681,6 +736,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_BooleanColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -690,12 +746,13 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
+            assertNotNull(result, "Result should not be null");
             // PostgreSQL may return "t" or "true" for boolean
             String boolStr = new String(result);
-            assertTrue("true".equals(boolStr) || "t".equals(boolStr));
+            assertTrue(
+                    "true".equals(boolStr) || "t".equals(boolStr), "Boolean should be true or t");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -704,19 +761,24 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_DoubleColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
             stmt.execute("CREATE TABLE rs_test (val DOUBLE PRECISION)");
-            stmt.execute("INSERT INTO rs_test (val) VALUES (3.14)");
+            stmt.execute("INSERT INTO rs_test (val) VALUES (2.75)");
         }
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals(3.14, Double.parseDouble(new String(result)), 0.001);
+            assertNotNull(result, "Result should not be null");
+            assertEquals(
+                    2.75,
+                    Double.parseDouble(new String(result)),
+                    0.001,
+                    "Double value should be 2.75");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -725,6 +787,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_DateColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -734,10 +797,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertTrue(new String(result).contains("2024-01-15"));
+            assertNotNull(result, "Result should not be null");
+            assertTrue(new String(result).contains("2024-01-15"), "Date should contain 2024-01-15");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -746,6 +809,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_TimestampColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -755,10 +819,12 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertTrue(new String(result).contains("2024-01-15"));
+            assertNotNull(result, "Result should not be null");
+            assertTrue(
+                    new String(result).contains("2024-01-15"),
+                    "Timestamp should contain 2024-01-15");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -767,6 +833,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_SmallIntColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -776,10 +843,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertEquals("123", new String(result));
+            assertNotNull(result, "Result should not be null");
+            assertEquals("123", new String(result), "SmallInt value should be 123");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -793,7 +860,9 @@ class CobolDataConverterTest {
 
     @Test
     void testStringToCobol_NullField() {
-        assertDoesNotThrow(() -> CobolDataConverter.stringToCobol(null, "42".getBytes()));
+        assertDoesNotThrow(
+                () -> CobolDataConverter.stringToCobol(null, "42".getBytes()),
+                "stringToCobol with null field should not throw");
     }
 
     @Test
@@ -801,7 +870,9 @@ class CobolDataConverterTest {
         byte[] storage = new byte[4];
         AbstractCobolField field =
                 makeField(4, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
-        assertDoesNotThrow(() -> CobolDataConverter.stringToCobol(field, null));
+        assertDoesNotThrow(
+                () -> CobolDataConverter.stringToCobol(field, null),
+                "stringToCobol with null data should not throw");
     }
 
     @Test
@@ -811,7 +882,7 @@ class CobolDataConverterTest {
                 makeField(4, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
         CobolDataConverter.stringToCobol(field, "42".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 4);
-        assertEquals("0042", new String(result));
+        assertEquals("0042", new String(result), "Unsigned numeric should be zero-padded");
     }
 
     @Test
@@ -821,7 +892,7 @@ class CobolDataConverterTest {
                 makeField(10, storage, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
         CobolDataConverter.stringToCobol(field, "Hi".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 10);
-        assertEquals("Hi        ", new String(result));
+        assertEquals("Hi        ", new String(result), "Short alphanumeric should be space-padded");
     }
 
     @Test
@@ -831,7 +902,7 @@ class CobolDataConverterTest {
                 makeField(5, storage, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
         CobolDataConverter.stringToCobol(field, "Hello".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 5);
-        assertEquals("Hello", new String(result));
+        assertEquals("Hello", new String(result), "Exact-length alphanumeric");
     }
 
     // ============================================================
@@ -852,7 +923,7 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "-123".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 4);
         // Last byte should have overpunch sign (0x40 added)
-        assertEquals((byte) 0x73, result[3]);
+        assertEquals((byte) 0x73, result[3], "Last byte should have overpunch sign for negative");
     }
 
     @Test
@@ -869,7 +940,7 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
         CobolDataConverter.stringToCobol(field, "-42".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 5);
-        assertEquals('-', (char) result[4]);
+        assertEquals('-', (char) result[4], "Sign byte should be minus");
     }
 
     @Test
@@ -886,7 +957,7 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
         CobolDataConverter.stringToCobol(field, "42".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 5);
-        assertEquals('+', (char) result[4]);
+        assertEquals('+', (char) result[4], "Sign byte should be plus for positive");
     }
 
     @Test
@@ -904,7 +975,7 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         CobolDataConverter.stringToCobol(field, "-99".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 5);
-        assertEquals('-', (char) result[0]);
+        assertEquals('-', (char) result[0], "Leading sign byte should be minus");
     }
 
     @Test
@@ -922,7 +993,8 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "-42".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 4);
         // First byte should have overpunch sign
-        assertTrue((result[0] & 0xFF) >= 0x70);
+        assertTrue(
+                (result[0] & 0xFF) >= 0x70, "First byte should have overpunch sign for negative");
     }
 
     @Test
@@ -939,7 +1011,7 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "-1234".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 3);
         // Last nibble should be 0x0D for negative
-        assertEquals(0x0D, result[2] & 0x0F);
+        assertEquals(0x0D, result[2] & 0x0F, "Last nibble should be 0x0D for negative");
     }
 
     @Test
@@ -950,7 +1022,7 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "123".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 2);
         // Last nibble should be 0x0F for unsigned
-        assertEquals(0x0F, result[1] & 0x0F);
+        assertEquals(0x0F, result[1] & 0x0F, "Last nibble should be 0x0F for unsigned");
     }
 
     @Test
@@ -958,7 +1030,8 @@ class CobolDataConverterTest {
         assertDoesNotThrow(
                 () ->
                         CobolDataConverter.stringToCobolRaw(
-                                null, new CobolDataStorage(10), 10, "42".getBytes()));
+                                null, new CobolDataStorage(10), 10, "42".getBytes()),
+                "stringToCobolRaw with null field should not throw");
     }
 
     @Test
@@ -967,7 +1040,8 @@ class CobolDataConverterTest {
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
         assertDoesNotThrow(
-                () -> CobolDataConverter.stringToCobolRaw(field, null, 4, "42".getBytes()));
+                () -> CobolDataConverter.stringToCobolRaw(field, null, 4, "42".getBytes()),
+                "stringToCobolRaw with null storage should not throw");
     }
 
     @Test
@@ -976,9 +1050,8 @@ class CobolDataConverterTest {
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 0, 0);
         assertDoesNotThrow(
-                () ->
-                        CobolDataConverter.stringToCobolRaw(
-                                field, new CobolDataStorage(10), 4, null));
+                () -> CobolDataConverter.stringToCobolRaw(field, new CobolDataStorage(10), 4, null),
+                "stringToCobolRaw with null data should not throw");
     }
 
     @Test
@@ -989,7 +1062,7 @@ class CobolDataConverterTest {
         CobolDataStorage target = new CobolDataStorage(10);
         CobolDataConverter.stringToCobolRaw(field, target, 4, "42".getBytes());
         byte[] result = target.getByteArray(0, 4);
-        assertEquals("0042", new String(result));
+        assertEquals("0042", new String(result), "Raw unsigned numeric should be zero-padded");
     }
 
     // ============================================================
@@ -1002,7 +1075,7 @@ class CobolDataConverterTest {
         byte[] data = new byte[] {(byte) 0x12, (byte) 0x3F};
         AbstractCobolField field =
                 makeField(2, data, CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED, 3, 0, 0);
-        assertEquals("123", CobolDataConverter.cobolToString(field));
+        assertEquals("123", CobolDataConverter.cobolToString(field), "Unsigned packed odd digits");
     }
 
     @Test
@@ -1011,7 +1084,8 @@ class CobolDataConverterTest {
         byte[] data = new byte[] {(byte) 0x01, (byte) 0x23, (byte) 0x4F};
         AbstractCobolField field =
                 makeField(3, data, CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED, 4, 0, 0);
-        assertEquals("1234", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "1234", CobolDataConverter.cobolToString(field), "Unsigned packed even digits");
     }
 
     @Test
@@ -1027,7 +1101,7 @@ class CobolDataConverterTest {
                         2,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("123.45", result);
+        assertEquals("123.45", result, "Signed packed with scale");
     }
 
     @Test
@@ -1035,7 +1109,7 @@ class CobolDataConverterTest {
         byte[] data = new byte[] {(byte) 42};
         AbstractCobolField field =
                 makeField(1, data, CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 3, 0, 0);
-        assertEquals("42", CobolDataConverter.cobolToString(field));
+        assertEquals("42", CobolDataConverter.cobolToString(field), "Unsigned binary 1 byte");
     }
 
     @Test
@@ -1044,7 +1118,7 @@ class CobolDataConverterTest {
         ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putInt(65536);
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 9, 0, 0);
-        assertEquals("65536", CobolDataConverter.cobolToString(field));
+        assertEquals("65536", CobolDataConverter.cobolToString(field), "Unsigned binary 4 bytes");
     }
 
     @Test
@@ -1053,7 +1127,8 @@ class CobolDataConverterTest {
         ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putLong(123456789L);
         AbstractCobolField field =
                 makeField(8, data, CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 18, 0, 0);
-        assertEquals("123456789", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "123456789", CobolDataConverter.cobolToString(field), "Unsigned binary 8 bytes");
     }
 
     @Test
@@ -1067,7 +1142,7 @@ class CobolDataConverterTest {
                         3,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-42", CobolDataConverter.cobolToString(field));
+        assertEquals("-42", CobolDataConverter.cobolToString(field), "Signed binary 1 byte");
     }
 
     @Test
@@ -1082,7 +1157,7 @@ class CobolDataConverterTest {
                         4,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-1234", CobolDataConverter.cobolToString(field));
+        assertEquals("-1234", CobolDataConverter.cobolToString(field), "Signed binary 2 bytes");
     }
 
     @Test
@@ -1097,7 +1172,7 @@ class CobolDataConverterTest {
                         18,
                         0,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
-        assertEquals("-9999", CobolDataConverter.cobolToString(field));
+        assertEquals("-9999", CobolDataConverter.cobolToString(field), "Signed binary 8 bytes");
     }
 
     @Test
@@ -1113,7 +1188,7 @@ class CobolDataConverterTest {
                         2,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("123.45", result);
+        assertEquals("123.45", result, "Signed binary with scale");
     }
 
     @Test
@@ -1129,7 +1204,7 @@ class CobolDataConverterTest {
                         4,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("0.0005", result);
+        assertEquals("0.0005", result, "Binary with scale exceeding digits");
     }
 
     @Test
@@ -1137,7 +1212,10 @@ class CobolDataConverterTest {
         byte[] data = "Test  ".getBytes();
         AbstractCobolField field =
                 makeField(6, data, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
-        assertEquals("Test", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "Test",
+                CobolDataConverter.cobolToString(field),
+                "Alphabetic should trim trailing spaces");
     }
 
     @Test
@@ -1145,16 +1223,20 @@ class CobolDataConverterTest {
         byte[] data = "      ".getBytes();
         AbstractCobolField field =
                 makeField(6, data, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
-        assertEquals("", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "",
+                CobolDataConverter.cobolToString(field),
+                "All-spaces should produce empty string");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCobolToString_National() {
         byte[] data = new byte[] {(byte) 0x82, (byte) 0xA0}; // Shift-JIS char for hiragana 'a'
         AbstractCobolField field =
                 makeField(2, data, CobolFieldAttribute.COB_TYPE_NATIONAL, 0, 0, 0);
         String result = CobolDataConverter.cobolToString(field);
-        assertNotNull(result);
+        assertNotNull(result, "National field result should not be null");
         assertFalse(
                 result.isEmpty(), "National field conversion should produce a non-empty string");
         assertEquals(1, result.length(), "Shift-JIS 0x82A0 should decode to a single character");
@@ -1174,7 +1256,10 @@ class CobolDataConverterTest {
                         0,
                         0,
                         CobolFieldAttribute.COB_FLAG_VARYING);
-        assertEquals("Hello", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "Hello",
+                CobolDataConverter.cobolToString(field),
+                "Varying alphanumeric should extract Hello");
     }
 
     @Test
@@ -1183,10 +1268,14 @@ class CobolDataConverterTest {
         byte[] data = "1234".getBytes();
         AbstractCobolField field =
                 makeField(4, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 4, 2, 0);
-        assertEquals("12.34", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "12.34",
+                CobolDataConverter.cobolToString(field),
+                "Unsigned numeric V99 should insert decimal");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCobolToString_SignedTrailingCombined_WithScale() {
         byte[] data = new byte[] {'1', '2', '3', (byte) 0x74};
         AbstractCobolField field =
@@ -1198,11 +1287,14 @@ class CobolDataConverterTest {
                         2,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertTrue(result.startsWith("-"));
-        assertTrue(result.contains("."));
+        assertTrue(
+                result.startsWith("-"), "Signed trailing combined with scale should be negative");
+        assertTrue(
+                result.contains("."), "Signed trailing combined with scale should contain decimal");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCobolToString_SignedTrailingSeparate_WithScale() {
         byte[] data = "1234-".getBytes();
         AbstractCobolField field =
@@ -1215,8 +1307,10 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
         String result = CobolDataConverter.cobolToString(field);
-        assertTrue(result.startsWith("-"));
-        assertTrue(result.contains("."));
+        assertTrue(
+                result.startsWith("-"), "Signed trailing separate with scale should be negative");
+        assertTrue(
+                result.contains("."), "Signed trailing separate with scale should contain decimal");
     }
 
     @Test
@@ -1233,10 +1327,12 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         String result = CobolDataConverter.cobolToString(field);
-        assertTrue(result.contains("."));
+        assertTrue(
+                result.contains("."), "Signed leading separate with scale should contain decimal");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCobolToString_SignedLeadingCombined_WithScale() {
         byte[] data = new byte[] {(byte) 0x71, '2', '3', '4'};
         AbstractCobolField field =
@@ -1249,8 +1345,9 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         String result = CobolDataConverter.cobolToString(field);
-        assertTrue(result.startsWith("-"));
-        assertTrue(result.contains("."));
+        assertTrue(result.startsWith("-"), "Signed leading combined with scale should be negative");
+        assertTrue(
+                result.contains("."), "Signed leading combined with scale should contain decimal");
     }
 
     // ============================================================
@@ -1264,7 +1361,7 @@ class CobolDataConverterTest {
                 makeField(6, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 6, 2, 0);
         CobolDataConverter.stringToCobol(field, "12.34".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 6);
-        assertEquals("001234", new String(result));
+        assertEquals("001234", new String(result), "Unsigned numeric with scale");
     }
 
     @Test
@@ -1281,7 +1378,9 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "-12.34".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 4);
         // Last byte should have overpunch
-        assertTrue((result[3] & 0xFF) >= 0x70);
+        assertTrue(
+                (result[3] & 0xFF) >= 0x70,
+                "Last byte should have overpunch for signed trailing combined with scale");
     }
 
     @Test
@@ -1297,7 +1396,7 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         CobolDataConverter.stringToCobol(field, "123.45".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 3);
-        assertEquals(0x0C, result[2] & 0x0F); // positive sign
+        assertEquals(0x0C, result[2] & 0x0F, "Positive sign nibble should be 0x0C");
     }
 
     @Test
@@ -1313,7 +1412,7 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_VARYING);
         CobolDataConverter.stringToCobol(field, "Hi".getBytes());
         int len = ByteBuffer.wrap(field.getDataStorage().getByteArray(0, 4)).getInt();
-        assertEquals(2, len);
+        assertEquals(2, len, "Varying length header should be 2");
     }
 
     @Test
@@ -1323,7 +1422,8 @@ class CobolDataConverterTest {
                 makeField(10, storage, CobolFieldAttribute.COB_TYPE_NATIONAL, 0, 0, 0);
         CobolDataConverter.stringToCobol(field, "AB".getBytes());
         // Should not throw
-        assertNotNull(field.getDataStorage());
+        assertNotNull(
+                field.getDataStorage(), "Storage should not be null after national conversion");
     }
 
     // ============================================================
@@ -1331,6 +1431,7 @@ class CobolDataConverterTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_TimeColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1340,10 +1441,10 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
-            assertTrue(new String(result).contains("10:30:00"));
+            assertNotNull(result, "Result should not be null");
+            assertTrue(new String(result).contains("10:30:00"), "Time should contain 10:30:00");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1352,6 +1453,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_NullDecimal() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1361,9 +1463,9 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNull(result);
+            assertNull(result, "NULL decimal should return null");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1372,6 +1474,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_NullTimestamp() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1381,9 +1484,9 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNull(result);
+            assertNull(result, "NULL timestamp should return null");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1392,6 +1495,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_NullDate() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1401,9 +1505,9 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNull(result);
+            assertNull(result, "NULL date should return null");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1412,6 +1516,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_NullTime() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1421,9 +1526,9 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNull(result);
+            assertNull(result, "NULL time should return null");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1432,6 +1537,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_CharColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1441,11 +1547,11 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
+            assertNotNull(result, "Result should not be null");
             // CHAR pads with spaces
-            assertTrue(new String(result).startsWith("ABC"));
+            assertTrue(new String(result).startsWith("ABC"), "CHAR value should start with ABC");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1454,6 +1560,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_RealColumn() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS rs_test");
@@ -1463,11 +1570,11 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             byte[] result = CobolDataConverter.getValueFromResultSet(rs, 1);
-            assertNotNull(result);
+            assertNotNull(result, "Result should not be null");
             double val = Double.parseDouble(new String(result));
-            assertEquals(1.5, val, 0.01);
+            assertEquals(1.5, val, 0.01, "Real value should be 1.5");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1480,6 +1587,7 @@ class CobolDataConverterTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_BooleanType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1500,8 +1608,8 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertTrue(rs.getBoolean(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertTrue(rs.getBoolean(1), "Boolean value should be true");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1510,6 +1618,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_BigintType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1528,8 +1637,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(9999999L, rs.getLong(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(9999999L, rs.getLong(1), "BigInt value should be 9999999");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1538,6 +1647,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_DoubleType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1557,8 +1667,8 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(3145.0, rs.getDouble(1), 0.01);
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(3145.0, rs.getDouble(1), 0.01, "Double value should be 3145.0");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1567,6 +1677,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_RealType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1586,8 +1697,8 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(150.0, rs.getFloat(1), 0.01);
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(150.0, rs.getFloat(1), 0.01, "Real value should be 150.0");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1596,6 +1707,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_DateType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1615,8 +1727,8 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals("2024-01-15", rs.getDate(1).toString());
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals("2024-01-15", rs.getDate(1).toString(), "Date should be 2024-01-15");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1625,6 +1737,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_TimestampType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1644,9 +1757,11 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
+            assertTrue(rs.next(), "Should have a row");
             Timestamp ts = rs.getTimestamp(1);
-            assertTrue(ts.toString().startsWith("2024-01-15 10:30:00"));
+            assertTrue(
+                    ts.toString().startsWith("2024-01-15 10:30:00"),
+                    "Timestamp should start with 2024-01-15 10:30:00");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1655,6 +1770,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_SmallintType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1673,8 +1789,8 @@ class CobolDataConverterTest {
 
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals(42, rs.getShort(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(42, rs.getShort(1), "SmallInt value should be 42");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1683,6 +1799,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
     void testSetParam_NumericType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1705,6 +1822,7 @@ class CobolDataConverterTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_TimeType() throws Exception {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS param_test");
@@ -1724,8 +1842,8 @@ class CobolDataConverterTest {
         // Verify the inserted value
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("SELECT val FROM param_test")) {
-            assertTrue(rs.next());
-            assertEquals("10:30:00", rs.getTime(1).toString());
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals("10:30:00", rs.getTime(1).toString(), "Time should be 10:30:00");
         }
 
         try (Statement stmt = conn.createStatement()) {
@@ -1745,7 +1863,7 @@ class CobolDataConverterTest {
                 makeField(6, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 6, 2, 0);
         CobolDataConverter.stringToCobol(field, "1234.56".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 6);
-        assertEquals("123456", new String(result));
+        assertEquals("123456", new String(result), "Scale should remove decimal point");
     }
 
     @Test
@@ -1762,7 +1880,8 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
         CobolDataConverter.stringToCobol(field, "-12.34".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 7);
-        assertEquals('-', (char) result[6]);
+        assertEquals(
+                '-', (char) result[6], "Trailing sign should be minus for negative with scale");
     }
 
     @Test
@@ -1780,7 +1899,7 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         CobolDataConverter.stringToCobol(field, "-12.34".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 5);
-        assertEquals('-', (char) result[0]);
+        assertEquals('-', (char) result[0], "Leading sign should be minus for negative with scale");
     }
 
     @Test
@@ -1798,7 +1917,9 @@ class CobolDataConverterTest {
         CobolDataConverter.stringToCobol(field, "-12.34".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 4);
         // First byte should have overpunch
-        assertTrue((result[0] & 0xFF) >= 0x70);
+        assertTrue(
+                (result[0] & 0xFF) >= 0x70,
+                "Leading combined overpunch should be present with scale");
     }
 
     @Test
@@ -1814,7 +1935,7 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         CobolDataConverter.stringToCobol(field, "1234".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 3);
-        assertEquals(0x0C, result[2] & 0x0F); // positive sign
+        assertEquals(0x0C, result[2] & 0x0F, "Positive sign nibble should be 0x0C");
     }
 
     @Test
@@ -1824,7 +1945,7 @@ class CobolDataConverterTest {
                 makeField(3, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED, 4, 0, 0);
         CobolDataConverter.stringToCobol(field, "1234".getBytes());
         byte[] result = field.getDataStorage().getByteArray(0, 3);
-        assertEquals(0x0F, result[2] & 0x0F); // unsigned
+        assertEquals(0x0F, result[2] & 0x0F, "Unsigned sign nibble should be 0x0F");
     }
 
     @Test
@@ -1834,7 +1955,7 @@ class CobolDataConverterTest {
         AbstractCobolField field =
                 makeField(4, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 9, 0, 0);
         CobolDataConverter.stringToCobol(field, "42".getBytes());
-        assertNotNull(field.getDataStorage());
+        assertNotNull(field.getDataStorage(), "Storage should not be null after binary write");
     }
 
     @Test
@@ -1842,8 +1963,8 @@ class CobolDataConverterTest {
         byte[] storage = new byte[8];
         AbstractCobolField field =
                 makeField(8, storage, CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE, 0, 0, 0);
-        CobolDataConverter.stringToCobol(field, "3.14".getBytes());
-        assertNotNull(field.getDataStorage());
+        CobolDataConverter.stringToCobol(field, "2.75".getBytes());
+        assertNotNull(field.getDataStorage(), "Storage should not be null after float write");
     }
 
     @Test
@@ -1859,7 +1980,8 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_VARYING
                                 | CobolFieldAttribute.COB_FLAG_NATIONAL_VARYING);
         CobolDataConverter.stringToCobol(field, new byte[] {(byte) 0x82, (byte) 0xA0});
-        assertNotNull(field.getDataStorage());
+        assertNotNull(
+                field.getDataStorage(), "Storage should not be null after Japanese varying write");
     }
 
     @Test
@@ -1880,14 +2002,17 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_VARYING
                                 | CobolFieldAttribute.COB_FLAG_NATIONAL_VARYING);
         String result = CobolDataConverter.cobolToString(field);
-        assertNotNull(result);
+        assertNotNull(result, "Japanese varying result should not be null");
     }
 
     @Test
     void testCobolToString_Group() {
         byte[] data = "Hello     ".getBytes();
         AbstractCobolField field = makeField(10, data, CobolFieldAttribute.COB_TYPE_GROUP, 0, 0, 0);
-        assertEquals("Hello", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "Hello",
+                CobolDataConverter.cobolToString(field),
+                "Group type should trim trailing spaces");
     }
 
     @Test
@@ -1904,10 +2029,11 @@ class CobolDataConverterTest {
                         -2,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("12300", result);
+        assertEquals("12300", result, "Signed packed PP should produce 12300");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCobolToString_SignedPacked_ScaleExceedsLength() {
         // PIC S9V9999 COMP-3 (scale = 4, digits = 5, 5 digits stored)
         // This exercises the -scale > length branch
@@ -1921,8 +2047,8 @@ class CobolDataConverterTest {
                         4,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         String result = CobolDataConverter.cobolToString(field);
-        assertNotNull(result);
-        assertTrue(result.contains("."));
+        assertNotNull(result, "Result should not be null");
+        assertTrue(result.contains("."), "Result should contain decimal point");
     }
 
     @Test
@@ -1939,7 +2065,7 @@ class CobolDataConverterTest {
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN);
         CobolDataStorage target = new CobolDataStorage(10);
         CobolDataConverter.stringToCobolRaw(field, target, 2, "12300".getBytes());
-        assertNotNull(target);
+        assertNotNull(target, "Target storage should not be null after packed PP write");
     }
 
     @Test
@@ -1956,7 +2082,7 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("+0042", result);
+        assertEquals("+0042", result, "Signed leading separate no scale");
     }
 
     @Test
@@ -1965,6 +2091,9 @@ class CobolDataConverterTest {
                 new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
         AbstractCobolField field =
                 CobolFieldFactory.makeCobolField(10, (CobolDataStorage) null, attr);
-        assertEquals("", CobolDataConverter.cobolToString(field));
+        assertEquals(
+                "",
+                CobolDataConverter.cobolToString(field),
+                "Null storage should produce empty string");
     }
 }

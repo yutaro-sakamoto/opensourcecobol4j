@@ -47,6 +47,7 @@ class CobolSqlTest {
     }
 
     @BeforeEach
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void setUp() throws Exception {
         sqlca = new CobolDataStorage(136);
 
@@ -60,7 +61,7 @@ class CobolSqlTest {
         ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     @AfterEach
     void tearDown() throws Exception {
         // Close ALL connections registered in SqlState, not just the default
@@ -78,7 +79,7 @@ class CobolSqlTest {
                 } catch (Exception ignored) {
                 }
             }
-        } catch (Exception ignored) {
+        } catch (ReflectiveOperationException ignored) {
         }
         resetStaticField(SqlState.class, "connections", new java.util.HashMap<>());
         resetStaticField(SqlState.class, "cursors", new java.util.HashMap<>());
@@ -90,7 +91,7 @@ class CobolSqlTest {
         ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     private void resetStaticField(Class<?> clazz, String fieldName, Object value) throws Exception {
         Field f = clazz.getDeclaredField(fieldName);
         f.setAccessible(true);
@@ -156,16 +157,17 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testConnect_Success() throws Exception {
         connectToPostgres();
-        assertNotNull(SqlState.getDefaultConnection());
+        assertNotNull(SqlState.getDefaultConnection(), "Default connection should not be null");
 
         // Verify the connection is usable by executing a simple query
         Connection c = SqlState.getDefaultConnection().getConnection();
         try (Statement stmt = c.createStatement();
                 java.sql.ResultSet rs = stmt.executeQuery("SELECT 1")) {
-            assertTrue(rs.next());
-            assertEquals(1, rs.getInt(1));
+            assertTrue(rs.next(), "Query should return a row");
+            assertEquals(1, rs.getInt(1), "SELECT 1 should return 1");
         }
     }
 
@@ -173,21 +175,28 @@ class CobolSqlTest {
     void testConnect_NullStorage() {
         CobolSql.connect(sqlca, null, 0, null, 0, null, 0);
         // With null storage and no env vars, should get a connection error
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(
+                0, getSqlCode(), "Connect with null storage should produce non-zero SQLCODE");
     }
 
     @Test
     void testDisconnect_NoConnection() {
         CobolSql.disconnect(sqlca);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Disconnect without connection should return ECPG_NO_CONN");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testDisconnect_Success() throws Exception {
         connectToPostgres();
         CobolSql.disconnect(sqlca);
-        assertEquals(0, getSqlCode());
-        assertNull(SqlState.getDefaultConnection());
+        assertEquals(0, getSqlCode(), "Disconnect should succeed");
+        assertNull(
+                SqlState.getDefaultConnection(),
+                "Default connection should be null after disconnect");
     }
 
     // ============================================================
@@ -197,24 +206,30 @@ class CobolSqlTest {
     @Test
     void testExec_NoConnection() {
         CobolSql.exec(sqlca, "SELECT 1");
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Exec without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testExec_NullQuery() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Exec with null query should return ECPG_EMPTY");
     }
 
     @Test
     void testExec_EmptyQuery() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, "");
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Exec with empty query should return ECPG_EMPTY");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testExec_CreateTable() throws Exception {
         // Use a fresh connection to avoid stale state from other tests
         Connection freshConn =
@@ -231,10 +246,11 @@ class CobolSqlTest {
         assertEquals(0, getSqlCode(), "CREATE TABLE failed with state: " + getSqlState());
         // Clean up
         CobolSql.exec(sqlca, "DROP TABLE exec_test");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "DROP TABLE should succeed");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testExec_InsertAndCommit() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -243,10 +259,10 @@ class CobolSqlTest {
         }
 
         CobolSql.exec(sqlca, "INSERT INTO exec_test VALUES (42)");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "INSERT should succeed");
 
         CobolSql.exec(sqlca, "COMMIT");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "COMMIT should succeed");
 
         // Clean up
         try (Statement stmt = realConn.createStatement()) {
@@ -258,31 +274,32 @@ class CobolSqlTest {
     void testExec_Rollback() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, "ROLLBACK");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ROLLBACK should succeed");
     }
 
     @Test
     void testExec_Begin() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, "BEGIN");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "BEGIN should succeed");
     }
 
     @Test
     void testExec_InvalidTable() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, "INSERT INTO nonexistent_table VALUES (1)");
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "Insert into nonexistent table should fail");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testExec_CommitClearsCursors() throws Exception {
         registerRealConnection();
         SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
         SqlState.getCursor("c1").isOpened = true;
         CobolSql.exec(sqlca, "COMMIT");
-        assertEquals(0, getSqlCode());
-        assertFalse(SqlState.getCursor("c1").isOpened);
+        assertEquals(0, getSqlCode(), "COMMIT should succeed");
+        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
     }
 
     // ============================================================
@@ -293,17 +310,24 @@ class CobolSqlTest {
     void testExecWithParams_NoConnection() {
         CobolSql.execWithParams(
                 sqlca, "INSERT INTO t VALUES(?)", makeNumericField(4, "0042".getBytes()));
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "ExecWithParams without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testExecWithParams_NullQuery() throws Exception {
         registerRealConnection();
         CobolSql.execWithParams(sqlca, null, makeNumericField(4, "0042".getBytes()));
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "ExecWithParams with null query should return ECPG_EMPTY");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testExecWithParams_Success() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -316,14 +340,14 @@ class CobolSqlTest {
                 "INSERT INTO param_exec VALUES (?, ?)",
                 makeNumericField(4, "0042".getBytes()),
                 makeAlphaField(5, "Hello".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ExecWithParams INSERT should succeed");
 
         // Verify
         try (Statement stmt = realConn.createStatement();
                 java.sql.ResultSet rs = stmt.executeQuery("SELECT id, name FROM param_exec")) {
-            assertTrue(rs.next());
-            assertEquals(42, rs.getInt(1));
-            assertEquals("Hello", rs.getString(2));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(42, rs.getInt(1), "Inserted id should be 42");
+            assertEquals("Hello", rs.getString(2), "Inserted name should be Hello");
         }
 
         try (Statement stmt = realConn.createStatement()) {
@@ -340,7 +364,7 @@ class CobolSqlTest {
         }
         CobolSql.execWithParams(
                 sqlca, "INSERT INTO param_exec2 VALUES (1)", (AbstractCobolField[]) null);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ExecWithParams with null params should succeed");
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE param_exec2");
         }
@@ -357,7 +381,10 @@ class CobolSqlTest {
 
         CobolSql.execWithParams(
                 sqlca, "INSERT INTO uniq_test VALUES (?)", makeNumericField(4, "0001".getBytes()));
-        assertEquals(SqlCA.ECPG_DUPLICATE_KEY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_DUPLICATE_KEY,
+                getSqlCode(),
+                "Duplicate key should return ECPG_DUPLICATE_KEY");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE uniq_test");
@@ -371,14 +398,20 @@ class CobolSqlTest {
     @Test
     void testSelectInto_NoConnection() {
         CobolSql.selectInto(sqlca, "SELECT 1", null, null);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "SelectInto without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testSelectInto_NullQuery() throws Exception {
         registerRealConnection();
         CobolSql.selectInto(sqlca, null, null, null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "SelectInto with null query should return ECPG_EMPTY");
     }
 
     @Test
@@ -396,7 +429,10 @@ class CobolSqlTest {
                 "SELECT name FROM sel_test WHERE id = 999",
                 null,
                 new AbstractCobolField[] {resultField});
-        assertEquals(SqlCA.ECPG_NOT_FOUND, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NOT_FOUND,
+                getSqlCode(),
+                "SelectInto with no results should return ECPG_NOT_FOUND");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -404,6 +440,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSelectInto_WithResults() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -419,9 +456,9 @@ class CobolSqlTest {
                 "SELECT name FROM sel_test WHERE id = 1",
                 null,
                 new AbstractCobolField[] {resultField});
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectInto should succeed");
         String result = new String(resultField.getDataStorage().getByteArray(0, 5)).trim();
-        assertEquals("World", result);
+        assertEquals("World", result, "Selected value should be World");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -429,6 +466,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSelectInto_WithInputParams() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -445,9 +483,9 @@ class CobolSqlTest {
                 "SELECT name FROM sel_test WHERE id = ?",
                 new AbstractCobolField[] {inputField},
                 new AbstractCobolField[] {resultField});
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectInto with params should succeed");
         String result = new String(resultField.getDataStorage().getByteArray(0, 5)).trim();
-        assertEquals("World", result);
+        assertEquals("World", result, "Selected value should be World");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -464,7 +502,7 @@ class CobolSqlTest {
         }
 
         CobolSql.selectInto(sqlca, "SELECT id FROM sel_test", null, null);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectInto with null result params should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -481,7 +519,7 @@ class CobolSqlTest {
         }
 
         CobolSql.selectInto(sqlca, "SELECT id FROM sel_test", null, new AbstractCobolField[] {});
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectInto with empty result params should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -489,6 +527,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSelectInto_NullValueInResult() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -502,8 +541,9 @@ class CobolSqlTest {
         AbstractCobolField resultField = makeAlphaField(10, data);
         CobolSql.selectInto(
                 sqlca, "SELECT name FROM sel_test", null, new AbstractCobolField[] {resultField});
-        assertEquals(0, getSqlCode());
-        assertEquals(0, resultField.getDataStorage().getByte(0));
+        assertEquals(0, getSqlCode(), "SelectInto with NULL value should succeed");
+        assertEquals(
+                0, resultField.getDataStorage().getByte(0), "NULL value should zero out storage");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -515,22 +555,25 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testDeclareCursor_Success() {
         CobolSql.declareCursor(sqlca, "c1", "SELECT * FROM t");
-        assertEquals(0, getSqlCode());
-        assertNotNull(SqlState.getCursor("c1"));
+        assertEquals(0, getSqlCode(), "Declare cursor should succeed");
+        assertNotNull(SqlState.getCursor("c1"), "Cursor should be registered");
     }
 
     @Test
     void testDeclareCursor_NullName() {
         CobolSql.declareCursor(sqlca, null, "SELECT 1");
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with null name should return ECPG_EMPTY");
     }
 
     @Test
     void testDeclareCursor_NullQuery() {
         CobolSql.declareCursor(sqlca, "c1", null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with null query should return ECPG_EMPTY");
     }
 
     @Test
@@ -539,33 +582,44 @@ class CobolSqlTest {
         cursor.isOpened = true;
         SqlState.addCursor("c1", cursor);
         CobolSql.declareCursor(sqlca, "c1", "SELECT 2");
-        assertEquals(SqlCA.ECPG_WARNING_PORTAL_EXISTS, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_PORTAL_EXISTS,
+                getSqlCode(),
+                "Declaring already-opened cursor should return ECPG_WARNING_PORTAL_EXISTS");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testDeclareCursor_ExistingClosed() {
         SqlCursor cursor = new SqlCursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
         CobolSql.declareCursor(sqlca, "c1", "SELECT 2");
-        assertEquals(0, getSqlCode());
-        assertEquals("SELECT 2", SqlState.getCursor("c1").query);
+        assertEquals(0, getSqlCode(), "Re-declaring closed cursor should succeed");
+        assertEquals("SELECT 2", SqlState.getCursor("c1").query, "Cursor query should be updated");
     }
 
     @Test
     void testOpenCursor_NoConnection() {
         CobolSql.openCursor(sqlca, "c1");
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Open cursor without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testOpenCursor_CursorNotFound() throws Exception {
         registerRealConnection();
         CobolSql.openCursor(sqlca, "nonexistent");
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "Open nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCursorLifecycle_RealDB() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -577,37 +631,38 @@ class CobolSqlTest {
 
         // Declare
         CobolSql.declareCursor(sqlca, "myc", "SELECT name FROM cur_test ORDER BY id");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Declare cursor should succeed");
 
         // Open
         CobolSql.openCursor(sqlca, "myc");
-        assertEquals(0, getSqlCode());
-        assertTrue(SqlState.getCursor("myc").isOpened);
+        assertEquals(0, getSqlCode(), "Open cursor should succeed");
+        assertTrue(SqlState.getCursor("myc").isOpened, "Cursor should be opened");
 
         // Fetch first row
         byte[] data1 = new byte[20];
         AbstractCobolField field1 = makeAlphaField(20, data1);
         CobolSql.fetchCursor(sqlca, "myc", field1);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Fetch first row should succeed");
         String result1 = new String(field1.getDataStorage().getByteArray(0, 5)).trim();
-        assertEquals("Alice", result1);
+        assertEquals("Alice", result1, "First row should be Alice");
 
         // Fetch second row
         byte[] data2 = new byte[20];
         AbstractCobolField field2 = makeAlphaField(20, data2);
         CobolSql.fetchCursor(sqlca, "myc", field2);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Fetch second row should succeed");
         String result2 = new String(field2.getDataStorage().getByteArray(0, 3)).trim();
-        assertEquals("Bob", result2);
+        assertEquals("Bob", result2, "Second row should be Bob");
 
         // Fetch past end
         CobolSql.fetchCursor(sqlca, "myc");
-        assertEquals(SqlCA.ECPG_NOT_FOUND, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NOT_FOUND, getSqlCode(), "Fetch past end should return ECPG_NOT_FOUND");
 
         // Close
         CobolSql.closeCursor(sqlca, "myc");
-        assertEquals(0, getSqlCode());
-        assertFalse(SqlState.getCursor("myc").isOpened);
+        assertEquals(0, getSqlCode(), "Close cursor should succeed");
+        assertFalse(SqlState.getCursor("myc").isOpened, "Cursor should be closed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE cur_test");
@@ -617,14 +672,20 @@ class CobolSqlTest {
     @Test
     void testFetchCursor_NoConnection() {
         CobolSql.fetchCursor(sqlca, "c1");
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Fetch without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testFetchCursor_CursorNotFound() throws Exception {
         registerRealConnection();
         CobolSql.fetchCursor(sqlca, "nonexistent");
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "Fetch nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -634,20 +695,29 @@ class CobolSqlTest {
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
         CobolSql.fetchCursor(sqlca, "c1");
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "Fetch closed cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
     void testCloseCursor_NoConnection() {
         CobolSql.closeCursor(sqlca, "c1");
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Close cursor without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testCloseCursor_CursorNotFound() throws Exception {
         registerRealConnection();
         CobolSql.closeCursor(sqlca, "nonexistent");
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "Close nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -657,7 +727,10 @@ class CobolSqlTest {
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
         CobolSql.closeCursor(sqlca, "c1");
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "Close not-opened cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     // ============================================================
@@ -665,25 +738,32 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testDeclareCursorWithParams_Success() {
         AbstractCobolField param = makeNumericField(4, "0001".getBytes());
         CobolSql.declareCursorWithParams(sqlca, "c1", "SELECT * FROM t WHERE id=?", param);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "DeclareCursorWithParams should succeed");
         SqlCursor c = SqlState.getCursor("c1");
-        assertNotNull(c);
-        assertEquals(1, c.nParams);
+        assertNotNull(c, "Cursor should be registered");
+        assertEquals(1, c.nParams, "Cursor should have 1 param");
     }
 
     @Test
     void testDeclareCursorWithParams_NullName() {
         CobolSql.declareCursorWithParams(sqlca, null, "SELECT 1");
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "DeclareCursorWithParams with null name should return ECPG_EMPTY");
     }
 
     @Test
     void testDeclareCursorWithParams_EmptyQuery() {
         CobolSql.declareCursorWithParams(sqlca, "c1", "");
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "DeclareCursorWithParams with empty query should return ECPG_EMPTY");
     }
 
     @Test
@@ -692,14 +772,18 @@ class CobolSqlTest {
         cursor.isOpened = true;
         SqlState.addCursor("c1", cursor);
         CobolSql.declareCursorWithParams(sqlca, "c1", "SELECT 2");
-        assertEquals(SqlCA.ECPG_WARNING_PORTAL_EXISTS, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_PORTAL_EXISTS,
+                getSqlCode(),
+                "Declaring already-opened cursor should return ECPG_WARNING_PORTAL_EXISTS");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testDeclareCursorWithParams_NullParams() {
         CobolSql.declareCursorWithParams(sqlca, "c1", "SELECT 1", (AbstractCobolField[]) null);
-        assertEquals(0, getSqlCode());
-        assertEquals(0, SqlState.getCursor("c1").nParams);
+        assertEquals(0, getSqlCode(), "DeclareCursorWithParams with null params should succeed");
+        assertEquals(0, SqlState.getCursor("c1").nParams, "Cursor should have 0 params");
     }
 
     // ============================================================
@@ -709,14 +793,21 @@ class CobolSqlTest {
     @Test
     void testOpenCursorWithParams_NoConnection() {
         CobolSql.openCursorWithParams(sqlca, "c1", makeNumericField(4, "0001".getBytes()));
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "OpenCursorWithParams without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testOpenCursorWithParams_CursorNotFound() throws Exception {
         registerRealConnection();
         CobolSql.openCursorWithParams(sqlca, "nonexistent", makeNumericField(4, "0001".getBytes()));
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "OpenCursorWithParams for nonexistent cursor should return"
+                        + " ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     // ============================================================
@@ -726,14 +817,21 @@ class CobolSqlTest {
     @Test
     void testFetchCursorOccurs_NoConnection() {
         CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "FetchCursorOccurs without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testFetchCursorOccurs_CursorNotFound() throws Exception {
         registerRealConnection();
         CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "FetchCursorOccurs for nonexistent cursor should return"
+                        + " ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -743,7 +841,10 @@ class CobolSqlTest {
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
         CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
-        assertEquals(SqlCA.ECPG_WARNING_UNKNOWN_PORTAL, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                getSqlCode(),
+                "FetchCursorOccurs for closed cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     // ============================================================
@@ -753,14 +854,20 @@ class CobolSqlTest {
     @Test
     void testSelectIntoOccurs_NoConnection() {
         CobolSql.selectIntoOccurs(sqlca, "SELECT 1", null, null, 10, 5);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "SelectIntoOccurs without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testSelectIntoOccurs_NullQuery() throws Exception {
         registerRealConnection();
         CobolSql.selectIntoOccurs(sqlca, null, null, null, 10, 5);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "SelectIntoOccurs with null query should return ECPG_EMPTY");
     }
 
     // ============================================================
@@ -770,33 +877,41 @@ class CobolSqlTest {
     @Test
     void testCommit_NoConnection() {
         CobolSql.commit(sqlca);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Commit without connection should return ECPG_NO_CONN");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCommit_Success() throws Exception {
         registerRealConnection();
         SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
         SqlState.getCursor("c1").isOpened = true;
         CobolSql.commit(sqlca);
-        assertEquals(0, getSqlCode());
-        assertFalse(SqlState.getCursor("c1").isOpened);
+        assertEquals(0, getSqlCode(), "Commit should succeed");
+        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after commit");
     }
 
     @Test
     void testRollback_NoConnection() {
         CobolSql.rollback(sqlca);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "Rollback without connection should return ECPG_NO_CONN");
     }
 
     @Test
     void testRollback_Success() throws Exception {
         registerRealConnection();
         CobolSql.rollback(sqlca);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Rollback should succeed");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testRollback_UndoesInsert() throws Exception {
         // Create the table OUTSIDE any transaction so it persists after rollback
         Connection setupConn =
@@ -812,16 +927,16 @@ class CobolSqlTest {
         Connection realConn = registerRealConnection();
 
         CobolSql.exec(sqlca, "INSERT INTO rollback_test VALUES (1)");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "INSERT should succeed");
 
         CobolSql.exec(sqlca, "ROLLBACK");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ROLLBACK should succeed");
 
         // Verify the insert was rolled back
         try (Statement stmt = realConn.createStatement();
                 java.sql.ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM rollback_test")) {
-            assertTrue(rs.next());
-            assertEquals(0, rs.getInt(1));
+            assertTrue(rs.next(), "COUNT query should return a row");
+            assertEquals(0, rs.getInt(1), "Rolled-back table should have 0 rows");
         }
 
         try (Statement stmt = realConn.createStatement()) {
@@ -836,49 +951,59 @@ class CobolSqlTest {
     @Test
     void testPrepare_NullName() {
         CobolSql.prepare(sqlca, null, null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Prepare with null name should return ECPG_EMPTY");
     }
 
     @Test
     void testPrepare_EmptyName() {
         CobolSql.prepare(sqlca, "", null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Prepare with empty name should return ECPG_EMPTY");
     }
 
     @Test
     void testPrepare_NullQueryField() {
         CobolSql.prepare(sqlca, "stmt1", null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "Prepare with null query field should return ECPG_EMPTY");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testPrepare_Success_NoParams() {
         byte[] data = "SELECT * FROM t".getBytes();
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolSql.prepare(sqlca, "stmt1", field);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Prepare should succeed");
         String[] prepared = SqlState.getPrepared("stmt1");
-        assertNotNull(prepared);
-        assertEquals("SELECT * FROM t", prepared[0]);
-        assertEquals("0", prepared[1]);
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertEquals("SELECT * FROM t", prepared[0], "Prepared query should match");
+        assertEquals("0", prepared[1], "Prepared param count should be 0");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testPrepare_Success_WithHostVars() {
         byte[] data = "SELECT * FROM t WHERE id=:id AND name=:name".getBytes();
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolSql.prepare(sqlca, "stmt2", field);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Prepare with host vars should succeed");
         String[] prepared = SqlState.getPrepared("stmt2");
-        assertNotNull(prepared);
-        assertTrue(prepared[0].contains("?"));
-        assertEquals("2", prepared[1]);
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(prepared[0].contains("?"), "Host vars should be replaced with ?");
+        assertEquals("2", prepared[1], "Prepared param count should be 2");
     }
 
     @Test
     void testExecutePrepared_NotFound() {
         CobolSql.executePrepared(sqlca, "nonexistent");
-        assertEquals(SqlCA.ECPG_INVALID_STMT, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_INVALID_STMT,
+                getSqlCode(),
+                "Execute nonexistent prepared should return ECPG_INVALID_STMT");
     }
 
     @Test
@@ -892,7 +1017,7 @@ class CobolSqlTest {
 
         SqlState.addPrepared("stmt1", "SELECT 1", 0);
         CobolSql.executePrepared(sqlca, "stmt1");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ExecutePrepared should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE prep_test");
@@ -900,6 +1025,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testExecutePrepared_WithParams() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -909,12 +1035,12 @@ class CobolSqlTest {
 
         SqlState.addPrepared("stmt1", "INSERT INTO prep_test VALUES (?)", 1);
         CobolSql.executePrepared(sqlca, "stmt1", makeNumericField(4, "0042".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "ExecutePrepared with params should succeed");
 
         try (Statement stmt = realConn.createStatement();
                 java.sql.ResultSet rs = stmt.executeQuery("SELECT id FROM prep_test")) {
-            assertTrue(rs.next());
-            assertEquals(42, rs.getInt(1));
+            assertTrue(rs.next(), "Should have a row");
+            assertEquals(42, rs.getInt(1), "Prepared insert value should be 42");
         }
 
         try (Statement stmt = realConn.createStatement()) {
@@ -929,21 +1055,27 @@ class CobolSqlTest {
     @Test
     void testConnectInformal_NullInfo() {
         CobolSql.connectInformal(sqlca, null, 0);
-        assertEquals(SqlCA.ECPG_CONNECT, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_CONNECT,
+                getSqlCode(),
+                "ConnectInformal with null should return ECPG_CONNECT");
     }
 
     @Test
     void testConnectInformal_EmptyInfo() {
         CobolDataStorage info = new CobolDataStorage(new byte[0]);
         CobolSql.connectInformal(sqlca, info, 0);
-        assertEquals(SqlCA.ECPG_CONNECT, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_CONNECT,
+                getSqlCode(),
+                "ConnectInformal with empty info should return ECPG_CONNECT");
     }
 
     @Test
     void testConnectShort() {
         CobolSql.connectShort(sqlca);
         // Will fail because no env vars set - exercises code path
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "ConnectShort without env vars should fail");
     }
 
     // ============================================================
@@ -954,7 +1086,10 @@ class CobolSqlTest {
     void testIdExec_NoConnection() {
         byte[] atdb = "mydb".getBytes();
         CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "SELECT 1");
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "IdExec without connection should return ECPG_NO_CONN");
     }
 
     @Test
@@ -969,7 +1104,8 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, null);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "IdExec with null query should return ECPG_EMPTY");
         realConn.close();
     }
 
@@ -985,7 +1121,7 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "SELECT 1");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdExec should succeed");
         realConn.close();
     }
 
@@ -993,10 +1129,14 @@ class CobolSqlTest {
     void testIdDisconnect_NoConnection() {
         byte[] atdb = "mydb".getBytes();
         CobolSql.idDisconnect(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "IdDisconnect without connection should return ECPG_NO_CONN");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testIdDisconnect_Success() throws Exception {
         byte[] atdb = "mydb".getBytes();
         Connection realConn =
@@ -1008,15 +1148,18 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idDisconnect(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode());
-        assertTrue(realConn.isClosed());
+        assertEquals(0, getSqlCode(), "IdDisconnect should succeed");
+        assertTrue(realConn.isClosed(), "Connection should be closed after idDisconnect");
     }
 
     @Test
     void testIdCommit_NoConnection() {
         byte[] atdb = "mydb".getBytes();
         CobolSql.idCommit(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "IdCommit without connection should return ECPG_NO_CONN");
     }
 
     @Test
@@ -1031,7 +1174,7 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idCommit(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdCommit should succeed");
         realConn.close();
     }
 
@@ -1039,7 +1182,10 @@ class CobolSqlTest {
     void testIdRollback_NoConnection() {
         byte[] atdb = "mydb".getBytes();
         CobolSql.idRollback(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "IdRollback without connection should return ECPG_NO_CONN");
     }
 
     @Test
@@ -1054,7 +1200,7 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idRollback(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdRollback should succeed");
         realConn.close();
     }
 
@@ -1068,7 +1214,10 @@ class CobolSqlTest {
                 "INSERT INTO t VALUES(?)",
                 1,
                 makeNumericField(4, "0042".getBytes()));
-        assertEquals(SqlCA.ECPG_NO_CONN, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NO_CONN,
+                getSqlCode(),
+                "IdExecParams without connection should return ECPG_NO_CONN");
     }
 
     @Test
@@ -1083,7 +1232,10 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idExecParams(sqlca, new CobolDataStorage(atdb), atdb.length, null, 0);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "IdExecParams with null query should return ECPG_EMPTY");
         realConn.close();
     }
 
@@ -1108,7 +1260,7 @@ class CobolSqlTest {
                 "INSERT INTO id_param_test VALUES (?)",
                 1,
                 makeNumericField(4, "0042".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdExecParams should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE id_param_test");
@@ -1117,6 +1269,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testIdExec_Commit() throws Exception {
         byte[] atdb = "mydb".getBytes();
         Connection realConn =
@@ -1130,8 +1283,8 @@ class CobolSqlTest {
         SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
         SqlState.getCursor("c1").isOpened = true;
         CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "COMMIT");
-        assertEquals(0, getSqlCode());
-        assertFalse(SqlState.getCursor("c1").isOpened);
+        assertEquals(0, getSqlCode(), "IdExec COMMIT should succeed");
+        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
         realConn.close();
     }
 
@@ -1147,7 +1300,7 @@ class CobolSqlTest {
         }
         SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
         CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "ROLLBACK");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdExec ROLLBACK should succeed");
         realConn.close();
     }
 
@@ -1159,7 +1312,7 @@ class CobolSqlTest {
     void testExec_TableNotExists() throws Exception {
         registerRealConnection();
         CobolSql.exec(sqlca, "SELECT * FROM table_that_does_not_exist");
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "Query on nonexistent table should fail");
     }
 
     @Test
@@ -1169,7 +1322,7 @@ class CobolSqlTest {
                 sqlca,
                 "INSERT INTO table_that_does_not_exist VALUES (?)",
                 makeNumericField(4, "0001".getBytes()));
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "Insert into nonexistent table should fail");
     }
 
     // ============================================================
@@ -1181,43 +1334,22 @@ class CobolSqlTest {
         // NOTE: This test only verifies the error path because connectInformal parses
         // "user/passwd@dbname" format, and the @ character in the container's JDBC URL
         // conflicts with the @ delimiter used to separate user/pass from dbname.
-        // A successful connect test would require a matching environment variable or
-        // a dbname format that does not contain @. The parsing code path is still exercised.
-        // connectInformal parses "user/passwd@dbname" format
-        // dbname part is passed to buildJdbcUrl as-is, which supports "dbname@host:port"
-        String host = postgres.getHost();
-        int port = postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
-        // The @ in the connection string is split by lastIndexOf('@')
-        // So we need: user/pass@dbname@host:port
-        // lastIndexOf('@') splits into rest="user/pass@dbname", dbname="host:port" -- wrong!
-        // Actually the code uses lastIndexOf('@') on the whole string:
-        // "user/pass@dbname@host:port" => atIdx at second @, dbname="host:port",
-        // rest="user/pass@dbname"
-        // Then rest.indexOf('/') => user="user", passwd="pass@dbname"
-        // That doesn't work. So use a simpler format: "user/pass@dbname"
-        // where dbname encodes host:port using buildJdbcUrl's format: "testdb@host:port"
-        // But that has an @ in it, which breaks the parsing.
-        // The simplest test: just use user/pass (no @) which exercises the parsing path
         String info = postgres.getUsername() + "/" + postgres.getPassword();
         byte[] data = info.getBytes();
         CobolDataStorage infoStorage = new CobolDataStorage(data);
         CobolSql.connectInformal(sqlca, infoStorage, data.length);
         // Will fail because no dbname => uses env var or defaults => won't find the container DB
-        // But exercises the user/passwd parsing path
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "ConnectInformal without proper dbname should fail");
     }
 
     @Test
     void testConnectInformal_UserOnly() {
         // NOTE: This test only verifies the error path because without @dbname,
-        // connectInformal falls through to connect with just a username, which will
-        // fail without a matching DB accessible via environment variables. The parsing
-        // logic for the user-only format is still exercised.
+        // connectInformal falls through to connect with just a username
         byte[] data = "testuser".getBytes();
         CobolDataStorage info = new CobolDataStorage(data);
         CobolSql.connectInformal(sqlca, info, data.length);
-        // Will fail (no real DB match) but exercises connectInformal parsing logic
-        assertTrue(getSqlCode() != 0);
+        assertNotEquals(0, getSqlCode(), "ConnectInformal with user only should fail");
     }
 
     // ============================================================
@@ -1245,7 +1377,7 @@ class CobolSqlTest {
                 new AbstractCobolField[] {field},
                 10,
                 3);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectIntoOccurs should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE occ_test");
@@ -1264,7 +1396,10 @@ class CobolSqlTest {
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.selectIntoOccurs(
                 sqlca, "SELECT val FROM occ_test", null, new AbstractCobolField[] {field}, 10, 3);
-        assertEquals(SqlCA.ECPG_NOT_FOUND, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_NOT_FOUND,
+                getSqlCode(),
+                "SelectIntoOccurs with no results should return ECPG_NOT_FOUND");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE occ_test");
@@ -1291,7 +1426,7 @@ class CobolSqlTest {
                 new AbstractCobolField[] {field},
                 10,
                 2);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SelectIntoOccurs with input params should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE occ_test");
@@ -1303,6 +1438,7 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testFetchCursorOccurs_WithData() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -1313,18 +1449,18 @@ class CobolSqlTest {
         }
 
         CobolSql.declareCursor(sqlca, "focc", "SELECT val FROM focc_test ORDER BY val");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Declare cursor should succeed");
 
         CobolSql.openCursor(sqlca, "focc");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Open cursor should succeed");
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.fetchCursorOccurs(sqlca, "focc", new AbstractCobolField[] {field}, 10, 2);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "FetchCursorOccurs should succeed");
 
         CobolSql.closeCursor(sqlca, "focc");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Close cursor should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE focc_test");
@@ -1332,6 +1468,7 @@ class CobolSqlTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testFetchCursorOccurs_EmptyResult() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -1340,14 +1477,14 @@ class CobolSqlTest {
         }
 
         CobolSql.declareCursor(sqlca, "focc2", "SELECT val FROM focc_test2");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Declare cursor should succeed");
         CobolSql.openCursor(sqlca, "focc2");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Open cursor should succeed");
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.fetchCursorOccurs(sqlca, "focc2", new AbstractCobolField[] {field}, 10, 2);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "FetchCursorOccurs on empty should succeed");
 
         CobolSql.closeCursor(sqlca, "focc2");
         try (Statement stmt = realConn.createStatement()) {
@@ -1360,6 +1497,7 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testOpenCursorWithParams_Success() throws Exception {
         Connection realConn = registerRealConnection();
         try (Statement stmt = realConn.createStatement()) {
@@ -1373,17 +1511,17 @@ class CobolSqlTest {
                 "ocp",
                 "SELECT val FROM ocp_test WHERE id = ?",
                 makeNumericField(4, "0001".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "DeclareCursorWithParams should succeed");
 
         CobolSql.openCursorWithParams(sqlca, "ocp", makeNumericField(4, "0001".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "OpenCursorWithParams should succeed");
 
         byte[] data = new byte[10];
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.fetchCursor(sqlca, "ocp", field);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "FetchCursor should succeed");
         String val = new String(field.getDataStorage().getByteArray(0, 5)).trim();
-        assertEquals("Hello", val);
+        assertEquals("Hello", val, "Fetched value should be Hello");
 
         CobolSql.closeCursor(sqlca, "ocp");
         try (Statement stmt = realConn.createStatement()) {
@@ -1396,14 +1534,15 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testPrepare_WithVaryingPrefix() {
         byte[] data = "123SELECT * FROM t".getBytes();
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolSql.prepare(sqlca, "stmt3", field);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Prepare with varying prefix should succeed");
         String[] prepared = SqlState.getPrepared("stmt3");
-        assertNotNull(prepared);
-        assertEquals("SELECT * FROM t", prepared[0]);
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertEquals("SELECT * FROM t", prepared[0], "Prepared query should strip varying prefix");
     }
 
     @Test
@@ -1413,19 +1552,23 @@ class CobolSqlTest {
         AbstractCobolField field =
                 CobolFieldFactory.makeCobolField(0, new CobolDataStorage(1), attr);
         CobolSql.prepare(sqlca, "stmt1", field);
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "Prepare with empty query field should return ECPG_EMPTY");
     }
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testPrepare_HostVarWithParenthesis() {
         byte[] data = "INSERT INTO t(id) VALUES(:id)".getBytes();
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolSql.prepare(sqlca, "stmt4", field);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "Prepare with host var in parens should succeed");
         String[] prepared = SqlState.getPrepared("stmt4");
-        assertNotNull(prepared);
-        assertTrue(prepared[0].contains("?"));
-        assertTrue(prepared[0].contains(")"));
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(prepared[0].contains("?"), "Host var should be replaced with ?");
+        assertTrue(prepared[0].contains(")"), "Parenthesis should be preserved");
     }
 
     // ============================================================
@@ -1433,6 +1576,7 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testIdExecParams_Commit() throws Exception {
         byte[] atdb = "mydb".getBytes();
         Connection realConn =
@@ -1446,8 +1590,8 @@ class CobolSqlTest {
         SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
         SqlState.getCursor("c1").isOpened = true;
         CobolSql.idExecParams(sqlca, new CobolDataStorage(atdb), atdb.length, "COMMIT", 0);
-        assertEquals(0, getSqlCode());
-        assertFalse(SqlState.getCursor("c1").isOpened);
+        assertEquals(0, getSqlCode(), "IdExecParams COMMIT should succeed");
+        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
         realConn.close();
     }
 
@@ -1471,7 +1615,7 @@ class CobolSqlTest {
                 "INSERT INTO id_null_test VALUES (1)",
                 0,
                 (AbstractCobolField[]) null);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "IdExecParams with null params should succeed");
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE id_null_test");
         }
@@ -1511,9 +1655,6 @@ class CobolSqlTest {
         registerRealConnection();
         SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
         SqlState.getCursor("c1").isOpened = true;
-        // execWithParams wraps COMMIT in SAVEPOINT, which may fail with PostgreSQL
-        // since COMMIT closes the transaction including the savepoint.
-        // The important thing is that the code path is exercised.
         CobolSql.execWithParams(sqlca, "COMMIT");
         // Accept both success (0) and "no transaction" warning (-604)
         assertTrue(
@@ -1535,7 +1676,10 @@ class CobolSqlTest {
     void testExecWithParams_EmptyQuery() throws Exception {
         registerRealConnection();
         CobolSql.execWithParams(sqlca, "", makeNumericField(4, "0042".getBytes()));
-        assertEquals(SqlCA.ECPG_EMPTY, getSqlCode());
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "ExecWithParams with empty query should return ECPG_EMPTY");
     }
 
     // ============================================================
@@ -1543,12 +1687,13 @@ class CobolSqlTest {
     // ============================================================
 
     @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testFullLifecycle() throws Exception {
         connectToPostgres();
 
         // CREATE TABLE
         CobolSql.exec(sqlca, "CREATE TABLE lifecycle_test (id INTEGER, name VARCHAR(20))");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "CREATE TABLE should succeed");
 
         // INSERT with params
         CobolSql.execWithParams(
@@ -1556,7 +1701,7 @@ class CobolSqlTest {
                 "INSERT INTO lifecycle_test VALUES (?, ?)",
                 makeNumericField(4, "0001".getBytes()),
                 makeAlphaField(5, "Alice".getBytes()));
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "INSERT should succeed");
 
         // SELECT INTO
         byte[] nameData = new byte[20];
@@ -1566,20 +1711,20 @@ class CobolSqlTest {
                 "SELECT name FROM lifecycle_test WHERE id = 1",
                 null,
                 new AbstractCobolField[] {nameField});
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "SELECT INTO should succeed");
         String fetchedName = new String(nameField.getDataStorage().getByteArray(0, 5)).trim();
-        assertEquals("Alice", fetchedName);
+        assertEquals("Alice", fetchedName, "Fetched name should be Alice");
 
         // COMMIT
         CobolSql.commit(sqlca);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "COMMIT should succeed");
 
         // Clean up
         CobolSql.exec(sqlca, "DROP TABLE lifecycle_test");
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "DROP TABLE should succeed");
 
         // Disconnect
         CobolSql.disconnect(sqlca);
-        assertEquals(0, getSqlCode());
+        assertEquals(0, getSqlCode(), "DISCONNECT should succeed");
     }
 }
