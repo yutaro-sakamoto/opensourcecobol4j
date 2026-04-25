@@ -171,6 +171,13 @@ java [PROGRAM-ID]
 > cobj file3.cbl
 > ```
 
+## Embedded SQL (ESQL)
+
+opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポートしており、COBOLプログラムからホスト変数を使用してSQL文を直接実行できます。
+
+- [ESQLガイド](./doc/esql-guide_JP.md) -- サポートされるSQL文、ホスト変数の型、エラーハンドリングなどを網羅したドキュメント。
+- [ESQLサンプル](./example/esql/) -- 基本操作、カーソル、プリペアドステートメントを示す実行可能なサンプルプログラム。
+
 ## ドキュメント
 
 * [ランタイムライブラリ`libcobj.jar`のAPIリファレンス](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)
