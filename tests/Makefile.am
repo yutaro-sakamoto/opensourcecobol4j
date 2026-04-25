@@ -274,11 +274,24 @@ esql_sql_data_DEPENDENCIES = \
 	esql-sql-data.at \
 	esql-sql-data.src/sql_type.at
 
+esql_utf8_DEPENDENCIES = \
+	esql-utf8.at \
+	esql-utf8.src/cursor.at \
+	esql-utf8.src/host-variable.at \
+	esql-utf8.src/include.at \
+	esql-utf8.src/japanese.at \
+	esql-utf8.src/long-sql.at \
+	esql-utf8.src/prepare.at \
+	esql-utf8.src/sample.at \
+	esql-utf8.src/sql-convert.at \
+	esql-utf8.src/varying.at
+
 $(srcdir)/esql-basic: $(esql_basic_DEPENDENCIES)
 $(srcdir)/esql-sqlca: $(esql_sqlca_DEPENDENCIES)
 $(srcdir)/esql-cobol-data: $(esql_cobol_data_DEPENDENCIES)
 $(srcdir)/esql-misc: $(esql_misc_DEPENDENCIES)
 $(srcdir)/esql-sql-data: $(esql_sql_data_DEPENDENCIES)
+$(srcdir)/esql-utf8: $(esql_utf8_DEPENDENCIES)
 
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
@@ -339,12 +352,13 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(esql_cobol_data_DEPENDENCIES) \
 	$(esql_misc_DEPENDENCIES) \
 	$(esql_sql_data_DEPENDENCIES) \
+	$(esql_utf8_DEPENDENCIES) \
 	embed_db_info.sh \
 	sqlca.cbl
 
 DISTCLEANFILES = atconfig
 
-ESQL_TESTS = esql-basic esql-sqlca esql-cobol-data esql-misc esql-sql-data
+ESQL_TESTS = esql-basic esql-sqlca esql-cobol-data esql-misc esql-sql-data esql-utf8
 
 all: $(TESTS) $(ESQL_TESTS)
 

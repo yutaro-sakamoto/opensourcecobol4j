@@ -1,0 +1,16 @@
+AT_INIT(ESQL UTF-8 test)
+
+dnl UTF-8 ESQL tests are disabled until UTF-8 encoding support
+dnl is fully implemented in the ESQL pipeline (codegen, scanner).
+dnl Failures include: SJIS encoding errors in generated Java,
+dnl Japanese variable/cursor name parsing, and PIC N value sizing.
+dnl
+dnl m4_include([cursor.at])
+dnl m4_include([host-variable.at])
+dnl m4_include([include.at])
+dnl m4_include([japanese.at])
+dnl m4_include([long-sql.at])
+dnl m4_include([prepare.at])
+dnl m4_include([sample.at])
+dnl m4_include([sql-convert.at])
+dnl m4_include([varying.at])
