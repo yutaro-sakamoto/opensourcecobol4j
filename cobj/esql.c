@@ -50,9 +50,23 @@ static const char *skip_ws(const char *p) {
 /* Helper: extract identifier (alphanumeric, hyphen, underscore) */
 static const char *extract_ident(const char *p, char *buf, size_t bufsize) {
   size_t i = 0;
-  while (i < bufsize - 1 &&
-         (isalnum((unsigned char)*p) || *p == '-' || *p == '_')) {
-    buf[i++] = *p++;
+  while (i < bufsize - 1) {
+    unsigned char c = (unsigned char)*p;
+    if (isalnum(c) || c == '-' || c == '_') {
+      buf[i++] = *p++;
+#ifdef I18N_UTF8
+    } else if (c >= 0xC0) {
+      /* UTF-8 multibyte start byte */
+      int len = (c < 0xE0) ? 2 : (c < 0xF0) ? 3 : 4;
+      if (i + (size_t)len >= bufsize)
+        break;
+      for (int j = 0; j < len; j++) {
+        buf[i++] = *p++;
+      }
+#endif
+    } else {
+      break;
+    }
   }
   buf[i] = '\0';
   return p;
