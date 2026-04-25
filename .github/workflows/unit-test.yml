@@ -23,6 +23,6 @@ jobs:
         with:
           gradle-version: wrapper
 
-      - name: Run unit tests
+      - name: Run unit tests with coverage verification
         working-directory: libcobj
-        run: ./gradlew test
+        run: ./gradlew check

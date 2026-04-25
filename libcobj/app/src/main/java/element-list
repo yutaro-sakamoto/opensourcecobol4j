@@ -1,0 +1,10 @@
+jp.osscons.opensourcecobol.libcobj
+jp.osscons.opensourcecobol.libcobj.call
+jp.osscons.opensourcecobol.libcobj.common
+jp.osscons.opensourcecobol.libcobj.data
+jp.osscons.opensourcecobol.libcobj.exceptions
+jp.osscons.opensourcecobol.libcobj.file
+jp.osscons.opensourcecobol.libcobj.sql
+jp.osscons.opensourcecobol.libcobj.termio
+jp.osscons.opensourcecobol.libcobj.ui
+jp.osscons.opensourcecobol.libcobj.user_util.indexed_file
