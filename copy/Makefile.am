@@ -17,6 +17,6 @@
 # Boston, MA 02110-1301 USA
 
 copydir = @COB_COPY_DIR@
-copy_DATA = screenio.cpy
+copy_DATA = screenio.cpy sqlca.cbl
 
 EXTRA_DIST = $(copy_DATA)
