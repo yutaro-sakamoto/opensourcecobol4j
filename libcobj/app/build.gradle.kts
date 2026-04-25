@@ -41,6 +41,7 @@ dependencies {
 
     implementation("org.slf4j:slf4j-api:2.0.17")
     implementation("org.slf4j:slf4j-simple:2.0.17")
+    implementation("org.postgresql:postgresql:42.7.5")
 }
 
 java {
