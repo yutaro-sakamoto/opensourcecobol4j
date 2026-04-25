@@ -20,14 +20,17 @@
 bin_PROGRAMS = cobj
 cobj_SOURCES = cobj.c cobj.h config.c tree.c tree.h reserved.c error.c \
 	parser.c parser.h scanner.c field.c typeck.c codegen.c esql.c \
+	esql-parser.c esql-parser.h esql-scanner.c \
 	ppparse.c ppparse.h pplex.c \
 	config.def flag.def warning.def exception.def system.def
 
 cobj_CFLAGS = -I$(top_srcdir)
 cobj_LDADD = $(COBJ_LIBS) $(top_builddir)/lib/libsupport.a
 
-BUILT_SOURCES = parser.c parser.h scanner.c ppparse.c ppparse.h pplex.c
-EXTRA_DIST = ppparse.y pplex.l parser.y scanner.l pplex.l.m4 scanner.l.m4
+BUILT_SOURCES = parser.c parser.h scanner.c ppparse.c ppparse.h pplex.c \
+	esql-parser.c esql-parser.h esql-scanner.c
+EXTRA_DIST = ppparse.y pplex.l parser.y scanner.l pplex.l.m4 scanner.l.m4 \
+	esql-parser.y esql-scanner.l
 CLEANFILES = parser.output
 
 %.c: %.l
@@ -35,6 +38,12 @@ CLEANFILES = parser.output
 
 %.c: %.y
 	bison -o $@ $<
+
+esql-parser.c esql-parser.h: esql-parser.y
+	bison -d -o esql-parser.c esql-parser.y
+
+esql-scanner.c: esql-scanner.l
+	flex --nounistd -o esql-scanner.c esql-scanner.l
 
 %.l: %.l.m4
 	m4 $(COB_M4_FLAGS) $< >$@
