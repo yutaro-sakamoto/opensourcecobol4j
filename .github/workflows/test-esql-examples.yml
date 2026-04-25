@@ -1,0 +1,84 @@
+name: ESQL example tests
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CLASSPATH: ":/usr/lib/opensourcecobol4j/libcobj.jar"
+
+jobs:
+  test-esql-examples:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.os }}
+
+    services:
+      postgres15:
+        image: postgres:15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: password
+          POSTGRES_USER: main_user
+          POSTGRES_DB: testdb
+          POSTGRES_HOST_AUTH_METHOD: 'trust'
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Get the artifact name
+        run: echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install dependencies on Ubuntu 24.04
+        if: inputs.os == 'ubuntu:24.04'
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential curl
+
+      - name: Install dependencies on AlmaLinux 9
+        if: inputs.os == 'almalinux:9'
+        run: |
+          dnf -y update
+          dnf install -y gcc make diffutils curl
+
+      - name: Install opensource COBOL 4J
+        run: |
+          tar zxf opensourcecobol4j.tar.gz
+          mv opensourcecobol4j/* .
+          make install
+
+      - name: Configure database settings
+        working-directory: example/esql/
+        run: |
+          cat > db-config.sh << 'EOF'
+DB_NAME=testdb
+DB_HOST=postgres15
+DB_PORT=5432
+DB_USER=main_user
+DB_PASSWORD=password
+EOF
+
+      - name: Run ESQL examples
+        working-directory: example/esql/
+        run: make all
