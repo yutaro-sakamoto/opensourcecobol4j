@@ -40,6 +40,9 @@ static void esql_reset_flags(void) {
   esql_in_quote = 0;
 }
 
+const char *esql_get_sqlbody(void);
+void esql_scanner_reset(void);
+
 const char *esql_get_sqlbody(void) {
   return esql_sqlbody;
 }

@@ -58,6 +58,8 @@ extern cb_tree esql_build_and_resolve(enum cb_sql_command command,
                                       int conn_use_other_db);
 
 int esql_lex(void);
+void esql_error(const char *msg);
+void esql_parser_init(void);
 
 void esql_error(const char *msg) {
   cb_error("ESQL parse error: %s", msg);
