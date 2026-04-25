@@ -104,10 +104,9 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu:24.04", "almalinux:9"]
-    uses: ./.github/workflows/test-esql.yml
+    uses: ./.github/workflows/test-esql-utf8.yml
     with:
       os: ${{ matrix.os }}
-      configure-args: --enable-utf8
 
   run-test-cobj-api:
     needs: build

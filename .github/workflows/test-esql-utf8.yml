@@ -1,4 +1,4 @@
-name: ESQL tests
+name: ESQL UTF-8 tests
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ env:
   CLASSPATH: ":/usr/lib/opensourcecobol4j/libcobj.jar"
 
 jobs:
-  test-esql:
+  test-esql-utf8:
     runs-on: ubuntu-latest
     container:
       image: ${{ inputs.os }}
@@ -41,7 +41,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_
+          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_--enable-utf8
 
       - uses: actions/setup-java@v5
         with:
@@ -90,44 +90,16 @@ jobs:
           mv ${TEMP_FILE} $1
           DBEOF
 
-      - name: Run ESQL basic tests
-        id: esql-basic
+      - name: Run ESQL UTF-8 tests
+        id: esql-utf8
         continue-on-error: true
         working-directory: tests/
-        run: ./esql-basic
-
-      - name: Run ESQL SQLCA tests
-        id: esql-sqlca
-        continue-on-error: true
-        working-directory: tests/
-        run: ./esql-sqlca
-
-      - name: Run ESQL cobol data tests
-        id: esql-cobol-data
-        continue-on-error: true
-        working-directory: tests/
-        run: ./esql-cobol-data
-
-      - name: Run ESQL misc tests
-        id: esql-misc
-        continue-on-error: true
-        working-directory: tests/
-        run: ./esql-misc
-
-      - name: Run ESQL sql data tests
-        id: esql-sql-data
-        continue-on-error: true
-        working-directory: tests/
-        run: ./esql-sql-data
+        run: ./esql-utf8
 
       - name: Upload test logs if tests fail
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: esql-test-${{ env.ARTIFACT_NAME }}-log
+          name: esql-utf8-test-${{ env.ARTIFACT_NAME }}-log
           path: |
-            tests/esql-basic.dir/
-            tests/esql-sqlca.dir/
-            tests/esql-cobol-data.dir/
-            tests/esql-misc.dir/
-            tests/esql-sql-data.dir/
+            tests/esql-utf8.dir/
