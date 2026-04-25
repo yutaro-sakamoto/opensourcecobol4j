@@ -59,6 +59,10 @@ pmd {
     ruleSetFiles = files("${rootDir}/config/pmdRuleSet.xml")
 }
 
+// Disable PMD and SpotBugs for test sources
+tasks.named("pmdTest") { enabled = false }
+tasks.named("spotbugsTest") { enabled = false }
+
 spotbugs {
     excludeFilter.set(project.file("${rootDir}/config/spotbugsFilter.xml"))
 }
