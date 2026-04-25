@@ -1212,6 +1212,8 @@ extern int cb_literal_to_int_for_switch_label(struct cb_literal *lit,
  * EXEC SQL statement
  */
 
+#ifndef CB_SQL_COMMAND_DEFINED
+#define CB_SQL_COMMAND_DEFINED
 enum cb_sql_command {
   CB_SQL_CONNECT,
   CB_SQL_CONNECT_INFORMAL,
@@ -1233,6 +1235,7 @@ enum cb_sql_command {
   CB_SQL_COMMIT,
   CB_SQL_ROLLBACK,
 };
+#endif
 
 #define HVARTYPE_UNSIGNED_NUMERIC 1
 #define HVARTYPE_SIGNED_TRAILING_SEPARATE 2
