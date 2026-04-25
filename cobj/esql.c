@@ -208,7 +208,6 @@ cb_tree esql_build_and_resolve(enum cb_sql_command command, char *sql_text,
                                struct cb_sql_host_var *res_host_list,
                                int res_host_count, int conn_use_other_db) {
   resolve_host_var_list(host_list);
-  resolve_host_var_list(host_list);
   int occurs_size = 0;
   int occurs_max = 0;
   /* Detect OCCURS for FETCH_ONE → promote to FETCH_OCCURS */

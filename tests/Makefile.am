@@ -241,7 +241,8 @@ esql_basic_DEPENDENCIES = \
 	esql-basic.src/select.at \
 	esql-basic.src/prepare-execute.at \
 	esql-basic.src/other-sql.at \
-	esql-basic.src/declare-bind-var.at
+	esql-basic.src/declare-bind-var.at \
+	esql-basic.src/sample.at
 
 esql_sqlca_DEPENDENCIES = \
 	esql-sqlca.at \
