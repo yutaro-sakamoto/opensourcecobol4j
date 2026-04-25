@@ -97,6 +97,39 @@ SQLCAは、`EXEC SQL` 文を使用するプログラムで自動的に定義さ�
 
 後方互換性のため、`EXEC SQL INCLUDE SQLCA END-EXEC` は引き続き使用できますが、記述する必要はありません。
 
+暗黙に定義されるSQLCAの構造は以下の通りです：
+
+```cobol
+       01  SQLCA GLOBAL.
+           05  SQLCAID               PIC X(8).
+           05  SQLCABC               PIC S9(9) COMP-5.
+           05  SQLCODE               PIC S9(9) COMP-5.
+           05  SQLERRM.
+           49  SQLERRML              PIC S9(4) COMP-5.
+           49  SQLERRMC              PIC X(70).
+           05  SQLERRP               PIC X(8).
+           05  SQLERRD OCCURS 6 TIMES
+                                     PIC S9(9) COMP-5.
+           05  SQLWARN.
+               10 SQLWARN0           PIC X(1).
+               10 SQLWARN1           PIC X(1).
+               10 SQLWARN2           PIC X(1).
+               10 SQLWARN3           PIC X(1).
+               10 SQLWARN4           PIC X(1).
+               10 SQLWARN5           PIC X(1).
+               10 SQLWARN6           PIC X(1).
+               10 SQLWARN7           PIC X(1).
+           05  SQLSTATE              PIC X(5).
+```
+
+| フィールド | 説明 |
+|-----------|------|
+| `SQLCODE` | 戻りコード：0 = 成功、100 = データなし、負の値 = エラー |
+| `SQLSTATE` | 5文字のSQL状態コード（例：`"00000"`, `"02000"`, `"08001"`） |
+| `SQLERRMC` | エラーメッセージテキスト（最大70文字） |
+| `SQLERRML` | `SQLERRMC` 内のエラーメッセージの長さ |
+| `SQLERRD(3)` | 直前の文で影響を受けた行数 |
+
 ### SELECT INTO
 
 単一行の取得:
