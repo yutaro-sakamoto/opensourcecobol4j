@@ -92,7 +92,6 @@ jobs:
 
       - name: Run ESQL UTF-8 tests
         id: esql-utf8
-        continue-on-error: true
         working-directory: tests/
         run: ./esql-utf8
 
