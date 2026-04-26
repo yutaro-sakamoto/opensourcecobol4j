@@ -816,7 +816,7 @@ class CobolSqlTest {
 
     @Test
     void testFetchCursorOccurs_NoConnection() {
-        CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
+        CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
                 SqlCA.ECPG_NO_CONN,
                 getSqlCode(),
@@ -826,7 +826,7 @@ class CobolSqlTest {
     @Test
     void testFetchCursorOccurs_CursorNotFound() throws Exception {
         registerRealConnection();
-        CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
+        CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
                 SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
@@ -840,7 +840,7 @@ class CobolSqlTest {
         SqlCursor cursor = new SqlCursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
-        CobolSql.fetchCursorOccurs(sqlca, "c1", null, 10, 5);
+        CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
                 SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
@@ -1456,7 +1456,7 @@ class CobolSqlTest {
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(10, data);
-        CobolSql.fetchCursorOccurs(sqlca, "focc", new AbstractCobolField[] {field}, 10, 2);
+        CobolSql.fetchCursorOccurs(sqlca, "focc", 10, 2, field);
         assertEquals(0, getSqlCode(), "FetchCursorOccurs should succeed");
 
         CobolSql.closeCursor(sqlca, "focc");
@@ -1483,7 +1483,7 @@ class CobolSqlTest {
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(10, data);
-        CobolSql.fetchCursorOccurs(sqlca, "focc2", new AbstractCobolField[] {field}, 10, 2);
+        CobolSql.fetchCursorOccurs(sqlca, "focc2", 10, 2, field);
         assertEquals(0, getSqlCode(), "FetchCursorOccurs on empty should succeed");
 
         CobolSql.closeCursor(sqlca, "focc2");

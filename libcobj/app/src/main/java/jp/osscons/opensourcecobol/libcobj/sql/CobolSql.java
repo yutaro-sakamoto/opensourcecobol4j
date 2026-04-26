@@ -682,9 +682,9 @@ public final class CobolSql {
     public static void fetchCursorOccurs(
             CobolDataStorage sqlca,
             String cursorName,
-            AbstractCobolField[] resultParams,
             int occursSize,
-            int occursMax) {
+            int occursMax,
+            AbstractCobolField... resultParams) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
