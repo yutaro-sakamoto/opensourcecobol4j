@@ -253,7 +253,7 @@ After each `EXEC SQL` statement, the SQLCA fields are updated:
 
 | Field | Description |
 |---|---|
-| `SQLCODE` | 0 = success, +10 = not found, negative = error |
+| `SQLCODE` | 0 = success, +100 = not found, negative = error |
 | `SQLSTATE` | 5-character SQL state code |
 | `SQLERRMC` | Error message text |
 | `SQLERRD(3)` | Number of rows affected |
@@ -263,7 +263,7 @@ Common SQLCODE values:
 | SQLCODE | Meaning |
 |---|---|
 | 0 | Success |
-| +10 | Record not found / end of cursor |
+| +100 | Record not found / end of cursor |
 | -1 | Connection failed |
 | -20 | Internal error |
 | -30 | PostgreSQL error (see SQLSTATE and SQLERRMC) |

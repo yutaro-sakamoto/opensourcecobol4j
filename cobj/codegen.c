@@ -3897,6 +3897,10 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     }
     joutput(");\n");
     break;
+
+  default:
+    cb_error("Unknown EXEC SQL command type: %d", p->command);
+    break;
   }
 }
 static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {

@@ -138,7 +138,7 @@ static void resolve_host_var_type(struct cb_sql_host_var *hv) {
           hv->hvar_type = HVARTYPE_UNSIGNED_NUMERIC;
         }
       } else {
-        /* ALPHANUMERIC */
+        /* ALPHABETIC / ALPHANUMERIC */
         hv->hvar_type = HVARTYPE_ALPHABETIC;
       }
     } else {

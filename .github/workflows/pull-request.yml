@@ -108,6 +108,15 @@ jobs:
     with:
       os: ${{ matrix.os }}
 
+  run-test-esql-examples:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-esql-examples.yml
+    with:
+      os: ${{ matrix.os }}
+
   run-test-cobj-api:
     needs: build
     strategy:
@@ -205,6 +214,7 @@ jobs:
     with:
       test-name: ${{ matrix.test_name }}
 
+  # TODO: Re-enable when Windows PostgreSQL setup is resolved.
   # windows-test-esql:
   #   needs: [windows-build, windows-generate-test-scripts]
   #   uses: ./.github/workflows/windows-test-esql.yml
