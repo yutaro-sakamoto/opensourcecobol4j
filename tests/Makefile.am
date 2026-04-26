@@ -269,7 +269,8 @@ esql_misc_DEPENDENCIES = \
 	esql-misc.src/include.at \
 	esql-misc.src/fetch-sqlca.at \
 	esql-misc.src/compile.at \
-	esql-misc.src/sql-convert.at
+	esql-misc.src/sql-convert.at \
+	esql-misc.src/implicit-declare.at
 
 esql_sql_data_DEPENDENCIES = \
 	esql-sql-data.at \

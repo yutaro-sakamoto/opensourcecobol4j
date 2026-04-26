@@ -2298,7 +2298,9 @@ case 24:
 YY_RULE_SETUP
 #line 220 "esql-scanner.l"
 {
-    esql_sqlbody_append(yytext);
+    if (!esql_flag_select_into) {
+      esql_sqlbody_append(yytext);
+    }
     esql_lval.s = strdup(yytext);
     return ESQL_TOKEN;
   }
@@ -2306,7 +2308,7 @@ YY_RULE_SETUP
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 226 "esql-scanner.l"
+#line 228 "esql-scanner.l"
 {
     if (esql_in_quote) {
       esql_sqlbody_append(yytext);
@@ -2317,7 +2319,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 234 "esql-scanner.l"
+#line 236 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2330,7 +2332,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 244 "esql-scanner.l"
+#line 246 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2346,7 +2348,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 257 "esql-scanner.l"
+#line 259 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2362,7 +2364,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 270 "esql-scanner.l"
+#line 272 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2376,7 +2378,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 281 "esql-scanner.l"
+#line 283 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2392,7 +2394,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 294 "esql-scanner.l"
+#line 296 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2403,7 +2405,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 302 "esql-scanner.l"
+#line 304 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2415,7 +2417,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 311 "esql-scanner.l"
+#line 313 "esql-scanner.l"
 {
     esql_flag_select_into = 0;
     if (strcmp(esql_commandname, "SELECT") != 0) {
@@ -2434,7 +2436,7 @@ YY_RULE_SETUP
 case 34:
 /* rule 34 can match eol */
 YY_RULE_SETUP
-#line 326 "esql-scanner.l"
+#line 328 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     yy_push_state(WHERE_CURRENT_OF);
@@ -2443,7 +2445,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 332 "esql-scanner.l"
+#line 334 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2452,7 +2454,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 338 "esql-scanner.l"
+#line 340 "esql-scanner.l"
 {
     if (!esql_flag_select_into) {
       esql_sqlbody_append(" ?");
@@ -2463,7 +2465,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 346 "esql-scanner.l"
+#line 348 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_in_quote && strlen(esql_sqlbody) >= 2) {
@@ -2483,7 +2485,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 363 "esql-scanner.l"
+#line 365 "esql-scanner.l"
 {
     if (strcmp(esql_commandname, "DECLARE") != 0) {
       esql_sqlbody_append(yytext);
@@ -2494,7 +2496,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 371 "esql-scanner.l"
+#line 373 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2507,12 +2509,12 @@ YY_RULE_SETUP
 case 40:
 /* rule 40 can match eol */
 YY_RULE_SETUP
-#line 380 "esql-scanner.l"
+#line 382 "esql-scanner.l"
 { }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 381 "esql-scanner.l"
+#line 383 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext);
     yy_pop_state();
@@ -2523,15 +2525,15 @@ YY_RULE_SETUP
 /* Fallback: skip anything unrecognized */
 case 42:
 YY_RULE_SETUP
-#line 389 "esql-scanner.l"
+#line 391 "esql-scanner.l"
 { }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 391 "esql-scanner.l"
+#line 393 "esql-scanner.l"
 ECHO;
 	YY_BREAK
-#line 2535 "esql-scanner.c"
+#line 2537 "esql-scanner.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ESQL_STATE):
 case YY_STATE_EOF(ESQL_DBNAME_STATE):
@@ -3581,7 +3583,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 391 "esql-scanner.l"
+#line 393 "esql-scanner.l"
 
 
 void esql_scanner_reset(void) {
