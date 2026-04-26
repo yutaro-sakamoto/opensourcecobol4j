@@ -317,7 +317,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
         CobolDataStorage data = this.getDataStorage();
 
         if (val == Integer.MIN_VALUE) {
-            // Integer.MIN_VALUE == -2147483647
+            // Integer.MIN_VALUE == -2147483648
             int[] bytes = {2, 1, 4, 7, 4, 8, 3, 6, 4, 8};
             int digits = this.getAttribute().getDigits();
             for (int i = 0; i < digits; ++i) {
