@@ -3864,9 +3864,13 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.fetchCursorOccurs(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s_%s\", ", excp_current_program_id, p->cursor_name);
-    joutput_sql_field_array(p->res_host_list);
-    joutput(", %d, %d);\n", p->occurs_size, p->occurs_max);
+    joutput(", \"%s_%s\", %d, %d", excp_current_program_id, p->cursor_name,
+            p->occurs_size, p->occurs_max);
+    for (hv = p->res_host_list; hv; hv = hv->next) {
+      joutput(", ");
+      joutput_sql_field_ref(hv);
+    }
+    joutput(");\n");
     break;
 
   case CB_SQL_PREPARE:
