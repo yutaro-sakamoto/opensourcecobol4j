@@ -1294,6 +1294,7 @@ extern struct cb_sql_host_var *
 cb_sql_host_var_list_add(struct cb_sql_host_var *list,
                          struct cb_sql_host_var *item);
 extern cb_tree cb_parse_exec_sql(const char *sql_text);
+extern void esql_inject_sqlca(void);
 extern cb_tree
 esql_build_and_resolve(enum cb_sql_command command, char *sql_text,
                        char *cursor_name, char *prepare_name, char *db_name,

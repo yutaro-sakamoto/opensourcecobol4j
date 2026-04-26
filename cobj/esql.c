@@ -293,3 +293,145 @@ cb_tree cb_parse_exec_sql(const char *sql_text) {
 
   return esql_parsed_result;
 }
+
+/*
+ * Helper: create a cb_field with given properties.
+ */
+static struct cb_field *make_sqlca_field(int level, const char *name,
+                                         const char *pic_str, int usage) {
+  struct cb_field *f =
+      CB_FIELD(cb_build_field(cb_build_reference((char *)name)));
+  f->level = level;
+  f->storage = CB_STORAGE_WORKING;
+  if (pic_str) {
+    f->pic = CB_PICTURE(cb_build_picture(pic_str));
+  }
+  f->usage = usage;
+  return f;
+}
+
+/*
+ * Inject SQLCA structure into the compiler's field tree.
+ * Called from parser.y when the first EXEC SQL statement is encountered.
+ * This avoids preprocessor text insertion that would shift line numbers.
+ */
+void esql_inject_sqlca(void) {
+  struct cb_field *sqlca, *child, *prev, *grp, *gprev;
+
+  /* 01 SQLCA GLOBAL */
+  sqlca = make_sqlca_field(1, "SQLCA", NULL, CB_USAGE_DISPLAY);
+  sqlca->flag_is_global = 1;
+
+  /* 05 SQLCAID PIC X(8) */
+  child = make_sqlca_field(5, "SQLCAID", "X(8)", CB_USAGE_DISPLAY);
+  child->parent = sqlca;
+  sqlca->children = child;
+  prev = child;
+
+  /* 05 SQLCABC PIC S9(9) COMP-5 */
+  child = make_sqlca_field(5, "SQLCABC", "S9(9)", CB_USAGE_COMP_5);
+  child->parent = sqlca;
+  prev->sister = child;
+  prev = child;
+
+  /* 05 SQLCODE PIC S9(9) COMP-5 */
+  child = make_sqlca_field(5, "SQLCODE", "S9(9)", CB_USAGE_COMP_5);
+  child->parent = sqlca;
+  prev->sister = child;
+  prev = child;
+
+  /* 05 SQLERRM (group) */
+  grp = make_sqlca_field(5, "SQLERRM", NULL, CB_USAGE_DISPLAY);
+  grp->parent = sqlca;
+  prev->sister = grp;
+  prev = grp;
+
+  /* 49 SQLERRML PIC S9(4) COMP-5 */
+  child = make_sqlca_field(49, "SQLERRML", "S9(4)", CB_USAGE_COMP_5);
+  child->parent = grp;
+  grp->children = child;
+  gprev = child;
+
+  /* 49 SQLERRMC PIC X(70) */
+  child = make_sqlca_field(49, "SQLERRMC", "X(70)", CB_USAGE_DISPLAY);
+  child->parent = grp;
+  gprev->sister = child;
+
+  /* 05 SQLERRP PIC X(8) */
+  child = make_sqlca_field(5, "SQLERRP", "X(8)", CB_USAGE_DISPLAY);
+  child->parent = sqlca;
+  prev->sister = child;
+  prev = child;
+
+  /* 05 SQLERRD PIC S9(9) COMP-5 OCCURS 6 */
+  child = make_sqlca_field(5, "SQLERRD", "S9(9)", CB_USAGE_COMP_5);
+  child->parent = sqlca;
+  child->flag_occurs = 1;
+  child->occurs_min = 6;
+  child->occurs_max = 6;
+  child->indexes = 1;
+  prev->sister = child;
+  prev = child;
+
+  /* 05 SQLWARN (group) */
+  grp = make_sqlca_field(5, "SQLWARN", NULL, CB_USAGE_DISPLAY);
+  grp->parent = sqlca;
+  prev->sister = grp;
+  prev = grp;
+
+  /* 10 SQLWARN0-7 PIC X(1) */
+  {
+    int i;
+    struct cb_field *wprev = NULL;
+    for (i = 0; i < 8; i++) {
+      char wname[16];
+      snprintf(wname, sizeof(wname), "SQLWARN%d", i);
+      child = make_sqlca_field(10, wname, "X(1)", CB_USAGE_DISPLAY);
+      child->parent = grp;
+      if (i == 0) {
+        grp->children = child;
+      } else {
+        wprev->sister = child;
+      }
+      wprev = child;
+    }
+  }
+
+  /* 05 SQLSTATE PIC X(5) */
+  child = make_sqlca_field(5, "SQLSTATE", "X(5)", CB_USAGE_DISPLAY);
+  child->parent = sqlca;
+  prev->sister = child;
+
+  /* Validate each field individually, then the root */
+  {
+    struct cb_field *f;
+    for (f = sqlca->children; f; f = f->sister) {
+      if (f->children) {
+        struct cb_field *c;
+        for (c = f->children; c; c = c->sister) {
+          cb_validate_field(c);
+        }
+      }
+      cb_validate_field(f);
+    }
+  }
+  cb_validate_field(sqlca);
+
+  /* Set count=1 so codegen generates storage declarations */
+  {
+    struct cb_field *f;
+    sqlca->count = 1;
+    for (f = sqlca->children; f; f = f->sister) {
+      f->count = 1;
+      if (f->children) {
+        struct cb_field *c;
+        for (c = f->children; c; c = c->sister) {
+          c->count = 1;
+        }
+      }
+    }
+  }
+
+  current_program->working_storage =
+      cb_field_add(current_program->working_storage, sqlca);
+}
