@@ -110,6 +110,7 @@ static size_t			samearea = 1;
 static size_t			organized_seen = 0;
 static size_t			inspect_keyword = 0;
 static int			next_label_id = 0;
+static int			esql_program_seen = 0;
 static int			eval_level = 0;
 static int			eval_inc = 0;
 static int			eval_inc2 = 0;
@@ -2621,16 +2622,14 @@ exec_sql_data_statement:
   EXEC_SQL_STATEMENT
   {
 	/* Handle EXEC SQL in DATA DIVISION (BEGIN/END DECLARE SECTION, INCLUDE SQLCA) */
-	const char *sql_text = (const char *)CB_LITERAL ($1)->data;
-	/* BEGIN DECLARE SECTION and END DECLARE SECTION are no-ops */
-	/* INCLUDE SQLCA is handled by pplex via COPY */
-	/* Silently ignore these in data division */
-	(void)sql_text;
+	/* Mark this as an ESQL program so SQLCA will be injected */
+	esql_program_seen = 1;
+	(void)CB_LITERAL ($1)->data;
   }
 | EXEC_SQL_STATEMENT '.'
   {
-	const char *sql_text = (const char *)CB_LITERAL ($1)->data;
-	(void)sql_text;
+	esql_program_seen = 1;
+	(void)CB_LITERAL ($1)->data;
   }
 ;
 
@@ -3529,6 +3528,9 @@ screen_section:
 procedure_division:
 | PROCEDURE DIVISION procedure_using_chaining procedure_returning '.'
   {
+	if (esql_program_seen) {
+		esql_inject_sqlca ();
+	}
 	current_section = NULL;
 	current_paragraph = NULL;
 	cb_define_system_name ("CONSOLE");
