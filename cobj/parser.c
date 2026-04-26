@@ -13346,6 +13346,13 @@ yyreduce:
 #line 7331 "parser.y"
   {
 	cb_tree sql_node;
+	/* If no DECLARE SECTION was seen in DATA DIVISION, the first
+	   EXEC SQL in PROCEDURE DIVISION also marks the program as ESQL
+	   so SQLCA gets injected. */
+	if (!esql_program_seen) {
+		esql_program_seen = 1;
+		esql_inject_sqlca ();
+	}
 	BEGIN_STATEMENT ("EXEC SQL", 0);
 	sql_node = cb_parse_exec_sql ((char *)CB_LITERAL (yyvsp[0])->data);
 	if (sql_node != cb_error_node) {
@@ -13353,11 +13360,11 @@ yyreduce:
 			cb_list_add (current_statement->body, sql_node);
 	}
   }
-#line 13357 "parser.c"
+#line 13364 "parser.c"
     break;
 
 
-#line 13361 "parser.c"
+#line 13368 "parser.c"
 
       default: break;
     }
@@ -13550,5 +13557,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 7343 "parser.y"
+#line 7350 "parser.y"
 

@@ -7330,6 +7330,13 @@ exec_sql_statement:
   EXEC_SQL_STATEMENT
   {
 	cb_tree sql_node;
+	/* If no DECLARE SECTION was seen in DATA DIVISION, the first
+	   EXEC SQL in PROCEDURE DIVISION also marks the program as ESQL
+	   so SQLCA gets injected. */
+	if (!esql_program_seen) {
+		esql_program_seen = 1;
+		esql_inject_sqlca ();
+	}
 	BEGIN_STATEMENT ("EXEC SQL", 0);
 	sql_node = cb_parse_exec_sql ((char *)CB_LITERAL ($1)->data);
 	if (sql_node != cb_error_node) {

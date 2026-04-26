@@ -82,13 +82,26 @@ dbname@host:port
 
 ### BEGIN / END DECLARE SECTION
 
-SQL文で使用するホスト変数は、`EXEC SQL BEGIN DECLARE SECTION END-EXEC` と `EXEC SQL END DECLARE SECTION END-EXEC` の間で宣言する必要があります。
+SQL文で使用するホスト変数は、`EXEC SQL BEGIN DECLARE SECTION END-EXEC` と `EXEC SQL END DECLARE SECTION END-EXEC` の間で宣言できます：
 
 ```cobol
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  MY-VAR  PIC X(20).
        01  MY-NUM  PIC 9(5).
        EXEC SQL END DECLARE SECTION END-EXEC.
+```
+
+ただし、`BEGIN / END DECLARE SECTION`は**省略可能**です。省略した場合、WORKING-STORAGE SECTIONおよびLINKAGE SECTIONの全変数がホスト変数として使用できます。可変長フィールドの`VARYING`句もDECLARE SECTIONなしで利用可能です。
+
+```cobol
+      * DECLARE SECTIONなしでも動作:
+       WORKING-STORAGE SECTION.
+       01  MY-VAR  PIC X(20).
+       01  MY-NUM  PIC 9(5).
+       PROCEDURE DIVISION.
+           EXEC SQL
+               INSERT INTO TBL VALUES (:MY-VAR, :MY-NUM)
+           END-EXEC.
 ```
 
 ### SQLCA（SQL通信領域）

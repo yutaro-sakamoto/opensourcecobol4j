@@ -217,7 +217,9 @@ COMMA ","
  /* === ESQL_STATE: inside SQL statement === */
 <ESQL_STATE>{
   {COMMA} {
-    esql_sqlbody_append(yytext);
+    if (!esql_flag_select_into) {
+      esql_sqlbody_append(yytext);
+    }
     esql_lval.s = strdup(yytext);
     return ESQL_TOKEN;
   }

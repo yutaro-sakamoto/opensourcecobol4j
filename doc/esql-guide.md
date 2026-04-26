@@ -82,13 +82,26 @@ For example: `"testdb@localhost:5432"`.
 
 ### BEGIN / END DECLARE SECTION
 
-Host variables used in SQL statements must be declared between `EXEC SQL BEGIN DECLARE SECTION END-EXEC` and `EXEC SQL END DECLARE SECTION END-EXEC`.
+Host variables used in SQL statements can be declared between `EXEC SQL BEGIN DECLARE SECTION END-EXEC` and `EXEC SQL END DECLARE SECTION END-EXEC`:
 
 ```cobol
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  MY-VAR  PIC X(20).
        01  MY-NUM  PIC 9(5).
        EXEC SQL END DECLARE SECTION END-EXEC.
+```
+
+However, `BEGIN / END DECLARE SECTION` is **optional**. If omitted, all variables in WORKING-STORAGE SECTION and LINKAGE SECTION are treated as potential host variables. The `VARYING` clause for variable-length fields is also available without DECLARE SECTION.
+
+```cobol
+      * No DECLARE SECTION needed:
+       WORKING-STORAGE SECTION.
+       01  MY-VAR  PIC X(20).
+       01  MY-NUM  PIC 9(5).
+       PROCEDURE DIVISION.
+           EXEC SQL
+               INSERT INTO TBL VALUES (:MY-VAR, :MY-NUM)
+           END-EXEC.
 ```
 
 ### SQLCA (SQL Communication Area)
