@@ -4,6 +4,21 @@ NEWS - user visible changes				-*- outline -*-
 
 * opensource COBOL 4J 1.1.19
 
+** Bug Fixes
+
+(1) Report a clear "not implemented" error message for source code that uses `LOCAL-STORAGE SECTION`
+(2) Fix a bug related to `CALL BY VALUE`
+(3) Fix the `-java-package` option
+
+** Miscellaneous
+
+(1) Expanded CI test coverage for the Windows build
+(2) Improved Javadoc comments for the `ui` module of libcobj
+
+-----------------------------------------------------------------------
+
+* opensource COBOL 4J 1.1.19
+
 ** New Features
 
 (1) Implemented POINTER type variables (#802, #808)

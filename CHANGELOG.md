@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.20] - 2026-04-27
+
+## Fixed
+
+- Report a clear "not implemented" error message for source code that uses `LOCAL-STORAGE SECTION` (#815)
+- Fix a bug related to `CALL BY VALUE` (#809)
+- Fix the `-java-package` option (#820)
+
+## Miscellaneous
+
+- Expanded CI test coverage for the Windows build (#823)
+- Improved Javadoc comments for the `ui` module of libcobj (#825)
+
 ## [1.1.19] - 2026-03-30
 
 ### New Features
