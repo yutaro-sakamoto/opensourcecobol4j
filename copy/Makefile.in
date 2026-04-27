@@ -330,7 +330,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 copydir = @COB_COPY_DIR@
-copy_DATA = screenio.cpy sqlca.cbl
+copy_DATA = screenio.cpy
 EXTRA_DIST = $(copy_DATA)
 all: all-am
 
