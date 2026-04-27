@@ -638,6 +638,42 @@ static void joutput_string_write(const unsigned char *s, int size,
   }
 }
 
+/* リテラルをJava文字列リテラルとしてインライン出力できるか判定する。
+   moveFrom(String) はバイト列を SHIFT_JIS でラウンドトリップさせるため、
+   SJIS の単バイト範囲で意味が変わらない ASCII printable に限定する。
+   空リテラル(size==0)は既存の c_N パスとの厳密な等価性を保つため除外する。 */
+static int literal_is_inlineable_as_java_string(const unsigned char *data,
+                                                int size) {
+  int i;
+  if (size <= 0) {
+    return 0;
+  }
+  for (i = 0; i < size; i++) {
+    unsigned char c = data[i];
+    if (c < 0x20 || c > 0x7E) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+/* 生のJava文字列リテラル "..." を出力する。" と \ のみエスケープする。
+   呼び出し元で literal_is_inlineable_as_java_string によりバイト列の安全性を
+   担保していることが前提。 */
+static void joutput_inline_java_string(const unsigned char *data, int size) {
+  int i;
+  joutput("\"");
+  for (i = 0; i < size; i++) {
+    unsigned char c = data[i];
+    if (c == '"' || c == '\\') {
+      joutput("\\%c", c);
+    } else {
+      joutput("%c", c);
+    }
+  }
+  joutput("\"");
+}
+
 static void joutput_string(const unsigned char *s, int size) {
   int i;
   struct string_literal_cache *new_literal_cache =
@@ -1925,20 +1961,41 @@ static void joutput_funcall(cb_tree x) {
     param_wrap_string_flag = tmp_flag;
 
     joutput(".%s (", p->name);
-    for (i = 1; i < p->argc; i++) {
-      if (p->varcnt && i + 1 == p->argc) {
-        joutput("%d, ", p->varcnt);
-        for (l = p->argv[i]; l; l = CB_CHAIN(l)) {
-          joutput_param(CB_VALUE(l), i);
-          i++;
-          if (CB_CHAIN(l)) {
+
+    /* MOVE文の文字列リテラル可読性改善:
+       moveFrom(<alphanumeric literal>) のとき、c_N 経由ではなく Java の
+       生文字列リテラルとして直接出力する。AbstractCobolField.moveFrom(String)
+       が既に存在しランタイム上の振る舞いは等価である。
+       ALL リテラル(l->all)、非ASCII/制御バイトは安全のため除外する。 */
+    int inline_literal = 0;
+    if (strcmp(p->name, "moveFrom") == 0 && p->argc == 2 && !p->varcnt &&
+        p->argv[1] != NULL && CB_TREE_TAG(p->argv[1]) == CB_TAG_LITERAL &&
+        CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC &&
+        CB_LITERAL(p->argv[1])->all == 0 &&
+        literal_is_inlineable_as_java_string(CB_LITERAL(p->argv[1])->data,
+                                             (int)CB_LITERAL(p->argv[1])->size)) {
+      inline_literal = 1;
+    }
+
+    if (inline_literal) {
+      struct cb_literal *lit = CB_LITERAL(p->argv[1]);
+      joutput_inline_java_string(lit->data, (int)lit->size);
+    } else {
+      for (i = 1; i < p->argc; i++) {
+        if (p->varcnt && i + 1 == p->argc) {
+          joutput("%d, ", p->varcnt);
+          for (l = p->argv[i]; l; l = CB_CHAIN(l)) {
+            joutput_param(CB_VALUE(l), i);
+            i++;
+            if (CB_CHAIN(l)) {
+              joutput(", ");
+            }
+          }
+        } else {
+          joutput_param(p->argv[i], i);
+          if (i + 1 < p->argc) {
             joutput(", ");
           }
-        }
-      } else {
-        joutput_param(p->argv[i], i);
-        if (i + 1 < p->argc) {
-          joutput(", ");
         }
       }
     }
