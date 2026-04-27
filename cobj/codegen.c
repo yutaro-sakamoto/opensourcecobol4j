@@ -638,6 +638,43 @@ static void joutput_string_write(const unsigned char *s, int size,
   }
 }
 
+/* 文字列リテラルを `CobolFieldFactory.stringField("...")` 形式で
+   インライン出力できるか判定する。Java ソースに埋め込んだ文字列が
+   SHIFT_JIS でラウンドトリップしても元の COBOL ソースのバイト列と
+   一致するよう、ASCII printable の単バイト範囲に限定する。
+   空リテラル(size==0)は従来の c_N 経路との厳密な等価性を保つため除外。 */
+static int literal_is_inlineable_as_java_string(const unsigned char *data,
+                                                int size) {
+  int i;
+  if (size <= 0) {
+    return 0;
+  }
+  for (i = 0; i < size; i++) {
+    unsigned char c = data[i];
+    if (c < 0x20 || c > 0x7E) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+/* 生のJava文字列リテラル "..." を出力する。" と \ のみエスケープする。
+   呼び出し元で literal_is_inlineable_as_java_string によりバイト列の安全性を
+   担保していることが前提。 */
+static void joutput_inline_java_string(const unsigned char *data, int size) {
+  int i;
+  joutput("\"");
+  for (i = 0; i < size; i++) {
+    unsigned char c = data[i];
+    if (c == '"' || c == '\\') {
+      joutput("\\%c", c);
+    } else {
+      joutput("%c", c);
+    }
+  }
+  joutput("\"");
+}
+
 static void joutput_string(const unsigned char *s, int size) {
   int i;
   struct string_literal_cache *new_literal_cache =
@@ -1588,10 +1625,27 @@ static void joutput_param(cb_tree x, int id) {
   case CB_TAG_FILE:
     joutput("%s%s", CB_PREFIX_FILE, CB_FILE(x)->cname);
     break;
-  case CB_TAG_LITERAL:
-    ll = lookup_literal(x);
-    joutput_const_identifier(ll);
+  case CB_TAG_LITERAL: {
+    /* 文字列リテラル可読性改善:
+       alphanumeric リテラルかつ ALL/非ASCII を除く安全なバイト列のとき、
+       `CobolFieldFactory.stringField("...")` 形式でインライン出力する。
+       これにより MOVE/IF/DISPLAY 等あらゆる文脈で `c_N` 経由の参照が
+       不要になる。同一文字列はランタイムでキャッシュされるため、
+       生成されるインスタンスは元の `c_N` と同じく一度だけ作られる。
+       除外条件のリテラル(ALL、NATIONAL、数値、非ASCII/制御バイトを
+       含むもの)は従来通り `lookup_literal` 経由で `c_N` 定数に展開する。 */
+    struct cb_literal *lit = CB_LITERAL(x);
+    if (CB_TREE_CATEGORY(x) == CB_CATEGORY_ALPHANUMERIC && lit->all == 0 &&
+        literal_is_inlineable_as_java_string(lit->data, (int)lit->size)) {
+      joutput("CobolFieldFactory.stringField(");
+      joutput_inline_java_string(lit->data, (int)lit->size);
+      joutput(")");
+    } else {
+      ll = lookup_literal(x);
+      joutput_const_identifier(ll);
+    }
     break;
+  }
   case CB_TAG_FIELD:
     /* TODO: remove me */
     joutput_param(cb_build_field_reference(CB_FIELD(x), NULL), id);

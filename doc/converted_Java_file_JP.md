@@ -139,11 +139,13 @@ DISPLAY "HELLO".
 ```java
 /* a.cbl:6: DISPLAY */
 {
-  CobolTerminal.display (0, 1, 1, c_1);
+  CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("HELLO"));
 }
 ```
 
 このように各文はブロック`{}`で囲まれ、その上にコメントで元のCOBOLソースコードのファイル名・行番号と、変換されたメソッドの呼び出しを示すコメントが付けられる。
+
+なお、上の例の `CobolFieldFactory.stringField("HELLO")` は alphanumeric な文字列リテラルに対する参照を生成する。同じ文字列に対しては libcobj 側で `AbstractCobolField` インスタンスがキャッシュされる。`MOVE ALL "x"` のような ALL 指定や、NATIONAL リテラル、数値リテラル、非ASCII/制御バイトを含むリテラルは、従来通りクラスのインスタンスフィールド `c_N` として宣言・初期化される。
 
 ### 制御文
 IF文やPERFORM VARYING文は、それぞれJavaのif文やfor文に変換される。
@@ -164,14 +166,14 @@ IF文やPERFORM VARYING文は、それぞれJavaのif文やfor文に変換され
             {
               /* a.cbl:7: DISPLAY */
               {
-                CobolTerminal.display (0, 1, 1, c_2);
+                CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("HELLO"));
               }
             }
           else
             {
               /* a.cbl:9: DISPLAY */
               {
-                CobolTerminal.display (0, 1, 1, c_3);
+                CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("WORLD"));
               }
             }
         }
@@ -290,11 +292,11 @@ new CobolControl(l_SUB__A_01, CobolControl.LabelType.label) {
   public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
     /* prog.cbl:13: DISPLAY */
     {
-      CobolTerminal.display (0, 1, 1, c_1);
+      CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("A-01 START"));
     }
     /* prog.cbl:14: DISPLAY */
     {
-      CobolTerminal.display (0, 1, 1, c_2);
+      CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("A-01 END"));
     }
 
     return Optional.of(contList[l_SUB__A_02]);
@@ -309,7 +311,7 @@ new CobolControl(l_SUB__A_02, CobolControl.LabelType.label) {
   public Optional<CobolControl> run() throws CobolRuntimeException, CobolGoBackException, CobolStopRunException {
     /* prog.cbl:16: DISPLAY */
     {
-      CobolTerminal.display (0, 1, 1, c_3);
+      CobolTerminal.display (0, 1, 1, CobolFieldFactory.stringField("SECT-02"));
     }
 
     return Optional.of(contList[l_LAST_PROC]);

@@ -18,10 +18,47 @@
  */
 package jp.osscons.opensourcecobol.libcobj.data;
 
+import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 
 /** AbstractCobolFieldのサブクラスを生成するためのメソッドを定義するクラス */
 public class CobolFieldFactory {
+
+    /**
+     * COBOL文字列リテラル(alphanumeric)に対応する読み取り専用 AbstractCobolField を
+     * 同一文字列につき一度だけ生成し、以降は再利用するためのキャッシュ。
+     * cobjが`stringField("...")`の形でリテラル参照を生成するため、同じリテラルが
+     * 複数箇所で出現してもインスタンス生成は1回で済む。 */
+    private static final ConcurrentHashMap<String, AbstractCobolField> STRING_FIELD_CACHE =
+            new ConcurrentHashMap<>();
+
+    /** stringField で生成する全ての AbstractCobolField で共有する読み取り専用属性。
+     *  cobj が `joutput_attr` で出力する non-ALL alphanumeric literal の属性
+     *  (`a_N_Alphanumeric`)と等価。 */
+    private static final CobolFieldAttribute STRING_FIELD_ATTR =
+            new CobolFieldAttribute(
+                    CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
+
+    /**
+     * 文字列リテラルに対応する AbstractCobolField を取得する。
+     * 同じ s に対しては JVM 全体で同一インスタンスを返す(キャッシュ)。
+     * 生成される field は属性的には従来 cobj が出力していた `c_N` 定数(
+     * `CobolFieldAttribute(COB_TYPE_ALPHANUMERIC, 0, 0, 0, null)`)と等価。
+     *
+     * <p>注意: 返される field は読み取り専用として扱うこと。MOVE/IF/DISPLAY等
+     * リテラル参照のあらゆる文脈で安全だが、書き換え操作は他の利用箇所に副作用を
+     * もたらすため避ける必要がある(従来の `c_N` 定数と同じ前提)。
+     *
+     * @param s リテラル文字列。SHIFT-JIS でバイト化される。
+     * @return 文字列に対応するキャッシュ済み AbstractCobolField
+     */
+    public static AbstractCobolField stringField(String s) {
+        return STRING_FIELD_CACHE.computeIfAbsent(s, key -> {
+            byte[] bytes = key.getBytes(AbstractCobolField.charSetSJIS);
+            return new CobolAlphanumericField(
+                    bytes.length, new CobolDataStorage(bytes), STRING_FIELD_ATTR);
+        });
+    }
 
     /**
      * 引数に応じて適切なAbstractCobolFieldクラスのサブクラスを生成する。
