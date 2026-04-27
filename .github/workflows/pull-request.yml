@@ -4,11 +4,11 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths-ignore:
-      - '*.md'
-      - 'ChangeLog'
-      - 'NEWS'
-      - 'README'
-      - 'COPYING'
+      - "*.md"
+      - "ChangeLog"
+      - "NEWS"
+      - "README"
+      - "COPYING"
   workflow_dispatch:
 
 concurrency:
@@ -94,7 +94,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9"]
+        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
     uses: ./.github/workflows/test-esql.yml
     with:
       os: ${{ matrix.os }}
@@ -103,7 +103,7 @@ jobs:
     needs: build-utf8
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9"]
+        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
     uses: ./.github/workflows/test-esql-utf8.yml
     with:
       os: ${{ matrix.os }}
@@ -172,7 +172,6 @@ jobs:
     needs: check-workflows
     uses: ./.github/workflows/javadoc.yml
 
-
   check-missing-javadoc:
     needs: check-workflows
     uses: ./.github/workflows/check-missing-javadoc.yml
@@ -186,8 +185,8 @@ jobs:
   windows-test:
     needs: windows-build
     strategy:
-       matrix:
-         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
+      matrix:
+        test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
     uses: ./.github/workflows/windows-test.yml
     with:
       test-name: ${{ matrix.test_name }}
