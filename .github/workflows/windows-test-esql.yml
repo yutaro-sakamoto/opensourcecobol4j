@@ -7,6 +7,9 @@ jobs:
   test:
     runs-on: windows-latest
 
+    env:
+      CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
+
     steps:
     - uses: actions/checkout@v6
 
@@ -78,55 +81,21 @@ jobs:
         mv ${TEMP_FILE} $1
         DBEOF
 
-    - name: Run ESQL basic tests
-      shell: bash
-      run: |
+        # Create diff wrapper that strips trailing CR
         mkdir -p /tmp/diff-wrapper
         printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
         chmod +x /tmp/diff-wrapper/diff
+
+    - name: Run ESQL tests
+      shell: bash
+      run: |
         export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
         ./esql-basic
-
-    - name: Run ESQL SQLCA tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
         ./esql-sqlca
-
-    - name: Run ESQL cobol data tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
         ./esql-cobol-data
-
-    - name: Run ESQL misc tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
         ./esql-misc
-
-    - name: Run ESQL sql data tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
         ./esql-sql-data
-
-    - name: Run ESQL UTF-8 tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
         ./esql-utf8
 
     - name: Upload log files if tests fail
