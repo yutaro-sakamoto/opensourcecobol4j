@@ -110,95 +110,10 @@ static void ppecho_dataname (char *datanamebuf);
 static void switch_to_buffer (const int lineno, const char *filename,
 			      YY_BUFFER_STATE buffer);
 
-static char esql_declare_line[1024];
-static int esql_declare_line_len = 0;
-
 static char *esql_include_fname = NULL;
-static int esql_include_return_state = 0; /* 0=INITIAL, 1=ESQL_DECLARE_STATE */
 static int esql_passthru_in_quote = 0;
 static int esql_passthru_active = 0;
-static int sqlca_included = 0;
 
-static void process_declare_line(const char *line) {
-	char *upper_line;
-	const char *varying_pos;
-	int i, len;
-
-	len = strlen(line);
-	if (len == 0) { fputc('\n', ppout); return; }
-
-	upper_line = malloc(len + 1);
-	for (i = 0; i < len; i++) upper_line[i] = toupper((unsigned char)line[i]);
-	upper_line[len] = '\0';
-
-	varying_pos = strstr(upper_line, "VARYING");
-	if (!varying_pos || !strstr(upper_line, "PIC")) {
-		ppecho(line);
-		fputc('\n', ppout);
-		free(upper_line);
-		return;
-	}
-
-	/* Parse: "   NN  FIELDNAME  PIC X(nn) VARYING." */
-	const char *p = line;
-	char level[8] = "";
-	char fieldname[64] = "";
-	char pic_type = 'X';
-	int pic_size = 0;
-	int child_level = 0;
-	int indent_len = 0;
-	char buf[512];
-
-	while (line[indent_len] == ' ') indent_len++;
-	p = line + indent_len;
-
-	i = 0;
-	while (*p >= '0' && *p <= '9' && i < 6) { level[i++] = *p++; }
-	level[i] = '\0';
-	child_level = atoi(level) + 2;
-	if (child_level > 49) child_level = 49;
-
-	while (*p == ' ' || *p == '\t') p++;
-
-	i = 0;
-	while (*p && *p != ' ' && *p != '\t' && *p != '.' && i < 62) {
-		fieldname[i++] = *p++;
-	}
-	fieldname[i] = '\0';
-
-	const char *pic_pos = strstr(upper_line, "PIC");
-	if (pic_pos) {
-		const char *q = line + (pic_pos - upper_line) + 3;
-		while (*q == ' ' || *q == '\t') q++;
-		pic_type = toupper((unsigned char)*q);
-		q++;
-		if (*q == '(') {
-			q++;
-			pic_size = atoi(q);
-		} else {
-			pic_size = 0;
-			while (toupper((unsigned char)*q) == pic_type) { pic_size++; q++; }
-		}
-	}
-
-	if (pic_size <= 0 || fieldname[0] == '\0') {
-		ppecho(line);
-		fputc('\n', ppout);
-		free(upper_line);
-		return;
-	}
-
-	snprintf(buf, sizeof(buf), "%.*s%s %s.", indent_len, line, level, fieldname);
-	ppecho(buf); fputc('\n', ppout);
-	snprintf(buf, sizeof(buf), "%.*s  %02d %s-LEN PIC S9(8) COMP-5.",
-	         indent_len, line, child_level, fieldname);
-	ppecho(buf); fputc('\n', ppout);
-	snprintf(buf, sizeof(buf), "%.*s  %02d %s-ARR PIC %c(%d).",
-	         indent_len, line, child_level, fieldname, pic_type, pic_size);
-	ppecho(buf); fputc('\n', ppout);
-
-	free(upper_line);
-}
 
 %}
 ifdef(M4.I18N_UTF8,>>>>>
@@ -226,7 +141,7 @@ WORD		([_0-9A-Z-]|{JPNWORD})+
 NUMRIC_LITERAL	[+-]?[0-9,.]*[0-9]
 ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
-%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE ESQL_DECLARE_STATE
+%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE
 
 %%
 
@@ -239,11 +154,9 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "IDENTIFICATION"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."	{
 	identification_division_line_number = cb_source_line;
-	sqlca_included = 0;
 	ppecho ("IDENTIFICATION DIVISION.");
 }
 "ID"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."			{
-	sqlca_included = 0;
 	ppecho ("ID DIVISION.");
 }
 "FUNCTION"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."		{ ppecho ("FUNCTION DIVISION."); }
@@ -282,21 +195,22 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"BEGIN"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* No-op: accepted for backward compatibility */
 	ppecho ("EXEC SQL BEGIN DECLARE SECTION END-EXEC.\n");
-	esql_declare_line_len = 0;
-	esql_declare_line[0] = '\0';
-	BEGIN ESQL_DECLARE_STATE;
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"END"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* No-op: accepted for backward compatibility */
+	ppecho ("EXEC SQL END DECLARE SECTION END-EXEC.\n");
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	/* EXEC SQL INCLUDE SQLCA END-EXEC: no-op (SQLCA is injected by the compiler) */
-	sqlca_included = 1;
+	/* No-op: SQLCA is injected by the compiler */
 	fputc ('\n', ppout);
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
 	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
-	esql_include_return_state = 0;
 	BEGIN ESQL_INCLUDE_STATE;
 }
 
@@ -358,67 +272,10 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
   .			{ pplval.s = strdup (yytext); return TOKEN; }
 }
 
-<ESQL_DECLARE_STATE>{
-  "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"END"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	if (esql_declare_line_len > 0) {
-		esql_declare_line[esql_declare_line_len] = '\0';
-		process_declare_line(esql_declare_line);
-		esql_declare_line_len = 0;
-	}
-	ppecho ("EXEC SQL END DECLARE SECTION END-EXEC.\n");
-	BEGIN INITIAL;
-  }
-  "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	if (esql_declare_line_len > 0) {
-		esql_declare_line[esql_declare_line_len] = '\0';
-		process_declare_line(esql_declare_line);
-		esql_declare_line_len = 0;
-	}
-	/* SQLCA is injected by the compiler, no ppcopy needed */
-	sqlca_included = 1;
-	fputc ('\n', ppout);
-  }
-  "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
-	if (esql_declare_line_len > 0) {
-		esql_declare_line[esql_declare_line_len] = '\0';
-		process_declare_line(esql_declare_line);
-		esql_declare_line_len = 0;
-	}
-	esql_include_return_state = 1;
-	BEGIN ESQL_INCLUDE_STATE;
-  }
-  "EXEC"({ZENSPC}|[ ])+"SQL" {
-	if (esql_declare_line_len > 0) {
-		esql_declare_line[esql_declare_line_len] = '\0';
-		process_declare_line(esql_declare_line);
-		esql_declare_line_len = 0;
-	}
-	ppecho ("EXEC SQL");
-	esql_passthru_in_quote = 0;
-	esql_passthru_active = 1;
-	BEGIN ESQL_PASSTHRU_STATE;
-  }
-  \n {
-	esql_declare_line[esql_declare_line_len] = '\0';
-	process_declare_line(esql_declare_line);
-	esql_declare_line_len = 0;
-	cb_source_line++;
-  }
-  . {
-	if (esql_declare_line_len < (int)sizeof(esql_declare_line) - 2) {
-		esql_declare_line[esql_declare_line_len++] = yytext[0];
-	}
-  }
-}
-
 <ESQL_INCLUDE_STATE>{
   [ \t\n]+ { if (yytext[0] == '\n') cb_source_line++; }
   "END-EXEC"({ZENSPC}|[ ])*"."? {
-	if (esql_include_return_state == 1) {
-		BEGIN ESQL_DECLARE_STATE;
-	} else {
-		BEGIN INITIAL;
-	}
+	BEGIN INITIAL;
 	if (esql_include_fname) {
 		fputc ('\n', ppout);
 		ppcopy (esql_include_fname, NULL, NULL, NULL);

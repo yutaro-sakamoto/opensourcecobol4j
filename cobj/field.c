@@ -476,6 +476,10 @@ static int validate_field_1(struct cb_field *f) {
     }
 
     for (f = f->children; f; f = f->sister) {
+      /* Expand VARYING before validating the child */
+      if (f->flag_varying && f->pic && !f->children) {
+        cb_validate_field(f); /* triggers VARYING expansion */
+      }
       if (validate_field_1(f) != 0) {
         return -1;
       }
