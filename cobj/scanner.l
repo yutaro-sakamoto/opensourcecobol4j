@@ -117,43 +117,45 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	/* End of EXEC SQL block */
 	BEGIN INITIAL;
 	esql_in_quote = 0;
-	esql_buff[esql_buff_len] = '\0';
-	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
+	/* Trim leading whitespace */
+	size_t start = 0;
+	while (start < esql_buff_len &&
+	       (esql_buff[start] == ' ' || esql_buff[start] == '\t' ||
+	        esql_buff[start] == '\n' || esql_buff[start] == '\r')) {
+		start++;
+	}
+	/* Trim trailing whitespace */
+	size_t end = esql_buff_len;
+	while (end > start &&
+	       (esql_buff[end - 1] == ' ' || esql_buff[end - 1] == '\t' ||
+	        esql_buff[end - 1] == '\n' || esql_buff[end - 1] == '\r')) {
+		end--;
+	}
+	size_t trimmed_len = end - start;
+	if (start > 0 && trimmed_len > 0) {
+		memmove(esql_buff, esql_buff + start, trimmed_len);
+	}
+	esql_buff[trimmed_len] = '\0';
+	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, trimmed_len);
 	SET_LOCATION (yylval);
 	return EXEC_SQL_STATEMENT;
   }
   \n {
 	cb_source_line++;
-	if (esql_in_quote) {
-		/* Inside string literal: don't add space for newline */
-	} else {
-		if (esql_buff_len + 2 >= esql_buff_capacity) {
-			esql_buff_capacity *= 2;
-			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
-		}
-		esql_buff[esql_buff_len++] = ' ';
+	if (esql_buff_len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
 	}
+	esql_buff[esql_buff_len++] = '\n';
   }
   [ \t]+ {
-	if (esql_in_quote) {
-		/* Inside string literal: preserve whitespace as-is */
-		size_t len = strlen(yytext);
-		while (esql_buff_len + len + 2 >= esql_buff_capacity) {
-			esql_buff_capacity *= 2;
-			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
-		}
-		memcpy(esql_buff + esql_buff_len, yytext, len);
-		esql_buff_len += len;
-	} else {
-		/* Outside: collapse whitespace to single space */
-		if (esql_buff_len > 0 && esql_buff[esql_buff_len - 1] != ' ') {
-			if (esql_buff_len + 2 >= esql_buff_capacity) {
-				esql_buff_capacity *= 2;
-				esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
-			}
-			esql_buff[esql_buff_len++] = ' ';
-		}
+	size_t len = strlen(yytext);
+	while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
 	}
+	memcpy(esql_buff + esql_buff_len, yytext, len);
+	esql_buff_len += len;
   }
   . {
 	if (esql_buff_len + 2 >= esql_buff_capacity) {

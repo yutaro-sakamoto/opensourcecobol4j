@@ -225,11 +225,7 @@ COMMA ","
   }
 
   ({ZENSPC}|[ \t\r\n])+ {
-    if (esql_in_quote) {
-      esql_sqlbody_append(yytext);
-    } else {
-      esql_sqlbody_append(" ");
-    }
+    esql_sqlbody_append(yytext);
   }
 
   "AT" {
@@ -338,7 +334,7 @@ COMMA ","
 
   {HOSTWORD} {
     if (!esql_flag_select_into) {
-      esql_sqlbody_append(" ?");
+      esql_sqlbody_append("?");
     }
     esql_lval.s = strdup(yytext + 1); /* strip ':' */
     return ESQL_HOSTTOKEN;

@@ -3716,6 +3716,33 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   joutput("}");
 }
 
+static void joutput_sql_string(const char *sql) {
+  joutput("\"");
+  for (const char *p = sql; *p; p++) {
+    switch (*p) {
+    case '\n':
+      joutput("\\n");
+      break;
+    case '\t':
+      joutput("\\t");
+      break;
+    case '\r':
+      joutput("\\r");
+      break;
+    case '"':
+      joutput("\\\"");
+      break;
+    case '\\':
+      joutput("\\\\");
+      break;
+    default:
+      joutput("%c", *p);
+      break;
+    }
+  }
+  joutput("\"");
+}
+
 static void joutput_exec_sql(struct cb_exec_sql *p) {
   struct cb_sql_host_var *hv;
 
@@ -3759,14 +3786,17 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.exec(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\");\n", p->sql_text);
+    joutput(", ");
+    joutput_sql_string(p->sql_text);
+    joutput(");\n");
     break;
 
   case CB_SQL_EXEC_PARAMS:
     joutput_prefix();
     joutput("CobolSql.execWithParams(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\"", p->sql_text);
+    joutput(", ");
+    joutput_sql_string(p->sql_text);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
       joutput_sql_field_ref(hv);
@@ -3778,7 +3808,9 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.selectInto(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\", ", p->sql_text);
+    joutput(", ");
+    joutput_sql_string(p->sql_text);
+    joutput(", ");
     joutput_sql_field_array(p->host_list);
     joutput(", ");
     joutput_sql_field_array(p->res_host_list);
@@ -3789,7 +3821,9 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.selectIntoOccurs(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s\", ", p->sql_text);
+    joutput(", ");
+    joutput_sql_string(p->sql_text);
+    joutput(", ");
     joutput_sql_field_array(p->host_list);
     joutput(", ");
     joutput_sql_field_array(p->res_host_list);
@@ -3804,8 +3838,9 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
       joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
               p->cursor_name, p->prepare_name);
     } else {
-      joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
-              p->cursor_name, p->sql_text);
+      joutput(", \"%s_%s\", ", excp_current_program_id, p->cursor_name);
+      joutput_sql_string(p->sql_text);
+      joutput(");\n");
     }
     break;
 
@@ -3813,8 +3848,8 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.declareCursorWithParams(");
     joutput_exec_sql_field_name("SQLCA");
-    joutput(", \"%s_%s\", \"%s\"", excp_current_program_id, p->cursor_name,
-            p->sql_text);
+    joutput(", \"%s_%s\", ", excp_current_program_id, p->cursor_name);
+    joutput_sql_string(p->sql_text);
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
       joutput_sql_field_ref(hv);
