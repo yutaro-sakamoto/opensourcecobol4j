@@ -305,9 +305,7 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	BEGIN INITIAL;
   }
   \n {
-	if (!esql_passthru_in_quote) {
-		ppecho (" ");
-	}
+	ppecho ("\n");
 	cb_source_line++;
   }
   "''" {
