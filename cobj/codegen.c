@@ -3721,7 +3721,10 @@ static void joutput_sql_string(const char *sql) {
   for (const char *p = sql; *p; p++) {
     switch (*p) {
     case '\n':
-      joutput("\\n");
+      joutput("\\n\"");
+      joutput("\n");
+      joutput_prefix();
+      joutput("+ \"");
       break;
     case '\t':
       joutput("\\t");
