@@ -171,21 +171,21 @@ COMMA ","
   return ESQL_ROLLBACK_WORK;
 }
 
-"BEGIN"[ \t]+"DECLARE" {
+"BEGIN"[ \t\r\n]+"DECLARE" {
   BEGIN ESQL_STATE;
   return ESQL_BEGIN_DECLARE;
 }
 
-"END"[ \t]+"DECLARE" {
+"END"[ \t\r\n]+"DECLARE" {
   BEGIN ESQL_STATE;
   return ESQL_END_DECLARE;
 }
 
-"INCLUDE"[ \t]+"SQLCA" {
+"INCLUDE"[ \t\r\n]+"SQLCA" {
   return ESQL_INCLUDE_SQLCA;
 }
 
-"INCLUDE"[ \t]+ {
+"INCLUDE"[ \t\r\n]+ {
   return ESQL_INCLUDE;
 }
 
@@ -206,7 +206,7 @@ COMMA ","
 
  /* === ESQL_DBNAME_STATE: after AT keyword === */
 <ESQL_DBNAME_STATE>{
-  [ \t]+ { }
+  [ \t\r\n]+ { }
   {HOSTWORD} {
     esql_lval.s = strdup(yytext + 1);
     yy_pop_state();
@@ -305,7 +305,7 @@ COMMA ","
     return ESQL_USING;
   }
 
-  ({ZENSPC}|[ \t])+"INTO"({ZENSPC}|[ \t])+ {
+  ({ZENSPC}|[ \t\r\n])+"INTO"({ZENSPC}|[ \t\r\n])+ {
     esql_flag_select_into = 0;
     if (strcmp(esql_commandname, "SELECT") != 0) {
       esql_sqlbody_append(yytext);
