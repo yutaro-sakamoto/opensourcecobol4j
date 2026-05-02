@@ -5,9 +5,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Wraps a JDBC Connection with a COBOL connection identifier. */
 public class SqlConnection {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SqlConnection.class);
 
     private String id;
     private Connection conn;
@@ -129,6 +133,7 @@ public class SqlConnection {
         }
         props.put("encoding", encoding);
 
+        LOG.debug("Connecting to {} (user={})", url, user);
         Connection connection = DriverManager.getConnection(url, props);
         connection.setAutoCommit(true);
 
@@ -137,6 +142,7 @@ public class SqlConnection {
 
         // Start transaction
         sqlConn.beginTransaction();
+        LOG.debug("Connected successfully (id={})", connId);
 
         return sqlConn;
     }

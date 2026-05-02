@@ -11,9 +11,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
 public final class CobolSql {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
 
     /** Private constructor to prevent instantiation of utility class. */
     private CobolSql() {}
@@ -53,12 +57,16 @@ public final class CobolSql {
             String passwdStr = storageToString(passwd, passwdLen);
             String dbnameStr = storageToString(dbname, dbnameLen);
 
+            LOG.debug("CONNECT user={} dbname={}", userStr, dbnameStr);
             SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
             SqlState.addConnection(conn.getId(), conn);
             SqlCA.setSuccess(sqlca);
+            LOG.debug("CONNECT successful (id={})", conn.getId());
         } catch (SQLException e) {
+            LOG.error("CONNECT failed: {}", e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         } catch (Exception e) {
+            LOG.error("CONNECT failed: {}", e.getMessage());
             SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
         }
     }
@@ -137,6 +145,7 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
+            LOG.debug("DISCONNECT (id={})", conn.getId());
             // Commit before disconnect
             try (Statement stmt = conn.getConnection().createStatement()) {
                 stmt.execute("COMMIT");
@@ -147,6 +156,7 @@ public final class CobolSql {
             SqlState.removeConnection(conn.getId());
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
+            LOG.error("DISCONNECT failed: {}", e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -173,6 +183,8 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
+
+            LOG.debug("EXEC SQL: {}", query.trim());
 
             String trimmed = query.trim();
             boolean isTxnControl =
@@ -213,6 +225,7 @@ public final class CobolSql {
                 SqlCA.setSuccess(sqlca);
             }
         } catch (SQLException e) {
+            LOG.error("EXEC SQL failed: {} - {}", query.trim(), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -241,6 +254,8 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
+
+            LOG.debug("EXEC SQL (params={}): {}", params != null ? params.length : 0, query.trim());
 
             try (Statement sp = conn.createStatement()) {
                 sp.execute(SQL_SAVEPOINT);
@@ -277,6 +292,7 @@ public final class CobolSql {
                 sqlConn.beginTransaction();
             }
         } catch (SQLException e) {
+            LOG.error("EXEC SQL failed: {} - {}", query.trim(), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -430,6 +446,8 @@ public final class CobolSql {
                 return;
             }
 
+            LOG.debug("SELECT INTO: {}", query.trim());
+
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
                 ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
@@ -445,6 +463,7 @@ public final class CobolSql {
                 }
             }
         } catch (SQLException e) {
+            LOG.error("SELECT INTO failed: {} - {}", query.trim(), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -514,6 +533,7 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
+            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, query.trim());
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
@@ -580,6 +600,7 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            LOG.debug("OPEN CURSOR {}", cursorName);
             Connection conn = sqlConn.getConnection();
             try (Statement sp = conn.createStatement()) {
                 sp.execute(SQL_SAVEPOINT);
@@ -598,6 +619,7 @@ public final class CobolSql {
             }
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
+            LOG.error("OPEN CURSOR {} failed: {}", cursorName, e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -657,6 +679,7 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            LOG.trace("FETCH CURSOR {}", cursorName);
             boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams);
             if (hasRow) {
                 SqlCA.setSuccess(sqlca);

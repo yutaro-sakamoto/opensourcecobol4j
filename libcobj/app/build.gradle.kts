@@ -44,7 +44,8 @@ dependencies {
     spotbugs("com.github.spotbugs:spotbugs:4.8.6")
 
     implementation("org.slf4j:slf4j-api:2.0.17")
-    implementation("org.slf4j:slf4j-simple:2.0.17")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+    testImplementation("com.github.valfirst:slf4j-test:3.0.1")
     implementation("org.postgresql:postgresql:42.7.5")
 }
 
