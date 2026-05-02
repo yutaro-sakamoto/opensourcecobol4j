@@ -290,7 +290,9 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	BEGIN INITIAL;
   }
   \n {
-	ppecho ("\n");
+	if (!esql_passthru_in_quote) {
+		ppecho ("\n");
+	}
 	cb_source_line++;
   }
   "''" {

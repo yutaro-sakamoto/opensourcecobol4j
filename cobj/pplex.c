@@ -2598,13 +2598,15 @@ case 62:
 YY_RULE_SETUP
 #line 292 "pplex.l"
 {
-	ppecho ("\n");
+	if (!esql_passthru_in_quote) {
+		ppecho ("\n");
+	}
 	cb_source_line++;
   }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 296 "pplex.l"
+#line 298 "pplex.l"
 {
 	/* Escaped single quote inside SQL literal: stay in quote */
 	ppecho ("''");
@@ -2612,7 +2614,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 300 "pplex.l"
+#line 302 "pplex.l"
 {
 	if (yytext[0] == '\'') {
 		esql_passthru_in_quote = !esql_passthru_in_quote;
@@ -2624,33 +2626,33 @@ YY_RULE_SETUP
 
 case 65:
 YY_RULE_SETUP
-#line 309 "pplex.l"
+#line 311 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 310 "pplex.l"
+#line 312 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 311 "pplex.l"
+#line 313 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return REPLACE; }
 	YY_BREAK
 case 68:
 /* rule 68 can match eol */
 YY_RULE_SETUP
-#line 312 "pplex.l"
+#line 314 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 313 "pplex.l"
+#line 315 "pplex.l"
 { ppecho (" "); }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 314 "pplex.l"
+#line 316 "pplex.l"
 {
 	BEGIN INITIAL;
 	if (!strcasecmp (yytext, "FILLER")) {
@@ -2666,18 +2668,18 @@ YY_RULE_SETUP
   }
 	YY_BREAK
 case 71:
-#line 328 "pplex.l"
+#line 330 "pplex.l"
 case 72:
-#line 329 "pplex.l"
+#line 331 "pplex.l"
 case 73:
 YY_RULE_SETUP
-#line 329 "pplex.l"
+#line 331 "pplex.l"
 { suppress_echo = 0; BEGIN INITIAL; ppecho (yytext); }
 	YY_BREAK
 
 case 74:
 YY_RULE_SETUP
-#line 332 "pplex.l"
+#line 334 "pplex.l"
 {
 	suppress_echo = (omit_data_redef_name) ? 1 : 0;
 	ppecho (yytext);
@@ -2688,20 +2690,20 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 75:
-#line 342 "pplex.l"
-case 76:
-#line 343 "pplex.l"
-case 77:
 #line 344 "pplex.l"
-case 78:
+case 76:
 #line 345 "pplex.l"
-case 79:
+case 77:
 #line 346 "pplex.l"
-case 80:
+case 78:
 #line 347 "pplex.l"
+case 79:
+#line 348 "pplex.l"
+case 80:
+#line 349 "pplex.l"
 case 81:
 YY_RULE_SETUP
-#line 347 "pplex.l"
+#line 349 "pplex.l"
 {
 	/* these words are treated as comments */
 	if (cb_verify (cb_author_paragraph, yytext)) {
@@ -2719,14 +2721,14 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 82:
-#line 364 "pplex.l"
-case 83:
-#line 365 "pplex.l"
-case 84:
 #line 366 "pplex.l"
+case 83:
+#line 367 "pplex.l"
+case 84:
+#line 368 "pplex.l"
 case 85:
 YY_RULE_SETUP
-#line 366 "pplex.l"
+#line 368 "pplex.l"
 {
 	/* these words are comments in IBM COBOL */
 	if (cb_verify (cb_eject_statement, yytext)) {
@@ -2739,17 +2741,17 @@ YY_RULE_SETUP
 case 86:
 /* rule 86 can match eol */
 YY_RULE_SETUP
-#line 375 "pplex.l"
+#line 377 "pplex.l"
 { ppecho ("\n"); cb_source_line++; }
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 377 "pplex.l"
+#line 379 "pplex.l"
 { ppecho (" "); }
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 379 "pplex.l"
+#line 381 "pplex.l"
 {
 	if (inside_bracket) {
 		ppecho (", ");
@@ -2760,7 +2762,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 387 "pplex.l"
+#line 389 "pplex.l"
 {
 	inside_bracket++;
 	ppecho ("(");
@@ -2768,7 +2770,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 392 "pplex.l"
+#line 394 "pplex.l"
 {
 	if (inside_bracket) {
 		inside_bracket--;
@@ -2778,50 +2780,50 @@ YY_RULE_SETUP
 	YY_BREAK
 case 91:
 /* rule 91 can match eol */
-#line 400 "pplex.l"
+#line 402 "pplex.l"
 case 92:
 /* rule 92 can match eol */
-#line 401 "pplex.l"
+#line 403 "pplex.l"
 case 93:
 /* rule 93 can match eol */
-#line 402 "pplex.l"
+#line 404 "pplex.l"
 case 94:
 /* rule 94 can match eol */
-#line 403 "pplex.l"
+#line 405 "pplex.l"
 case 95:
 /* rule 95 can match eol */
-#line 404 "pplex.l"
+#line 406 "pplex.l"
 case 96:
 /* rule 96 can match eol */
-#line 405 "pplex.l"
+#line 407 "pplex.l"
 case 97:
 /* rule 97 can match eol */
-#line 406 "pplex.l"
+#line 408 "pplex.l"
 case 98:
 /* rule 98 can match eol */
-#line 407 "pplex.l"
+#line 409 "pplex.l"
 case 99:
 /* rule 99 can match eol */
-#line 408 "pplex.l"
+#line 410 "pplex.l"
 case 100:
 /* rule 100 can match eol */
-#line 409 "pplex.l"
+#line 411 "pplex.l"
 case 101:
 /* rule 101 can match eol */
-#line 410 "pplex.l"
+#line 412 "pplex.l"
 case 102:
 /* rule 102 can match eol */
-#line 411 "pplex.l"
+#line 413 "pplex.l"
 case 103:
 /* rule 103 can match eol */
-#line 412 "pplex.l"
+#line 414 "pplex.l"
 case 104:
 /* rule 104 can match eol */
-#line 413 "pplex.l"
+#line 415 "pplex.l"
 case 105:
 /* rule 105 can match eol */
 YY_RULE_SETUP
-#line 413 "pplex.l"
+#line 415 "pplex.l"
 {
 	/* each numeric is not a level-number */
 	char *p, *pcrnt;
@@ -2846,7 +2848,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 435 "pplex.l"
+#line 437 "pplex.l"
 {
 	char *p = yytext;
 	cobc_mbspc2ascii (yytext);
@@ -2865,7 +2867,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 451 "pplex.l"
+#line 453 "pplex.l"
 {
 	ppecho (yytext);
 	return yytext[0];
@@ -2873,7 +2875,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 456 "pplex.l"
+#line 458 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2881,12 +2883,12 @@ YY_RULE_SETUP
 			  ppecho (yytext); }
 	YY_BREAK
 case 109:
-#line 462 "pplex.l"
+#line 464 "pplex.l"
 case 110:
-#line 463 "pplex.l"
+#line 465 "pplex.l"
 case 111:
 YY_RULE_SETUP
-#line 463 "pplex.l"
+#line 465 "pplex.l"
 { ppecho (yytext); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -2896,7 +2898,7 @@ case YY_STATE_EOF(PSEUDO_STATE):
 case YY_STATE_EOF(DATANAME_JOIN_STATE):
 case YY_STATE_EOF(ESQL_PASSTHRU_STATE):
 case YY_STATE_EOF(ESQL_INCLUDE_STATE):
-#line 465 "pplex.l"
+#line 467 "pplex.l"
 {
 	struct copy_info *p;
 
@@ -2940,10 +2942,10 @@ case YY_STATE_EOF(ESQL_INCLUDE_STATE):
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
-#line 506 "pplex.l"
+#line 508 "pplex.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 2947 "pplex.c"
+#line 2949 "pplex.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3950,7 +3952,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 506 "pplex.l"
+#line 508 "pplex.l"
 
 
 void
