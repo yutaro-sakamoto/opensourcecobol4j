@@ -1275,7 +1275,7 @@ yyreduce:
 #line 129 "esql-parser.y"
                          {
       /* CONNECT (short form) */
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT_SHORT);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT_SHORT);
     }
 #line 1281 "esql-parser.c"
     break;
@@ -1283,7 +1283,7 @@ yyreduce:
   case 18: /* connectsql: connect_user identified using otherdb  */
 #line 133 "esql-parser.y"
                                           {
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT);
     }
 #line 1289 "esql-parser.c"
     break;
@@ -1291,7 +1291,7 @@ yyreduce:
   case 19: /* connectsql: connect_user otherdb  */
 #line 136 "esql-parser.y"
                          {
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT_INFORMAL);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT_INFORMAL);
     }
 #line 1297 "esql-parser.c"
     break;
@@ -1331,7 +1331,7 @@ yyreduce:
   case 24: /* commitsql: ESQL_COMMIT_WORK otherdb  */
 #line 168 "esql-parser.y"
                              {
-      esql_parsed_result =esql_build_node(CB_SQL_COMMIT);
+      esql_parsed_result = esql_build_node(CB_SQL_COMMIT);
     }
 #line 1337 "esql-parser.c"
     break;
@@ -1339,7 +1339,7 @@ yyreduce:
   case 25: /* rollbacksql: ESQL_ROLLBACK_WORK otherdb  */
 #line 174 "esql-parser.y"
                                {
-      esql_parsed_result =esql_build_node(CB_SQL_ROLLBACK);
+      esql_parsed_result = esql_build_node(CB_SQL_ROLLBACK);
     }
 #line 1345 "esql-parser.c"
     break;
@@ -1348,7 +1348,7 @@ yyreduce:
 #line 182 "esql-parser.y"
                              {
       esql_set_cursor((yyvsp[-4].s));
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_DECLARE_CURSOR_PARAMS
                             : CB_SQL_DECLARE_CURSOR);
     }
@@ -1359,7 +1359,7 @@ yyreduce:
 #line 188 "esql-parser.y"
                                                            {
       esql_set_cursor((yyvsp[-3].s));
-      esql_parsed_result =esql_build_node(CB_SQL_DECLARE_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_DECLARE_CURSOR);
     }
 #line 1365 "esql-parser.c"
     break;
@@ -1368,7 +1368,7 @@ yyreduce:
 #line 196 "esql-parser.y"
                            {
       esql_set_cursor((yyvsp[-1].s));
-      esql_parsed_result =esql_build_node(CB_SQL_OPEN_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR);
     }
 #line 1374 "esql-parser.c"
     break;
@@ -1377,7 +1377,7 @@ yyreduce:
 #line 200 "esql-parser.y"
                                                       {
       esql_set_cursor((yyvsp[-3].s));
-      esql_parsed_result =esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
+      esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
     }
 #line 1383 "esql-parser.c"
     break;
@@ -1386,7 +1386,7 @@ yyreduce:
 #line 208 "esql-parser.y"
                             {
       esql_set_cursor((yyvsp[-1].s));
-      esql_parsed_result =esql_build_node(CB_SQL_CLOSE_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_CLOSE_CURSOR);
     }
 #line 1392 "esql-parser.c"
     break;
@@ -1395,7 +1395,7 @@ yyreduce:
 #line 216 "esql-parser.y"
                                                           {
       esql_set_cursor((yyvsp[-3].s));
-      esql_parsed_result =esql_build_node(CB_SQL_FETCH_ONE);
+      esql_parsed_result = esql_build_node(CB_SQL_FETCH_ONE);
     }
 #line 1401 "esql-parser.c"
     break;
@@ -1404,7 +1404,7 @@ yyreduce:
 #line 224 "esql-parser.y"
                                                                   {
       esql_add_host_var((yyvsp[0].s));
-      esql_parsed_result =esql_build_node(CB_SQL_PREPARE);
+      esql_parsed_result = esql_build_node(CB_SQL_PREPARE);
     }
 #line 1410 "esql-parser.c"
     break;
@@ -1412,7 +1412,7 @@ yyreduce:
   case 33: /* executesql: ESQL_EXECUTE prepared_stname otherdb ESQL_USING host_references  */
 #line 232 "esql-parser.y"
                                                                     {
-      esql_parsed_result =esql_build_node(CB_SQL_EXECUTE_PREPARED);
+      esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
 #line 1418 "esql-parser.c"
     break;
@@ -1420,7 +1420,7 @@ yyreduce:
   case 34: /* executesql: ESQL_EXECUTE prepared_stname otherdb  */
 #line 235 "esql-parser.y"
                                          {
-      esql_parsed_result =esql_build_node(CB_SQL_EXECUTE_PREPARED);
+      esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
 #line 1426 "esql-parser.c"
     break;
@@ -1428,7 +1428,7 @@ yyreduce:
   case 35: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references ESQL_SELECTFROM token_list  */
 #line 243 "esql-parser.y"
                                  {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
@@ -1438,7 +1438,7 @@ yyreduce:
   case 36: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references  */
 #line 248 "esql-parser.y"
                                                                  {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
@@ -1448,7 +1448,7 @@ yyreduce:
   case 37: /* othersql: ESQL_OTHERFUNC otherdb token_list  */
 #line 257 "esql-parser.y"
                                       {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
     }
 #line 1455 "esql-parser.c"
@@ -1457,7 +1457,7 @@ yyreduce:
   case 38: /* declaresection: ESQL_BEGIN_DECLARE token_list_opt  */
 #line 265 "esql-parser.y"
                                       {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
 #line 1463 "esql-parser.c"
     break;
@@ -1465,7 +1465,7 @@ yyreduce:
   case 39: /* declaresection: ESQL_END_DECLARE token_list_opt  */
 #line 268 "esql-parser.y"
                                     {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
 #line 1471 "esql-parser.c"
     break;
@@ -1473,7 +1473,7 @@ yyreduce:
   case 40: /* includesql: ESQL_INCLUDE_SQLCA  */
 #line 274 "esql-parser.y"
                        {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
 #line 1479 "esql-parser.c"
     break;
@@ -1482,7 +1482,7 @@ yyreduce:
 #line 277 "esql-parser.y"
                             {
       /* INCLUDE filename - handled at preprocessor level */
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
 #line 1488 "esql-parser.c"
     break;

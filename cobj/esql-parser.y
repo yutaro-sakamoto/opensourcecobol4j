@@ -128,13 +128,13 @@ esql_statement:
 connectsql:
     ESQL_CONNECT otherdb {
       /* CONNECT (short form) */
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT_SHORT);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT_SHORT);
     }
   | connect_user identified using otherdb {
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT);
     }
   | connect_user otherdb {
-      esql_parsed_result =esql_build_node(CB_SQL_CONNECT_INFORMAL);
+      esql_parsed_result = esql_build_node(CB_SQL_CONNECT_INFORMAL);
     }
   ;
 
@@ -166,13 +166,13 @@ disconnectsql:
 /* --- COMMIT / ROLLBACK --- */
 commitsql:
     ESQL_COMMIT_WORK otherdb {
-      esql_parsed_result =esql_build_node(CB_SQL_COMMIT);
+      esql_parsed_result = esql_build_node(CB_SQL_COMMIT);
     }
   ;
 
 rollbacksql:
     ESQL_ROLLBACK_WORK otherdb {
-      esql_parsed_result =esql_build_node(CB_SQL_ROLLBACK);
+      esql_parsed_result = esql_build_node(CB_SQL_ROLLBACK);
     }
   ;
 
@@ -181,13 +181,13 @@ declaresql:
     ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR
       ESQL_SELECT token_list {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_DECLARE_CURSOR_PARAMS
                             : CB_SQL_DECLARE_CURSOR);
     }
   | ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR prepared_stname {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(CB_SQL_DECLARE_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_DECLARE_CURSOR);
     }
   ;
 
@@ -195,11 +195,11 @@ declaresql:
 opensql:
     ESQL_OPEN expr otherdb {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(CB_SQL_OPEN_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR);
     }
   | ESQL_OPEN expr otherdb ESQL_USING host_references {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
+      esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
     }
   ;
 
@@ -207,7 +207,7 @@ opensql:
 closesql:
     ESQL_CLOSE expr otherdb {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(CB_SQL_CLOSE_CURSOR);
+      esql_parsed_result = esql_build_node(CB_SQL_CLOSE_CURSOR);
     }
   ;
 
@@ -215,7 +215,7 @@ closesql:
 fetchsql:
     ESQL_FETCH expr otherdb ESQL_INTO res_host_references {
       esql_set_cursor($2);
-      esql_parsed_result =esql_build_node(CB_SQL_FETCH_ONE);
+      esql_parsed_result = esql_build_node(CB_SQL_FETCH_ONE);
     }
   ;
 
@@ -223,17 +223,17 @@ fetchsql:
 preparesql:
     ESQL_PREPARE prepared_stname otherdb ESQL_FROM host_reference {
       esql_add_host_var($5);
-      esql_parsed_result =esql_build_node(CB_SQL_PREPARE);
+      esql_parsed_result = esql_build_node(CB_SQL_PREPARE);
     }
   ;
 
 /* --- EXECUTE --- */
 executesql:
     ESQL_EXECUTE prepared_stname otherdb ESQL_USING host_references {
-      esql_parsed_result =esql_build_node(CB_SQL_EXECUTE_PREPARED);
+      esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
   | ESQL_EXECUTE prepared_stname otherdb {
-      esql_parsed_result =esql_build_node(CB_SQL_EXECUTE_PREPARED);
+      esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
   ;
 
@@ -241,12 +241,12 @@ executesql:
 selectintosql:
     ESQL_SELECT otherdb token_list ESQL_INTO res_host_references
       ESQL_SELECTFROM token_list {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
   | ESQL_SELECT otherdb token_list ESQL_INTO res_host_references {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
@@ -255,7 +255,7 @@ selectintosql:
 /* --- Other SQL (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, etc.) --- */
 othersql:
     ESQL_OTHERFUNC otherdb token_list {
-      esql_parsed_result =esql_build_node(
+      esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
     }
   ;
@@ -263,20 +263,20 @@ othersql:
 /* --- DECLARE SECTION / INCLUDE (no-ops) --- */
 declaresection:
     ESQL_BEGIN_DECLARE token_list_opt {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
   | ESQL_END_DECLARE token_list_opt {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
   ;
 
 includesql:
     ESQL_INCLUDE_SQLCA {
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
   | ESQL_INCLUDE ESQL_TOKEN {
       /* INCLUDE filename - handled at preprocessor level */
-      esql_parsed_result =cb_error_node;
+      esql_parsed_result = cb_error_node;
     }
   ;
 
