@@ -200,7 +200,7 @@ class CobolSqlLoggingTest {
     void testConnect_doesNotLogPassword() {
         connectToPostgres();
 
-        List<LoggingEvent> allEvents = cobolSqlLogger.getLoggingEvents();
+        List<LoggingEvent> allEvents = new java.util.ArrayList<>(cobolSqlLogger.getLoggingEvents());
         allEvents.addAll(sqlConnectionLogger.getLoggingEvents());
 
         String password = postgres.getPassword();
