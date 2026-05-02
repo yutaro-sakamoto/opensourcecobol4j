@@ -18,7 +18,10 @@
 #define YY_NO_UNPUT
 
 /* SQL body buffer (accumulated SQL text with host vars replaced by ?) */
-static char esql_sqlbody[8192];
+static char *esql_sqlbody = NULL;
+static size_t esql_sqlbody_len = 0;
+static size_t esql_sqlbody_capacity = 0;
+#define ESQL_SQLBODY_INIT_SIZE 8192
 static int esql_flag_insqlstring;
 static int esql_flag_selectcommand;
 static int esql_flag_select_into;
@@ -26,13 +29,33 @@ static int esql_flag_declare_cursor;
 static char esql_commandname[256];
 
 static void esql_sqlbody_append(const char *s) {
-  strncat(esql_sqlbody, s, sizeof(esql_sqlbody) - strlen(esql_sqlbody) - 1);
+  size_t slen = strlen(s);
+  size_t required = esql_sqlbody_len + slen + 1;
+  if (required >= esql_sqlbody_capacity) {
+    size_t new_capacity = esql_sqlbody_capacity ? esql_sqlbody_capacity : ESQL_SQLBODY_INIT_SIZE;
+    while (required >= new_capacity) {
+      new_capacity *= 2;
+    }
+    char *new_buf = realloc(esql_sqlbody, new_capacity);
+    if (!new_buf) {
+      return;
+    }
+    esql_sqlbody = new_buf;
+    esql_sqlbody_capacity = new_capacity;
+  }
+  strcpy(esql_sqlbody + esql_sqlbody_len, s);
+  esql_sqlbody_len += slen;
 }
 
 static int esql_in_quote = 0;
 
 static void esql_reset_flags(void) {
-  memset(esql_sqlbody, 0, sizeof(esql_sqlbody));
+  if (!esql_sqlbody) {
+    esql_sqlbody_capacity = ESQL_SQLBODY_INIT_SIZE;
+    esql_sqlbody = malloc(esql_sqlbody_capacity);
+  }
+  esql_sqlbody[0] = '\0';
+  esql_sqlbody_len = 0;
   memset(esql_commandname, 0, sizeof(esql_commandname));
   esql_flag_insqlstring = 0;
   esql_flag_selectcommand = 0;
@@ -315,10 +338,9 @@ COMMA ","
 
   "'" {
     esql_sqlbody_append(yytext);
-    if (esql_in_quote && strlen(esql_sqlbody) >= 2) {
+    if (esql_in_quote && esql_sqlbody_len >= 2) {
       /* Check for escaped quote ('') - previous char was also quote */
-      size_t len = strlen(esql_sqlbody);
-      if (len >= 2 && esql_sqlbody[len - 2] == '\'') {
+      if (esql_sqlbody[esql_sqlbody_len - 2] == '\'') {
         /* Escaped quote: stay in quote */
       } else {
         esql_in_quote = 0;
