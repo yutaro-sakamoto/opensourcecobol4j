@@ -187,7 +187,7 @@ AT_DATA([prog.cbl], [
 ])
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([${RUN_MODULE} prog], [0],
+AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [0001 <log> success test_return_code
 0002 <log> success test_return_code
 0003 <log> success fetch_record +0001, ñkäCÅ@ëæòY          , +0400
@@ -197,4 +197,6 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 0007 <log> success fetch_record +0005, ã{èÈÅ@å‹òY          , -0200
 ])
 
+AT_CHECK([test -f esql_debug.log], [0])
+AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

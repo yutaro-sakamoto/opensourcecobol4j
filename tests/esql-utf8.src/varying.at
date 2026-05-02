@@ -170,7 +170,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([${RUN_MODULE} prog], [0],
+AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [A         @&t@
 +00000001
 AB        @&t@
@@ -356,7 +356,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([${RUN_MODULE} prog], [0],
+AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [0         @&t@
 +00000001
 01        @&t@
@@ -379,6 +379,8 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 +00000010
 ])
 
+AT_CHECK([test -f esql_debug.log], [0])
+AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP
 
 
@@ -555,7 +557,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
+AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
 [一　　　　　　　　　@&t@
 +00000001
 一二　　　　　　　　@&t@
@@ -741,7 +743,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
+AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
 [一　　　　　　　　　@&t@
 +00000001
 一二　　　　　　　　@&t@
@@ -764,4 +766,6 @@ AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
 +00000010
 ])
 
+AT_CHECK([test -f esql_debug.log], [0])
+AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

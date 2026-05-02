@@ -222,7 +222,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([${RUN_MODULE} prog], [0],
+AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [+0000.00
 +0000.01
 -0000.01
@@ -255,4 +255,6 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 -9999
 ])
 
+AT_CHECK([test -f esql_debug.log], [0])
+AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

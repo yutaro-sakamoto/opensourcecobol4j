@@ -74,5 +74,9 @@ SKIP_TEST="exit 77"
 EMBED_DB_INFO="sh ${abs_srcdir}/embed_db_info.sh"
 COMPILE_MODULE_ESQL="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"
 
+# Run module with SLF4J DEBUG logging to file
+RUN_MODULE_LOG="java -Dorg.slf4j.simpleLogger.logFile=esql_debug.log -Dorg.slf4j.simpleLogger.defaultLogLevel=debug"
+export RUN_MODULE_LOG
+
 # Ensure local build's libcobj.jar is on CLASSPATH
 export CLASSPATH="${abs_top_builddir}/libcobj/app/build/libs/libcobj.jar:${CLASSPATH}"
