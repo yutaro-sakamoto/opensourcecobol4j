@@ -79,9 +79,7 @@ AT_DATA([prog.cbl], [
            05  READ-NAME           PIC  X(20) .
            05  READ-SALARY         PIC S9(04).
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        EXEC SQL INCLUDE ホスト変数の宣言 END-EXEC.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

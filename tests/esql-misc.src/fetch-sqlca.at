@@ -8,7 +8,6 @@ AT_DATA([prog.cbl], [
       ******************************************************************
        WORKING-STORAGE             SECTION.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01 TBL.
          02 TBL-REC OCCURS 30.
           03 N PIC 9(3).
@@ -17,7 +16,6 @@ AT_DATA([prog.cbl], [
        01 DBNAME                  PIC  X(30) VALUE SPACE.
        01 USERNAME                PIC  X(30) VALUE SPACE.
        01 PASSWD                  PIC  X(10) VALUE SPACE.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
        01 COUNTER PIC 9(7) VALUE ZERO.
        01 LOOP-MAX PIC 9(7) VALUE 30.

@@ -34,7 +34,6 @@ AT_DATA([prog.cbl], [
             VALUE "DELETE FROM EMP WHERE EMP_NO > ?".
        01 SQL-COMMAND-ARG PIC 99 VALUE 5.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
@@ -43,7 +42,6 @@ AT_DATA([prog.cbl], [
          03  EMP-NO                PIC S9(04) VALUE ZERO.
          03  EMP-NAME              PIC  X(20) .
          03  EMP-SALARY            PIC S9(04) VALUE ZERO.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

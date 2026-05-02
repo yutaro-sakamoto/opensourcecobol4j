@@ -27,7 +27,6 @@ AT_DATA([INSERTTBL.cbl], [
        01  IDX                     PIC  9(02).
        01  SYS-TIME                PIC  9(08).
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  データベース名            PIC  X(30) VALUE SPACE.
        01  ユーザー名                PIC  X(30) VALUE SPACE.
        01  パスワード                PIC  X(10) VALUE SPACE.
@@ -35,7 +34,6 @@ AT_DATA([INSERTTBL.cbl], [
          03  従業員番号              PIC S9(04) VALUE ZERO.
          03  氏名                   PIC  X(20) .
          03  給与                   PIC S9(04) VALUE ZERO.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.
@@ -155,7 +153,6 @@ AT_DATA([FETCHTBL.cbl], [
            05  FILLER              PIC  X.
            05  D-EMP-SALARY        PIC  --,--9.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  データベース名            PIC  X(30) VALUE SPACE.
        01  ユーザー名                PIC  X(30) VALUE SPACE.
        01  パスワード                PIC  X(10) VALUE SPACE.
@@ -164,7 +161,6 @@ AT_DATA([FETCHTBL.cbl], [
          03  氏名                   PIC  X(20) .
          03  給与                   PIC S9(04) VALUE ZERO.
        01  従業員数                 PIC  9(04).
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

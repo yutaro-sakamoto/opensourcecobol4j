@@ -138,11 +138,9 @@ AT_DATA([prog.cbl], [
          03  READ-TBL-2    OCCURS  10.
            05  READ-DATA-2     PIC 9(5) USAGE COMP-3.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

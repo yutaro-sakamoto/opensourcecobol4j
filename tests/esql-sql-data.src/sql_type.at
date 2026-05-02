@@ -66,11 +66,9 @@ AT_DATA([prog.cbl], [
          03 OUTPUT-DATA-13-ARR OCCURS 1.
            05 OUTPUT-DATA-13 PIC X(19).
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

@@ -1,23 +1,15 @@
-AT_SETUP([sql-variable-definition])
+AT_SETUP([explicit declare section])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
-      ******************************************************************
        PROGRAM-ID.                 prog.
-      ******************************************************************
        DATA                        DIVISION.
-      ******************************************************************
        WORKING-STORAGE             SECTION.
-
+       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
-
-       01 DB-ENDPOINT PIC X(120) VALUE "aaa".
-       01 DB-PASSWORD PIC X(120) VALUE "bbb".
-       01 DB-DATABASE PIC X(30) VALUE "ccc".
-       01 DB-USER PIC X(50) VALUE "ddd".
-       01 DB-PORT PIC X(5) VALUE "12345".
+       EXEC SQL END DECLARE SECTION END-EXEC.
 
        PROCEDURE                   DIVISION.
        MAIN-RTN.
@@ -29,15 +21,7 @@ AT_DATA([prog.cbl], [
              TO PASSWD.
 
            EXEC SQL
-               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME 
-           END-EXEC.
-
-           EXEC SQL
-               DROP TABLE IF EXISTS EMP
-           END-EXEC.
-
-           EXEC SQL
-               DROP TABLE IF EXISTS EMP
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
            END-EXEC.
 
            EXEC SQL

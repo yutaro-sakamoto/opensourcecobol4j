@@ -15,7 +15,6 @@
        WORKING-STORAGE             SECTION.
 
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
@@ -27,7 +26,6 @@
 
        01  OUT-NO                  PIC  9(04) VALUE ZERO.
        01  OUT-NAME                PIC  X(20) VALUE SPACE.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
        PROCEDURE                   DIVISION.
        MAIN-RTN.

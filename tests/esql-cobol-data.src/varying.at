@@ -28,7 +28,6 @@ AT_DATA([prog.cbl], [
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
@@ -37,7 +36,6 @@ AT_DATA([prog.cbl], [
          03  EMP-NUM1              PIC  9(4).
          03  EMP-NAME              PIC  X(10) VARYING.
          03  EMP-NUM2              PIC  9(4).
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.
@@ -221,14 +219,12 @@ AT_DATA([prog.cbl], [
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
 
        01  EMP-REC-VARS.
          03  EMP-NAME              PIC  X(10) VARYING.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.
@@ -415,7 +411,6 @@ AT_DATA([prog.cbl], [
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
@@ -424,7 +419,6 @@ AT_DATA([prog.cbl], [
          03  EMP-NUM1              PIC  9(4).
          03  EMP-NAME              PIC  N(10) VARYING.
          03  EMP-NUM2              PIC  9(4).
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.
@@ -609,14 +603,12 @@ AT_DATA([prog.cbl], [
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
-       EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.
        01  PASSWD                  PIC  X(10) VALUE SPACE.
 
        01  EMP-REC-VARS.
          03  EMP-NAME              PIC  N(10) VARYING.
-       EXEC SQL END DECLARE SECTION END-EXEC.
 
       ******************************************************************
        PROCEDURE                   DIVISION.

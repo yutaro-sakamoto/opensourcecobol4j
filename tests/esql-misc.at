@@ -6,6 +6,7 @@ m4_include([fetch-sqlca.at])
 m4_include([compile.at])
 m4_include([sql-convert.at])
 m4_include([implicit-declare.at])
+m4_include([declare-section.at])
 dnl group-sub requires dot-qualified host variable syntax (:GROUP.FIELD)
 dnl which is not yet implemented in the ESQL parser.
 dnl m4_include([group-sub.at])
