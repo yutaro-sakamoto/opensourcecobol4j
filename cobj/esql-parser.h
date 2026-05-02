@@ -63,36 +63,33 @@ extern int esql_debug;
     ESQL_error = 256,              /* error  */
     ESQL_UNDEF = 257,              /* "invalid token"  */
     ESQL_SELECT = 258,             /* ESQL_SELECT  */
-    ESQL_INSERT = 259,             /* ESQL_INSERT  */
-    ESQL_UPDATE = 260,             /* ESQL_UPDATE  */
-    ESQL_DELETE = 261,             /* ESQL_DELETE  */
-    ESQL_DISCONNECT = 262,         /* ESQL_DISCONNECT  */
-    ESQL_TOKEN = 263,              /* ESQL_TOKEN  */
-    ESQL_HOSTTOKEN = 264,          /* ESQL_HOSTTOKEN  */
-    ESQL_CURNAME = 265,            /* ESQL_CURNAME  */
-    ESQL_OTHERFUNC = 266,          /* ESQL_OTHERFUNC  */
-    ESQL_INTO = 267,               /* ESQL_INTO  */
-    ESQL_SELECTFROM = 268,         /* ESQL_SELECTFROM  */
-    ESQL_FOR = 269,                /* ESQL_FOR  */
-    ESQL_CONNECT = 270,            /* ESQL_CONNECT  */
-    ESQL_DECLARE = 271,            /* ESQL_DECLARE  */
-    ESQL_CURSOR = 272,             /* ESQL_CURSOR  */
-    ESQL_OPEN = 273,               /* ESQL_OPEN  */
-    ESQL_CLOSE = 274,              /* ESQL_CLOSE  */
-    ESQL_FETCH = 275,              /* ESQL_FETCH  */
-    ESQL_PREPARE = 276,            /* ESQL_PREPARE  */
-    ESQL_EXECUTE = 277,            /* ESQL_EXECUTE  */
-    ESQL_FROM = 278,               /* ESQL_FROM  */
-    ESQL_COMMIT_WORK = 279,        /* ESQL_COMMIT_WORK  */
-    ESQL_ROLLBACK_WORK = 280,      /* ESQL_ROLLBACK_WORK  */
-    ESQL_IDENTIFIED_BY = 281,      /* ESQL_IDENTIFIED_BY  */
-    ESQL_USING = 282,              /* ESQL_USING  */
-    ESQL_AT = 283,                 /* ESQL_AT  */
-    ESQL_BEGIN_DECLARE = 284,      /* ESQL_BEGIN_DECLARE  */
-    ESQL_END_DECLARE = 285,        /* ESQL_END_DECLARE  */
-    ESQL_INCLUDE_SQLCA = 286,      /* ESQL_INCLUDE_SQLCA  */
-    ESQL_INCLUDE = 287,            /* ESQL_INCLUDE  */
-    ESQL_WHERECURRENTOF = 288      /* ESQL_WHERECURRENTOF  */
+    ESQL_DISCONNECT = 259,         /* ESQL_DISCONNECT  */
+    ESQL_TOKEN = 260,              /* ESQL_TOKEN  */
+    ESQL_HOSTTOKEN = 261,          /* ESQL_HOSTTOKEN  */
+    ESQL_CURNAME = 262,            /* ESQL_CURNAME  */
+    ESQL_OTHERFUNC = 263,          /* ESQL_OTHERFUNC  */
+    ESQL_INTO = 264,               /* ESQL_INTO  */
+    ESQL_SELECTFROM = 265,         /* ESQL_SELECTFROM  */
+    ESQL_FOR = 266,                /* ESQL_FOR  */
+    ESQL_CONNECT = 267,            /* ESQL_CONNECT  */
+    ESQL_DECLARE = 268,            /* ESQL_DECLARE  */
+    ESQL_CURSOR = 269,             /* ESQL_CURSOR  */
+    ESQL_OPEN = 270,               /* ESQL_OPEN  */
+    ESQL_CLOSE = 271,              /* ESQL_CLOSE  */
+    ESQL_FETCH = 272,              /* ESQL_FETCH  */
+    ESQL_PREPARE = 273,            /* ESQL_PREPARE  */
+    ESQL_EXECUTE = 274,            /* ESQL_EXECUTE  */
+    ESQL_FROM = 275,               /* ESQL_FROM  */
+    ESQL_COMMIT_WORK = 276,        /* ESQL_COMMIT_WORK  */
+    ESQL_ROLLBACK_WORK = 277,      /* ESQL_ROLLBACK_WORK  */
+    ESQL_IDENTIFIED_BY = 278,      /* ESQL_IDENTIFIED_BY  */
+    ESQL_USING = 279,              /* ESQL_USING  */
+    ESQL_AT = 280,                 /* ESQL_AT  */
+    ESQL_BEGIN_DECLARE = 281,      /* ESQL_BEGIN_DECLARE  */
+    ESQL_END_DECLARE = 282,        /* ESQL_END_DECLARE  */
+    ESQL_INCLUDE_SQLCA = 283,      /* ESQL_INCLUDE_SQLCA  */
+    ESQL_INCLUDE = 284,            /* ESQL_INCLUDE  */
+    ESQL_WHERECURRENTOF = 285      /* ESQL_WHERECURRENTOF  */
   };
   typedef enum esql_tokentype esql_token_kind_t;
 #endif
@@ -105,7 +102,7 @@ union ESQL_STYPE
 
   char *s;
 
-#line 109 "esql-parser.h"
+#line 106 "esql-parser.h"
 
 };
 typedef union ESQL_STYPE ESQL_STYPE;

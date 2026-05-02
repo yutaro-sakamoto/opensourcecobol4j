@@ -79,33 +79,6 @@ COMMA ","
   return ESQL_SELECT;
 }
 
-"INSERT" {
-  BEGIN ESQL_STATE;
-  esql_flag_insqlstring = 1;
-  strncpy(esql_commandname, yytext, sizeof(esql_commandname) - 1);
-  esql_sqlbody_append(yytext);
-  esql_lval.s = strdup(yytext);
-  return ESQL_INSERT;
-}
-
-"DELETE" {
-  BEGIN ESQL_STATE;
-  esql_flag_insqlstring = 1;
-  strncpy(esql_commandname, yytext, sizeof(esql_commandname) - 1);
-  esql_sqlbody_append(yytext);
-  esql_lval.s = strdup(yytext);
-  return ESQL_DELETE;
-}
-
-"UPDATE" {
-  BEGIN ESQL_STATE;
-  esql_flag_insqlstring = 1;
-  strncpy(esql_commandname, yytext, sizeof(esql_commandname) - 1);
-  esql_sqlbody_append(yytext);
-  esql_lval.s = strdup(yytext);
-  return ESQL_UPDATE;
-}
-
 "CONNECT" {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "CONNECT", sizeof(esql_commandname) - 1);

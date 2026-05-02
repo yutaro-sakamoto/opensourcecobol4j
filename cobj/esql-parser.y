@@ -86,7 +86,7 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
   char *s;
 }
 
-%token<s> ESQL_SELECT ESQL_INSERT ESQL_UPDATE ESQL_DELETE ESQL_DISCONNECT
+%token<s> ESQL_SELECT ESQL_DISCONNECT
 %token<s> ESQL_TOKEN ESQL_HOSTTOKEN ESQL_CURNAME ESQL_OTHERFUNC
 %token<s> ESQL_INTO ESQL_SELECTFROM
 %token<s> ESQL_FOR
@@ -119,9 +119,6 @@ esql_statement:
   | preparesql
   | executesql
   | selectintosql
-  | insertsql
-  | updatesql
-  | deletesql
   | othersql
   | declaresection
   | includesql
@@ -255,36 +252,7 @@ selectintosql:
     }
   ;
 
-/* --- INSERT --- */
-insertsql:
-    ESQL_INSERT otherdb insert_rest token_list {
-      esql_parsed_result =esql_build_node(
-        esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
-    }
-  ;
-
-insert_rest:
-    ESQL_INTO { }
-  | /* empty */ { }
-  ;
-
-/* --- UPDATE --- */
-updatesql:
-    ESQL_UPDATE otherdb token_list {
-      esql_parsed_result =esql_build_node(
-        esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
-    }
-  ;
-
-/* --- DELETE --- */
-deletesql:
-    ESQL_DELETE otherdb token_list {
-      esql_parsed_result =esql_build_node(
-        esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
-    }
-  ;
-
-/* --- Other SQL (DROP, CREATE, ALTER, etc.) --- */
+/* --- Other SQL (INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, etc.) --- */
 othersql:
     ESQL_OTHERFUNC otherdb token_list {
       esql_parsed_result =esql_build_node(
@@ -371,11 +339,8 @@ expr:
     ESQL_TOKEN { $$ = $1; }
   | ESQL_SELECT { $$ = $1; }
   | ESQL_FOR { $$ = $1; }
-  | ESQL_UPDATE { $$ = $1; }
   | ESQL_SELECTFROM { $$ = $1; }
   | ESQL_INTO { $$ = $1; }
-  | ESQL_DELETE { $$ = $1; }
-  | ESQL_INSERT { $$ = $1; }
   ;
 
 %%
