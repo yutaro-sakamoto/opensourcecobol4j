@@ -196,12 +196,12 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"BEGIN"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
 	/* No-op: accepted for backward compatibility */
-	ppecho ("EXEC SQL BEGIN DECLARE SECTION END-EXEC.\n");
+	fputc ('\n', ppout);
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"END"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
 	/* No-op: accepted for backward compatibility */
-	ppecho ("EXEC SQL END DECLARE SECTION END-EXEC.\n");
+	fputc ('\n', ppout);
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {

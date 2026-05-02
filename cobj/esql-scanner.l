@@ -167,24 +167,6 @@ COMMA ","
   return ESQL_ROLLBACK_WORK;
 }
 
-"BEGIN"[ \t\r\n]+"DECLARE" {
-  BEGIN ESQL_STATE;
-  return ESQL_BEGIN_DECLARE;
-}
-
-"END"[ \t\r\n]+"DECLARE" {
-  BEGIN ESQL_STATE;
-  return ESQL_END_DECLARE;
-}
-
-"INCLUDE"[ \t\r\n]+"SQLCA" {
-  return ESQL_INCLUDE_SQLCA;
-}
-
-"INCLUDE"[ \t\r\n]+ {
-  return ESQL_INCLUDE;
-}
-
 "AT" {
   esql_sqlbody_append(yytext);
   yy_push_state(ESQL_DBNAME_STATE);

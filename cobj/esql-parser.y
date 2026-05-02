@@ -95,8 +95,6 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
 %token ESQL_PREPARE ESQL_EXECUTE ESQL_FROM
 %token ESQL_COMMIT_WORK ESQL_ROLLBACK_WORK
 %token ESQL_IDENTIFIED_BY ESQL_USING ESQL_AT
-%token ESQL_BEGIN_DECLARE ESQL_END_DECLARE
-%token ESQL_INCLUDE_SQLCA ESQL_INCLUDE
 %token ESQL_WHERECURRENTOF
 
 %type<s> host_reference expr prepared_stname
@@ -120,8 +118,6 @@ esql_statement:
   | executesql
   | selectintosql
   | othersql
-  | declaresection
-  | includesql
   ;
 
 /* --- CONNECT --- */
@@ -257,26 +253,6 @@ othersql:
     ESQL_OTHERFUNC otherdb token_list {
       esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
-    }
-  ;
-
-/* --- DECLARE SECTION / INCLUDE (no-ops) --- */
-declaresection:
-    ESQL_BEGIN_DECLARE token_list_opt {
-      esql_parsed_result = cb_error_node;
-    }
-  | ESQL_END_DECLARE token_list_opt {
-      esql_parsed_result = cb_error_node;
-    }
-  ;
-
-includesql:
-    ESQL_INCLUDE_SQLCA {
-      esql_parsed_result = cb_error_node;
-    }
-  | ESQL_INCLUDE ESQL_TOKEN {
-      /* INCLUDE filename - handled at preprocessor level */
-      esql_parsed_result = cb_error_node;
     }
   ;
 

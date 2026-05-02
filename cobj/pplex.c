@@ -2326,7 +2326,7 @@ YY_RULE_SETUP
 #line 182 "pplex.l"
 {
 	/* No-op: accepted for backward compatibility */
-	ppecho ("EXEC SQL BEGIN DECLARE SECTION END-EXEC.\n");
+	fputc ('\n', ppout);
 }
 	YY_BREAK
 case 18:
@@ -2334,7 +2334,7 @@ YY_RULE_SETUP
 #line 187 "pplex.l"
 {
 	/* No-op: accepted for backward compatibility */
-	ppecho ("EXEC SQL END DECLARE SECTION END-EXEC.\n");
+	fputc ('\n', ppout);
 }
 	YY_BREAK
 case 19:

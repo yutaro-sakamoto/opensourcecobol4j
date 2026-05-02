@@ -85,11 +85,7 @@ extern int esql_debug;
     ESQL_IDENTIFIED_BY = 278,      /* ESQL_IDENTIFIED_BY  */
     ESQL_USING = 279,              /* ESQL_USING  */
     ESQL_AT = 280,                 /* ESQL_AT  */
-    ESQL_BEGIN_DECLARE = 281,      /* ESQL_BEGIN_DECLARE  */
-    ESQL_END_DECLARE = 282,        /* ESQL_END_DECLARE  */
-    ESQL_INCLUDE_SQLCA = 283,      /* ESQL_INCLUDE_SQLCA  */
-    ESQL_INCLUDE = 284,            /* ESQL_INCLUDE  */
-    ESQL_WHERECURRENTOF = 285      /* ESQL_WHERECURRENTOF  */
+    ESQL_WHERECURRENTOF = 281      /* ESQL_WHERECURRENTOF  */
   };
   typedef enum esql_tokentype esql_token_kind_t;
 #endif
@@ -102,7 +98,7 @@ union ESQL_STYPE
 
   char *s;
 
-#line 106 "esql-parser.h"
+#line 102 "esql-parser.h"
 
 };
 typedef union ESQL_STYPE ESQL_STYPE;
