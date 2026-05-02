@@ -49,6 +49,12 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.5")
 }
 
+configurations {
+    testRuntimeOnly {
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8

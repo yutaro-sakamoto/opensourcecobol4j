@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
+@SuppressWarnings("PMD.GuardLogStatement")
 public final class CobolSql {
 
     private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
@@ -184,9 +185,8 @@ public final class CobolSql {
                 return;
             }
 
-            LOG.debug("EXEC SQL: {}", query.trim());
-
             String trimmed = query.trim();
+            LOG.debug("EXEC SQL: {}", trimmed);
             boolean isTxnControl =
                     "COMMIT".equalsIgnoreCase(trimmed)
                             || "ROLLBACK".equalsIgnoreCase(trimmed)
