@@ -191,7 +191,7 @@ ABCDEFGHI @&t@
 +00000009
 ABCDEFGHIJ
 +00000010
-])
+], [ignore])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
@@ -575,7 +575,7 @@ AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 +00000009
 àÍìÒéOélå‹òZéµî™ã„è\
 +00000010
-])
+], [ignore])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
