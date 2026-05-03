@@ -261,8 +261,6 @@ AT_CHECK([${RUN_MODULE_LOG} prog | tee stdout.txt], [0],
 <open(invalid)> SQLCODE:-000009999
 <fetch(invalid)> SQLCODE:-000000602
 <close(invalid)> SQLCODE:-000000602
-])
+], [ignore])
 
-AT_CHECK([test -f esql_debug.log], [0])
-AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

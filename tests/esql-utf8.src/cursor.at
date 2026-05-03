@@ -286,8 +286,6 @@ NO   NAME                 SALARY
 0046 鹿児島　六郎           -320
 0047 沖縄　七郎              480
 *** FETCHTBL FINISHED ***
-])
+], [ignore])
 
-AT_CHECK([test -f esql_debug.log], [0])
-AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

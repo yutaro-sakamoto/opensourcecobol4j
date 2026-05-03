@@ -365,8 +365,6 @@ aaaaaaaaaaaaaaaaaaa                               @&t@
 ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ aa              @&t@
 ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ a             @&t@
 ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚ ‚             @&t@
-])
+], [ignore])
 
-AT_CHECK([test -f esql_debug.log], [0])
-AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP

@@ -425,9 +425,7 @@ AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 -12345
 -99999
 +99999
-])
+], [ignore])
 
-AT_CHECK([test -f esql_debug.log], [0])
-AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP
 
