@@ -24,6 +24,12 @@ public final class CobolSql {
     private CobolSql() {}
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
+
+    /** Collapse whitespace (newlines, tabs, multiple spaces) into single spaces for logging. */
+    private static String collapseWhitespace(String s) {
+        return s.replaceAll("\\s+", " ").trim();
+    }
+
     private static final String SQL_SAVEPOINT = "SAVEPOINT oc_save";
     private static final String SQL_RELEASE_SAVEPOINT = "RELEASE SAVEPOINT oc_save";
     private static final String SQL_ROLLBACK_SAVEPOINT = "ROLLBACK TO oc_save";
@@ -58,7 +64,7 @@ public final class CobolSql {
             String passwdStr = storageToString(passwd, passwdLen);
             String dbnameStr = storageToString(dbname, dbnameLen);
 
-            LOG.debug("CONNECT user={} dbname={}", userStr, dbnameStr);
+            LOG.trace("CONNECT user={} dbname={}", userStr.trim(), dbnameStr.trim());
             SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
             SqlState.addConnection(conn.getId(), conn);
             SqlCA.setSuccess(sqlca);
@@ -185,7 +191,7 @@ public final class CobolSql {
                 return;
             }
 
-            String trimmed = query.trim();
+            String trimmed = collapseWhitespace(query);
             LOG.debug("EXEC SQL: {}", trimmed);
             boolean isTxnControl =
                     "COMMIT".equalsIgnoreCase(trimmed)
@@ -225,7 +231,7 @@ public final class CobolSql {
                 SqlCA.setSuccess(sqlca);
             }
         } catch (SQLException e) {
-            LOG.error("EXEC SQL failed: {} - {}", query.trim(), e.getMessage());
+            LOG.error("EXEC SQL failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -255,7 +261,10 @@ public final class CobolSql {
                 return;
             }
 
-            LOG.debug("EXEC SQL (params={}): {}", params != null ? params.length : 0, query.trim());
+            LOG.debug(
+                    "EXEC SQL (params={}): {}",
+                    params != null ? params.length : 0,
+                    collapseWhitespace(query));
 
             try (Statement sp = conn.createStatement()) {
                 sp.execute(SQL_SAVEPOINT);
@@ -292,7 +301,7 @@ public final class CobolSql {
                 sqlConn.beginTransaction();
             }
         } catch (SQLException e) {
-            LOG.error("EXEC SQL failed: {} - {}", query.trim(), e.getMessage());
+            LOG.error("EXEC SQL failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -446,7 +455,7 @@ public final class CobolSql {
                 return;
             }
 
-            LOG.debug("SELECT INTO: {}", query.trim());
+            LOG.debug("SELECT INTO: {}", collapseWhitespace(query));
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
@@ -463,7 +472,7 @@ public final class CobolSql {
                 }
             }
         } catch (SQLException e) {
-            LOG.error("SELECT INTO failed: {} - {}", query.trim(), e.getMessage());
+            LOG.error("SELECT INTO failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -533,7 +542,7 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
-            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, query.trim());
+            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(

@@ -9,16 +9,16 @@ AT_DATA([prog.cbl], [
       ******************************************************************
        WORKING-STORAGE             SECTION.
        01  TEST-DATA.
-         03 FILLER       PIC X(28) VALUE "0001ñkäCÅ@ëæòY          0400".
-         03 FILLER       PIC X(28) VALUE "0002ê¬êXÅ@éüòY          0350".
-         03 FILLER       PIC X(28) VALUE "0003èHìcÅ@éOòY          0300".
-         03 FILLER       PIC X(28) VALUE "0004ä‚éËÅ@élòY          025p".
-         03 FILLER       PIC X(28) VALUE "0005ã{èÈÅ@å‹òY          020p".
-         03 FILLER       PIC X(28) VALUE "0006ïüìáÅ@òZòY          0150".
-         03 FILLER       PIC X(28) VALUE "0007ì»ñÿÅ@éµòY          010p".
-         03 FILLER       PIC X(28) VALUE "0008àÔèÈÅ@î™òY          0050".
-         03 FILLER       PIC X(28) VALUE "0009åQînÅ@ã„òY          020p".
-         03 FILLER       PIC X(28) VALUE "0010çÈã Å@è\òY          0350".
+         03 FILLER       PIC X(28) VALUE "0001ÔøΩkÔøΩCÔøΩ@ÔøΩÔøΩÔøΩY          0400".
+         03 FILLER       PIC X(28) VALUE "0002ÔøΩ¬êXÔøΩ@ÔøΩÔøΩÔøΩY          0350".
+         03 FILLER       PIC X(28) VALUE "0003ÔøΩHÔøΩcÔøΩ@ÔøΩOÔøΩY          0300".
+         03 FILLER       PIC X(28) VALUE "0004ÔøΩÔøΩÔøΩ@ÔøΩlÔøΩY          025p".
+         03 FILLER       PIC X(28) VALUE "0005ÔøΩ{ÔøΩÔøΩ@ÔøΩ‹òY          020p".
+         03 FILLER       PIC X(28) VALUE "0006ÔøΩÔøΩÔøΩÔøΩÔøΩ@ÔøΩZÔøΩY          0150".
+         03 FILLER       PIC X(28) VALUE "0007ÔøΩ»ñÿÅ@ÔøΩÔøΩÔøΩY          010p".
+         03 FILLER       PIC X(28) VALUE "0008ÔøΩÔøΩÔøΩ@ÔøΩÔøΩÔøΩY          0050".
+         03 FILLER       PIC X(28) VALUE "0009ÔøΩQÔøΩnÔøΩ@ÔøΩÔøΩY          020p".
+         03 FILLER       PIC X(28) VALUE "0010ÔøΩÔøΩ Å@ÔøΩ\ÔøΩY          0350".
 
        01  TEST-DATA-R   REDEFINES TEST-DATA.
          03  TEST-TBL    OCCURS  10.
@@ -151,8 +151,21 @@ AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 <log> test case 0008: success
 <log> test case 0009: success
 <log> test case 0010: success
+],
+[[DEBUG] CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+[DEBUG] EXEC SQL: DROP TABLE IF EXISTS EMP
+[DEBUG] EXEC SQL: CREATE TABLE EMP ( EMP_NO NUMERIC(4,0) NOT NULL, EMP_NAME CHAR(20), EMP_SALARY NUMERIC(4,0), CONSTRAINT IEMP_0 PRIMARY KEY (EMP_NO) )
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+[DEBUG] EXEC SQL: DROP TABLE IF EXISTS EMP
+[DEBUG] DISCONNECT (id=OCDB_DEFAULT_DBNAME)
 ])
-
-AT_CHECK([test -f esql_debug.log], [0])
-AT_CHECK([grep "CONNECT\|EXEC SQL\|DISCONNECT\|SELECT INTO\|DECLARE CURSOR\|OPEN CURSOR" esql_debug.log], [0], [ignore])
 AT_CLEANUP
