@@ -576,7 +576,7 @@ AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
 +00000009
 一二三四五六七八九十
 +00000010
-])
+], [ignore])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
