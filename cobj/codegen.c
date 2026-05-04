@@ -3652,28 +3652,6 @@ static void joutput_exec_sql_field_name(const char *cobol_name) {
   joutput("%s%s", CB_PREFIX_BASE, java_name);
 }
 
-static void joutput_exec_sql_host_var_ref(struct cb_sql_host_var *hv) {
-  if (hv->ref) {
-    cb_tree resolved = cb_ref(hv->ref);
-    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
-      joutput_base(CB_FIELD(resolved));
-      return;
-    }
-  }
-  /* Fallback: use simple name */
-  joutput_exec_sql_field_name(hv->name);
-}
-
-static int joutput_exec_sql_host_var_size(struct cb_sql_host_var *hv) {
-  if (hv->ref) {
-    cb_tree resolved = cb_ref(hv->ref);
-    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
-      return CB_FIELD(resolved)->size;
-    }
-  }
-  return 0;
-}
-
 /* Helper: output f_FIELD reference for a host variable.
  * Uses joutput_param which automatically registers the field
  * in field_cache, ensuring the f_ declaration is generated. */
