@@ -104,17 +104,13 @@ class CobolSqlTest {
                         + postgres.getHost()
                         + ":"
                         + postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
-        CobolDataStorage userStorage = makeStorage(postgres.getUsername());
-        CobolDataStorage passStorage = makeStorage(postgres.getPassword());
-        CobolDataStorage dbStorage = makeStorage(dbSpec);
-        CobolSql.connect(
-                sqlca,
-                userStorage,
-                postgres.getUsername().length(),
-                passStorage,
-                postgres.getPassword().length(),
-                dbStorage,
-                dbSpec.length());
+        byte[] userBytes = postgres.getUsername().getBytes();
+        byte[] passBytes = postgres.getPassword().getBytes();
+        byte[] dbBytes = dbSpec.getBytes();
+        AbstractCobolField userField = makeAlphaField(userBytes.length, userBytes);
+        AbstractCobolField passField = makeAlphaField(passBytes.length, passBytes);
+        AbstractCobolField dbField = makeAlphaField(dbBytes.length, dbBytes);
+        CobolSql.connect(sqlca, userField, passField, dbField);
         assertEquals(0, getSqlCode(), "Connect failed: " + getSqlState());
     }
 
@@ -173,7 +169,7 @@ class CobolSqlTest {
 
     @Test
     void testConnect_NullStorage() {
-        CobolSql.connect(sqlca, null, 0, null, 0, null, 0);
+        CobolSql.connect(sqlca, null, null, null);
         // With null storage and no env vars, should get a connection error
         assertNotEquals(
                 0, getSqlCode(), "Connect with null storage should produce non-zero SQLCODE");

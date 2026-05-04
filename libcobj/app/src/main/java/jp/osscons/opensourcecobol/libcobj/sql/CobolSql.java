@@ -44,25 +44,19 @@ public final class CobolSql {
      * Establish a database connection using separate user, password, and dbname parameters.
      *
      * @param sqlca the SQLCA data storage for status reporting
-     * @param user user name storage
-     * @param userLen byte length of user
-     * @param passwd password storage
-     * @param passwdLen byte length of passwd
-     * @param dbname database name storage
-     * @param dbnameLen byte length of dbname
+     * @param user user name field
+     * @param passwd password field
+     * @param dbname database name field
      */
     public static void connect(
             CobolDataStorage sqlca,
-            CobolDataStorage user,
-            int userLen,
-            CobolDataStorage passwd,
-            int passwdLen,
-            CobolDataStorage dbname,
-            int dbnameLen) {
+            AbstractCobolField user,
+            AbstractCobolField passwd,
+            AbstractCobolField dbname) {
         try {
-            String userStr = storageToString(user, userLen);
-            String passwdStr = storageToString(passwd, passwdLen);
-            String dbnameStr = storageToString(dbname, dbnameLen);
+            String userStr = fieldToString(user);
+            String passwdStr = fieldToString(passwd);
+            String dbnameStr = fieldToString(dbname);
 
             LOG.trace("CONNECT user={} dbname={}", userStr.trim(), dbnameStr.trim());
             SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
@@ -1169,6 +1163,13 @@ public final class CobolSql {
         }
         byte[] bytes = storage.getByteArray(0, len);
         return new String(bytes, SHIFT_JIS);
+    }
+
+    private static String fieldToString(AbstractCobolField field) {
+        if (field == null) {
+            return null;
+        }
+        return storageToString(field.getDataStorage(), field.getSize());
     }
 
     private static PreparedStatement getOrCreatePreparedStatement(Connection conn, String query)

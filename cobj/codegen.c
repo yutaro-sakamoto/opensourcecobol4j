@@ -3758,8 +3758,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_exec_sql_field_name("SQLCA");
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
-      joutput_exec_sql_host_var_ref(hv);
-      joutput(", %d", joutput_exec_sql_host_var_size(hv));
+      joutput_sql_field_ref(hv);
     }
     joutput(");\n");
     break;

@@ -10,7 +10,10 @@ import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
+import jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,6 +96,13 @@ class CobolSqlLoggingTest {
         return s;
     }
 
+    private static AbstractCobolField makeAlphaField(int size, byte[] data) {
+        CobolFieldAttribute attr =
+                new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
+        CobolDataStorage storage = new CobolDataStorage(data);
+        return CobolFieldFactory.makeCobolField(size, storage, attr);
+    }
+
     private int getSqlCode() {
         return ByteBuffer.wrap(sqlca.getByteArray(12, 4)).getInt();
     }
@@ -103,17 +113,13 @@ class CobolSqlLoggingTest {
                         + postgres.getHost()
                         + ":"
                         + postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
-        CobolDataStorage userStorage = makeStorage(postgres.getUsername());
-        CobolDataStorage passStorage = makeStorage(postgres.getPassword());
-        CobolDataStorage dbStorage = makeStorage(dbSpec);
-        CobolSql.connect(
-                sqlca,
-                userStorage,
-                postgres.getUsername().length(),
-                passStorage,
-                postgres.getPassword().length(),
-                dbStorage,
-                dbSpec.length());
+        byte[] userBytes = postgres.getUsername().getBytes();
+        byte[] passBytes = postgres.getPassword().getBytes();
+        byte[] dbBytes = dbSpec.getBytes();
+        AbstractCobolField userField = makeAlphaField(userBytes.length, userBytes);
+        AbstractCobolField passField = makeAlphaField(passBytes.length, passBytes);
+        AbstractCobolField dbField = makeAlphaField(dbBytes.length, dbBytes);
+        CobolSql.connect(sqlca, userField, passField, dbField);
     }
 
     @Test
