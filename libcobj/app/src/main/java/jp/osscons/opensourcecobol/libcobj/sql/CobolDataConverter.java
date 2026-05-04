@@ -15,55 +15,55 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
 /** Converts between COBOL host variable storage and Java/JDBC types. */
-public final class CobolDataConverter {
+final class CobolDataConverter {
 
     /** Private constructor to prevent instantiation of utility class. */
     private CobolDataConverter() {}
 
     /** Unsigned numeric display (USAGE DISPLAY, no sign). */
-    public static final int TYPE_UNSIGNED_NUMERIC = 1;
+    static final int TYPE_UNSIGNED_NUMERIC = 1;
 
     /** Signed numeric with trailing separate sign character. */
-    public static final int TYPE_SIGNED_TRAILING_SEPARATE = 2;
+    static final int TYPE_SIGNED_TRAILING_SEPARATE = 2;
 
     /** Signed numeric with trailing combined (overpunch) sign. */
-    public static final int TYPE_SIGNED_TRAILING_COMBINED = 3;
+    static final int TYPE_SIGNED_TRAILING_COMBINED = 3;
 
     /** Signed numeric with leading separate sign character. */
-    public static final int TYPE_SIGNED_LEADING_SEPARATE = 4;
+    static final int TYPE_SIGNED_LEADING_SEPARATE = 4;
 
     /** Signed numeric with leading combined (overpunch) sign. */
-    public static final int TYPE_SIGNED_LEADING_COMBINED = 5;
+    static final int TYPE_SIGNED_LEADING_COMBINED = 5;
 
     /** Unsigned packed-decimal (COMP-3, no sign nibble). */
-    public static final int TYPE_UNSIGNED_PACKED = 8;
+    static final int TYPE_UNSIGNED_PACKED = 8;
 
     /** Signed packed-decimal (COMP-3). */
-    public static final int TYPE_SIGNED_PACKED = 9;
+    static final int TYPE_SIGNED_PACKED = 9;
 
     /** Unsigned binary native (COMP-5, big-endian). */
-    public static final int TYPE_UNSIGNED_BINARY_NATIVE = 13;
+    static final int TYPE_UNSIGNED_BINARY_NATIVE = 13;
 
     /** Signed binary native (COMP-5, big-endian). */
-    public static final int TYPE_SIGNED_BINARY_NATIVE = 14;
+    static final int TYPE_SIGNED_BINARY_NATIVE = 14;
 
     /** Alphabetic (PIC A). */
-    public static final int TYPE_ALPHABETIC = 16;
+    static final int TYPE_ALPHABETIC = 16;
 
     /** Group item (treated as alphanumeric). */
-    public static final int TYPE_GROUP = 22;
+    static final int TYPE_GROUP = 22;
 
     /** Floating-point double (COMP-2). */
-    public static final int TYPE_FLOAT = 23;
+    static final int TYPE_FLOAT = 23;
 
     /** National character (PIC N). */
-    public static final int TYPE_NATIONAL = 24;
+    static final int TYPE_NATIONAL = 24;
 
     /** Alphanumeric varying-length string. */
-    public static final int TYPE_ALPHANUMERIC_VARYING = 30;
+    static final int TYPE_ALPHANUMERIC_VARYING = 30;
 
     /** Japanese (DBCS) varying-length string. */
-    public static final int TYPE_JAPANESE_VARYING = 31;
+    static final int TYPE_JAPANESE_VARYING = 31;
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
     private static final int SIGN_LENGTH = 1;
@@ -125,7 +125,7 @@ public final class CobolDataConverter {
      * @param field the COBOL host variable field
      * @return the string representation, or empty string if field is null
      */
-    public static String cobolToString(AbstractCobolField field) {
+    static String cobolToString(AbstractCobolField field) {
         if (field == null || field.getDataStorage() == null) {
             return "";
         }
@@ -583,7 +583,7 @@ public final class CobolDataConverter {
      * @param length the field byte length
      * @param resultData the SQL result data as bytes
      */
-    public static void stringToCobolRaw(
+    static void stringToCobolRaw(
             AbstractCobolField field, CobolDataStorage storage, int length, byte[] resultData) {
         if (field == null || storage == null || resultData == null) {
             return;
@@ -613,7 +613,7 @@ public final class CobolDataConverter {
      * @param field the target COBOL field
      * @param resultData the SQL result data as bytes
      */
-    public static void stringToCobol(AbstractCobolField field, byte[] resultData) {
+    static void stringToCobol(AbstractCobolField field, byte[] resultData) {
         if (field == null || field.getDataStorage() == null || resultData == null) {
             return;
         }
@@ -1102,7 +1102,7 @@ public final class CobolDataConverter {
      * @param field the COBOL host variable field to bind
      * @throws SQLException if a JDBC error occurs
      */
-    public static void setParam(
+    static void setParam(
             PreparedStatement stmt, int index, ParameterMetaData metaData, AbstractCobolField field)
             throws SQLException {
         String str = cobolToString(field);
@@ -1185,7 +1185,7 @@ public final class CobolDataConverter {
      * @param columnIndex the 1-based column index
      * @return the column value as a byte array, or null if the value is SQL NULL
      */
-    public static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) {
+    static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) {
         try {
             int colType = rs.getMetaData().getColumnType(columnIndex);
             String strValue;

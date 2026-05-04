@@ -8,7 +8,7 @@ import java.sql.Statement;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
 /** Represents a SQL cursor for iterating over query results in COBOL embedded SQL. */
-public class SqlCursor {
+class SqlCursor {
 
     /** Cursor name used in DECLARE/OPEN/FETCH/CLOSE statements. */
     String name;
@@ -32,7 +32,7 @@ public class SqlCursor {
      * @param query the SQL query for this cursor
      * @param nParams the number of host variable parameters
      */
-    public SqlCursor(String name, String query, int nParams) {
+    SqlCursor(String name, String query, int nParams) {
         this.name = name;
         this.query = query;
         this.nParams = nParams;
@@ -47,7 +47,7 @@ public class SqlCursor {
      * @param openParams host variable parameters for the query, or null to use stored params
      * @throws SQLException if a database access error occurs
      */
-    public void open(Connection conn, AbstractCobolField[] openParams) throws SQLException {
+    void open(Connection conn, AbstractCobolField[] openParams) throws SQLException {
         String command = "DECLARE " + name + " CURSOR FOR " + query;
 
         if (openParams != null && openParams.length > 0) {
@@ -82,7 +82,7 @@ public class SqlCursor {
      * @return true if a row was fetched, false if no more rows
      * @throws SQLException if a database access error occurs
      */
-    public boolean fetch(Connection conn, AbstractCobolField[] resultParams) throws SQLException {
+    boolean fetch(Connection conn, AbstractCobolField[] resultParams) throws SQLException {
         String fetchSql = "FETCH FORWARD 1 FROM " + name;
         try (Statement stmt = conn.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
@@ -121,7 +121,7 @@ public class SqlCursor {
      * @param conn the JDBC connection
      * @throws SQLException if a database access error occurs
      */
-    public void close(Connection conn) throws SQLException {
+    void close(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("CLOSE " + name);
         }

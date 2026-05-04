@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Global registry for SQL connections, cursors, and prepared statements. */
-public final class SqlState {
+final class SqlState {
 
     /** Private constructor to prevent instantiation of utility class. */
     private SqlState() {}
@@ -20,7 +20,7 @@ public final class SqlState {
      * @param id the connection identifier
      * @param conn the SQL connection
      */
-    public static void addConnection(String id, SqlConnection conn) {
+    static void addConnection(String id, SqlConnection conn) {
         connections.put(id, conn);
         if (defaultConnId == null) {
             defaultConnId = id;
@@ -33,7 +33,7 @@ public final class SqlState {
      * @param id the connection identifier, or null for the default
      * @return the connection, or null if not found
      */
-    public static SqlConnection getConnection(String id) {
+    static SqlConnection getConnection(String id) {
         if (id == null) {
             return getDefaultConnection();
         }
@@ -45,7 +45,7 @@ public final class SqlState {
      *
      * @return the default connection, or null if none registered
      */
-    public static SqlConnection getDefaultConnection() {
+    static SqlConnection getDefaultConnection() {
         if (defaultConnId != null) {
             return connections.get(defaultConnId);
         }
@@ -60,7 +60,7 @@ public final class SqlState {
      *
      * @param id the connection identifier to remove
      */
-    public static void removeConnection(String id) {
+    static void removeConnection(String id) {
         connections.remove(id);
         if (id != null && id.equals(defaultConnId)) {
             if (!connections.isEmpty()) {
@@ -77,7 +77,7 @@ public final class SqlState {
      * @param name the cursor name
      * @param cursor the cursor descriptor
      */
-    public static void addCursor(String name, SqlCursor cursor) {
+    static void addCursor(String name, SqlCursor cursor) {
         cursors.put(name, cursor);
     }
 
@@ -87,7 +87,7 @@ public final class SqlState {
      * @param name the cursor name
      * @return the cursor descriptor, or null if not found
      */
-    public static SqlCursor getCursor(String name) {
+    static SqlCursor getCursor(String name) {
         return cursors.get(name);
     }
 
@@ -96,7 +96,7 @@ public final class SqlState {
      *
      * @param name the cursor name
      */
-    public static void removeCursor(String name) {
+    static void removeCursor(String name) {
         cursors.remove(name);
     }
 
@@ -107,7 +107,7 @@ public final class SqlState {
      * @param query the SQL query string
      * @param nParams the number of parameters
      */
-    public static void addPrepared(String name, String query, int nParams) {
+    static void addPrepared(String name, String query, int nParams) {
         preparedStatements.put(name, new String[] {query, String.valueOf(nParams)});
     }
 
@@ -117,12 +117,12 @@ public final class SqlState {
      * @param name the statement name
      * @return a two-element array [query, nParams], or null if not found
      */
-    public static String[] getPrepared(String name) {
+    static String[] getPrepared(String name) {
         return preparedStatements.get(name);
     }
 
     /** Mark all cursors as closed (e.g. after COMMIT or ROLLBACK). */
-    public static void clearCursors() {
+    static void clearCursors() {
         for (SqlCursor cursor : cursors.values()) {
             cursor.isOpened = false;
         }

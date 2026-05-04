@@ -85,7 +85,7 @@ public final class CobolSql {
      * @param connInfo connection info storage in "user/passwd@dbname" format
      * @param len byte length of connInfo
      */
-    public static void connectInformal(CobolDataStorage sqlca, CobolDataStorage connInfo, int len) {
+    static void connectInformal(CobolDataStorage sqlca, CobolDataStorage connInfo, int len) {
         try {
             String info = storageToString(connInfo, len);
             if (info == null || info.isEmpty()) {
@@ -128,7 +128,7 @@ public final class CobolSql {
      *
      * @param sqlca the SQLCA data storage for status reporting
      */
-    public static void connectShort(CobolDataStorage sqlca) {
+    static void connectShort(CobolDataStorage sqlca) {
         try {
             SqlConnection conn = SqlConnection.connect(null, null, null);
             SqlState.addConnection(conn.getId(), conn);
@@ -964,7 +964,7 @@ public final class CobolSql {
      * @param dbname database name storage
      * @param dbnameLen byte length of dbname
      */
-    public static void idConnect(
+    static void idConnect(
             CobolDataStorage sqlca,
             CobolDataStorage atdb,
             int atdbLen,
@@ -999,8 +999,7 @@ public final class CobolSql {
      * @param atdbLen byte length of atdb
      * @param query the SQL query string
      */
-    public static void idExec(
-            CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen, String query) {
+    static void idExec(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen, String query) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
             SqlConnection sqlConn = SqlState.getConnection(atdbStr);
@@ -1039,7 +1038,7 @@ public final class CobolSql {
      * @param nParams the expected number of parameters
      * @param params the COBOL host variable parameters
      */
-    public static void idExecParams(
+    static void idExecParams(
             CobolDataStorage sqlca,
             CobolDataStorage atdb,
             int atdbLen,
@@ -1086,7 +1085,7 @@ public final class CobolSql {
      * @param atdb connection identifier storage
      * @param atdbLen byte length of atdb
      */
-    public static void idDisconnect(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
+    static void idDisconnect(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
             SqlConnection conn = SqlState.getConnection(atdbStr);
@@ -1114,7 +1113,7 @@ public final class CobolSql {
      * @param atdb connection identifier storage
      * @param atdbLen byte length of atdb
      */
-    public static void idCommit(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
+    static void idCommit(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
             SqlConnection sqlConn = SqlState.getConnection(atdbStr);
@@ -1141,7 +1140,7 @@ public final class CobolSql {
      * @param atdb connection identifier storage
      * @param atdbLen byte length of atdb
      */
-    public static void idRollback(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
+    static void idRollback(CobolDataStorage sqlca, CobolDataStorage atdb, int atdbLen) {
         try {
             String atdbStr = storageToString(atdb, atdbLen);
             SqlConnection sqlConn = SqlState.getConnection(atdbStr);

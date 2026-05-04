@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Wraps a JDBC Connection with a COBOL connection identifier. */
-public class SqlConnection {
+class SqlConnection {
 
     private static final Logger LOG = LoggerFactory.getLogger(SqlConnection.class);
 
@@ -26,7 +26,7 @@ public class SqlConnection {
      *
      * @return the connection ID string
      */
-    public String getId() {
+    String getId() {
         return id;
     }
 
@@ -35,7 +35,7 @@ public class SqlConnection {
      *
      * @return the JDBC Connection
      */
-    public Connection getConnection() {
+    Connection getConnection() {
         return conn;
     }
 
@@ -44,7 +44,7 @@ public class SqlConnection {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void close() throws SQLException {
+    void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             conn.close();
         }
@@ -55,7 +55,7 @@ public class SqlConnection {
      *
      * @throws SQLException if a database access error occurs
      */
-    public void beginTransaction() throws SQLException {
+    void beginTransaction() throws SQLException {
         if (conn != null && !conn.isClosed()) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute("BEGIN");

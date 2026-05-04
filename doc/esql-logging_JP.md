@@ -2,7 +2,9 @@
 
 ## 概要
 
-opensource COBOL 4JのESQLランタイム（`CobolSql`, `SqlConnection`）はSLF4Jを使用してログを出力します。SQL操作の実行状況、エラー情報をログレベルに応じて出力します。
+opensource COBOL 4JのESQLランタイム（`CobolSql` および内部実装クラスの `SqlConnection`）はSLF4Jを使用してログを出力します。SQL操作の実行状況、エラー情報をログレベルに応じて出力します。
+
+なお、`CobolSql` は cobjが生成するJavaコードから呼び出される公開APIですが、`SqlConnection`、`SqlCA`、`SqlCursor`、`SqlState`、`CobolDataConverter` 等の他のクラスはすべてpackage-privateの内部実装です。SLF4Jのロガー名（完全修飾クラス名）としてはログ設定で利用できますが、外部から直接呼び出すことは想定されていません。
 
 ## ログレベル
 
