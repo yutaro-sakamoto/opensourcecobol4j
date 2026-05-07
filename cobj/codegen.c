@@ -639,39 +639,91 @@ static void joutput_string_write(const unsigned char *s, int size,
 }
 
 /* 文字列リテラルを `CobolFieldFactory.stringField("...")` 形式で
-   インライン出力できるか判定する。Java ソースに埋め込んだ文字列が
-   SHIFT_JIS でラウンドトリップしても元の COBOL ソースのバイト列と
-   一致するよう、ASCII printable の単バイト範囲に限定する。
-   空リテラル(size==0)は従来の c_N 経路との厳密な等価性を保つため除外。 */
-static int literal_is_inlineable_as_java_string(const unsigned char *data,
-                                                int size) {
-  int i;
-  if (size <= 0) {
+   インライン出力できるか判定する。Java ソースの文字列リテラル内で
+   そのまま表現できるバイト列(printable ASCII、および build encoding
+   における妥当な多バイト列)であれば 1 を返す。`lit->data` は
+   build_literal で `size + 1` の calloc 確保により末尾が必ず NUL のため、
+   NUL 終端で走査する。NUL 自体は valid byte range 外なので走査停止と
+   不適格判定が一致する。`get_string_category` を再利用せず独自に検証
+   するのは、SJIS の trail byte 範囲を厳格に検証して不正なバイト列が
+   javac の文字コード変換エラーを引き起こすのを避けるため。
+   空リテラルは従来の c_N 経路との厳密な等価性を保つため対象外。 */
+static int literal_is_inlineable_as_java_string(const unsigned char *data) {
+  if (*data == 0) {
     return 0;
   }
-  for (i = 0; i < size; i++) {
-    unsigned char c = data[i];
-    if (c < 0x20 || c > 0x7E) {
-      return 0;
+  while (*data) {
+    int c = *data;
+    if (0x20 <= c && c <= 0x7e) {
+      data += 1;
+      continue;
     }
+#ifdef I18N_UTF8
+    if (0xc2 <= c && c <= 0xdf) {
+      if (0x80 <= data[1] && data[1] <= 0xbf) {
+        data += 2;
+        continue;
+      }
+    } else if (0xe0 <= c && c <= 0xef) {
+      if (0x80 <= data[1] && data[1] <= 0xbf && 0x80 <= data[2] &&
+          data[2] <= 0xbf) {
+        data += 3;
+        continue;
+      }
+    } else if (0xf0 <= c && c <= 0xf4) {
+      if (0x80 <= data[1] && data[1] <= 0xbf && 0x80 <= data[2] &&
+          data[2] <= 0xbf && 0x80 <= data[3] && data[3] <= 0xbf) {
+        data += 4;
+        continue;
+      }
+    }
+#else
+    if ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef)) {
+      int t = data[1];
+      if ((0x40 <= t && t <= 0x7e) || (0x80 <= t && t <= 0xfc)) {
+        data += 2;
+        continue;
+      }
+    }
+#endif
+    return 0;
   }
   return 1;
 }
 
-/* 生のJava文字列リテラル "..." を出力する。" と \ のみエスケープする。
-   呼び出し元で literal_is_inlineable_as_java_string によりバイト列の安全性を
-   担保していることが前提。 */
-static void joutput_inline_java_string(const unsigned char *data, int size) {
-  int i;
+/* 生の Java 文字列リテラル "..." を出力する。" と \\ をエスケープし、
+   SJIS ビルドでは多バイト列の trail byte を生のまま出力してバイト列を保つ。
+   `lit->data` の NUL 終端まで走査するため size を取らない。
+   AbstractCobolField の `size` は libcobj の `stringField` 側で
+   `bytes.length` から実行時に算出される。
+   呼び出し元で literal_is_inlineable_as_java_string によりバイト列の
+   安全性を担保していることが前提。 */
+static void joutput_inline_java_string(const unsigned char *data) {
   joutput("\"");
-  for (i = 0; i < size; i++) {
-    unsigned char c = data[i];
+#ifdef I18N_UTF8
+  for (; *data; data++) {
+    int c = *data;
     if (c == '"' || c == '\\') {
       joutput("\\%c", c);
     } else {
       joutput("%c", c);
     }
   }
+#else
+  {
+    int output_multibyte = 0;
+    for (; *data; data++) {
+      int c = *data;
+      if (!output_multibyte && (c == '"' || c == '\\')) {
+        joutput("\\%c", c);
+      } else {
+        joutput("%c", c);
+      }
+      output_multibyte = !output_multibyte &&
+                         ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
+    }
+  }
+#endif
   joutput("\"");
 }
 
@@ -1627,18 +1679,18 @@ static void joutput_param(cb_tree x, int id) {
     break;
   case CB_TAG_LITERAL: {
     /* 文字列リテラル可読性改善:
-       alphanumeric リテラルかつ ALL/非ASCII を除く安全なバイト列のとき、
-       `CobolFieldFactory.stringField("...")` 形式でインライン出力する。
-       これにより MOVE/IF/DISPLAY 等あらゆる文脈で `c_N` 経由の参照が
-       不要になる。同一文字列はランタイムでキャッシュされるため、
-       生成されるインスタンスは元の `c_N` と同じく一度だけ作られる。
-       除外条件のリテラル(ALL、NATIONAL、数値、非ASCII/制御バイトを
+       alphanumeric リテラル(ALL 指定なし)で、Java 文字列リテラルとして
+       そのまま埋め込めるバイト列のとき、`CobolFieldFactory.stringField("...")`
+       形式でインライン出力する。これにより MOVE/IF/DISPLAY 等あらゆる文脈で
+       `c_N` 経由の参照が不要になる。同一文字列はランタイムでキャッシュされる
+       ため、生成されるインスタンスは元の `c_N` と同じく一度だけ作られる。
+       除外条件のリテラル(ALL、NATIONAL、数値、制御文字や不正な多バイト列を
        含むもの)は従来通り `lookup_literal` 経由で `c_N` 定数に展開する。 */
     struct cb_literal *lit = CB_LITERAL(x);
     if (CB_TREE_CATEGORY(x) == CB_CATEGORY_ALPHANUMERIC && lit->all == 0 &&
-        literal_is_inlineable_as_java_string(lit->data, (int)lit->size)) {
+        literal_is_inlineable_as_java_string(lit->data)) {
       joutput("CobolFieldFactory.stringField(");
-      joutput_inline_java_string(lit->data, (int)lit->size);
+      joutput_inline_java_string(lit->data);
       joutput(")");
     } else {
       ll = lookup_literal(x);

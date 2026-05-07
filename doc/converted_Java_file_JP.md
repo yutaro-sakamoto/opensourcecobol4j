@@ -145,7 +145,7 @@ DISPLAY "HELLO".
 
 このように各文はブロック`{}`で囲まれ、その上にコメントで元のCOBOLソースコードのファイル名・行番号と、変換されたメソッドの呼び出しを示すコメントが付けられる。
 
-なお、上の例の `CobolFieldFactory.stringField("HELLO")` は alphanumeric な文字列リテラルに対する参照を生成する。同じ文字列に対しては libcobj 側で `AbstractCobolField` インスタンスがキャッシュされる。`MOVE ALL "x"` のような ALL 指定や、NATIONAL リテラル、数値リテラル、非ASCII/制御バイトを含むリテラルは、従来通りクラスのインスタンスフィールド `c_N` として宣言・初期化される。
+なお、上の例の `CobolFieldFactory.stringField("HELLO")` は alphanumeric な文字列リテラルに対する参照を生成する。同じ文字列に対しては libcobj 側で `AbstractCobolField` インスタンスがキャッシュされる。Java ソースに埋め込み可能なバイト列であれば日本語等の非 ASCII 文字を含む alphanumeric リテラルも同形式でインライン展開される。`MOVE ALL "x"` のような ALL 指定や、NATIONAL リテラル、数値リテラル、Java 文字列リテラルとして表現できないバイト列(制御文字や不正な多バイト列)を含むリテラルは、従来通りクラスのインスタンスフィールド `c_N` として宣言・初期化される。
 
 ### 制御文
 IF文やPERFORM VARYING文は、それぞれJavaのif文やfor文に変換される。

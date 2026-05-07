@@ -36,8 +36,7 @@ public class CobolFieldFactory {
      *  cobj が `joutput_attr` で出力する non-ALL alphanumeric literal の属性
      *  (`a_N_Alphanumeric`)と等価。 */
     private static final CobolFieldAttribute STRING_FIELD_ATTR =
-            new CobolFieldAttribute(
-                    CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
+            new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0, null);
 
     /**
      * 文字列リテラルに対応する AbstractCobolField を取得する。
@@ -53,11 +52,13 @@ public class CobolFieldFactory {
      * @return 文字列に対応するキャッシュ済み AbstractCobolField
      */
     public static AbstractCobolField stringField(String s) {
-        return STRING_FIELD_CACHE.computeIfAbsent(s, key -> {
-            byte[] bytes = key.getBytes(AbstractCobolField.charSetSJIS);
-            return new CobolAlphanumericField(
-                    bytes.length, new CobolDataStorage(bytes), STRING_FIELD_ATTR);
-        });
+        return STRING_FIELD_CACHE.computeIfAbsent(
+                s,
+                key -> {
+                    byte[] bytes = key.getBytes(AbstractCobolField.charSetSJIS);
+                    return new CobolAlphanumericField(
+                            bytes.length, new CobolDataStorage(bytes), STRING_FIELD_ATTR);
+                });
     }
 
     /**
