@@ -179,6 +179,10 @@ public class CobolAlphanumericField extends AbstractCobolField {
 
     @Override
     public void moveFrom(String string) {
+        if (this.getAttribute().isFlagJustified()) {
+            super.moveFrom(string);
+            return;
+        }
         byte[] bytes = string.getBytes(AbstractCobolField.charSetSJIS);
         int length = Math.min(bytes.length, this.getSize());
         CobolDataStorage data = this.getDataStorage();

@@ -5535,23 +5535,9 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     }
     return cb_build_method_call_2("moveFrom", dst, cb_int(val));
   } else {
-    /* Issue #286: literal を target field へ直接埋め込む。
-     * 既存 setBytes 最適化（cat と f->size の条件で上位の if 分岐に取られる）に
-     * 拾われない長い／可変長ケースが対象。
-     * libcobj 側の moveFrom(String) は JUSTIFIED やグループ項目の特別処理を
-     * 行わない単純実装なので、それらは従来パスに残す。
-     * 編集系 (ALPHANUMERIC_EDITED / NATIONAL_EDITED) と NATIONAL は、libcobj
-     * 側で moveFrom(String) を AbstractCobolField の基底実装に委ねており、
-     * 一時 ALPHANUMERIC を経由して moveFrom(AbstractCobolField) の編集ロジック
-     * へ流れるため安全。
-     * 数値系（NUMERIC/NUMERIC_EDITED）はリテラルの l->scale や符号情報が
-     * ALPHANUMERIC tmp
-     * 経由で失われるため除外し、従来の数値→数値変換パスに残す。 */
-    if (!l->all && !f->flag_justified && !f->children &&
-        (cat == CB_CATEGORY_ALPHANUMERIC || cat == CB_CATEGORY_ALPHABETIC ||
-         cat == CB_CATEGORY_NATIONAL ||
-         cat == CB_CATEGORY_ALPHANUMERIC_EDITED ||
-         cat == CB_CATEGORY_NATIONAL_EDITED)) {
+    if (cat == CB_CATEGORY_ALPHANUMERIC || cat == CB_CATEGORY_ALPHABETIC ||
+        cat == CB_CATEGORY_NATIONAL || cat == CB_CATEGORY_ALPHANUMERIC_EDITED ||
+        cat == CB_CATEGORY_NATIONAL_EDITED) {
       return cb_build_method_call_2("moveFrom", dst,
                                     cb_build_inline_jstring(l->data, l->size));
     }
