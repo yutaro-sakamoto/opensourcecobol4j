@@ -21,6 +21,8 @@ package jp.osscons.opensourcecobol.libcobj.data;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.common.CobolConstant;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
 import jp.osscons.opensourcecobol.libcobj.common.CobolUtil;
@@ -43,6 +45,34 @@ public abstract class AbstractCobolField {
 
     /** TODO: 準備中 */
     public static Charset charSetSJIS = Charset.forName("SHIFT-JIS");
+
+    /**
+     * リテラル文字列を元にした AbstractCobolField のキャッシュ。
+     * moveFrom(String) は同一リテラルが何度も渡されるホットパスのため、
+     * 一度作った ALPHANUMERIC 一時フィールドを使い回して allocation を削る。
+     * key は元の String、value は size=bytes.length の CobolAlphanumericField。
+     */
+    private static final Map<String, AbstractCobolField> LITERAL_FIELD_CACHE =
+            new ConcurrentHashMap<>();
+
+    private static AbstractCobolField cachedFieldForLiteral(String s) {
+        AbstractCobolField cached = LITERAL_FIELD_CACHE.get(s);
+        if (cached != null) {
+            return cached;
+        }
+        byte[] bytes = s.getBytes(charSetSJIS);
+        CobolDataStorage storage = new CobolDataStorage(bytes);
+        CobolFieldAttribute attr =
+                new CobolFieldAttribute(
+                        CobolFieldAttribute.COB_TYPE_ALPHANUMERIC,
+                        bytes.length,
+                        0,
+                        0,
+                        String.format("X(%d)", bytes.length));
+        AbstractCobolField built = CobolFieldFactory.makeCobolField(bytes.length, storage, attr);
+        AbstractCobolField race = LITERAL_FIELD_CACHE.putIfAbsent(s, built);
+        return race != null ? race : built;
+    }
 
     static final int[] cobExp10 = {
         1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000
@@ -639,23 +669,9 @@ public abstract class AbstractCobolField {
      * @param s 代入元のデータ
      */
     public void moveFrom(String s) {
-        // The maximum number of digits of int type in decimal is 10
-
-        byte[] bytes = s.getBytes(charSetSJIS);
-
-        CobolDataStorage storage = new CobolDataStorage(bytes.length);
-        storage.memcpy(bytes);
-
-        CobolFieldAttribute attr =
-                new CobolFieldAttribute(
-                        CobolFieldAttribute.COB_TYPE_ALPHANUMERIC,
-                        bytes.length,
-                        0,
-                        0,
-                        String.format("X(%d)", bytes.length));
-
-        AbstractCobolField tmp = CobolFieldFactory.makeCobolField(bytes.length, storage, attr);
-        this.moveFrom(tmp);
+        // 同一リテラルの繰り返し呼び出しでオブジェクト生成を避けるため
+        // ALPHANUMERIC 一時フィールドをキャッシュから取得して再利用する。
+        this.moveFrom(cachedFieldForLiteral(s));
     }
 
     /**
