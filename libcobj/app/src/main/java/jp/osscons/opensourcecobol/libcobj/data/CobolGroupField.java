@@ -82,6 +82,14 @@ public class CobolGroupField extends AbstractCobolField {
     }
 
     @Override
+    public void moveFrom(String string) {
+        byte[] bytes;
+        bytes = string.getBytes(AbstractCobolField.charSetSJIS);
+
+        this.moveFrom(bytes);
+    }
+
+    @Override
     public void moveFrom(int number) {}
 
     @Override

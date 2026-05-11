@@ -209,6 +209,9 @@ public class CobolNumericBinaryField extends AbstractCobolField {
     public void moveFrom(byte[] bytes) {}
 
     @Override
+    public void moveFrom(String string) {}
+
+    @Override
     public void moveFrom(int number) {
         this.getDataStorage().setSwpU32Binary(number);
     }

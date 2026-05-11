@@ -170,6 +170,11 @@ public class CobolAlphanumericEditedField extends AbstractCobolField {
     }
 
     @Override
+    public void moveFrom(String string) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
     public void moveFrom(int number) {
         // TODO Auto-generated method stub
     }

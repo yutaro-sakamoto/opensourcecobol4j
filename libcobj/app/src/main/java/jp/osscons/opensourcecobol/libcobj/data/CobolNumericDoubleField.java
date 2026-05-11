@@ -170,6 +170,9 @@ public class CobolNumericDoubleField extends AbstractCobolField {
     public void moveFrom(byte[] bytes) {}
 
     @Override
+    public void moveFrom(String string) {}
+
+    @Override
     public void moveFrom(int number) {}
 
     @Override
