@@ -954,6 +954,16 @@ cb_tree cb_build_string(const unsigned char *data, size_t size) {
   return CB_TREE(p);
 }
 
+cb_tree cb_build_inline_jstring(const unsigned char *data, size_t size) {
+  struct cb_string *p;
+
+  p = make_tree(CB_TAG_INLINE_JSTRING, CB_CATEGORY_ALPHANUMERIC,
+                sizeof(struct cb_string));
+  p->size = size;
+  p->data = data;
+  return CB_TREE(p);
+}
+
 /*
  * Alphabet-name
  */

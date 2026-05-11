@@ -638,6 +638,54 @@ static void joutput_string_write(const unsigned char *s, int size,
   }
 }
 
+static void joutput_java_string_literal(const unsigned char *s, int size) {
+  int i;
+  joutput("\"");
+#ifdef I18N_UTF8
+  for (i = 0; i < size; i++) {
+    int c = s[i];
+    if (c == '"' || c == '\\') {
+      joutput("\\%c", c);
+    } else if (c == '\n') {
+      joutput("\\n");
+    } else if (c == '\r') {
+      joutput("\\r");
+    } else if (c == '\t') {
+      joutput("\\t");
+    } else if (c < 0x20 || c == 0x7f) {
+      joutput("\\u%04x", c);
+    } else {
+      joutput("%c", c);
+    }
+  }
+#else
+  int output_multibyte = 0;
+  for (i = 0; i < size; i++) {
+    int c = s[i];
+    if (!output_multibyte) {
+      if (c == '"' || c == '\\') {
+        joutput("\\%c", c);
+      } else if (c == '\n') {
+        joutput("\\n");
+      } else if (c == '\r') {
+        joutput("\\r");
+      } else if (c == '\t') {
+        joutput("\\t");
+      } else if (c < 0x20 || c == 0x7f) {
+        joutput("\\u%04x", c);
+      } else {
+        joutput("%c", c);
+      }
+    } else {
+      joutput("%c", c);
+    }
+    output_multibyte = !output_multibyte &&
+                       ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
+  }
+#endif
+  joutput("\"");
+}
+
 static void joutput_string(const unsigned char *s, int size) {
   int i;
   struct string_literal_cache *new_literal_cache =
@@ -1529,6 +1577,10 @@ static void joutput_param(cb_tree x, int id) {
     break;
   case CB_TAG_STRING:
     joutput_string(CB_STRING(x)->data, (int)CB_STRING(x)->size);
+    break;
+  case CB_TAG_INLINE_JSTRING:
+    joutput_java_string_literal(CB_INLINE_JSTRING(x)->data,
+                                (int)CB_INLINE_JSTRING(x)->size);
     break;
   case CB_TAG_LOCALE_NAME:
     joutput_param(CB_LOCALE_NAME(x)->list, id);

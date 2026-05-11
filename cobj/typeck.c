@@ -5535,6 +5535,14 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     }
     return cb_build_method_call_2("moveFrom", dst, cb_int(val));
   } else {
+    /* Issue #286: ALPHANUMERIC literal を string field へ直接埋め込む。
+     * 既存 setBytes 最適化（cat と f->size の条件で上位の if 分岐に取られる）に
+     * 拾われない長い／可変長ケースが対象。 */
+    if (!l->all &&
+        (cat == CB_CATEGORY_ALPHANUMERIC || cat == CB_CATEGORY_ALPHABETIC)) {
+      return cb_build_method_call_2(
+          "moveFrom", dst, cb_build_inline_jstring(l->data, l->size));
+    }
     return cb_build_move_call(src, dst);
   }
 }

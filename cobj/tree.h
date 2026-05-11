@@ -87,6 +87,9 @@ enum cb_tag {
   CB_TAG_JAVA_BREAK,
 
   CB_TAG_SWITCH,
+
+  /* Java string literal embedded directly (Issue #286) */
+  CB_TAG_INLINE_JSTRING,
 };
 
 enum cb_alphabet_name_type {
@@ -389,6 +392,13 @@ struct cb_string {
 #define cb_build_string0(str) cb_build_string(str, strlen((char *)str))
 
 extern cb_tree cb_build_string(const unsigned char *data, size_t size);
+
+/* Inline Java string literal — reuses struct cb_string layout */
+#define CB_INLINE_JSTRING(x)                                                   \
+  (CB_TREE_CAST(CB_TAG_INLINE_JSTRING, struct cb_string, x))
+#define CB_INLINE_JSTRING_P(x) (CB_TREE_TAG(x) == CB_TAG_INLINE_JSTRING)
+
+extern cb_tree cb_build_inline_jstring(const unsigned char *data, size_t size);
 
 /*
  * Alphabet-name
