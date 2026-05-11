@@ -5535,13 +5535,14 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     }
     return cb_build_method_call_2("moveFrom", dst, cb_int(val));
   } else {
-    /* Issue #286: ALPHANUMERIC literal を string field へ直接埋め込む。
-     * 既存 setBytes 最適化（cat と f->size の条件で上位の if 分岐に取られる）に
-     * 拾われない長い／可変長ケースが対象。
-     * libcobj 側の moveFrom(String) は JUSTIFIED やグループ項目の特別処理を
-     * 行わない単純実装なので、それらは従来パスに残す。 */
-    if (!l->all && !f->flag_justified && !f->children &&
-        (cat == CB_CATEGORY_ALPHANUMERIC || cat == CB_CATEGORY_ALPHABETIC)) {
+    /* Issue #286: literal を target field へ直接埋め込む。
+     * 既存 setBytes 最適化（上位の if 分岐）に取られない長い／可変長ケースや、
+     * 編集項目・NATIONAL・数値系などへの代入が対象。
+     * libcobj 側の moveFrom(String) は AbstractCobolField の基底実装に委ね、
+     * 一時 ALPHANUMERIC を作って moveFrom(AbstractCobolField) に委譲する形に
+     * 統一されているので、JUSTIFIED・グループ・編集・数値含む全カテゴリで
+     * c_変数経由と等価に振る舞う。 */
+    if (!l->all) {
       return cb_build_method_call_2("moveFrom", dst,
                                     cb_build_inline_jstring(l->data, l->size));
     }
