@@ -2018,11 +2018,18 @@ case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
 #line 94 "esql-scanner.l"
-{ /* skip leading whitespace */ }
+{
+  /* 先頭の空白を sqlbody に保持する。scanner.l 側で複数行 SQL の
+     最初の非空白行のインデントを残してくれているので、ここでそれを
+     消すと「1 行目だけインデントが 0」という不揃いな出力になる。
+     単一行 SQL の場合は scanner.l ですべて取り除かれているため
+     yytext は空相当となり、ここでの append は無害。 */
+  esql_sqlbody_append(yytext);
+}
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 96 "esql-scanner.l"
+#line 103 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   esql_flag_insqlstring = 1;
@@ -2035,7 +2042,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 106 "esql-scanner.l"
+#line 113 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "CONNECT", sizeof(esql_commandname) - 1);
@@ -2044,7 +2051,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 112 "esql-scanner.l"
+#line 119 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   esql_flag_insqlstring = 1;
@@ -2056,7 +2063,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 121 "esql-scanner.l"
+#line 128 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "DECLARE", sizeof(esql_commandname) - 1);
@@ -2065,7 +2072,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 127 "esql-scanner.l"
+#line 134 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "OPEN", sizeof(esql_commandname) - 1);
@@ -2075,7 +2082,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 134 "esql-scanner.l"
+#line 141 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "CLOSE", sizeof(esql_commandname) - 1);
@@ -2085,7 +2092,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 141 "esql-scanner.l"
+#line 148 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "FETCH", sizeof(esql_commandname) - 1);
@@ -2094,7 +2101,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 147 "esql-scanner.l"
+#line 154 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "PREPARE", sizeof(esql_commandname) - 1);
@@ -2104,7 +2111,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 154 "esql-scanner.l"
+#line 161 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   strncpy(esql_commandname, "EXECUTE", sizeof(esql_commandname) - 1);
@@ -2114,7 +2121,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 161 "esql-scanner.l"
+#line 168 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   return ESQL_COMMIT_WORK;
@@ -2122,7 +2129,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 166 "esql-scanner.l"
+#line 173 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   return ESQL_ROLLBACK_WORK;
@@ -2130,7 +2137,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 171 "esql-scanner.l"
+#line 178 "esql-scanner.l"
 {
   esql_sqlbody_append(yytext);
   yy_push_state(ESQL_DBNAME_STATE);
@@ -2139,7 +2146,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 177 "esql-scanner.l"
+#line 184 "esql-scanner.l"
 {
   BEGIN ESQL_STATE;
   esql_flag_insqlstring = 1;
@@ -2154,12 +2161,12 @@ YY_RULE_SETUP
 case 15:
 /* rule 15 can match eol */
 YY_RULE_SETUP
-#line 188 "esql-scanner.l"
+#line 195 "esql-scanner.l"
 { }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 189 "esql-scanner.l"
+#line 196 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext + 1);
     yy_pop_state();
@@ -2171,7 +2178,7 @@ YY_RULE_SETUP
 
 case 17:
 YY_RULE_SETUP
-#line 198 "esql-scanner.l"
+#line 205 "esql-scanner.l"
 {
     if (!esql_flag_select_into) {
       esql_sqlbody_append(yytext);
@@ -2183,14 +2190,14 @@ YY_RULE_SETUP
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-#line 206 "esql-scanner.l"
+#line 213 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
   }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 210 "esql-scanner.l"
+#line 217 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2203,7 +2210,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 220 "esql-scanner.l"
+#line 227 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2219,7 +2226,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 233 "esql-scanner.l"
+#line 240 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2235,7 +2242,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 246 "esql-scanner.l"
+#line 253 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2249,7 +2256,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 257 "esql-scanner.l"
+#line 264 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2265,7 +2272,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 270 "esql-scanner.l"
+#line 277 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2276,7 +2283,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 278 "esql-scanner.l"
+#line 285 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2289,7 +2296,7 @@ YY_RULE_SETUP
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 287 "esql-scanner.l"
+#line 294 "esql-scanner.l"
 {
     esql_flag_select_into = 0;
     if (strcmp(esql_commandname, "SELECT") != 0) {
@@ -2308,7 +2315,7 @@ YY_RULE_SETUP
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 302 "esql-scanner.l"
+#line 309 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     yy_push_state(WHERE_CURRENT_OF);
@@ -2317,7 +2324,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 308 "esql-scanner.l"
+#line 315 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2326,7 +2333,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 314 "esql-scanner.l"
+#line 321 "esql-scanner.l"
 {
     if (!esql_flag_select_into) {
       esql_sqlbody_append("?");
@@ -2337,7 +2344,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 322 "esql-scanner.l"
+#line 329 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_in_quote && esql_sqlbody_len >= 2) {
@@ -2356,7 +2363,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 338 "esql-scanner.l"
+#line 345 "esql-scanner.l"
 {
     if (strcmp(esql_commandname, "DECLARE") != 0) {
       esql_sqlbody_append(yytext);
@@ -2367,7 +2374,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 346 "esql-scanner.l"
+#line 353 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2380,12 +2387,12 @@ YY_RULE_SETUP
 case 33:
 /* rule 33 can match eol */
 YY_RULE_SETUP
-#line 355 "esql-scanner.l"
+#line 362 "esql-scanner.l"
 { }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 356 "esql-scanner.l"
+#line 363 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext);
     yy_pop_state();
@@ -2396,15 +2403,15 @@ YY_RULE_SETUP
 /* Fallback: skip anything unrecognized */
 case 35:
 YY_RULE_SETUP
-#line 364 "esql-scanner.l"
+#line 371 "esql-scanner.l"
 { }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 366 "esql-scanner.l"
+#line 373 "esql-scanner.l"
 ECHO;
 	YY_BREAK
-#line 2408 "esql-scanner.c"
+#line 2415 "esql-scanner.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ESQL_STATE):
 case YY_STATE_EOF(ESQL_DBNAME_STATE):
@@ -3454,7 +3461,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 366 "esql-scanner.l"
+#line 373 "esql-scanner.l"
 
 
 void esql_scanner_reset(void) {

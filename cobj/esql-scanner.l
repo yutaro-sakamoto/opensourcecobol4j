@@ -90,7 +90,14 @@ COMMA ","
 
  /* === Initial state: match first SQL keyword === */
 
-[ \t\r\n]+ { /* skip leading whitespace */ }
+[ \t\r\n]+ {
+  /* 先頭の空白を sqlbody に保持する。scanner.l 側で複数行 SQL の
+     最初の非空白行のインデントを残してくれているので、ここでそれを
+     消すと「1 行目だけインデントが 0」という不揃いな出力になる。
+     単一行 SQL の場合は scanner.l ですべて取り除かれているため
+     yytext は空相当となり、ここでの append は無害。 */
+  esql_sqlbody_append(yytext);
+}
 
 "SELECT" {
   BEGIN ESQL_STATE;

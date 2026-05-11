@@ -129,12 +129,25 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	/* End of EXEC SQL block */
 	BEGIN INITIAL;
 	esql_in_quote = 0;
-	/* Trim leading whitespace */
+	/* Trim leading whitespace.
+	 * 複数行 SQL の場合、最初の非空白行の手前の改行までだけを取り除く。
+	 * これにより、すべての行が同じ基準のインデントを保ち、
+	 * 生成 Java 内で 1 行目だけインデントがずれる現象を回避する。
+	 * 単一行 SQL (改行を含まない) の場合は従来どおり先頭空白を全削除する。 */
 	size_t start = 0;
+	size_t after_last_newline = 0;
+	int saw_newline = 0;
 	while (start < esql_buff_len &&
 	       (esql_buff[start] == ' ' || esql_buff[start] == '\t' ||
 	        esql_buff[start] == '\n' || esql_buff[start] == '\r')) {
+		if (esql_buff[start] == '\n') {
+			saw_newline = 1;
+			after_last_newline = start + 1;
+		}
 		start++;
+	}
+	if (saw_newline) {
+		start = after_last_newline;
 	}
 	/* Trim trailing whitespace */
 	size_t end = esql_buff_len;

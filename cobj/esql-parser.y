@@ -69,8 +69,33 @@ static void esql_set_dbname(const char *name) {
   esql_conn_use_other_db = 1;
 }
 
+/* sqlbody から先頭の「空白だけの行」を取り除く。
+ * 例えば DECLARE C1 CURSOR FOR SELECT ... では、
+ * DECLARE/CURSOR/FOR の間に存在する空白が sqlbody 先頭に蓄積され、
+ * SELECT の直前で改行が入ることで「先頭が空白だけの行」になる。
+ * これをそのまま出力すると Java リテラル先頭に意味のない空白行が残るため、
+ * 最初の非空白文字を含む行の手前までを取り除く。
+ * 一方で、CREATE TABLE のように先頭行に意味のあるインデントがある場合
+ * (＝ 先頭空白が改行を含まない場合) はそのまま残し、後続行とのインデントを揃える。 */
+static const char *esql_trim_leading_blank_lines(const char *s) {
+  size_t i = 0;
+  size_t after_last_newline = 0;
+  int saw_newline = 0;
+  while (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
+    if (s[i] == '\n') {
+      saw_newline = 1;
+      after_last_newline = i + 1;
+    }
+    i++;
+  }
+  if (saw_newline) {
+    return s + after_last_newline;
+  }
+  return s;
+}
+
 static cb_tree esql_build_node(enum cb_sql_command cmd) {
-  char *sql = strdup(esql_get_sqlbody());
+  char *sql = strdup(esql_trim_leading_blank_lines(esql_get_sqlbody()));
   char *cur = esql_cursor_name[0] ? strdup(esql_cursor_name) : NULL;
   char *prep = esql_prepare_name[0] ? strdup(esql_prepare_name) : NULL;
   char *db = esql_conn_use_other_db ? strdup(esql_db_name) : NULL;
