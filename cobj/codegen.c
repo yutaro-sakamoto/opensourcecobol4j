@@ -3746,20 +3746,26 @@ static void joutput_sql_string(const char *sql) {
 }
 
 /* SQL 文字列リテラルを引数として出力する。
- * 複数行 SQL (改行を含む) の場合は ",\n<余分なインデント>" を挟んで
- * SQL 文字列を独立行で開始する。可読性のため、関数呼び出しの構造
- * (メソッド名・SQLCA・SQL 本体) を視覚的に分離する。
- * 単一行 SQL の場合は従来どおり ", " を挟んで同一行に出力する。 */
+ * 単一行 SQL の場合は、先頭の空白 (スペース・タブ) を除去したうえで、
+ * 呼び出し元と同じインデント位置の独立行で出力する。
+ * 複数行 SQL (改行を含む) の場合は ",\n<+2 段インデント>" を挟み、
+ * COBOL ソースで保たれた各行のインデントを維持する。 */
 static void joutput_sql_string_arg(const char *sql) {
   if (strchr(sql, '\n')) {
     joutput(",\n");
     joutput_indent_level += 2;
     joutput_prefix();
     joutput_indent_level -= 2;
+    joutput_sql_string(sql);
   } else {
-    joutput(", ");
+    const char *p = sql;
+    while (*p == ' ' || *p == '\t') {
+      p++;
+    }
+    joutput(",\n");
+    joutput_prefix();
+    joutput_sql_string(p);
   }
-  joutput_sql_string(sql);
 }
 
 static void joutput_exec_sql(struct cb_exec_sql *p) {
