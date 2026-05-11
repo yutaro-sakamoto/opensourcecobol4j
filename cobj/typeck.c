@@ -5397,12 +5397,9 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
                                   cb_build_inline_jstring(buff, f->size),
                                   cb_build_cast_length(dst));
-  } else if ((cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
-              f->pic->scale == l->scale && !f->flag_sign_leading &&
-              !f->flag_sign_separate) ||
-             ((cat == CB_CATEGORY_ALPHABETIC ||
-               cat == CB_CATEGORY_ALPHANUMERIC) &&
-              f->size < (int)(l->size + 16) && !cb_field_variable_size(f))) {
+  } else if (cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
+             f->pic->scale == l->scale && !f->flag_sign_leading &&
+             !f->flag_sign_separate) {
 #ifdef I18N_UTF8
     if (!utf8_ext_pick(l->data)) {
       diff = (int)(f->size - l->size);
@@ -5422,40 +5419,22 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     buff = cobc_malloc(dst_size);
 #endif /*I18N_UTF8*/
 
-    if (cat == CB_CATEGORY_NUMERIC) {
-      if (diff <= 0) {
-        memcpy(buff, l->data - diff, dst_size);
-      } else {
-        memset(buff, '0', (size_t)diff);
-        memcpy(buff + diff, l->data, (size_t)l->size);
-      }
-      if (f->pic->have_sign) {
-        p = &buff[dst_size - 1];
-        if (cb_display_sign) {
-          cob_put_sign_ebcdic(p, l->sign);
-        } else if (l->sign < 0) {
-#ifdef COB_EBCDIC_MACHINE
-          cob_put_sign_ascii(p);
-#else
-          *p += 0x40;
-#endif
-        }
-      }
+    if (diff <= 0) {
+      memcpy(buff, l->data - diff, dst_size);
     } else {
-      if (f->flag_justified) {
-        if (diff <= 0) {
-          memcpy(buff, l->data - diff, dst_size);
-        } else {
-          memset(buff, ' ', (size_t)diff);
-          memcpy(buff + diff, l->data, (size_t)l->size);
-        }
-      } else {
-        if (diff <= 0) {
-          memcpy(buff, l->data, dst_size);
-        } else {
-          memcpy(buff, l->data, (size_t)l->size);
-          memset(buff + l->size, ' ', (size_t)diff);
-        }
+      memset(buff, '0', (size_t)diff);
+      memcpy(buff + diff, l->data, (size_t)l->size);
+    }
+    if (f->pic->have_sign) {
+      p = &buff[dst_size - 1];
+      if (cb_display_sign) {
+        cob_put_sign_ebcdic(p, l->sign);
+      } else if (l->sign < 0) {
+#ifdef COB_EBCDIC_MACHINE
+        cob_put_sign_ascii(p);
+#else
+        *p += 0x40;
+#endif
       }
     }
     bbyte = *buff;
