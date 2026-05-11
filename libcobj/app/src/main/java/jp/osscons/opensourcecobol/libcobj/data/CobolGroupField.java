@@ -82,11 +82,6 @@ public class CobolGroupField extends AbstractCobolField {
     }
 
     @Override
-    public void moveFrom(String string) {
-        super.moveFrom(string);
-    }
-
-    @Override
     public void moveFrom(int number) {}
 
     @Override
