@@ -5395,7 +5395,7 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     }
 #endif /*I18N_UTF8*/
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
-                                  cb_build_string(buff, f->size),
+                                  cb_build_inline_jstring(buff, f->size),
                                   cb_build_cast_length(dst));
   } else if ((cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
               f->pic->scale == l->scale && !f->flag_sign_leading &&
@@ -5474,7 +5474,7 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
                                     cb_int(bbyte), cb_build_cast_length(dst));
     }
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
-                                  cb_build_string(buff, dst_size),
+                                  cb_build_inline_jstring(buff, dst_size),
                                   cb_build_cast_length(dst));
   } else if (cb_fits_int(src) && f->size <= 8 &&
              (f->usage == CB_USAGE_BINARY || f->usage == CB_USAGE_COMP_5 ||
