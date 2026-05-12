@@ -1,0 +1,80 @@
+AT_SETUP([sql format - common indent strip and single-line rewrite])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+      ******************************************************************
+       PROGRAM-ID.                 prog.
+      ******************************************************************
+       DATA                        DIVISION.
+      ******************************************************************
+       WORKING-STORAGE             SECTION.
+
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+
+       01  EMP-REC-VARS.
+         03  EMP-NO                PIC S9(04) VALUE ZERO.
+         03  EMP-NAME              PIC  X(20) .
+         03  EMP-SALARY            PIC S9(04) VALUE ZERO.
+
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+      *    Single-line SQL: leading whitespace must be stripped and the
+      *    SQL literal must be emitted on its own line.
+           EXEC SQL
+               UPDATE EMP SET EMP_NAME = 'NO_NAME'
+           END-EXEC.
+
+      *    Multi-line SQL: the deepest common leading indent should be
+      *    removed from every line; relative indentation between lines
+      *    must be preserved.
+           EXEC SQL
+               DECLARE C1 CURSOR FOR
+               SELECT EMP_NO, EMP_NAME, EMP_SALARY
+                  FROM EMP
+                  ORDER BY EMP_NO
+           END-EXEC.
+
+      *    Multi-line CREATE: similar dedent.
+           EXEC SQL
+               CREATE TABLE EMP
+               (
+                   EMP_NO     NUMERIC(4,0) NOT NULL,
+                   EMP_NAME   CHAR(20),
+                   EMP_SALARY NUMERIC(4,0)
+               )
+           END-EXEC.
+
+           STOP RUN.
+])
+
+# Generate Java only (no class file).
+AT_CHECK([${COBJ} -C prog.cbl])
+
+# Single-line UPDATE: emitted on its own line and leading whitespace
+# inside the literal is gone. The single quotes around NO_NAME are
+# preserved verbatim.
+AT_CHECK([grep -F "\"UPDATE EMP SET EMP_NAME = 'NO_NAME'\"" prog.java], [0], [ignore])
+
+# Multi-line SELECT: first line has no leading whitespace; subsequent
+# lines retain only the relative indent (FROM/ORDER BY are 3 spaces
+# deeper than SELECT in the COBOL source).
+AT_CHECK([grep -F "\"SELECT EMP_NO, EMP_NAME, EMP_SALARY\\n\"" prog.java], [0], [ignore])
+AT_CHECK([grep -F "\"   FROM EMP\\n\"" prog.java], [0], [ignore])
+AT_CHECK([grep -F "\"   ORDER BY EMP_NO\"" prog.java], [0], [ignore])
+
+# Multi-line CREATE TABLE: first line should be flush left in the literal;
+# the inner column lines should retain only their relative indent (4
+# spaces) once the common indent (15 spaces) is removed.
+AT_CHECK([grep -F "\"CREATE TABLE EMP\\n\"" prog.java], [0], [ignore])
+AT_CHECK([grep -F "\"    EMP_NO     NUMERIC(4,0) NOT NULL,\\n\"" prog.java], [0], [ignore])
+AT_CHECK([grep -F "\"    EMP_NAME   CHAR(20),\\n\"" prog.java], [0], [ignore])
+AT_CHECK([grep -F "\"    EMP_SALARY NUMERIC(4,0)\\n\"" prog.java], [0], [ignore])
+
+# Negative check: the COBOL B-area leading spaces (column-7 padding) must
+# NOT survive in the generated Java literals.
+AT_CHECK([grep -F "\"               SELECT EMP_NO" prog.java], [1], [ignore])
+AT_CHECK([grep -F "\"               CREATE TABLE EMP" prog.java], [1], [ignore])
+
+AT_CLEANUP

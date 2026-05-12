@@ -3715,15 +3715,70 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   joutput("}");
 }
 
+/* SQL 文字列を Java 文字列リテラルとして出力する。
+ * 複数行 SQL の場合、各行 (シングルクォート文字列リテラル内に始まる行を除く) の
+ * 共通先頭空白 (スペース・タブ) を計算して全行から差し引く。文字列リテラル内に
+ * 始まる行 ('foo\n   bar' の "   bar" など) は SQL の値の一部なので削らない。
+ * シングルクォートのトグルで in_quote 状態を追跡する。SQL の '' エスケープは
+ * 2 回連続のトグルで自然に in_quote=1 へ戻る。 */
 static void joutput_sql_string(const char *sql) {
+  /* Pass 1: 共通インデント (= 各行の最小先頭空白) を求める。
+   * 文字列リテラル内に始まる行・全空白行は候補から除外。 */
+  int min_indent = -1;
+  int in_quote = 0;
+  int line_start_in_quote = 0;
+  int line_ws = 0;
+  int line_has_content = 0;
+  for (const char *p = sql;; p++) {
+    if (*p == '\n' || *p == '\0') {
+      if (!line_start_in_quote && line_has_content) {
+        if (min_indent < 0 || line_ws < min_indent) {
+          min_indent = line_ws;
+        }
+      }
+      if (*p == '\0') {
+        break;
+      }
+      /* 次行の開始状態は、今の \n 時点の in_quote */
+      line_start_in_quote = in_quote;
+      line_ws = 0;
+      line_has_content = 0;
+      continue;
+    }
+    if (!line_has_content) {
+      if (*p == ' ' || *p == '\t') {
+        line_ws++;
+      } else {
+        line_has_content = 1;
+      }
+    }
+    if (*p == '\'') {
+      in_quote = !in_quote;
+    }
+  }
+  if (min_indent < 0) {
+    min_indent = 0;
+  }
+
+  /* Pass 2: 出力。改行直後で in_quote=0
+   * なら共通インデント分の先頭空白をスキップ。 */
+  in_quote = 0;
+  int line_in_quote = 0;
+  int to_skip = min_indent;
   joutput("\"");
   for (const char *p = sql; *p; p++) {
+    if (to_skip > 0 && !line_in_quote && (*p == ' ' || *p == '\t')) {
+      to_skip--;
+      continue;
+    }
     switch (*p) {
     case '\n':
       joutput("\\n\"");
       joutput("\n");
       joutput_prefix();
       joutput("+ \"");
+      line_in_quote = in_quote;
+      to_skip = min_indent;
       break;
     case '\t':
       joutput("\\t");
@@ -3736,6 +3791,10 @@ static void joutput_sql_string(const char *sql) {
       break;
     case '\\':
       joutput("\\\\");
+      break;
+    case '\'':
+      in_quote = !in_quote;
+      joutput("%c", *p);
       break;
     default:
       joutput("%c", *p);
