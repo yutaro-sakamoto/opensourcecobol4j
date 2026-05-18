@@ -104,7 +104,7 @@ class SqlCursorTest {
         // Fetch first row
         byte[] data1 = new byte[20];
         AbstractCobolField field1 = makeAlphaField(20, data1);
-        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field1});
+        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field1}, null);
         assertTrue(hasRow, "First fetch should return a row");
         String fetched1 = new String(field1.getDataStorage().getByteArray(0, 5)).trim();
         assertEquals("Alice", fetched1, "First row should be Alice");
@@ -112,7 +112,7 @@ class SqlCursorTest {
         // Fetch second row
         byte[] data2 = new byte[20];
         AbstractCobolField field2 = makeAlphaField(20, data2);
-        hasRow = cursor.fetch(conn, new AbstractCobolField[] {field2});
+        hasRow = cursor.fetch(conn, new AbstractCobolField[] {field2}, null);
         assertTrue(hasRow, "Second fetch should return a row");
         String fetched2 = new String(field2.getDataStorage().getByteArray(0, 3)).trim();
         assertEquals("Bob", fetched2, "Second row should be Bob");
@@ -120,13 +120,13 @@ class SqlCursorTest {
         // Fetch third row
         byte[] data3 = new byte[20];
         AbstractCobolField field3 = makeAlphaField(20, data3);
-        hasRow = cursor.fetch(conn, new AbstractCobolField[] {field3});
+        hasRow = cursor.fetch(conn, new AbstractCobolField[] {field3}, null);
         assertTrue(hasRow, "Third fetch should return a row");
         String fetched3 = new String(field3.getDataStorage().getByteArray(0, 5)).trim();
         assertEquals("Carol", fetched3, "Third row should be Carol");
 
         // Fetch past end
-        hasRow = cursor.fetch(conn, null);
+        hasRow = cursor.fetch(conn, null, null);
         assertFalse(hasRow, "Fetch past end should return false");
 
         // Close
@@ -145,12 +145,12 @@ class SqlCursorTest {
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(20, data);
-        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field});
+        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field}, null);
         assertTrue(hasRow, "Fetch should return a row");
         String fetched = new String(field.getDataStorage().getByteArray(0, 3)).trim();
         assertEquals("Bob", fetched, "Fetched row should be Bob");
 
-        hasRow = cursor.fetch(conn, null);
+        hasRow = cursor.fetch(conn, null, null);
         assertFalse(hasRow, "No more rows should be available");
 
         cursor.close(conn);
@@ -168,7 +168,7 @@ class SqlCursorTest {
 
         byte[] data = new byte[20];
         AbstractCobolField field = makeAlphaField(20, data);
-        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field});
+        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field}, null);
         assertTrue(hasRow, "Fetch should return a row");
         String fetched = new String(field.getDataStorage().getByteArray(0, 5)).trim();
         assertEquals("Alice", fetched, "Fetched row should be Alice");
@@ -183,7 +183,7 @@ class SqlCursorTest {
         cursor.open(conn, null);
 
         // Fetch with null resultParams should return true but not write anything
-        boolean hasRow = cursor.fetch(conn, null);
+        boolean hasRow = cursor.fetch(conn, null, null);
         assertTrue(hasRow, "Fetch with null resultParams should still return true");
 
         cursor.close(conn);
@@ -202,11 +202,21 @@ class SqlCursorTest {
         byte[] data = new byte[20];
         java.util.Arrays.fill(data, (byte) 'X');
         AbstractCobolField field = makeAlphaField(20, data);
-        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field});
+        // Allocate a SQLCA (133 bytes) so we can observe ECPG_MISSING_INDICATOR.
+        CobolDataStorage sqlca = new CobolDataStorage(133);
+        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field}, sqlca);
         assertTrue(hasRow, "Fetch should return a row even with NULL value");
         // NULL value should zero out the storage
         assertEquals(
                 0, field.getDataStorage().getByte(0), "NULL value should zero out the storage");
+        // ECPG semantics: NULL without indicator => sqlcode=-213, sqlstate="22002"
+        assertEquals(
+                SqlCA.ECPG_MISSING_INDICATOR,
+                SqlCA.getCode(sqlca),
+                "NULL without indicator should set SQLCODE to ECPG_MISSING_INDICATOR");
+        byte[] state = sqlca.getByteArray(128, 5);
+        assertEquals(
+                "22002", new String(state), "NULL without indicator should set SQLSTATE to 22002");
 
         cursor.close(conn);
     }
@@ -217,7 +227,7 @@ class SqlCursorTest {
         SqlCursor cursor = new SqlCursor("cur6", "SELECT name FROM cursor_test WHERE id = 999", 0);
         cursor.open(conn, null);
 
-        boolean hasRow = cursor.fetch(conn, null);
+        boolean hasRow = cursor.fetch(conn, null, null);
         assertFalse(hasRow, "Fetch on empty result set should return false");
 
         cursor.close(conn);
@@ -255,7 +265,7 @@ class SqlCursorTest {
         AbstractCobolField idField = makeAlphaField(10, idData);
         AbstractCobolField nameField = makeAlphaField(20, nameData);
 
-        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {idField, nameField});
+        boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {idField, nameField}, null);
         assertTrue(hasRow, "Fetch should return a row");
 
         String fetchedId = new String(idField.getDataStorage().getByteArray(0, 1)).trim();

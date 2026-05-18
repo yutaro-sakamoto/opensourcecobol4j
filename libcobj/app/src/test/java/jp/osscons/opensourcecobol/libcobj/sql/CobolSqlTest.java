@@ -537,7 +537,12 @@ class CobolSqlTest {
         AbstractCobolField resultField = makeAlphaField(10, data);
         CobolSql.selectInto(
                 sqlca, "SELECT name FROM sel_test", null, new AbstractCobolField[] {resultField});
-        assertEquals(0, getSqlCode(), "SelectInto with NULL value should succeed");
+        // ECPG semantics: NULL without indicator => sqlcode=-213 (ECPG_MISSING_INDICATOR).
+        // The row is still considered fetched and the target field is zero-filled.
+        assertEquals(
+                SqlCA.ECPG_MISSING_INDICATOR,
+                getSqlCode(),
+                "SelectInto with NULL value should signal ECPG_MISSING_INDICATOR");
         assertEquals(
                 0, resultField.getDataStorage().getByte(0), "NULL value should zero out storage");
 
