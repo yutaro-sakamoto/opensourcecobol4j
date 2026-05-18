@@ -50,19 +50,23 @@ class SqlCursor {
     void open(Connection conn, AbstractCobolField[] openParams) throws SQLException {
         String command = "DECLARE " + name + " CURSOR FOR " + query;
 
+        // OPEN ... USING (openParams) を最優先し、なければ DECLARE 時に
+        // 保存した this.params にフォールバック。どちらも空ならパラメータ
+        // なしで Statement を実行する。
+        AbstractCobolField[] bindParams;
         if (openParams != null && openParams.length > 0) {
-            try (PreparedStatement pstmt = conn.prepareStatement(command)) {
-                java.sql.ParameterMetaData metaData = pstmt.getParameterMetaData();
-                for (int i = 0; i < openParams.length; i++) {
-                    CobolDataConverter.setParam(pstmt, i + 1, metaData, openParams[i]);
-                }
-                pstmt.execute();
-            }
+            bindParams = openParams;
         } else if (this.params != null && this.params.length > 0) {
+            bindParams = this.params;
+        } else {
+            bindParams = null;
+        }
+
+        if (bindParams != null) {
             try (PreparedStatement pstmt = conn.prepareStatement(command)) {
                 java.sql.ParameterMetaData metaData = pstmt.getParameterMetaData();
-                for (int i = 0; i < this.params.length; i++) {
-                    CobolDataConverter.setParam(pstmt, i + 1, metaData, this.params[i]);
+                for (int i = 0; i < bindParams.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, bindParams[i]);
                 }
                 pstmt.execute();
             }
