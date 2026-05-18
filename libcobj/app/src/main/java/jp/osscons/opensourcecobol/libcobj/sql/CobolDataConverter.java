@@ -20,62 +20,54 @@ final class CobolDataConverter {
     /** Private constructor to prevent instantiation of utility class. */
     private CobolDataConverter() {}
 
-    /** Unsigned numeric display (USAGE DISPLAY, no sign). */
-    static final int TYPE_UNSIGNED_NUMERIC = 1;
-
-    /** Signed numeric with trailing separate sign character. */
-    static final int TYPE_SIGNED_TRAILING_SEPARATE = 2;
-
-    /** Signed numeric with trailing combined (overpunch) sign. */
-    static final int TYPE_SIGNED_TRAILING_COMBINED = 3;
-
-    /** Signed numeric with leading separate sign character. */
-    static final int TYPE_SIGNED_LEADING_SEPARATE = 4;
-
-    /** Signed numeric with leading combined (overpunch) sign. */
-    static final int TYPE_SIGNED_LEADING_COMBINED = 5;
-
-    /** Unsigned packed-decimal (COMP-3, no sign nibble). */
-    static final int TYPE_UNSIGNED_PACKED = 8;
-
-    /** Signed packed-decimal (COMP-3). */
-    static final int TYPE_SIGNED_PACKED = 9;
-
-    /** Unsigned binary native (COMP-5, big-endian). */
-    static final int TYPE_UNSIGNED_BINARY_NATIVE = 13;
-
-    /** Signed binary native (COMP-5, big-endian). */
-    static final int TYPE_SIGNED_BINARY_NATIVE = 14;
-
-    /** Alphabetic (PIC A). */
-    static final int TYPE_ALPHABETIC = 16;
-
-    /** Group item (treated as alphanumeric). */
-    static final int TYPE_GROUP = 22;
-
-    /** Floating-point double (COMP-2). */
-    static final int TYPE_FLOAT = 23;
-
-    /** National character (PIC N). */
-    static final int TYPE_NATIONAL = 24;
-
-    /** Alphanumeric varying-length string. */
-    static final int TYPE_ALPHANUMERIC_VARYING = 30;
-
-    /** Japanese (DBCS) varying-length string. */
-    static final int TYPE_JAPANESE_VARYING = 31;
+    /**
+     * COBOL ホスト変数の内部分類。CobolFieldAttribute から resolveHvarType で
+     * 解決され、本クラス内のディスパッチにのみ使われる (公開しない)。
+     */
+    private enum HvarType {
+        /** Unsigned numeric display (USAGE DISPLAY, no sign). */
+        UNSIGNED_NUMERIC,
+        /** Signed numeric with trailing separate sign character. */
+        SIGNED_TRAILING_SEPARATE,
+        /** Signed numeric with trailing combined (overpunch) sign. */
+        SIGNED_TRAILING_COMBINED,
+        /** Signed numeric with leading separate sign character. */
+        SIGNED_LEADING_SEPARATE,
+        /** Signed numeric with leading combined (overpunch) sign. */
+        SIGNED_LEADING_COMBINED,
+        /** Unsigned packed-decimal (COMP-3, no sign nibble). */
+        UNSIGNED_PACKED,
+        /** Signed packed-decimal (COMP-3). */
+        SIGNED_PACKED,
+        /** Unsigned binary native (COMP-5, big-endian). */
+        UNSIGNED_BINARY_NATIVE,
+        /** Signed binary native (COMP-5, big-endian). */
+        SIGNED_BINARY_NATIVE,
+        /** Alphabetic (PIC A). */
+        ALPHABETIC,
+        /** Group item (treated as alphanumeric). */
+        GROUP,
+        /** Floating-point double (COMP-2). */
+        FLOAT,
+        /** National character (PIC N). */
+        NATIONAL,
+        /** Alphanumeric varying-length string. */
+        ALPHANUMERIC_VARYING,
+        /** Japanese (DBCS) varying-length string. */
+        JAPANESE_VARYING
+    }
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
     private static final int SIGN_LENGTH = 1;
     private static final int OCDB_VARCHAR_HEADER_BYTE = 4;
 
     /**
-     * Resolve the internal HVARTYPE constant from an AbstractCobolField's attributes.
+     * Resolve the internal HvarType from an AbstractCobolField's attributes.
      *
      * @param field the COBOL field
-     * @return the HVARTYPE constant for internal dispatch
+     * @return the HvarType for internal dispatch
      */
-    private static int resolveHvarType(AbstractCobolField field) {
+    private static HvarType resolveHvarType(AbstractCobolField field) {
         CobolFieldAttribute attr = field.getAttribute();
         int type = attr.getType();
         boolean hasSign = attr.isFlagHaveSign();
@@ -85,37 +77,37 @@ final class CobolDataConverter {
         switch (type) {
             case CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY:
                 if (!hasSign) {
-                    return TYPE_UNSIGNED_NUMERIC;
+                    return HvarType.UNSIGNED_NUMERIC;
                 }
                 if (signSep && signLead) {
-                    return TYPE_SIGNED_LEADING_SEPARATE;
+                    return HvarType.SIGNED_LEADING_SEPARATE;
                 }
                 if (signSep) {
-                    return TYPE_SIGNED_TRAILING_SEPARATE;
+                    return HvarType.SIGNED_TRAILING_SEPARATE;
                 }
                 if (signLead) {
-                    return TYPE_SIGNED_LEADING_COMBINED;
+                    return HvarType.SIGNED_LEADING_COMBINED;
                 }
-                return TYPE_SIGNED_TRAILING_COMBINED;
+                return HvarType.SIGNED_TRAILING_COMBINED;
             case CobolFieldAttribute.COB_TYPE_NUMERIC_PACKED:
-                return hasSign ? TYPE_SIGNED_PACKED : TYPE_UNSIGNED_PACKED;
+                return hasSign ? HvarType.SIGNED_PACKED : HvarType.UNSIGNED_PACKED;
             case CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY:
-                return hasSign ? TYPE_SIGNED_BINARY_NATIVE : TYPE_UNSIGNED_BINARY_NATIVE;
+                return hasSign ? HvarType.SIGNED_BINARY_NATIVE : HvarType.UNSIGNED_BINARY_NATIVE;
             case CobolFieldAttribute.COB_TYPE_NUMERIC_FLOAT:
             case CobolFieldAttribute.COB_TYPE_NUMERIC_DOUBLE:
-                return TYPE_FLOAT;
+                return HvarType.FLOAT;
             case CobolFieldAttribute.COB_TYPE_NATIONAL:
-                return TYPE_NATIONAL;
+                return HvarType.NATIONAL;
             case CobolFieldAttribute.COB_TYPE_GROUP:
                 if (attr.isFlagVarying()) {
                     if ((attr.getFlags() & CobolFieldAttribute.COB_FLAG_NATIONAL_VARYING) != 0) {
-                        return TYPE_JAPANESE_VARYING;
+                        return HvarType.JAPANESE_VARYING;
                     }
-                    return TYPE_ALPHANUMERIC_VARYING;
+                    return HvarType.ALPHANUMERIC_VARYING;
                 }
-                return TYPE_GROUP;
+                return HvarType.GROUP;
             default:
-                return TYPE_ALPHABETIC;
+                return HvarType.ALPHABETIC;
         }
     }
 
@@ -133,10 +125,10 @@ final class CobolDataConverter {
         // V99 → getScale()=2 → scale=-2; PP → getScale()=-2 → scale=0 (for non-packed)
         int scale = Math.min(0, -field.getAttribute().getScale());
         CobolDataStorage storage = field.getDataStorage();
-        int hvarType = resolveHvarType(field);
+        HvarType hvarType = resolveHvarType(field);
 
         // For VARYING, length = ARR size (total - 4 byte header)
-        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+        if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
 
@@ -151,35 +143,35 @@ final class CobolDataConverter {
         }
 
         switch (hvarType) {
-            case TYPE_UNSIGNED_NUMERIC:
+            case UNSIGNED_NUMERIC:
                 return readUnsignedNumeric(length, scale, storage);
-            case TYPE_SIGNED_TRAILING_SEPARATE:
+            case SIGNED_TRAILING_SEPARATE:
                 return readSignedTrailingSeparate(length, scale, storage);
-            case TYPE_SIGNED_TRAILING_COMBINED:
+            case SIGNED_TRAILING_COMBINED:
                 return readSignedTrailingCombined(length, scale, storage);
-            case TYPE_SIGNED_LEADING_SEPARATE:
+            case SIGNED_LEADING_SEPARATE:
                 return readSignedLeadingSeparate(length, scale, storage);
-            case TYPE_SIGNED_LEADING_COMBINED:
+            case SIGNED_LEADING_COMBINED:
                 return readSignedLeadingCombined(length, scale, storage);
-            case TYPE_UNSIGNED_PACKED:
+            case UNSIGNED_PACKED:
                 return appendTrailingZeros(
                         readUnsignedPacked(packedLength, scale, storage), ppCount);
-            case TYPE_SIGNED_PACKED:
+            case SIGNED_PACKED:
                 return appendTrailingZeros(readSignedPacked(packedLength, scale, storage), ppCount);
-            case TYPE_UNSIGNED_BINARY_NATIVE:
+            case UNSIGNED_BINARY_NATIVE:
                 return readUnsignedBinaryNative(length, scale, storage);
-            case TYPE_SIGNED_BINARY_NATIVE:
+            case SIGNED_BINARY_NATIVE:
                 return readSignedBinaryNative(length, scale, storage);
-            case TYPE_ALPHABETIC:
-            case TYPE_GROUP:
+            case ALPHABETIC:
+            case GROUP:
                 return readAlphanumeric(length, scale, storage);
-            case TYPE_FLOAT:
+            case FLOAT:
                 return readFloat(length, scale, storage);
-            case TYPE_NATIONAL:
+            case NATIONAL:
                 return readNational(length, scale, storage);
-            case TYPE_ALPHANUMERIC_VARYING:
+            case ALPHANUMERIC_VARYING:
                 return readAlphanumericVarying(length, scale, storage);
-            case TYPE_JAPANESE_VARYING:
+            case JAPANESE_VARYING:
                 return readJapaneseVarying(length, scale, storage);
             default:
                 return readAlphanumeric(length, scale, storage);
@@ -589,13 +581,13 @@ final class CobolDataConverter {
             return;
         }
         int scale = Math.min(0, -field.getAttribute().getScale());
-        int hvarType = resolveHvarType(field);
+        HvarType hvarType = resolveHvarType(field);
         // For VARYING, length = ARR size
-        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+        if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
         // For packed decimal, use digit count (excluding PP) instead of byte size
-        if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
+        if (hvarType == HvarType.UNSIGNED_PACKED || hvarType == HvarType.SIGNED_PACKED) {
             int rawScale = field.getAttribute().getScale();
             length = field.getAttribute().getDigits();
             if (rawScale < 0) {
@@ -617,10 +609,10 @@ final class CobolDataConverter {
         if (field == null || field.getDataStorage() == null || resultData == null) {
             return;
         }
-        int hvarType = resolveHvarType(field);
+        HvarType hvarType = resolveHvarType(field);
         int length = field.getSize();
         // For packed decimal, use digit count (excluding PP) instead of byte size
-        if (hvarType == TYPE_UNSIGNED_PACKED || hvarType == TYPE_SIGNED_PACKED) {
+        if (hvarType == HvarType.UNSIGNED_PACKED || hvarType == HvarType.SIGNED_PACKED) {
             int rawScale = field.getAttribute().getScale();
             length = field.getAttribute().getDigits();
             if (rawScale < 0) {
@@ -630,7 +622,7 @@ final class CobolDataConverter {
             }
         }
         // For VARYING, length = ARR size (total - 4 byte header)
-        if (hvarType == TYPE_ALPHANUMERIC_VARYING || hvarType == TYPE_JAPANESE_VARYING) {
+        if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
         stringToCobolInternal(
@@ -642,47 +634,47 @@ final class CobolDataConverter {
     }
 
     private static void stringToCobolInternal(
-            int hvarType, int length, int scale, CobolDataStorage storage, byte[] resultData) {
+            HvarType hvarType, int length, int scale, CobolDataStorage storage, byte[] resultData) {
         switch (hvarType) {
-            case TYPE_UNSIGNED_NUMERIC:
+            case UNSIGNED_NUMERIC:
                 writeUnsignedNumeric(length, scale, storage, resultData);
                 break;
-            case TYPE_SIGNED_TRAILING_COMBINED:
+            case SIGNED_TRAILING_COMBINED:
                 writeSignedTrailingCombined(length, scale, storage, resultData);
                 break;
-            case TYPE_SIGNED_TRAILING_SEPARATE:
+            case SIGNED_TRAILING_SEPARATE:
                 writeSignedTrailingSeparate(length, scale, storage, resultData);
                 break;
-            case TYPE_SIGNED_LEADING_SEPARATE:
+            case SIGNED_LEADING_SEPARATE:
                 writeSignedLeadingSeparate(length, scale, storage, resultData);
                 break;
-            case TYPE_SIGNED_LEADING_COMBINED:
+            case SIGNED_LEADING_COMBINED:
                 writeSignedLeadingCombined(length, scale, storage, resultData);
                 break;
-            case TYPE_UNSIGNED_PACKED:
+            case UNSIGNED_PACKED:
                 writeUnsignedPacked(length, scale, storage, resultData);
                 break;
-            case TYPE_SIGNED_PACKED:
+            case SIGNED_PACKED:
                 writeSignedPacked(length, scale, storage, resultData);
                 break;
-            case TYPE_ALPHABETIC:
-            case TYPE_GROUP:
+            case ALPHABETIC:
+            case GROUP:
                 writeAlphanumeric(length, scale, storage, resultData);
                 break;
-            case TYPE_NATIONAL:
+            case NATIONAL:
                 writeNational(length, scale, storage, resultData);
                 break;
-            case TYPE_ALPHANUMERIC_VARYING:
+            case ALPHANUMERIC_VARYING:
                 writeAlphanumericVarying(length, scale, storage, resultData);
                 break;
-            case TYPE_JAPANESE_VARYING:
+            case JAPANESE_VARYING:
                 writeJapaneseVarying(length, scale, storage, resultData);
                 break;
-            case TYPE_UNSIGNED_BINARY_NATIVE:
-            case TYPE_SIGNED_BINARY_NATIVE:
+            case UNSIGNED_BINARY_NATIVE:
+            case SIGNED_BINARY_NATIVE:
                 writeAlphanumeric(length, scale, storage, resultData);
                 break;
-            case TYPE_FLOAT:
+            case FLOAT:
                 writeAlphanumeric(length, scale, storage, resultData);
                 break;
             default:
