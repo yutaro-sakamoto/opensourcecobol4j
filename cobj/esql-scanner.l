@@ -91,11 +91,10 @@ COMMA ","
  /* === Initial state: match first SQL keyword === */
 
 [ \t\r\n]+ {
-  /* 先頭の空白を sqlbody に保持する。scanner.l 側で複数行 SQL の
-     最初の非空白行のインデントを残してくれているので、ここでそれを
-     消すと「1 行目だけインデントが 0」という不揃いな出力になる。
-     単一行 SQL の場合は scanner.l ですべて取り除かれているため
-     yytext は空相当となり、ここでの append は無害。 */
+  /* 先頭の空白をそのまま sqlbody に保持する。COBOL ソース上の
+     1 行目のインデントを残しておくことで、codegen.c 側の共通
+     インデント計算が成立する。最終的な整形 (先頭の空白だけの
+     行の除去・共通インデント差し引き) は codegen.c で行う。 */
   esql_sqlbody_append(yytext);
 }
 

@@ -114,42 +114,19 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 
 <ESQL_STATE>{
   "END-EXEC" {
-	/* End of EXEC SQL block */
+	/* End of EXEC SQL block.
+	 * SQL 本体の空白整形は codegen.c (joutput_sql_string) が行う。
+	 * ここでは末尾の空白だけ落としておく。先頭の空白は保持する。 */
 	BEGIN INITIAL;
 	esql_in_quote = 0;
-	/* Trim leading whitespace.
-	 * 複数行 SQL の場合、最初の非空白行の手前の改行までだけを取り除く。
-	 * これにより、すべての行が同じ基準のインデントを保ち、
-	 * 生成 Java 内で 1 行目だけインデントがずれる現象を回避する。
-	 * 単一行 SQL (改行を含まない) の場合は従来どおり先頭空白を全削除する。 */
-	size_t start = 0;
-	size_t after_last_newline = 0;
-	int saw_newline = 0;
-	while (start < esql_buff_len &&
-	       (esql_buff[start] == ' ' || esql_buff[start] == '\t' ||
-	        esql_buff[start] == '\n' || esql_buff[start] == '\r')) {
-		if (esql_buff[start] == '\n') {
-			saw_newline = 1;
-			after_last_newline = start + 1;
-		}
-		start++;
-	}
-	if (saw_newline) {
-		start = after_last_newline;
-	}
-	/* Trim trailing whitespace */
 	size_t end = esql_buff_len;
-	while (end > start &&
+	while (end > 0 &&
 	       (esql_buff[end - 1] == ' ' || esql_buff[end - 1] == '\t' ||
 	        esql_buff[end - 1] == '\n' || esql_buff[end - 1] == '\r')) {
 		end--;
 	}
-	size_t trimmed_len = end - start;
-	if (start > 0 && trimmed_len > 0) {
-		memmove(esql_buff, esql_buff + start, trimmed_len);
-	}
-	esql_buff[trimmed_len] = '\0';
-	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, trimmed_len);
+	esql_buff[end] = '\0';
+	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, end);
 	SET_LOCATION (yylval);
 	return EXEC_SQL_STATEMENT;
   }

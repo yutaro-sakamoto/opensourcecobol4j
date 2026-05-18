@@ -3715,14 +3715,46 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   joutput("}");
 }
 
+/* 先頭の「空白だけの行」(改行を含む whitespace の連続) を取り除いた
+ * SQL 先頭ポインタを返す。改行を含まない先頭空白 (= 1 行目に意味のある
+ * インデントがある場合) はそのまま残す。
+ * これにより:
+ *   - EXEC SQL 直後の改行・インデント
+ *   - DECLARE ... CURSOR FOR <SELECT> でトークン間空白が
+ *     sqlbody 先頭に蓄積したケース
+ * の双方で「最初の意味のある行」までスキップできる。 */
+static const char *sql_skip_leading_blank_lines(const char *sql) {
+  size_t i = 0;
+  size_t after_last_newline = 0;
+  int saw_newline = 0;
+  while (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n' || sql[i] == '\r') {
+    if (sql[i] == '\n') {
+      saw_newline = 1;
+      after_last_newline = i + 1;
+    }
+    i++;
+  }
+  if (saw_newline) {
+    return sql + after_last_newline;
+  }
+  return sql;
+}
+
 /* SQL 文字列を Java 文字列リテラルとして出力する。
- * 複数行 SQL の場合、各行 (シングルクォート文字列リテラル内に始まる行を除く) の
- * 共通先頭空白 (スペース・タブ) を計算して全行から差し引く。文字列リテラル内に
- * 始まる行 ('foo\n   bar' の "   bar" など) は SQL の値の一部なので削らない。
- * シングルクォートのトグルで in_quote 状態を追跡する。SQL の '' エスケープは
- * 2 回連続のトグルで自然に in_quote=1 へ戻る。 */
+ * 字句解析・構文解析の段階では空白除去を行わず、入力された SQL は
+ * COBOL ソース上の改行・先頭空白をすべて保持している。整形はここで完結させる。
+ *
+ * 整形手順:
+ *   (a) 先頭の「空白だけの行」を取り除く。
+ *   (b) 残った各行 (シングルクォート文字列リテラル内に始まる行を除く) の
+ *       共通先頭空白を計算し、全行から差し引く。文字列リテラル内に始まる
+ *       行 ('foo\n   bar' の "   bar" など) は SQL の値の一部なので削らない。
+ *       シングルクォートのトグルで in_quote 状態を追跡する。SQL の ''
+ *       エスケープは 2 回連続のトグルで自然に in_quote=1 へ戻る。 */
 static void joutput_sql_string(const char *sql) {
-  /* Pass 1: 共通インデント (= 各行の最小先頭空白) を求める。
+  sql = sql_skip_leading_blank_lines(sql);
+
+  /* (b) Pass 1: 共通インデント (= 各行の最小先頭空白) を求める。
    * 文字列リテラル内に始まる行・全空白行は候補から除外。 */
   int min_indent = -1;
   int in_quote = 0;
@@ -3760,7 +3792,7 @@ static void joutput_sql_string(const char *sql) {
     min_indent = 0;
   }
 
-  /* Pass 2: 出力。改行直後で in_quote=0
+  /* (b) Pass 2: 出力。改行直後で in_quote=0
    * なら共通インデント分の先頭空白をスキップ。 */
   in_quote = 0;
   int line_in_quote = 0;
@@ -3805,25 +3837,26 @@ static void joutput_sql_string(const char *sql) {
 }
 
 /* SQL 文字列リテラルを引数として出力する。
- * 単一行 SQL の場合は、先頭の空白 (スペース・タブ) を除去したうえで、
- * 呼び出し元と同じインデント位置の独立行で出力する。
- * 複数行 SQL (改行を含む) の場合は ",\n<+2 段インデント>" を挟み、
- * COBOL ソースで保たれた各行のインデントを維持する。 */
+ * 先頭の「空白だけの行」を取り除いたうえで、残った本文が複数行か単一行かを
+ * 判定する。単一行 SQL は呼び出し元と同じインデント位置の独立行で出力する。
+ * 複数行 SQL は ",\n<+2 段インデント>" を挟み、joutput_sql_string が
+ * 共通インデントを差し引きながら出力する。 */
 static void joutput_sql_string_arg(const char *sql) {
-  if (strchr(sql, '\n')) {
+  const char *body = sql_skip_leading_blank_lines(sql);
+  if (strchr(body, '\n')) {
     joutput(",\n");
     joutput_indent_level += 2;
     joutput_prefix();
     joutput_indent_level -= 2;
-    joutput_sql_string(sql);
+    joutput_sql_string(body);
   } else {
-    const char *p = sql;
-    while (*p == ' ' || *p == '\t') {
-      p++;
+    /* 単一行: 先頭スペース/タブも落としてフラットに出力する。 */
+    while (*body == ' ' || *body == '\t') {
+      body++;
     }
     joutput(",\n");
     joutput_prefix();
-    joutput_sql_string(p);
+    joutput_sql_string(body);
   }
 }
 
