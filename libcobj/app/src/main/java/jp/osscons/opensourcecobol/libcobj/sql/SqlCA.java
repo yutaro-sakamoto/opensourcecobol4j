@@ -236,6 +236,20 @@ final class SqlCA {
     }
 
     /**
+     * Set the SQLCA to ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002").
+     *
+     * <p>Signals "NULL value without indicator variable" — ECPG standard behavior when a fetched
+     * column is SQL NULL and the host variable has no indicator companion. The COBOL field
+     * itself is still written (typically zero-filled) so the row is considered processed;
+     * application code is expected to check SQLCODE/SQLSTATE after the FETCH/SELECT.
+     *
+     * @param sqlca the SQLCA data storage
+     */
+    static void setMissingIndicator(CobolDataStorage sqlca) {
+        setError(sqlca, ECPG_MISSING_INDICATOR, "22002", "Null value without indicator");
+    }
+
+    /**
      * Set the SQLCA to indicate an error with the given code, state, and message.
      *
      * @param sqlca the SQLCA data storage

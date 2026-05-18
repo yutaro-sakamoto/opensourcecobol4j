@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
+import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /** Represents a SQL cursor for iterating over query results in COBOL embedded SQL. */
 class SqlCursor {
@@ -81,12 +82,19 @@ class SqlCursor {
     /**
      * Fetch the next row from this cursor and write results to COBOL host variables.
      *
+     * <p>If any column comes back SQL NULL while indicator variables are not supported, sets
+     * {@code sqlca} to ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002"). The row data
+     * is still written (zero-fill for NULL columns), matching ECPG behavior of "row fetched
+     * but flagged".
+     *
      * @param conn the JDBC connection
      * @param resultParams output host variables to receive column values
+     * @param sqlca SQLCA storage to flag NULL-without-indicator (may be null)
      * @return true if a row was fetched, false if no more rows
      * @throws SQLException if a database access error occurs
      */
-    boolean fetch(Connection conn, AbstractCobolField[] resultParams) throws SQLException {
+    boolean fetch(Connection conn, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
+            throws SQLException {
         String fetchSql = "FETCH FORWARD 1 FROM " + name;
         try (Statement stmt = conn.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
@@ -103,6 +111,7 @@ class SqlCursor {
 
             if (resultParams != null) {
                 int columnCount = rs.getMetaData().getColumnCount();
+                boolean sawNullWithoutIndicator = false;
                 for (int i = 0; i < resultParams.length && i < columnCount; i++) {
                     byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
                     if (value != null) {
@@ -111,7 +120,11 @@ class SqlCursor {
                         resultParams[i]
                                 .getDataStorage()
                                 .memset((byte) 0, resultParams[i].getSize());
+                        sawNullWithoutIndicator = true;
                     }
+                }
+                if (sawNullWithoutIndicator) {
+                    SqlCA.setMissingIndicator(sqlca);
                 }
             }
             rs.close();

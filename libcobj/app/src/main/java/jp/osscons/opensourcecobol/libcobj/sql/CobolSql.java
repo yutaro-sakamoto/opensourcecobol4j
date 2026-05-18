@@ -328,6 +328,7 @@ public final class CobolSql {
             return;
         }
         int rowCount = 0;
+        boolean sawNullWithoutIndicator = false;
         do {
             if (rowCount >= occursMax) {
                 break;
@@ -343,13 +344,18 @@ public final class CobolSql {
                             resultParams[i], fieldStorage, fieldSize, value);
                 } else {
                     fieldStorage.memset((byte) 0, fieldSize);
+                    sawNullWithoutIndicator = true;
                 }
             }
             rowCount++;
         } while (rs.next());
         rs.close();
         SqlCA.setErrd(sqlca, 2, rowCount);
-        SqlCA.setSuccess(sqlca);
+        if (sawNullWithoutIndicator) {
+            SqlCA.setMissingIndicator(sqlca);
+        } else {
+            SqlCA.setSuccess(sqlca);
+        }
     }
 
     private static void processSelectIntoResults(
@@ -379,6 +385,7 @@ public final class CobolSql {
             CobolDataStorage baseStorage = groupField.getDataStorage();
             int columnCount = rs.getMetaData().getColumnCount();
             int rowIndex = 0;
+            boolean sawNullWithoutIndicator = false;
 
             do {
                 // Write each column into the correct position within the element
@@ -398,6 +405,7 @@ public final class CobolSql {
                         }
                     } else {
                         elementStorage.memset((byte) 0, colSize);
+                        sawNullWithoutIndicator = true;
                     }
                     colOffset += colSize;
                 }
@@ -405,22 +413,32 @@ public final class CobolSql {
             } while (rs.next());
             rs.close();
             SqlCA.setErrd(sqlca, 2, rowIndex);
-            SqlCA.setSuccess(sqlca);
+            if (sawNullWithoutIndicator) {
+                SqlCA.setMissingIndicator(sqlca);
+            } else {
+                SqlCA.setSuccess(sqlca);
+            }
             return;
         }
 
         // Single row: write columns to individual result fields
         int columnCount = rs.getMetaData().getColumnCount();
+        boolean sawNullWithoutIndicator = false;
         for (int i = 0; i < resultParams.length && i < columnCount; i++) {
             byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
             if (value != null) {
                 CobolDataConverter.stringToCobol(resultParams[i], value);
             } else {
                 resultParams[i].getDataStorage().memset((byte) 0, resultParams[i].getSize());
+                sawNullWithoutIndicator = true;
             }
         }
         rs.close();
-        SqlCA.setSuccess(sqlca);
+        if (sawNullWithoutIndicator) {
+            SqlCA.setMissingIndicator(sqlca);
+        } else {
+            SqlCA.setSuccess(sqlca);
+        }
     }
 
     /**
@@ -683,10 +701,11 @@ public final class CobolSql {
                 return;
             }
             LOG.trace("FETCH CURSOR {}", cursorName);
-            boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams);
-            if (hasRow) {
-                SqlCA.setSuccess(sqlca);
-            } else {
+            // Pre-clear so a clean fetch lands on sqlcode=0; fetch() may overwrite with
+            // ECPG_MISSING_INDICATOR if any column is NULL without indicator.
+            SqlCA.setSuccess(sqlca);
+            boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams, sqlca);
+            if (!hasRow) {
                 SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
                 SqlCA.setState(sqlca, "02000");
                 SqlCA.clearErrmc(sqlca);
@@ -736,6 +755,7 @@ public final class CobolSql {
                     return;
                 }
                 int rowCount = 0;
+                boolean sawNullWithoutIndicator = false;
                 do {
                     if (rowCount >= occursMax) {
                         break;
@@ -751,12 +771,17 @@ public final class CobolSql {
                                     resultParams[i], fieldStorage, fieldSize, value);
                         } else {
                             fieldStorage.memset((byte) 0, fieldSize);
+                            sawNullWithoutIndicator = true;
                         }
                     }
                     rowCount++;
                 } while (rs.next());
                 SqlCA.setErrd(sqlca, 2, rowCount);
-                SqlCA.setSuccess(sqlca);
+                if (sawNullWithoutIndicator) {
+                    SqlCA.setMissingIndicator(sqlca);
+                } else {
+                    SqlCA.setSuccess(sqlca);
+                }
             }
         } catch (SQLException e) {
             SqlCA.setResultFromException(sqlca, e);
