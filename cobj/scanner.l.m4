@@ -127,18 +127,13 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 <ESQL_STATE>{
   "END-EXEC" {
 	/* End of EXEC SQL block.
-	 * SQL 本体の空白整形は codegen.c (joutput_sql_string) が行う。
-	 * ここでは末尾の空白だけ落としておく。先頭の空白は保持する。 */
+	 * SQL 本体の空白整形 (先頭・末尾・共通インデント) は codegen.c
+	 * (joutput_sql_string) が行う。ここでは esql_buff を加工せず
+	 * そのまま EXEC_SQL_STATEMENT トークンに渡す。 */
 	BEGIN INITIAL;
 	esql_in_quote = 0;
-	size_t end = esql_buff_len;
-	while (end > 0 &&
-	       (esql_buff[end - 1] == ' ' || esql_buff[end - 1] == '\t' ||
-	        esql_buff[end - 1] == '\n' || esql_buff[end - 1] == '\r')) {
-		end--;
-	}
-	esql_buff[end] = '\0';
-	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, end);
+	esql_buff[esql_buff_len] = '\0';
+	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
 	SET_LOCATION (yylval);
 	return EXEC_SQL_STATEMENT;
   }

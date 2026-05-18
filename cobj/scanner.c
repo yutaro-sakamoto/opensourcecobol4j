@@ -1613,18 +1613,13 @@ YY_RULE_SETUP
 #line 117 "scanner.l"
 {
 	/* End of EXEC SQL block.
-	 * SQL 本体の空白整形は codegen.c (joutput_sql_string) が行う。
-	 * ここでは末尾の空白だけ落としておく。先頭の空白は保持する。 */
+	 * SQL 本体の空白整形 (先頭・末尾・共通インデント) は codegen.c
+	 * (joutput_sql_string) が行う。ここでは esql_buff を加工せず
+	 * そのまま EXEC_SQL_STATEMENT トークンに渡す。 */
 	BEGIN INITIAL;
 	esql_in_quote = 0;
-	size_t end = esql_buff_len;
-	while (end > 0 &&
-	       (esql_buff[end - 1] == ' ' || esql_buff[end - 1] == '\t' ||
-	        esql_buff[end - 1] == '\n' || esql_buff[end - 1] == '\r')) {
-		end--;
-	}
-	esql_buff[end] = '\0';
-	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, end);
+	esql_buff[esql_buff_len] = '\0';
+	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
 	SET_LOCATION (yylval);
 	return EXEC_SQL_STATEMENT;
   }
@@ -1632,7 +1627,7 @@ YY_RULE_SETUP
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 134 "scanner.l"
+#line 129 "scanner.l"
 {
 	cb_source_line++;
 	if (esql_buff_len + 2 >= esql_buff_capacity) {
@@ -1644,7 +1639,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 142 "scanner.l"
+#line 137 "scanner.l"
 {
 	size_t len = strlen(yytext);
 	while (esql_buff_len + len + 2 >= esql_buff_capacity) {
@@ -1657,7 +1652,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 151 "scanner.l"
+#line 146 "scanner.l"
 {
 	if (esql_buff_len + 2 >= esql_buff_capacity) {
 		esql_buff_capacity *= 2;
@@ -1677,14 +1672,14 @@ YY_RULE_SETUP
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 167 "scanner.l"
+#line 162 "scanner.l"
 {
 	cb_source_line++;
 }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 171 "scanner.l"
+#line 166 "scanner.l"
 {
 	/* line directive */
 	char *endp;
@@ -1697,17 +1692,17 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 7:
-#line 183 "scanner.l"
+#line 178 "scanner.l"
 case 8:
 YY_RULE_SETUP
-#line 183 "scanner.l"
+#line 178 "scanner.l"
 {
 	BEGIN PICTURE_STATE;
 }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 187 "scanner.l"
+#line 182 "scanner.l"
 {
 	if (inside_repository) {
 		return FUNCTION;
@@ -1717,7 +1712,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 194 "scanner.l"
+#line 189 "scanner.l"
 {
 	inside_repository = 0;
 	return DIVISION;
@@ -1725,7 +1720,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 199 "scanner.l"
+#line 194 "scanner.l"
 {
 	inside_repository = 0;
 	cb_force_pid_literal = 1;
@@ -1734,7 +1729,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 205 "scanner.l"
+#line 200 "scanner.l"
 {
 	inside_repository = 0;
 	cb_force_pid_literal = 1;
@@ -1743,7 +1738,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 211 "scanner.l"
+#line 206 "scanner.l"
 {
 	inside_repository = 1;
 	return REPOSITORY;
@@ -1751,7 +1746,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 216 "scanner.l"
+#line 211 "scanner.l"
 {
 	/* string literal */
 	cb_force_pid_literal = 0;
@@ -1760,7 +1755,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 222 "scanner.l"
+#line 217 "scanner.l"
 {
 	cb_force_pid_literal = 0;
 	return read_literal (yytext[1], CB_CATEGORY_NATIONAL);
@@ -1768,7 +1763,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 227 "scanner.l"
+#line 222 "scanner.l"
 {
 	cb_force_pid_literal = 0;
 	return read_literal (yytext[2], CB_CATEGORY_NATIONAL);
@@ -1776,17 +1771,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 232 "scanner.l"
+#line 227 "scanner.l"
 {
 	cb_force_pid_literal = 0;
 	return read_literal (yytext[2], CB_CATEGORY_NATIONAL);
 }
 	YY_BREAK
 case 18:
-#line 238 "scanner.l"
+#line 233 "scanner.l"
 case 19:
 YY_RULE_SETUP
-#line 238 "scanner.l"
+#line 233 "scanner.l"
 {
 	/* X string literal */
 	if (cb_warn_compat) {
@@ -1797,10 +1792,10 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 20:
-#line 248 "scanner.l"
+#line 243 "scanner.l"
 case 21:
 YY_RULE_SETUP
-#line 248 "scanner.l"
+#line 243 "scanner.l"
 {
 	/* NX string literal */
 	if (cb_warn_compat) {
@@ -1812,7 +1807,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 257 "scanner.l"
+#line 252 "scanner.l"
 {
 	inside_bracket++;
 	return '(';
@@ -1820,7 +1815,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 262 "scanner.l"
+#line 257 "scanner.l"
 {
 	if (inside_bracket > 0) {
 		inside_bracket--;
@@ -1830,7 +1825,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 269 "scanner.l"
+#line 264 "scanner.l"
 {
 	cb_force_pid_literal = 0;
 	if (integer_is_label) {
@@ -1860,14 +1855,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 296 "scanner.l"
+#line 291 "scanner.l"
 {
 	/* Ignore */
 }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 300 "scanner.l"
+#line 295 "scanner.l"
 {
 	if (inside_bracket) {
 		return SEMI_COLON;
@@ -1877,7 +1872,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 307 "scanner.l"
+#line 302 "scanner.l"
 {
 	/* numeric literal */
 	return scan_numeric (yytext);
@@ -1885,7 +1880,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 312 "scanner.l"
+#line 307 "scanner.l"
 {
 	if (inside_bracket) {
 		return COMMA_DELIM;
@@ -1895,7 +1890,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 319 "scanner.l"
+#line 314 "scanner.l"
 {
 	/* numeric literal */
 	return scan_numeric (yytext);
@@ -1903,7 +1898,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 324 "scanner.l"
+#line 319 "scanner.l"
 {
 	/* numeric literal */
 	return scan_numeric (yytext);
@@ -1911,7 +1906,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 329 "scanner.l"
+#line 324 "scanner.l"
 {
 	/* numeric literal */
 	return scan_numeric (yytext);
@@ -1919,14 +1914,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 334 "scanner.l"
+#line 329 "scanner.l"
 {
 	unput (',');
 }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 338 "scanner.l"
+#line 333 "scanner.l"
 {
 	if (inside_bracket) {
 		return COMMA_DELIM;
@@ -1935,10 +1930,10 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 34:
-#line 346 "scanner.l"
+#line 341 "scanner.l"
 case 35:
 YY_RULE_SETUP
-#line 346 "scanner.l"
+#line 341 "scanner.l"
 {
 	/* H numeric literal */
 	cb_force_pid_literal = 0;
@@ -1948,7 +1943,7 @@ YY_RULE_SETUP
 case 36:
 /* rule 36 can match eol */
 YY_RULE_SETUP
-#line 352 "scanner.l"
+#line 347 "scanner.l"
 {
 	/* Enter EXEC SQL state and collect SQL text */
 	count_lines (yytext);
@@ -1965,7 +1960,7 @@ YY_RULE_SETUP
 case 37:
 /* rule 37 can match eol */
 YY_RULE_SETUP
-#line 365 "scanner.l"
+#line 360 "scanner.l"
 {
 	cb_force_pid_literal = 1;
 	count_lines (yytext);
@@ -1975,7 +1970,7 @@ YY_RULE_SETUP
 case 38:
 /* rule 38 can match eol */
 YY_RULE_SETUP
-#line 371 "scanner.l"
+#line 366 "scanner.l"
 {
 	cb_force_pid_literal = 1;
 	count_lines (yytext);
@@ -1985,7 +1980,7 @@ YY_RULE_SETUP
 case 39:
 /* rule 39 can match eol */
 YY_RULE_SETUP
-#line 377 "scanner.l"
+#line 372 "scanner.l"
 {
 	count_lines (yytext);
 	return NEXT_SENTENCE;
@@ -1994,7 +1989,7 @@ YY_RULE_SETUP
 case 40:
 /* rule 40 can match eol */
 YY_RULE_SETUP
-#line 382 "scanner.l"
+#line 377 "scanner.l"
 {
 	count_lines (yytext);
 	return SCREEN_CONTROL;
@@ -2003,7 +1998,7 @@ YY_RULE_SETUP
 case 41:
 /* rule 41 can match eol */
 YY_RULE_SETUP
-#line 387 "scanner.l"
+#line 382 "scanner.l"
 {
 	count_lines (yytext);
 	return EVENT_STATUS;
@@ -2012,7 +2007,7 @@ YY_RULE_SETUP
 case 42:
 /* rule 42 can match eol */
 YY_RULE_SETUP
-#line 392 "scanner.l"
+#line 387 "scanner.l"
 {
 	count_lines (yytext);
 	return BLANK_SCREEN;
@@ -2021,7 +2016,7 @@ YY_RULE_SETUP
 case 43:
 /* rule 43 can match eol */
 YY_RULE_SETUP
-#line 397 "scanner.l"
+#line 392 "scanner.l"
 {
 	count_lines (yytext);
 	return BLANK_LINE;
@@ -2030,7 +2025,7 @@ YY_RULE_SETUP
 case 44:
 /* rule 44 can match eol */
 YY_RULE_SETUP
-#line 402 "scanner.l"
+#line 397 "scanner.l"
 {
 	count_lines (yytext);
 	return CONTROL;
@@ -2039,7 +2034,7 @@ YY_RULE_SETUP
 case 45:
 /* rule 45 can match eol */
 YY_RULE_SETUP
-#line 407 "scanner.l"
+#line 402 "scanner.l"
 {
 	count_lines (yytext);
 	return CONTROLS;
@@ -2048,7 +2043,7 @@ YY_RULE_SETUP
 case 46:
 /* rule 46 can match eol */
 YY_RULE_SETUP
-#line 412 "scanner.l"
+#line 407 "scanner.l"
 {
 	count_lines (yytext);
 	return CONTROL_HEADING;
@@ -2057,7 +2052,7 @@ YY_RULE_SETUP
 case 47:
 /* rule 47 can match eol */
 YY_RULE_SETUP
-#line 417 "scanner.l"
+#line 412 "scanner.l"
 {
 	count_lines (yytext);
 	return CONTROL_FOOTING;
@@ -2066,7 +2061,7 @@ YY_RULE_SETUP
 case 48:
 /* rule 48 can match eol */
 YY_RULE_SETUP
-#line 422 "scanner.l"
+#line 417 "scanner.l"
 {
 	count_lines (yytext);
 	return PAGE_HEADING;
@@ -2075,7 +2070,7 @@ YY_RULE_SETUP
 case 49:
 /* rule 49 can match eol */
 YY_RULE_SETUP
-#line 427 "scanner.l"
+#line 422 "scanner.l"
 {
 	count_lines (yytext);
 	return PAGE_FOOTING;
@@ -2084,7 +2079,7 @@ YY_RULE_SETUP
 case 50:
 /* rule 50 can match eol */
 YY_RULE_SETUP
-#line 432 "scanner.l"
+#line 427 "scanner.l"
 {
 	count_lines (yytext);
 	return REPORT_HEADING;
@@ -2093,7 +2088,7 @@ YY_RULE_SETUP
 case 51:
 /* rule 51 can match eol */
 YY_RULE_SETUP
-#line 437 "scanner.l"
+#line 432 "scanner.l"
 {
 	count_lines (yytext);
 	return REPORT_FOOTING;
@@ -2102,7 +2097,7 @@ YY_RULE_SETUP
 case 52:
 /* rule 52 can match eol */
 YY_RULE_SETUP
-#line 442 "scanner.l"
+#line 437 "scanner.l"
 {
 	count_lines (yytext);
 	return LAST_DETAIL;
@@ -2111,7 +2106,7 @@ YY_RULE_SETUP
 case 53:
 /* rule 53 can match eol */
 YY_RULE_SETUP
-#line 447 "scanner.l"
+#line 442 "scanner.l"
 {
 	count_lines (yytext);
 	return LAST_DETAIL;
@@ -2119,14 +2114,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 452 "scanner.l"
+#line 447 "scanner.l"
 {
 	/* Ignore */
 }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 456 "scanner.l"
+#line 451 "scanner.l"
 {
 	/* Ignore */
 }
@@ -2134,7 +2129,7 @@ YY_RULE_SETUP
 case 56:
 /* rule 56 can match eol */
 YY_RULE_SETUP
-#line 460 "scanner.l"
+#line 455 "scanner.l"
 {
 	count_lines (yytext);
 	return NO_ADVANCING;
@@ -2142,11 +2137,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 57:
 /* rule 57 can match eol */
-#line 466 "scanner.l"
+#line 461 "scanner.l"
 case 58:
 /* rule 58 can match eol */
 YY_RULE_SETUP
-#line 466 "scanner.l"
+#line 461 "scanner.l"
 {	
 	count_lines (yytext);
 	return NOT_SIZE_ERROR;
@@ -2154,11 +2149,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 /* rule 59 can match eol */
-#line 472 "scanner.l"
+#line 467 "scanner.l"
 case 60:
 /* rule 60 can match eol */
 YY_RULE_SETUP
-#line 472 "scanner.l"
+#line 467 "scanner.l"
 {	
 	count_lines (yytext);
 	return SIZE_ERROR;
@@ -2166,11 +2161,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 61:
 /* rule 61 can match eol */
-#line 478 "scanner.l"
+#line 473 "scanner.l"
 case 62:
 /* rule 62 can match eol */
 YY_RULE_SETUP
-#line 478 "scanner.l"
+#line 473 "scanner.l"
 {	
 	count_lines (yytext);
 	return NOT_EXCEPTION;
@@ -2178,11 +2173,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 63:
 /* rule 63 can match eol */
-#line 484 "scanner.l"
+#line 479 "scanner.l"
 case 64:
 /* rule 64 can match eol */
 YY_RULE_SETUP
-#line 484 "scanner.l"
+#line 479 "scanner.l"
 {	
 	count_lines (yytext);
 	return EXCEPTION;
@@ -2190,11 +2185,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 /* rule 65 can match eol */
-#line 490 "scanner.l"
+#line 485 "scanner.l"
 case 66:
 /* rule 66 can match eol */
 YY_RULE_SETUP
-#line 490 "scanner.l"
+#line 485 "scanner.l"
 {	
 	count_lines (yytext);
 	return NOT_OVERFLOW;
@@ -2202,11 +2197,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 /* rule 67 can match eol */
-#line 496 "scanner.l"
+#line 491 "scanner.l"
 case 68:
 /* rule 68 can match eol */
 YY_RULE_SETUP
-#line 496 "scanner.l"
+#line 491 "scanner.l"
 {	
 	count_lines (yytext);
 	return NOT_END;
@@ -2215,7 +2210,7 @@ YY_RULE_SETUP
 case 69:
 /* rule 69 can match eol */
 YY_RULE_SETUP
-#line 501 "scanner.l"
+#line 496 "scanner.l"
 {
 	count_lines (yytext);
 	return END;
@@ -2223,11 +2218,11 @@ YY_RULE_SETUP
 	YY_BREAK
 case 70:
 /* rule 70 can match eol */
-#line 507 "scanner.l"
+#line 502 "scanner.l"
 case 71:
 /* rule 71 can match eol */
 YY_RULE_SETUP
-#line 507 "scanner.l"
+#line 502 "scanner.l"
 {	
 	count_lines (yytext);
 	return OVERFLOW;
@@ -2235,17 +2230,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 72:
 /* rule 72 can match eol */
-#line 513 "scanner.l"
+#line 508 "scanner.l"
 case 73:
 /* rule 73 can match eol */
-#line 514 "scanner.l"
+#line 509 "scanner.l"
 case 74:
 /* rule 74 can match eol */
-#line 515 "scanner.l"
+#line 510 "scanner.l"
 case 75:
 /* rule 75 can match eol */
 YY_RULE_SETUP
-#line 515 "scanner.l"
+#line 510 "scanner.l"
 {	
 	count_lines (yytext);
 	return NOT_EOP;
@@ -2253,17 +2248,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 76:
 /* rule 76 can match eol */
-#line 521 "scanner.l"
+#line 516 "scanner.l"
 case 77:
 /* rule 77 can match eol */
-#line 522 "scanner.l"
+#line 517 "scanner.l"
 case 78:
 /* rule 78 can match eol */
-#line 523 "scanner.l"
+#line 518 "scanner.l"
 case 79:
 /* rule 79 can match eol */
 YY_RULE_SETUP
-#line 523 "scanner.l"
+#line 518 "scanner.l"
 {	
 	count_lines (yytext);
 	return EOP;
@@ -2272,7 +2267,7 @@ YY_RULE_SETUP
 case 80:
 /* rule 80 can match eol */
 YY_RULE_SETUP
-#line 528 "scanner.l"
+#line 523 "scanner.l"
 {
 	count_lines (yytext);
 	return NOT_INVALID_KEY;
@@ -2281,7 +2276,7 @@ YY_RULE_SETUP
 case 81:
 /* rule 81 can match eol */
 YY_RULE_SETUP
-#line 533 "scanner.l"
+#line 528 "scanner.l"
 {
 	count_lines (yytext);
 	return NOT_INVALID_KEY;
@@ -2290,7 +2285,7 @@ YY_RULE_SETUP
 case 82:
 /* rule 82 can match eol */
 YY_RULE_SETUP
-#line 538 "scanner.l"
+#line 533 "scanner.l"
 {
 	count_lines (yytext);
 	return INVALID_KEY;
@@ -2299,7 +2294,7 @@ YY_RULE_SETUP
 case 83:
 /* rule 83 can match eol */
 YY_RULE_SETUP
-#line 543 "scanner.l"
+#line 538 "scanner.l"
 {
 	count_lines (yytext);
 	return INVALID_KEY;
@@ -2308,7 +2303,7 @@ YY_RULE_SETUP
 case 84:
 /* rule 84 can match eol */
 YY_RULE_SETUP
-#line 548 "scanner.l"
+#line 543 "scanner.l"
 {
 	count_lines (yytext);
 	return UPON_ENVIRONMENT_NAME;
@@ -2317,7 +2312,7 @@ YY_RULE_SETUP
 case 85:
 /* rule 85 can match eol */
 YY_RULE_SETUP
-#line 553 "scanner.l"
+#line 548 "scanner.l"
 {
 	count_lines (yytext);
 	return UPON_ENVIRONMENT_VALUE;
@@ -2326,7 +2321,7 @@ YY_RULE_SETUP
 case 86:
 /* rule 86 can match eol */
 YY_RULE_SETUP
-#line 558 "scanner.l"
+#line 553 "scanner.l"
 {
 	count_lines (yytext);
 	return UPON_ARGUMENT_NUMBER;
@@ -2335,24 +2330,24 @@ YY_RULE_SETUP
 case 87:
 /* rule 87 can match eol */
 YY_RULE_SETUP
-#line 563 "scanner.l"
+#line 558 "scanner.l"
 {
 	count_lines (yytext);
 	return UPON_COMMAND_LINE;
 }
 	YY_BREAK
 case 88:
-#line 569 "scanner.l"
+#line 564 "scanner.l"
 case 89:
 YY_RULE_SETUP
-#line 569 "scanner.l"
+#line 564 "scanner.l"
 {
 	/* Ignore */
 }
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 573 "scanner.l"
+#line 568 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-1");
 	SET_LOCATION (yylval);
@@ -2361,7 +2356,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-#line 579 "scanner.l"
+#line 574 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-2");
 	SET_LOCATION (yylval);
@@ -2370,7 +2365,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-#line 585 "scanner.l"
+#line 580 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-3");
 	SET_LOCATION (yylval);
@@ -2379,7 +2374,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-#line 591 "scanner.l"
+#line 586 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-4");
 	SET_LOCATION (yylval);
@@ -2388,7 +2383,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-#line 597 "scanner.l"
+#line 592 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-5");
 	SET_LOCATION (yylval);
@@ -2397,7 +2392,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-#line 603 "scanner.l"
+#line 598 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-6");
 	SET_LOCATION (yylval);
@@ -2406,7 +2401,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
-#line 609 "scanner.l"
+#line 604 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-7");
 	SET_LOCATION (yylval);
@@ -2415,7 +2410,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
-#line 615 "scanner.l"
+#line 610 "scanner.l"
 {
 	yylval = cb_build_reference ("SWITCH-8");
 	SET_LOCATION (yylval);
@@ -2425,7 +2420,7 @@ YY_RULE_SETUP
 case 98:
 /* rule 98 can match eol */
 YY_RULE_SETUP
-#line 621 "scanner.l"
+#line 616 "scanner.l"
 {
 	count_lines (yytext);
 	return WHEN_OTHER;
@@ -2433,7 +2428,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 99:
 YY_RULE_SETUP
-#line 627 "scanner.l"
+#line 622 "scanner.l"
 {
 
 	struct cb_word			*word;
@@ -2567,7 +2562,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 100:
 YY_RULE_SETUP
-#line 757 "scanner.l"
+#line 752 "scanner.l"
 {
 	yylval = NULL;
 	return LE;
@@ -2575,7 +2570,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 101:
 YY_RULE_SETUP
-#line 762 "scanner.l"
+#line 757 "scanner.l"
 {
 	yylval = NULL;
 	return GE;
@@ -2583,7 +2578,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 102:
 YY_RULE_SETUP
-#line 767 "scanner.l"
+#line 762 "scanner.l"
 {
 	yylval = NULL;
 	return NE;
@@ -2591,7 +2586,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 103:
 YY_RULE_SETUP
-#line 772 "scanner.l"
+#line 767 "scanner.l"
 {
 	yylval = NULL;
 	return '^';
@@ -2599,7 +2594,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 104:
 YY_RULE_SETUP
-#line 777 "scanner.l"
+#line 772 "scanner.l"
 {
 	last_token_is_dot = 1;
 	yylval = NULL;
@@ -2608,7 +2603,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
-#line 783 "scanner.l"
+#line 778 "scanner.l"
 {
 	yylval = NULL;
 	return yytext[0];
@@ -2617,14 +2612,14 @@ YY_RULE_SETUP
 
 case 106:
 YY_RULE_SETUP
-#line 790 "scanner.l"
+#line 785 "scanner.l"
 {
 	/* ignore */
   }
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 793 "scanner.l"
+#line 788 "scanner.l"
 {
 	BEGIN INITIAL;
 	return scan_picture (yytext);
@@ -2634,7 +2629,7 @@ YY_RULE_SETUP
 
 case 108:
 YY_RULE_SETUP
-#line 800 "scanner.l"
+#line 795 "scanner.l"
 {
 	BEGIN INITIAL;
 	yylval = cb_build_reference (yytext);
@@ -2683,7 +2678,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 109:
 YY_RULE_SETUP
-#line 845 "scanner.l"
+#line 840 "scanner.l"
 {
 	yylval = NULL;
 	return yytext[0];
@@ -2696,7 +2691,7 @@ case YY_STATE_EOF(DECIMAL_IS_COMMA):
 case YY_STATE_EOF(PICTURE_STATE):
 case YY_STATE_EOF(FUNCTION_STATE):
 case YY_STATE_EOF(ESQL_STATE):
-#line 851 "scanner.l"
+#line 846 "scanner.l"
 {
 	last_token_is_dot = 0;
 	integer_is_label = 0;
@@ -2709,10 +2704,10 @@ case YY_STATE_EOF(ESQL_STATE):
 	YY_BREAK
 case 110:
 YY_RULE_SETUP
-#line 861 "scanner.l"
+#line 856 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 2716 "scanner.c"
+#line 2711 "scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3719,7 +3714,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 861 "scanner.l"
+#line 856 "scanner.l"
 
 
 static int

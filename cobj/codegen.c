@@ -3715,15 +3715,16 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   joutput("}");
 }
 
-/* 先頭の「空白だけの行」(改行を含む whitespace の連続) を取り除いた
- * SQL 先頭ポインタを返す。改行を含まない先頭空白 (= 1 行目に意味のある
- * インデントがある場合) はそのまま残す。
- * これにより:
- *   - EXEC SQL 直後の改行・インデント
- *   - DECLARE ... CURSOR FOR <SELECT> でトークン間空白が
- *     sqlbody 先頭に蓄積したケース
- * の双方で「最初の意味のある行」までスキップできる。 */
-static const char *sql_skip_leading_blank_lines(const char *sql) {
+/* SQL 文字列の先頭の「空白だけの行」と末尾の空白を取り除いた有効範囲を
+ * 返す。戻り値が start、*end_out が end (exclusive) ポインタ。
+ * - 先頭: 改行を含む whitespace の連続のうち、最後の改行までを進める。
+ *   改行を含まない先頭空白 (= 1 行目に意味のあるインデントがある場合) は
+ *   そのまま残し、共通インデント計算側に委ねる。
+ * - 末尾: 文末側のスペース・タブ・改行 (空白だけの行を含む) を落とす。
+ * これにより EXEC SQL / END-EXEC 周囲の余分な改行・インデント・末尾空白を
+ * codegen 側で一括して吸収する。 */
+static const char *sql_strip_outer_blanks(const char *sql,
+                                          const char **end_out) {
   size_t i = 0;
   size_t after_last_newline = 0;
   int saw_newline = 0;
@@ -3734,25 +3735,26 @@ static const char *sql_skip_leading_blank_lines(const char *sql) {
     }
     i++;
   }
-  if (saw_newline) {
-    return sql + after_last_newline;
+  const char *start = saw_newline ? sql + after_last_newline : sql;
+  const char *end = sql + strlen(sql);
+  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' ||
+                         end[-1] == '\r')) {
+    end--;
   }
-  return sql;
+  *end_out = end;
+  return start;
 }
 
-/* SQL 文字列を Java 文字列リテラルとして出力する。
- * 字句解析・構文解析の段階では空白除去を行わず、入力された SQL は
- * COBOL ソース上の改行・先頭空白をすべて保持している。整形はここで完結させる。
- *
- * 整形手順:
- *   (a) 先頭の「空白だけの行」を取り除く。
- *   (b) 残った各行 (シングルクォート文字列リテラル内に始まる行を除く) の
- *       共通先頭空白を計算し、全行から差し引く。文字列リテラル内に始まる
- *       行 ('foo\n   bar' の "   bar" など) は SQL の値の一部なので削らない。
- *       シングルクォートのトグルで in_quote 状態を追跡する。SQL の ''
- *       エスケープは 2 回連続のトグルで自然に in_quote=1 へ戻る。 */
+/* SQL 文字列を Java 文字列リテラルとして出力する。整形は本関数で完結する
+ * (lex/yacc 段階での空白除去には依存しない)。
+ *   (a) 先頭の空白行・末尾の空白を落として有効範囲 [sql, end) を得る。
+ *   (b) 各行 (シングルクォート文字列リテラル内に始まる行を除く) の共通
+ *       先頭空白を計算し、全行から差し引く。リテラル内に始まる行は SQL の
+ *       値の一部なので削らない。シングルクォートのトグルで in_quote 状態を
+ *       追跡する。SQL の '' エスケープは 2 連続トグルで in_quote=1 に戻る。 */
 static void joutput_sql_string(const char *sql) {
-  sql = sql_skip_leading_blank_lines(sql);
+  const char *end;
+  sql = sql_strip_outer_blanks(sql, &end);
 
   /* (b) Pass 1: 共通インデント (= 各行の最小先頭空白) を求める。
    * 文字列リテラル内に始まる行・全空白行は候補から除外。 */
@@ -3762,13 +3764,13 @@ static void joutput_sql_string(const char *sql) {
   int line_ws = 0;
   int line_has_content = 0;
   for (const char *p = sql;; p++) {
-    if (*p == '\n' || *p == '\0') {
+    if (p == end || *p == '\n') {
       if (!line_start_in_quote && line_has_content) {
         if (min_indent < 0 || line_ws < min_indent) {
           min_indent = line_ws;
         }
       }
-      if (*p == '\0') {
+      if (p == end) {
         break;
       }
       /* 次行の開始状態は、今の \n 時点の in_quote */
@@ -3798,7 +3800,7 @@ static void joutput_sql_string(const char *sql) {
   int line_in_quote = 0;
   int to_skip = min_indent;
   joutput("\"");
-  for (const char *p = sql; *p; p++) {
+  for (const char *p = sql; p < end; p++) {
     if (to_skip > 0 && !line_in_quote && (*p == ' ' || *p == '\t')) {
       to_skip--;
       continue;
@@ -3837,13 +3839,14 @@ static void joutput_sql_string(const char *sql) {
 }
 
 /* SQL 文字列リテラルを引数として出力する。
- * 先頭の「空白だけの行」を取り除いたうえで、残った本文が複数行か単一行かを
- * 判定する。単一行 SQL は呼び出し元と同じインデント位置の独立行で出力する。
- * 複数行 SQL は ",\n<+2 段インデント>" を挟み、joutput_sql_string が
- * 共通インデントを差し引きながら出力する。 */
+ * 先頭の空白行・末尾の空白を取り除いた有効範囲 [body, end) を取得したうえで、
+ * 残った本文が複数行か単一行かを判定する。単一行 SQL は呼び出し元と同じ
+ * インデント位置の独立行で出力する。複数行 SQL は ",\n<+2 段インデント>"
+ * を挟み、joutput_sql_string が共通インデントを差し引きながら出力する。 */
 static void joutput_sql_string_arg(const char *sql) {
-  const char *body = sql_skip_leading_blank_lines(sql);
-  if (strchr(body, '\n')) {
+  const char *end;
+  const char *body = sql_strip_outer_blanks(sql, &end);
+  if (memchr(body, '\n', (size_t)(end - body))) {
     joutput(",\n");
     joutput_indent_level += 2;
     joutput_prefix();
@@ -3851,7 +3854,7 @@ static void joutput_sql_string_arg(const char *sql) {
     joutput_sql_string(body);
   } else {
     /* 単一行: 先頭スペース/タブも落としてフラットに出力する。 */
-    while (*body == ' ' || *body == '\t') {
+    while (body < end && (*body == ' ' || *body == '\t')) {
       body++;
     }
     joutput(",\n");
