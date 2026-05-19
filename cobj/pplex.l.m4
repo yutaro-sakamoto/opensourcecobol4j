@@ -195,18 +195,20 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"BEGIN"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	/* No-op: accepted for backward compatibility */
-	fputc ('\n', ppout);
+	/* No-op: accepted for backward compatibility.
+	 * 後続のソース改行は generic [,;]?\n ルールが echo してくれるため、
+	 * ここで '\n' を emit すると 1 行分のずれが生じる (= 後続の
+	 * cb_source_line が +1 され、生成 Java のコメント行番号がずれる)。 */
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"END"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	/* No-op: accepted for backward compatibility */
-	fputc ('\n', ppout);
+	/* No-op: accepted for backward compatibility.
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	/* No-op: SQLCA is injected by the compiler */
-	fputc ('\n', ppout);
+	/* No-op: SQLCA is injected by the compiler.
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {

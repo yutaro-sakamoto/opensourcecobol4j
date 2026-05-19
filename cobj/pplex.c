@@ -2325,29 +2325,31 @@ case 17:
 YY_RULE_SETUP
 #line 182 "pplex.l"
 {
-	/* No-op: accepted for backward compatibility */
-	fputc ('\n', ppout);
+	/* No-op: accepted for backward compatibility.
+	 * 後続のソース改行は generic [,;]?\n ルールが echo してくれるため、
+	 * ここで '\n' を emit すると 1 行分のずれが生じる (= 後続の
+	 * cb_source_line が +1 され、生成 Java のコメント行番号がずれる)。 */
 }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 187 "pplex.l"
+#line 189 "pplex.l"
 {
-	/* No-op: accepted for backward compatibility */
-	fputc ('\n', ppout);
+	/* No-op: accepted for backward compatibility.
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
 }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 192 "pplex.l"
+#line 194 "pplex.l"
 {
-	/* No-op: SQLCA is injected by the compiler */
-	fputc ('\n', ppout);
+	/* No-op: SQLCA is injected by the compiler.
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
 }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 197 "pplex.l"
+#line 199 "pplex.l"
 {
 	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
 	BEGIN ESQL_INCLUDE_STATE;
@@ -2355,7 +2357,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 202 "pplex.l"
+#line 204 "pplex.l"
 {
 	/* Pass through EXEC SQL blocks to the main scanner */
 	ppecho ("EXEC SQL");
@@ -2366,129 +2368,129 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 210 "pplex.l"
+#line 212 "pplex.l"
 { BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 211 "pplex.l"
+#line 213 "pplex.l"
 { BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 212 "pplex.l"
+#line 214 "pplex.l"
 { BEGIN COPY_STATE; return REPLACE; }
 	YY_BREAK
 
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 215 "pplex.l"
+#line 217 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 216 "pplex.l"
+#line 218 "pplex.l"
 { /* ignore */ }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 217 "pplex.l"
+#line 219 "pplex.l"
 { BEGIN INITIAL; return '.'; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 218 "pplex.l"
+#line 220 "pplex.l"
 { BEGIN PSEUDO_STATE; return EQEQ; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 219 "pplex.l"
+#line 221 "pplex.l"
 { return '('; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 220 "pplex.l"
+#line 222 "pplex.l"
 { return ')'; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 221 "pplex.l"
+#line 223 "pplex.l"
 { return BY; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 222 "pplex.l"
+#line 224 "pplex.l"
 { return IN; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 223 "pplex.l"
+#line 225 "pplex.l"
 { return OF; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 224 "pplex.l"
+#line 226 "pplex.l"
 { return OFF; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 225 "pplex.l"
+#line 227 "pplex.l"
 { return SUPPRESS; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 226 "pplex.l"
+#line 228 "pplex.l"
 { return PRINTING; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 227 "pplex.l"
+#line 229 "pplex.l"
 { return REPLACING; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 228 "pplex.l"
+#line 230 "pplex.l"
 { return LEADING; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 229 "pplex.l"
+#line 231 "pplex.l"
 { return TRAILING; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 230 "pplex.l"
+#line 232 "pplex.l"
 { return JOINING; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 231 "pplex.l"
+#line 233 "pplex.l"
 { return AS; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 232 "pplex.l"
+#line 234 "pplex.l"
 { return PREFIX; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 233 "pplex.l"
+#line 235 "pplex.l"
 { return SUFFIX; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 234 "pplex.l"
+#line 236 "pplex.l"
 { return PREFIXING; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 235 "pplex.l"
+#line 237 "pplex.l"
 { return SUFFIXING; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 236 "pplex.l"
+#line 238 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2496,12 +2498,12 @@ YY_RULE_SETUP
 			  pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 case 47:
-#line 242 "pplex.l"
+#line 244 "pplex.l"
 case 48:
-#line 243 "pplex.l"
+#line 245 "pplex.l"
 case 49:
 YY_RULE_SETUP
-#line 243 "pplex.l"
+#line 245 "pplex.l"
 { pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 
@@ -2509,22 +2511,22 @@ YY_RULE_SETUP
 case 50:
 /* rule 50 can match eol */
 YY_RULE_SETUP
-#line 247 "pplex.l"
+#line 249 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 248 "pplex.l"
+#line 250 "pplex.l"
 { pplval.s = strdup (" "); return TOKEN; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 249 "pplex.l"
+#line 251 "pplex.l"
 { BEGIN COPY_STATE; return EQEQ; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 250 "pplex.l"
+#line 252 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2532,12 +2534,12 @@ YY_RULE_SETUP
 			  pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 case 54:
-#line 256 "pplex.l"
+#line 258 "pplex.l"
 case 55:
-#line 257 "pplex.l"
+#line 259 "pplex.l"
 case 56:
 YY_RULE_SETUP
-#line 257 "pplex.l"
+#line 259 "pplex.l"
 { pplval.s = strdup (yytext); return TOKEN; }
 	YY_BREAK
 
@@ -2545,12 +2547,12 @@ YY_RULE_SETUP
 case 57:
 /* rule 57 can match eol */
 YY_RULE_SETUP
-#line 261 "pplex.l"
+#line 263 "pplex.l"
 { if (yytext[0] == '\n') cb_source_line++; }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 262 "pplex.l"
+#line 264 "pplex.l"
 {
 	BEGIN INITIAL;
 	if (esql_include_fname) {
@@ -2563,7 +2565,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 271 "pplex.l"
+#line 273 "pplex.l"
 {
 	/* Save the filename; ppcopy is deferred until END-EXEC */
 	if (!esql_include_fname) {
@@ -2575,7 +2577,7 @@ YY_RULE_SETUP
 
 case 60:
 YY_RULE_SETUP
-#line 280 "pplex.l"
+#line 282 "pplex.l"
 {
 	ppecho (" END-EXEC.");
 	esql_passthru_in_quote = 0;
@@ -2585,7 +2587,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 286 "pplex.l"
+#line 288 "pplex.l"
 {
 	ppecho (" END-EXEC");
 	esql_passthru_in_quote = 0;
@@ -2596,7 +2598,7 @@ YY_RULE_SETUP
 case 62:
 /* rule 62 can match eol */
 YY_RULE_SETUP
-#line 292 "pplex.l"
+#line 294 "pplex.l"
 {
 	if (!esql_passthru_in_quote) {
 		ppecho ("\n");
@@ -2606,7 +2608,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-#line 298 "pplex.l"
+#line 300 "pplex.l"
 {
 	/* Escaped single quote inside SQL literal: stay in quote */
 	ppecho ("''");
@@ -2614,7 +2616,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 302 "pplex.l"
+#line 304 "pplex.l"
 {
 	if (yytext[0] == '\'') {
 		esql_passthru_in_quote = !esql_passthru_in_quote;
@@ -2626,33 +2628,33 @@ YY_RULE_SETUP
 
 case 65:
 YY_RULE_SETUP
-#line 311 "pplex.l"
+#line 313 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-#line 312 "pplex.l"
+#line 314 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return COPY; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 313 "pplex.l"
+#line 315 "pplex.l"
 { suppress_echo = 0; BEGIN COPY_STATE; return REPLACE; }
 	YY_BREAK
 case 68:
 /* rule 68 can match eol */
 YY_RULE_SETUP
-#line 314 "pplex.l"
+#line 316 "pplex.l"
 { ECHO; cb_source_line++; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-#line 315 "pplex.l"
+#line 317 "pplex.l"
 { ppecho (" "); }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 316 "pplex.l"
+#line 318 "pplex.l"
 {
 	BEGIN INITIAL;
 	if (!strcasecmp (yytext, "FILLER")) {
@@ -2668,18 +2670,18 @@ YY_RULE_SETUP
   }
 	YY_BREAK
 case 71:
-#line 330 "pplex.l"
+#line 332 "pplex.l"
 case 72:
-#line 331 "pplex.l"
+#line 333 "pplex.l"
 case 73:
 YY_RULE_SETUP
-#line 331 "pplex.l"
+#line 333 "pplex.l"
 { suppress_echo = 0; BEGIN INITIAL; ppecho (yytext); }
 	YY_BREAK
 
 case 74:
 YY_RULE_SETUP
-#line 334 "pplex.l"
+#line 336 "pplex.l"
 {
 	suppress_echo = (omit_data_redef_name) ? 1 : 0;
 	ppecho (yytext);
@@ -2690,20 +2692,20 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 75:
-#line 344 "pplex.l"
-case 76:
-#line 345 "pplex.l"
-case 77:
 #line 346 "pplex.l"
-case 78:
+case 76:
 #line 347 "pplex.l"
-case 79:
+case 77:
 #line 348 "pplex.l"
-case 80:
+case 78:
 #line 349 "pplex.l"
+case 79:
+#line 350 "pplex.l"
+case 80:
+#line 351 "pplex.l"
 case 81:
 YY_RULE_SETUP
-#line 349 "pplex.l"
+#line 351 "pplex.l"
 {
 	/* these words are treated as comments */
 	if (cb_verify (cb_author_paragraph, yytext)) {
@@ -2721,14 +2723,14 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 case 82:
-#line 366 "pplex.l"
-case 83:
-#line 367 "pplex.l"
-case 84:
 #line 368 "pplex.l"
+case 83:
+#line 369 "pplex.l"
+case 84:
+#line 370 "pplex.l"
 case 85:
 YY_RULE_SETUP
-#line 368 "pplex.l"
+#line 370 "pplex.l"
 {
 	/* these words are comments in IBM COBOL */
 	if (cb_verify (cb_eject_statement, yytext)) {
@@ -2741,17 +2743,17 @@ YY_RULE_SETUP
 case 86:
 /* rule 86 can match eol */
 YY_RULE_SETUP
-#line 377 "pplex.l"
+#line 379 "pplex.l"
 { ppecho ("\n"); cb_source_line++; }
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-#line 379 "pplex.l"
+#line 381 "pplex.l"
 { ppecho (" "); }
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-#line 381 "pplex.l"
+#line 383 "pplex.l"
 {
 	if (inside_bracket) {
 		ppecho (", ");
@@ -2762,7 +2764,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-#line 389 "pplex.l"
+#line 391 "pplex.l"
 {
 	inside_bracket++;
 	ppecho ("(");
@@ -2770,7 +2772,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-#line 394 "pplex.l"
+#line 396 "pplex.l"
 {
 	if (inside_bracket) {
 		inside_bracket--;
@@ -2780,50 +2782,50 @@ YY_RULE_SETUP
 	YY_BREAK
 case 91:
 /* rule 91 can match eol */
-#line 402 "pplex.l"
+#line 404 "pplex.l"
 case 92:
 /* rule 92 can match eol */
-#line 403 "pplex.l"
+#line 405 "pplex.l"
 case 93:
 /* rule 93 can match eol */
-#line 404 "pplex.l"
+#line 406 "pplex.l"
 case 94:
 /* rule 94 can match eol */
-#line 405 "pplex.l"
+#line 407 "pplex.l"
 case 95:
 /* rule 95 can match eol */
-#line 406 "pplex.l"
+#line 408 "pplex.l"
 case 96:
 /* rule 96 can match eol */
-#line 407 "pplex.l"
+#line 409 "pplex.l"
 case 97:
 /* rule 97 can match eol */
-#line 408 "pplex.l"
+#line 410 "pplex.l"
 case 98:
 /* rule 98 can match eol */
-#line 409 "pplex.l"
+#line 411 "pplex.l"
 case 99:
 /* rule 99 can match eol */
-#line 410 "pplex.l"
+#line 412 "pplex.l"
 case 100:
 /* rule 100 can match eol */
-#line 411 "pplex.l"
+#line 413 "pplex.l"
 case 101:
 /* rule 101 can match eol */
-#line 412 "pplex.l"
+#line 414 "pplex.l"
 case 102:
 /* rule 102 can match eol */
-#line 413 "pplex.l"
+#line 415 "pplex.l"
 case 103:
 /* rule 103 can match eol */
-#line 414 "pplex.l"
+#line 416 "pplex.l"
 case 104:
 /* rule 104 can match eol */
-#line 415 "pplex.l"
+#line 417 "pplex.l"
 case 105:
 /* rule 105 can match eol */
 YY_RULE_SETUP
-#line 415 "pplex.l"
+#line 417 "pplex.l"
 {
 	/* each numeric is not a level-number */
 	char *p, *pcrnt;
@@ -2848,7 +2850,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-#line 437 "pplex.l"
+#line 439 "pplex.l"
 {
 	char *p = yytext;
 	cobc_mbspc2ascii (yytext);
@@ -2867,7 +2869,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-#line 453 "pplex.l"
+#line 455 "pplex.l"
 {
 	ppecho (yytext);
 	return yytext[0];
@@ -2875,7 +2877,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
-#line 458 "pplex.l"
+#line 460 "pplex.l"
 {
 #ifdef	I18N_UTF8
 			  convert_ucs_hyphen_minus (yytext);
@@ -2883,12 +2885,12 @@ YY_RULE_SETUP
 			  ppecho (yytext); }
 	YY_BREAK
 case 109:
-#line 464 "pplex.l"
+#line 466 "pplex.l"
 case 110:
-#line 465 "pplex.l"
+#line 467 "pplex.l"
 case 111:
 YY_RULE_SETUP
-#line 465 "pplex.l"
+#line 467 "pplex.l"
 { ppecho (yytext); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
@@ -2898,7 +2900,7 @@ case YY_STATE_EOF(PSEUDO_STATE):
 case YY_STATE_EOF(DATANAME_JOIN_STATE):
 case YY_STATE_EOF(ESQL_PASSTHRU_STATE):
 case YY_STATE_EOF(ESQL_INCLUDE_STATE):
-#line 467 "pplex.l"
+#line 469 "pplex.l"
 {
 	struct copy_info *p;
 
@@ -2942,10 +2944,10 @@ case YY_STATE_EOF(ESQL_INCLUDE_STATE):
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
-#line 508 "pplex.l"
+#line 510 "pplex.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 2949 "pplex.c"
+#line 2951 "pplex.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -3952,7 +3954,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 508 "pplex.l"
+#line 510 "pplex.l"
 
 
 void
