@@ -7338,6 +7338,12 @@ exec_sql_statement:
 		esql_inject_sqlca ();
 	}
 	BEGIN_STATEMENT ("EXEC SQL", 0);
+	/* BEGIN_STATEMENT は cb_source_line (= END-EXEC 行) を入れる。
+	   $1 のリテラルには scanner が EXEC SQL 開始行を入れているので、
+	   そちらで上書きして「コメントは EXEC SQL の行を指す」ようにする。 */
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
 	sql_node = cb_parse_exec_sql ((char *)CB_LITERAL ($1)->data);
 	if (sql_node != cb_error_node) {
 		current_statement->body =

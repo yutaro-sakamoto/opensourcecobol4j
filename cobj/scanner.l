@@ -70,6 +70,11 @@ static char			*esql_buff = NULL;
 static size_t			esql_buff_len;
 static size_t			esql_buff_capacity;
 static int			esql_in_quote = 0;
+/* "EXEC SQL" を検出した時点での cb_source_line。
+ * END-EXEC で EXEC_SQL_STATEMENT トークンを emit する際の location に使う。
+ * これがないと、END-EXEC 行 (= ブロック末尾) が報告されてしまい、生成 Java の
+ * コメントが COBOL 上の EXEC SQL 行ではなく数行後の END-EXEC を指す。 */
+static int			esql_start_line = 0;
 
 static int read_literal (int mark, enum cb_category);
 static int scan_x (char *text);
@@ -122,7 +127,9 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	esql_in_quote = 0;
 	esql_buff[esql_buff_len] = '\0';
 	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
-	SET_LOCATION (yylval);
+	/* location は END-EXEC 行ではなく EXEC SQL 開始行を指すようにする */
+	yylval->source_file = (unsigned char *)cb_source_file;
+	yylval->source_line = esql_start_line;
 	return EXEC_SQL_STATEMENT;
   }
   \n {
@@ -344,7 +351,10 @@ H\"[^\"\n]*\" {
 }
 
 "EXEC"[ \t\n]+"SQL" {
-	/* Enter EXEC SQL state and collect SQL text */
+	/* Enter EXEC SQL state and collect SQL text.
+	 * EXEC SQL の開始行を保存しておき、END-EXEC で emit する
+	 * EXEC_SQL_STATEMENT トークンの location として使う。 */
+	esql_start_line = cb_source_line;
 	count_lines (yytext);
 	if (!esql_buff) {
 		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
