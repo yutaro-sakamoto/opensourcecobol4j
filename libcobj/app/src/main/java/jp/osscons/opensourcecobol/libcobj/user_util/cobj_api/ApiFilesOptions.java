@@ -1,6 +1,5 @@
 package jp.osscons.opensourcecobol.libcobj.user_util.cobj_api;
 
-import jp.osscons.opensourcecobol.libcobj.Const;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -47,7 +46,7 @@ class ApiFilesOptions {
                             System.exit(0);
                             break;
                         case "v":
-                            System.out.println(Const.version);
+                            System.out.println("1.1.20");
                             System.exit(0);
                             break;
                         case "java-package":
