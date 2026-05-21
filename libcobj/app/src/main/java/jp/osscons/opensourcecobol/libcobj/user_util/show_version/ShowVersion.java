@@ -24,6 +24,12 @@ import jp.osscons.opensourcecobol.libcobj.Const;
 /** Prints the version of libcobj.jar. */
 public class ShowVersion {
 
+    /**
+     * Entry point of the libcobj-version command. Prints the version of libcobj.jar to standard
+     * output.
+     *
+     * @param args command-line arguments (unused)
+     */
     public static void main(String[] args) {
         System.out.println("libcobj " + Const.version);
     }
