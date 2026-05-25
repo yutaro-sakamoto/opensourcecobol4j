@@ -851,13 +851,6 @@ public class CobolIndexedFile extends CobolFile {
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
-            IndexedCursor oldCursor = this.cursor.get();
-            Optional<IndexedCursor> newCursor = oldCursor.reloadCursor();
-            if (!newCursor.isPresent()) {
-                this.cursor = Optional.of(oldCursor);
-            } else {
-                this.cursor = newCursor;
-            }
         }
 
         if (!this.cursor.isPresent()) {

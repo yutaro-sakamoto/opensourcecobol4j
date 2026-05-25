@@ -102,10 +102,6 @@ final class IndexedCursor {
         return true;
     }
 
-    Optional<IndexedCursor> reloadCursor() {
-        return Optional.of(this);
-    }
-
     void setComparator(int comparator) {
         this.comparator = comparator;
     }
