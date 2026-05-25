@@ -33,7 +33,6 @@ import org.sqlite.SQLiteErrorCode;
 /** TODO: 準備中 */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
-    private boolean updateWhileReading = false;
     private boolean indexedFirstRead = true;
     private boolean callStart = false;
     private boolean commitOnModification = true;
@@ -510,7 +509,6 @@ public class CobolIndexedFile extends CobolFile {
         p.record_locked = false;
 
         p.key = DBT_SET(this.keys[0].getField());
-        this.updateWhileReading = false;
         this.indexedFirstRead = true;
         this.callStart = false;
 
@@ -846,11 +844,8 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
             this.cursor.get().moveToLast();
-        } else if (this.updateWhileReading) {
-            this.updateWhileReading = false;
-            if (!this.cursor.isPresent()) {
-                return COB_STATUS_30_PERMANENT_ERROR;
-            }
+        } else if (!this.cursor.isPresent()) {
+            return COB_STATUS_30_PERMANENT_ERROR;
         }
 
         if (!this.cursor.isPresent()) {
@@ -1054,8 +1049,6 @@ public class CobolIndexedFile extends CobolFile {
                 return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
             }
         }
-
-        this.updateWhileReading = true;
 
         return returnWith(p, closeCursor, 0, COB_STATUS_00_SUCCESS);
     }
@@ -1285,9 +1278,6 @@ public class CobolIndexedFile extends CobolFile {
                 return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
             }
         }
-
-        this.updateWhileReading = true;
-
         return COB_STATUS_00_SUCCESS;
     }
 
