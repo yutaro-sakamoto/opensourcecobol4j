@@ -557,8 +557,6 @@ public class CobolIndexedFile extends CobolFile {
     public int close_(int opt) {
         IndexedFile p = this.filei;
 
-        this.closeCursor();
-
         previousLockedRecordKey = null;
 
         try {
@@ -858,7 +856,6 @@ public class CobolIndexedFile extends CobolFile {
             if (!newCursor.isPresent()) {
                 this.cursor = Optional.of(oldCursor);
             } else {
-                oldCursor.close();
                 this.cursor = newCursor;
             }
         }
@@ -949,14 +946,6 @@ public class CobolIndexedFile extends CobolFile {
         return COB_STATUS_00_SUCCESS;
     }
 
-    private void closeCursor() {
-        if (this.cursor != null) {
-            if (this.cursor.isPresent()) {
-                this.cursor.get().close();
-            }
-        }
-    }
-
     private boolean keyExistsInTable(IndexedFile p, int index, byte[] key) {
         String query = String.format("select * from %s where key = ?", getTableName(index));
         try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
@@ -990,7 +979,6 @@ public class CobolIndexedFile extends CobolFile {
 
     private int returnWith(IndexedFile p, boolean closeCursor, int index, int returnCode) {
         if (closeCursor) {
-            this.closeCursor();
             p.write_cursor_open = false;
         }
         return returnCode;
