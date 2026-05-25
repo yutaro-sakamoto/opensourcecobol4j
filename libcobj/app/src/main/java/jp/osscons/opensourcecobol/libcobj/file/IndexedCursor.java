@@ -143,7 +143,7 @@ final class IndexedCursor {
         }
     }
 
-    Optional<FetchResult> fetchFirstRecord() {
+    private Optional<FetchResult> fetchFirstRecord() {
         this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
 
@@ -180,7 +180,7 @@ final class IndexedCursor {
         }
     }
 
-    Optional<FetchResult> fetchLastRecord() {
+    private Optional<FetchResult> fetchLastRecord() {
         this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
 
@@ -220,7 +220,7 @@ final class IndexedCursor {
         }
     }
 
-    Optional<FetchResult> forwardNextRecord() {
+    private Optional<FetchResult> forwardNextRecord() {
         this.position = CursorPosition.IN_TABLE;
 
         final boolean isPrimaryTable = this.tableIndex == 0;
@@ -312,7 +312,7 @@ final class IndexedCursor {
         }
     }
 
-    Optional<FetchResult> backwardPrevRecord() {
+    private Optional<FetchResult> backwardPrevRecord() {
         this.position = CursorPosition.IN_TABLE;
 
         final boolean isPrimaryTable = this.tableIndex == 0;
@@ -412,7 +412,7 @@ final class IndexedCursor {
         }
     }
 
-    Optional<FetchResult> fetchRecord() {
+    private Optional<FetchResult> fetchRecord() {
         this.previousFetchResult = Optional.empty();
         this.position = CursorPosition.IN_TABLE;
 
@@ -530,7 +530,7 @@ final class IndexedCursor {
         return result;
     }
 
-    Optional<FetchResult> prev() {
+    private Optional<FetchResult> prev() {
         if (this.position == CursorPosition.BEFORE_FIRST) {
             return Optional.empty();
         }
