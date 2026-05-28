@@ -638,10 +638,13 @@ static void joutput_string_write(const unsigned char *s, int size,
   }
 }
 
-/* リテラルをJava文字列リテラルとしてインライン出力できるか判定する。
-   moveFrom(String) はバイト列を SHIFT_JIS でラウンドトリップさせるため、
-   SJIS の単バイト範囲で意味が変わらない ASCII printable に限定する。
-   空リテラル(size==0)は既存の c_N パスとの厳密な等価性を保つため除外する。 */
+/* リテラルが Java 文字列リテラル "..." として直接埋め込めるか判定する。
+   joutput_string_write の本体と同じ規則 ("、\、\n をエスケープし、それ以外の
+   バイトは生で出力。SJIS マルチバイトは追跡) で出力できる範囲を許容する。
+   - 空リテラル (size==0) は既存の c_N パスを保つため除外。
+   - CR (0x0D) は Java 文字列リテラルが行終端子を含めないため除外。
+   非ASCII (SJIS のマルチバイト等) は str_N の CobolUtil.stringToBytes("...")
+   と同じ要領で出せるので許容する。 */
 static int literal_is_inlineable_as_java_string(const unsigned char *data,
                                                 int size) {
   int i;
@@ -649,28 +652,48 @@ static int literal_is_inlineable_as_java_string(const unsigned char *data,
     return 0;
   }
   for (i = 0; i < size; i++) {
-    unsigned char c = data[i];
-    if (c < 0x20 || c > 0x7E) {
+    if (data[i] == '\r') {
       return 0;
     }
   }
   return 1;
 }
 
-/* 生のJava文字列リテラル "..." を出力する。" と \ のみエスケープする。
-   呼び出し元で literal_is_inlineable_as_java_string によりバイト列の安全性を
-   担保していることが前提。 */
+/* Java 文字列リテラル "..." を出力する。joutput_string_write の本体と同じく
+   "、\、\n だけをエスケープし、その他のバイトは生で出力する。
+   非UTF-8 (SJIS) ビルドでは output_multibyte で SJIS マルチバイトの第2バイトを
+   追跡し、第2バイトが 0x22 や 0x5c の場合に誤エスケープしないようにする。 */
 static void joutput_inline_java_string(const unsigned char *data, int size) {
   int i;
   joutput("\"");
+#ifdef I18N_UTF8
   for (i = 0; i < size; i++) {
-    unsigned char c = data[i];
+    int c = data[i];
     if (c == '"' || c == '\\') {
       joutput("\\%c", c);
+    } else if (c == '\n') {
+      joutput("\\n");
     } else {
       joutput("%c", c);
     }
   }
+#else
+  {
+    int output_multibyte = 0;
+    for (i = 0; i < size; i++) {
+      int c = data[i];
+      if (!output_multibyte && (c == '"' || c == '\\')) {
+        joutput("\\%c", c);
+      } else if (!output_multibyte && c == '\n') {
+        joutput("\\n");
+      } else {
+        joutput("%c", c);
+      }
+      output_multibyte = !output_multibyte &&
+                         ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
+    }
+  }
+#endif
   joutput("\"");
 }
 
@@ -1963,16 +1986,17 @@ static void joutput_funcall(cb_tree x) {
     joutput(".%s (", p->name);
 
     /* MOVE文の文字列リテラル可読性改善:
-       moveFrom(<alphanumeric literal>) のとき、c_N 経由ではなく Java の
-       生文字列リテラルとして直接出力する。AbstractCobolField.moveFrom(String)
-       は内部で同じ ALPHANUMERIC フィールドを生成して
-       moveFrom(AbstractCobolField) に委譲するため、c_N 経由と完全に等価で
-       任意の受け側で安全に使える。
-       ALL リテラル(l->all)、非ASCII/制御バイトは安全のため除外する。 */
+       moveFrom(<文字列リテラル>) のとき、c_N 経由ではなく Java の生文字列
+       リテラルとして直接出力する。AbstractCobolField.moveFrom(String) は
+       内部で ALPHANUMERIC フィールドを生成して moveFrom(AbstractCobolField)
+       に委譲するため、c_N (ALPHANUMERIC/NATIONAL) 経由のときと同じ
+       moveAlphanumToAlphanum 経路を通って同じ結果になる。
+       ALL リテラル(l->all)は repeat-fill 意味論があるため除外する。 */
     int inline_literal = 0;
     if (strcmp(p->name, "moveFrom") == 0 && p->argc == 2 && !p->varcnt &&
         p->argv[1] != NULL && CB_TREE_TAG(p->argv[1]) == CB_TAG_LITERAL &&
-        CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC &&
+        (CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC ||
+         CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_NATIONAL) &&
         CB_LITERAL(p->argv[1])->all == 0 &&
         literal_is_inlineable_as_java_string(
             CB_LITERAL(p->argv[1])->data, (int)CB_LITERAL(p->argv[1])->size)) {
