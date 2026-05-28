@@ -1972,8 +1972,8 @@ static void joutput_funcall(cb_tree x) {
         p->argv[1] != NULL && CB_TREE_TAG(p->argv[1]) == CB_TAG_LITERAL &&
         CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC &&
         CB_LITERAL(p->argv[1])->all == 0 &&
-        literal_is_inlineable_as_java_string(CB_LITERAL(p->argv[1])->data,
-                                             (int)CB_LITERAL(p->argv[1])->size)) {
+        literal_is_inlineable_as_java_string(
+            CB_LITERAL(p->argv[1])->data, (int)CB_LITERAL(p->argv[1])->size)) {
       inline_literal = 1;
     }
 

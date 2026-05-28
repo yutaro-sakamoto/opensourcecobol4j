@@ -5415,7 +5415,8 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
     return cb_build_method_call_3("setBytes", cb_build_cast_address(dst),
                                   cb_build_string(buff, f->size),
                                   cb_build_cast_length(dst));
-  } else if ((cat == CB_CATEGORY_ALPHANUMERIC || cat == CB_CATEGORY_ALPHABETIC) &&
+  } else if ((cat == CB_CATEGORY_ALPHANUMERIC ||
+              cat == CB_CATEGORY_ALPHABETIC) &&
              !cb_field_variable_size(f) &&
              cb_literal_is_ascii_printable(l->data, (int)l->size)) {
     /* ASCII printable な英数字リテラルの MOVE は moveFrom 経由にして、
