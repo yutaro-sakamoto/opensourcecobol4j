@@ -1965,14 +1965,12 @@ static void joutput_funcall(cb_tree x) {
     /* MOVE文の文字列リテラル可読性改善:
        moveFrom(<alphanumeric literal>) のとき、c_N 経由ではなく Java の
        生文字列リテラルとして直接出力する。AbstractCobolField.moveFrom(String)
-       は ALPHANUMERIC な受け側でのみ正しく動作する（編集付き・数値・国別字種の
-       サブクラスでは空のスタブで no-op になり結果が壊れる）。そのため
-       受け側カテゴリも ALPHANUMERIC に限定する。
-       ALL リテラル(l->all)、非ASCII/制御バイトも安全のため除外する。 */
+       は内部で同じ ALPHANUMERIC フィールドを生成して
+       moveFrom(AbstractCobolField) に委譲するため、c_N 経由と完全に等価で
+       任意の受け側で安全に使える。
+       ALL リテラル(l->all)、非ASCII/制御バイトは安全のため除外する。 */
     int inline_literal = 0;
     if (strcmp(p->name, "moveFrom") == 0 && p->argc == 2 && !p->varcnt &&
-        p->argv[0] != NULL &&
-        CB_TREE_CATEGORY(p->argv[0]) == CB_CATEGORY_ALPHANUMERIC &&
         p->argv[1] != NULL && CB_TREE_TAG(p->argv[1]) == CB_TAG_LITERAL &&
         CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC &&
         CB_LITERAL(p->argv[1])->all == 0 &&
