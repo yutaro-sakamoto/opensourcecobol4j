@@ -650,7 +650,8 @@ int cb_literal_is_java_string_inlineable(const unsigned char *data, int size) {
   if (size <= 0) {
     return 0;
   }
-  return get_string_category(data, size) != CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
+  return get_string_category(data, size) !=
+         CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
 }
 
 /* Java 文字列リテラル "..." を出力する。joutput_string_write の本体と同じく

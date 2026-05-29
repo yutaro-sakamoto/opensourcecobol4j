@@ -5405,8 +5405,9 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
        経由にして、codegen.c で Java 文字列リテラルとして直接出力させる。
        コンパイル時にパディング済みバイト列を作って setBytes するより
        生成コードが読みやすくなる。判定は codegen.c の
-       cb_literal_is_java_string_inlineable (get_string_category 基準) を共有し、
-       インラインできない物を無駄に moveFrom 経路へ流さないようにする。 */
+       cb_literal_is_java_string_inlineable (get_string_category 基準)
+       を共有し、 インラインできない物を無駄に moveFrom
+       経路へ流さないようにする。 */
     return cb_build_move_call(src, dst);
   } else if ((cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
               f->pic->scale == l->scale && !f->flag_sign_leading &&
