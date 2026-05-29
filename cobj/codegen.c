@@ -639,30 +639,28 @@ static void joutput_string_write(const unsigned char *s, int size,
 }
 
 /* リテラルが Java 文字列リテラル "..." として直接埋め込めるか判定する。
-   joutput_string_write の本体と同じ規則 ("、\、\n をエスケープし、それ以外の
-   バイトは生で出力。SJIS マルチバイトは追跡) で出力できる範囲を許容する。
+   str_N (joutput_string_write) が文字列リテラルとして出力するか、バイト配列
+   (CobolUtil.toBytes) にフォールバックするかを分けている get_string_category と
+   同じ基準を使う。CONTAINS_UNCOMMON (制御文字や不正なマルチバイト列など、
+   Java ソースの文字コードで decode → moveFrom(String) 内の getBytes で
+   再 encode する往復が無損失にならないバイト列) は除外する。
    - 空リテラル (size==0) は既存の c_N パスを保つため除外。
-   - CR (0x0D) は Java 文字列リテラルが行終端子を含めないため除外。
-   非ASCII (SJIS のマルチバイト等) は str_N の CobolUtil.stringToBytes("...")
-   と同じ要領で出せるので許容する。 */
-static int literal_is_inlineable_as_java_string(const unsigned char *data,
-                                                int size) {
-  int i;
+   この判定は typeck.c の MOVE 経路振り分けからも共有される。 */
+int cb_literal_is_java_string_inlineable(const unsigned char *data, int size) {
   if (size <= 0) {
     return 0;
   }
-  for (i = 0; i < size; i++) {
-    if (data[i] == '\r') {
-      return 0;
-    }
-  }
-  return 1;
+  return get_string_category(data, size) != CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
 }
 
 /* Java 文字列リテラル "..." を出力する。joutput_string_write の本体と同じく
    "、\、\n だけをエスケープし、その他のバイトは生で出力する。
    非UTF-8 (SJIS) ビルドでは output_multibyte で SJIS マルチバイトの第2バイトを
-   追跡し、第2バイトが 0x22 や 0x5c の場合に誤エスケープしないようにする。 */
+   追跡し、第2バイトが 0x22 や 0x5c の場合に誤エスケープしないようにする。
+   呼び出し側 (cb_literal_is_java_string_inlineable) は get_string_category で
+   CONTAINS_UNCOMMON を弾くため LF を含むデータは渡ってこないが、
+   joutput_string_write の文字列リテラル分岐と規則を揃える意味で \n の
+   エスケープ分岐も残してある。 */
 static void joutput_inline_java_string(const unsigned char *data, int size) {
   int i;
   joutput("\"");
@@ -1998,7 +1996,7 @@ static void joutput_funcall(cb_tree x) {
         (CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_ALPHANUMERIC ||
          CB_TREE_CATEGORY(p->argv[1]) == CB_CATEGORY_NATIONAL) &&
         CB_LITERAL(p->argv[1])->all == 0 &&
-        literal_is_inlineable_as_java_string(
+        cb_literal_is_java_string_inlineable(
             CB_LITERAL(p->argv[1])->data, (int)CB_LITERAL(p->argv[1])->size)) {
       inline_literal = 1;
     }

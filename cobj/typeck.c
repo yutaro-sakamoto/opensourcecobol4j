@@ -5334,27 +5334,6 @@ static void cob_put_sign_ebcdic(unsigned char *p, const int sign) {
   /* NOT REACHED */
 }
 
-/* MOVE文の文字列リテラル可読性改善:
-   リテラルをコンパイル時にパディング済みバイト列にして setBytes
-   するのではなく、 moveFrom 経由で Java
-   文字列リテラルとして直接出力できるかを判定する。 codegen.c 側の
-   literal_is_inlineable_as_java_string と判定基準を一致させ、 既存の str_N
-   (CobolUtil.stringToBytes("...")) と同じ要領で書ける範囲を許容する (空・CR
-   含みのみ除外)。SJIS マルチバイト等の非ASCIIも codegen 側のマルチバイト
-   追跡で正しくエスケープ判定されるので許容する。 */
-static int cb_literal_is_java_string_safe(const unsigned char *data, int size) {
-  int i;
-  if (size <= 0) {
-    return 0;
-  }
-  for (i = 0; i < size; i++) {
-    if (data[i] == '\r') {
-      return 0;
-    }
-  }
-  return 1;
-}
-
 static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
   struct cb_literal *l;
   struct cb_field *f;
@@ -5421,11 +5400,13 @@ static cb_tree cb_build_move_literal(cb_tree src, cb_tree dst) {
   } else if ((cat == CB_CATEGORY_ALPHANUMERIC ||
               cat == CB_CATEGORY_ALPHABETIC) &&
              !cb_field_variable_size(f) &&
-             cb_literal_is_java_string_safe(l->data, (int)l->size)) {
-    /* ASCII printable な英数字リテラルの MOVE は moveFrom 経由にして、
-       codegen.c で Java 文字列リテラルとして直接出力させる。
+             cb_literal_is_java_string_inlineable(l->data, (int)l->size)) {
+    /* Java 文字列リテラルとして埋め込める英数字リテラルの MOVE は moveFrom
+       経由にして、codegen.c で Java 文字列リテラルとして直接出力させる。
        コンパイル時にパディング済みバイト列を作って setBytes するより
-       生成コードが読みやすくなる。 */
+       生成コードが読みやすくなる。判定は codegen.c の
+       cb_literal_is_java_string_inlineable (get_string_category 基準) を共有し、
+       インラインできない物を無駄に moveFrom 経路へ流さないようにする。 */
     return cb_build_move_call(src, dst);
   } else if ((cat == CB_CATEGORY_NUMERIC && f->usage == CB_USAGE_DISPLAY &&
               f->pic->scale == l->scale && !f->flag_sign_leading &&
