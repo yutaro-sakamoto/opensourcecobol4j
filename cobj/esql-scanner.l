@@ -242,6 +242,9 @@ COMMA ","
       esql_lval.s = strdup(yytext);
       if (esql_flag_selectcommand) {
         esql_flag_selectcommand = 0;
+        /* SELECT ... INTO 句が終わり FROM 以降は通常 SQL に戻るので、
+           WHERE 等のホスト変数を '?' 置換できるよう INTO 抑制を解除する。 */
+        esql_flag_select_into = 0;
         return ESQL_SELECTFROM;
       }
       return ESQL_TOKEN;

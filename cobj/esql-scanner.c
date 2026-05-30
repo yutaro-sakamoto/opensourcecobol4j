@@ -2343,6 +2343,9 @@ YY_RULE_SETUP
       esql_lval.s = strdup(yytext);
       if (esql_flag_selectcommand) {
         esql_flag_selectcommand = 0;
+        /* SELECT ... INTO 句が終わり FROM 以降は通常 SQL に戻るので、
+           WHERE 等のホスト変数を '?' 置換できるよう INTO 抑制を解除する。 */
+        esql_flag_select_into = 0;
         return ESQL_SELECTFROM;
       }
       return ESQL_TOKEN;
@@ -2352,7 +2355,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 253 "esql-scanner.l"
+#line 256 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2366,7 +2369,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 264 "esql-scanner.l"
+#line 267 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2382,7 +2385,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 277 "esql-scanner.l"
+#line 280 "esql-scanner.l"
 {
     if (esql_flag_insqlstring) {
       esql_lval.s = strdup(yytext);
@@ -2393,7 +2396,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 285 "esql-scanner.l"
+#line 288 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_flag_insqlstring) {
@@ -2406,7 +2409,7 @@ YY_RULE_SETUP
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 294 "esql-scanner.l"
+#line 297 "esql-scanner.l"
 {
     esql_flag_select_into = 0;
     if (strcmp(esql_commandname, "SELECT") != 0) {
@@ -2425,7 +2428,7 @@ YY_RULE_SETUP
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 309 "esql-scanner.l"
+#line 312 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     yy_push_state(WHERE_CURRENT_OF);
@@ -2434,7 +2437,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 315 "esql-scanner.l"
+#line 318 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2446,7 +2449,7 @@ case 29:
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 321 "esql-scanner.l"
+#line 324 "esql-scanner.l"
 {
     /* :VAR(...) のような添字付きホスト変数。
        直後の '(' は入力に残し、ESQL_HOSTSUB_STATE で
@@ -2461,7 +2464,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 333 "esql-scanner.l"
+#line 336 "esql-scanner.l"
 {
     if (!esql_flag_select_into) {
       esql_sqlbody_append("?");
@@ -2472,7 +2475,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 341 "esql-scanner.l"
+#line 344 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     if (esql_in_quote && esql_sqlbody_len >= 2) {
@@ -2491,7 +2494,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 357 "esql-scanner.l"
+#line 360 "esql-scanner.l"
 {
     if (strcmp(esql_commandname, "DECLARE") != 0) {
       esql_sqlbody_append(yytext);
@@ -2502,7 +2505,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 365 "esql-scanner.l"
+#line 368 "esql-scanner.l"
 {
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
@@ -2517,19 +2520,19 @@ YY_RULE_SETUP
 case 34:
 /* rule 34 can match eol */
 YY_RULE_SETUP
-#line 376 "esql-scanner.l"
+#line 379 "esql-scanner.l"
 { /* skip whitespace */ }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 377 "esql-scanner.l"
+#line 380 "esql-scanner.l"
 {
     return ESQL_HOSTSUB_LPAREN;
   }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 380 "esql-scanner.l"
+#line 383 "esql-scanner.l"
 {
     yy_pop_state();
     return ESQL_HOSTSUB_RPAREN;
@@ -2537,14 +2540,14 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 384 "esql-scanner.l"
+#line 387 "esql-scanner.l"
 {
     return ESQL_HOSTSUB_COMMA;
   }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 387 "esql-scanner.l"
+#line 390 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext);
     return ESQL_HOSTSUB_NUMBER;
@@ -2552,7 +2555,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 391 "esql-scanner.l"
+#line 394 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext);
     return ESQL_HOSTSUB_IDENT;
@@ -2564,12 +2567,12 @@ YY_RULE_SETUP
 case 40:
 /* rule 40 can match eol */
 YY_RULE_SETUP
-#line 399 "esql-scanner.l"
+#line 402 "esql-scanner.l"
 { }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 400 "esql-scanner.l"
+#line 403 "esql-scanner.l"
 {
     esql_lval.s = strdup(yytext);
     yy_pop_state();
@@ -2580,15 +2583,15 @@ YY_RULE_SETUP
 /* Fallback: skip anything unrecognized */
 case 42:
 YY_RULE_SETUP
-#line 408 "esql-scanner.l"
+#line 411 "esql-scanner.l"
 { }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 410 "esql-scanner.l"
+#line 413 "esql-scanner.l"
 ECHO;
 	YY_BREAK
-#line 2592 "esql-scanner.c"
+#line 2595 "esql-scanner.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ESQL_STATE):
 case YY_STATE_EOF(ESQL_DBNAME_STATE):
@@ -3639,7 +3642,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 410 "esql-scanner.l"
+#line 413 "esql-scanner.l"
 
 
 void esql_scanner_reset(void) {
