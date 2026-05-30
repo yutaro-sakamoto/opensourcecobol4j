@@ -101,6 +101,11 @@ static char esql_cursor_name[256];
 static char esql_prepare_name[256];
 static char esql_db_name[256];
 static int esql_conn_use_other_db;
+/* host_reference の :VAR(添字) で構築した subs を、
+   親規則の esql_add_host_var が消費するためのサイドチャネル。
+   各 host_reference の還元直後に親規則が必ず消費するので、
+   1 つの静的変数で十分。 */
+static cb_tree esql_pending_subs;
 
 void esql_parser_init(void) {
   esql_host_list = NULL;
@@ -111,10 +116,15 @@ void esql_parser_init(void) {
   memset(esql_prepare_name, 0, sizeof(esql_prepare_name));
   memset(esql_db_name, 0, sizeof(esql_db_name));
   esql_conn_use_other_db = 0;
+  esql_pending_subs = NULL;
 }
 
 static void esql_add_host_var(const char *name) {
   cb_tree ref = cb_build_reference((char *)name);
+  if (esql_pending_subs) {
+    esql_set_ref_subs(ref, esql_pending_subs);
+    esql_pending_subs = NULL;
+  }
   struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
   esql_host_list = cb_sql_host_var_list_add(esql_host_list, hv);
   esql_host_count++;
@@ -122,6 +132,10 @@ static void esql_add_host_var(const char *name) {
 
 static void esql_add_res_host_var(const char *name) {
   cb_tree ref = cb_build_reference((char *)name);
+  if (esql_pending_subs) {
+    esql_set_ref_subs(ref, esql_pending_subs);
+    esql_pending_subs = NULL;
+  }
   struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
   esql_res_host_list = cb_sql_host_var_list_add(esql_res_host_list, hv);
   esql_res_host_count++;
@@ -152,7 +166,7 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
 }
 
 
-#line 156 "esql-parser.c"
+#line 170 "esql-parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -192,47 +206,54 @@ enum yysymbol_kind_t
   YYSYMBOL_ESQL_INTO = 9,                  /* ESQL_INTO  */
   YYSYMBOL_ESQL_SELECTFROM = 10,           /* ESQL_SELECTFROM  */
   YYSYMBOL_ESQL_FOR = 11,                  /* ESQL_FOR  */
-  YYSYMBOL_ESQL_CONNECT = 12,              /* ESQL_CONNECT  */
-  YYSYMBOL_ESQL_DECLARE = 13,              /* ESQL_DECLARE  */
-  YYSYMBOL_ESQL_CURSOR = 14,               /* ESQL_CURSOR  */
-  YYSYMBOL_ESQL_OPEN = 15,                 /* ESQL_OPEN  */
-  YYSYMBOL_ESQL_CLOSE = 16,                /* ESQL_CLOSE  */
-  YYSYMBOL_ESQL_FETCH = 17,                /* ESQL_FETCH  */
-  YYSYMBOL_ESQL_PREPARE = 18,              /* ESQL_PREPARE  */
-  YYSYMBOL_ESQL_EXECUTE = 19,              /* ESQL_EXECUTE  */
-  YYSYMBOL_ESQL_FROM = 20,                 /* ESQL_FROM  */
-  YYSYMBOL_ESQL_COMMIT_WORK = 21,          /* ESQL_COMMIT_WORK  */
-  YYSYMBOL_ESQL_ROLLBACK_WORK = 22,        /* ESQL_ROLLBACK_WORK  */
-  YYSYMBOL_ESQL_IDENTIFIED_BY = 23,        /* ESQL_IDENTIFIED_BY  */
-  YYSYMBOL_ESQL_USING = 24,                /* ESQL_USING  */
-  YYSYMBOL_ESQL_AT = 25,                   /* ESQL_AT  */
-  YYSYMBOL_ESQL_WHERECURRENTOF = 26,       /* ESQL_WHERECURRENTOF  */
-  YYSYMBOL_YYACCEPT = 27,                  /* $accept  */
-  YYSYMBOL_input = 28,                     /* input  */
-  YYSYMBOL_esql_statement = 29,            /* esql_statement  */
-  YYSYMBOL_connectsql = 30,                /* connectsql  */
-  YYSYMBOL_connect_user = 31,              /* connect_user  */
-  YYSYMBOL_identified = 32,                /* identified  */
-  YYSYMBOL_using = 33,                     /* using  */
-  YYSYMBOL_disconnectsql = 34,             /* disconnectsql  */
-  YYSYMBOL_commitsql = 35,                 /* commitsql  */
-  YYSYMBOL_rollbacksql = 36,               /* rollbacksql  */
-  YYSYMBOL_declaresql = 37,                /* declaresql  */
-  YYSYMBOL_opensql = 38,                   /* opensql  */
-  YYSYMBOL_closesql = 39,                  /* closesql  */
-  YYSYMBOL_fetchsql = 40,                  /* fetchsql  */
-  YYSYMBOL_preparesql = 41,                /* preparesql  */
-  YYSYMBOL_executesql = 42,                /* executesql  */
-  YYSYMBOL_selectintosql = 43,             /* selectintosql  */
-  YYSYMBOL_othersql = 44,                  /* othersql  */
-  YYSYMBOL_otherdb = 45,                   /* otherdb  */
-  YYSYMBOL_host_references = 46,           /* host_references  */
-  YYSYMBOL_res_host_references = 47,       /* res_host_references  */
-  YYSYMBOL_host_reference = 48,            /* host_reference  */
-  YYSYMBOL_prepared_stname = 49,           /* prepared_stname  */
-  YYSYMBOL_token_list = 50,                /* token_list  */
-  YYSYMBOL_token_list_opt = 51,            /* token_list_opt  */
-  YYSYMBOL_expr = 52                       /* expr  */
+  YYSYMBOL_ESQL_HOSTSUB_NUMBER = 12,       /* ESQL_HOSTSUB_NUMBER  */
+  YYSYMBOL_ESQL_HOSTSUB_IDENT = 13,        /* ESQL_HOSTSUB_IDENT  */
+  YYSYMBOL_ESQL_HOSTSUB_LPAREN = 14,       /* ESQL_HOSTSUB_LPAREN  */
+  YYSYMBOL_ESQL_HOSTSUB_RPAREN = 15,       /* ESQL_HOSTSUB_RPAREN  */
+  YYSYMBOL_ESQL_HOSTSUB_COMMA = 16,        /* ESQL_HOSTSUB_COMMA  */
+  YYSYMBOL_ESQL_CONNECT = 17,              /* ESQL_CONNECT  */
+  YYSYMBOL_ESQL_DECLARE = 18,              /* ESQL_DECLARE  */
+  YYSYMBOL_ESQL_CURSOR = 19,               /* ESQL_CURSOR  */
+  YYSYMBOL_ESQL_OPEN = 20,                 /* ESQL_OPEN  */
+  YYSYMBOL_ESQL_CLOSE = 21,                /* ESQL_CLOSE  */
+  YYSYMBOL_ESQL_FETCH = 22,                /* ESQL_FETCH  */
+  YYSYMBOL_ESQL_PREPARE = 23,              /* ESQL_PREPARE  */
+  YYSYMBOL_ESQL_EXECUTE = 24,              /* ESQL_EXECUTE  */
+  YYSYMBOL_ESQL_FROM = 25,                 /* ESQL_FROM  */
+  YYSYMBOL_ESQL_COMMIT_WORK = 26,          /* ESQL_COMMIT_WORK  */
+  YYSYMBOL_ESQL_ROLLBACK_WORK = 27,        /* ESQL_ROLLBACK_WORK  */
+  YYSYMBOL_ESQL_IDENTIFIED_BY = 28,        /* ESQL_IDENTIFIED_BY  */
+  YYSYMBOL_ESQL_USING = 29,                /* ESQL_USING  */
+  YYSYMBOL_ESQL_AT = 30,                   /* ESQL_AT  */
+  YYSYMBOL_ESQL_WHERECURRENTOF = 31,       /* ESQL_WHERECURRENTOF  */
+  YYSYMBOL_YYACCEPT = 32,                  /* $accept  */
+  YYSYMBOL_input = 33,                     /* input  */
+  YYSYMBOL_esql_statement = 34,            /* esql_statement  */
+  YYSYMBOL_connectsql = 35,                /* connectsql  */
+  YYSYMBOL_connect_user = 36,              /* connect_user  */
+  YYSYMBOL_identified = 37,                /* identified  */
+  YYSYMBOL_using = 38,                     /* using  */
+  YYSYMBOL_disconnectsql = 39,             /* disconnectsql  */
+  YYSYMBOL_commitsql = 40,                 /* commitsql  */
+  YYSYMBOL_rollbacksql = 41,               /* rollbacksql  */
+  YYSYMBOL_declaresql = 42,                /* declaresql  */
+  YYSYMBOL_opensql = 43,                   /* opensql  */
+  YYSYMBOL_closesql = 44,                  /* closesql  */
+  YYSYMBOL_fetchsql = 45,                  /* fetchsql  */
+  YYSYMBOL_preparesql = 46,                /* preparesql  */
+  YYSYMBOL_executesql = 47,                /* executesql  */
+  YYSYMBOL_selectintosql = 48,             /* selectintosql  */
+  YYSYMBOL_othersql = 49,                  /* othersql  */
+  YYSYMBOL_otherdb = 50,                   /* otherdb  */
+  YYSYMBOL_host_references = 51,           /* host_references  */
+  YYSYMBOL_res_host_references = 52,       /* res_host_references  */
+  YYSYMBOL_host_reference = 53,            /* host_reference  */
+  YYSYMBOL_subscript_list = 54,            /* subscript_list  */
+  YYSYMBOL_subscript = 55,                 /* subscript  */
+  YYSYMBOL_prepared_stname = 56,           /* prepared_stname  */
+  YYSYMBOL_token_list = 57,                /* token_list  */
+  YYSYMBOL_token_list_opt = 58,            /* token_list_opt  */
+  YYSYMBOL_expr = 59                       /* expr  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -560,19 +581,19 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  49
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   119
+#define YYLAST   112
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  27
+#define YYNTOKENS  32
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  26
+#define YYNNTS  28
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  56
+#define YYNRULES  61
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  96
+#define YYNSTATES  104
 
 /* YYMAXUTOK -- Last valid token kind.  */
-#define YYMAXUTOK   281
+#define YYMAXUTOK   286
 
 
 /* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
@@ -614,19 +635,20 @@ static const yytype_int8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26
+      25,    26,    27,    28,    29,    30,    31
 };
 
 #if ESQL_DEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   105,   105,   109,   110,   111,   112,   113,   114,   115,
-     116,   117,   118,   119,   120,   125,   129,   132,   138,   144,
-     150,   157,   164,   170,   177,   184,   192,   196,   204,   212,
-     220,   228,   231,   238,   244,   253,   261,   262,   268,   271,
-     272,   278,   281,   282,   288,   292,   299,   300,   301,   304,
-     309,   311,   315,   316,   317,   318,   319
+       0,   123,   123,   127,   128,   129,   130,   131,   132,   133,
+     134,   135,   136,   137,   138,   143,   147,   150,   156,   162,
+     168,   175,   182,   188,   195,   202,   210,   214,   222,   230,
+     238,   246,   249,   256,   262,   271,   279,   280,   286,   289,
+     290,   296,   299,   300,   306,   310,   319,   322,   328,   331,
+     337,   344,   345,   346,   349,   354,   356,   360,   361,   362,
+     363,   364
 };
 #endif
 
@@ -645,16 +667,18 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "ESQL_SELECT",
   "ESQL_DISCONNECT", "ESQL_TOKEN", "ESQL_HOSTTOKEN", "ESQL_CURNAME",
   "ESQL_OTHERFUNC", "ESQL_INTO", "ESQL_SELECTFROM", "ESQL_FOR",
-  "ESQL_CONNECT", "ESQL_DECLARE", "ESQL_CURSOR", "ESQL_OPEN", "ESQL_CLOSE",
-  "ESQL_FETCH", "ESQL_PREPARE", "ESQL_EXECUTE", "ESQL_FROM",
-  "ESQL_COMMIT_WORK", "ESQL_ROLLBACK_WORK", "ESQL_IDENTIFIED_BY",
-  "ESQL_USING", "ESQL_AT", "ESQL_WHERECURRENTOF", "$accept", "input",
-  "esql_statement", "connectsql", "connect_user", "identified", "using",
-  "disconnectsql", "commitsql", "rollbacksql", "declaresql", "opensql",
-  "closesql", "fetchsql", "preparesql", "executesql", "selectintosql",
-  "othersql", "otherdb", "host_references", "res_host_references",
-  "host_reference", "prepared_stname", "token_list", "token_list_opt",
-  "expr", YY_NULLPTR
+  "ESQL_HOSTSUB_NUMBER", "ESQL_HOSTSUB_IDENT", "ESQL_HOSTSUB_LPAREN",
+  "ESQL_HOSTSUB_RPAREN", "ESQL_HOSTSUB_COMMA", "ESQL_CONNECT",
+  "ESQL_DECLARE", "ESQL_CURSOR", "ESQL_OPEN", "ESQL_CLOSE", "ESQL_FETCH",
+  "ESQL_PREPARE", "ESQL_EXECUTE", "ESQL_FROM", "ESQL_COMMIT_WORK",
+  "ESQL_ROLLBACK_WORK", "ESQL_IDENTIFIED_BY", "ESQL_USING", "ESQL_AT",
+  "ESQL_WHERECURRENTOF", "$accept", "input", "esql_statement",
+  "connectsql", "connect_user", "identified", "using", "disconnectsql",
+  "commitsql", "rollbacksql", "declaresql", "opensql", "closesql",
+  "fetchsql", "preparesql", "executesql", "selectintosql", "othersql",
+  "otherdb", "host_references", "res_host_references", "host_reference",
+  "subscript_list", "subscript", "prepared_stname", "token_list",
+  "token_list_opt", "expr", YY_NULLPTR
 };
 
 static const char *
@@ -664,7 +688,7 @@ yysymbol_name (yysymbol_kind_t yysymbol)
 }
 #endif
 
-#define YYPACT_NINF (-35)
+#define YYPACT_NINF (-27)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -678,16 +702,17 @@ yysymbol_name (yysymbol_kind_t yysymbol)
    STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      88,   -11,   -11,   -11,     5,   108,   108,   108,   108,    30,
-      30,   -11,   -11,    18,   -35,   -35,   -13,   -35,   -35,   -35,
-     -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,    31,   108,
-     108,   108,   -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,
-      22,   -11,   -11,   -11,   -35,   -11,   -11,   -35,   -35,   -35,
-      33,    23,   -35,   -35,    17,   -35,    35,   -35,    35,    37,
-      36,   -35,    43,    42,    39,   -35,    33,   -11,    33,    57,
-     -35,   -35,    16,    33,    33,    33,    33,   -35,   -35,     3,
-     -35,   -35,   108,   -35,    26,   -35,    28,   -35,    26,   -35,
-     108,   -35,    35,   -35,   -35,    35
+      85,   -24,   -24,   -24,    11,    67,    67,    67,    67,    26,
+      26,   -24,   -24,    50,   -27,   -27,    -7,   -27,   -27,   -27,
+     -27,   -27,   -27,   -27,   -27,   -27,   -27,   -27,     5,    67,
+      67,    67,     2,   -27,   -27,   -27,   -27,   -27,   -27,   -27,
+      33,   -24,   -24,   -24,   -27,   -24,   -24,   -27,   -27,   -27,
+      36,    25,   -27,   -27,     9,   -27,    27,   -27,    27,    16,
+      44,    30,   -27,    48,    35,    32,   -27,    36,   -24,    36,
+      55,   -27,   -27,   -27,   -27,    28,   -27,    19,    36,    36,
+      36,    36,   -27,   -27,     3,   -27,   -27,   -27,    16,    67,
+     -27,    40,   -27,    42,   -27,    40,   -27,    67,   -27,   -27,
+      27,   -27,   -27,    27
 };
 
 /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -698,29 +723,30 @@ static const yytype_int8 yydefact[] =
        0,    36,    36,    36,    36,     0,     0,     0,     0,     0,
        0,    36,    36,     0,     2,     3,    36,     4,     5,     6,
        7,     8,     9,    10,    11,    12,    13,    14,     0,     0,
-      50,     0,    44,    15,    18,    53,    52,    56,    55,    54,
-       0,    36,    36,    36,    45,    36,    36,    22,    23,     1,
-       0,     0,    17,    37,     0,    46,    51,    21,    35,     0,
-      26,    28,     0,     0,    32,    19,     0,    36,    56,     0,
-      48,    47,     0,     0,     0,     0,     0,    20,    16,    34,
-      41,    49,     0,    25,    27,    38,    29,    30,    31,    42,
-       0,    43,    24,    39,    40,    33
+      55,     0,    44,    15,    18,    58,    57,    61,    60,    59,
+       0,    36,    36,    36,    50,    36,    36,    22,    23,     1,
+       0,     0,    17,    37,     0,    51,    56,    21,    35,     0,
+       0,    26,    28,     0,     0,    32,    19,     0,    36,    61,
+       0,    53,    52,    48,    49,     0,    46,     0,     0,     0,
+       0,     0,    20,    16,    34,    41,    54,    45,     0,     0,
+      25,    27,    38,    29,    30,    31,    42,     0,    43,    47,
+      24,    39,    40,    33
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,
-     -35,   -35,   -35,   -35,   -35,   -35,   -35,   -35,    13,   -34,
-      -7,     0,    -3,   -25,   -35,    -5
+     -27,   -27,   -27,   -27,   -27,   -27,   -27,   -27,   -27,   -27,
+     -27,   -27,   -27,   -27,   -27,   -27,   -27,   -27,    23,   -14,
+       0,     6,   -27,    -8,    -3,   -26,   -27,    -5
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-       0,    13,    14,    15,    16,    51,    67,    17,    18,    19,
-      20,    21,    22,    23,    24,    25,    26,    27,    29,    84,
-      79,    70,    45,    54,    57,    55
+       0,    13,    14,    15,    16,    51,    68,    17,    18,    19,
+      20,    21,    22,    23,    24,    25,    26,    27,    29,    91,
+      84,    71,    75,    76,    45,    54,    57,    55
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -728,61 +754,63 @@ static const yytype_int8 yydefgoto[] =
    number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      40,    41,    42,    43,    34,    56,    58,    46,    89,    32,
-      50,    32,    28,    90,    28,    30,    31,    33,    49,    82,
-      35,    44,    36,    32,    47,    48,    68,    38,    39,    52,
-      28,    93,    32,    89,    32,    44,    59,    53,    35,    32,
-      36,    32,    88,    69,    37,    38,    39,    66,    72,    71,
-      65,    71,    74,    71,    60,    61,    62,    92,    63,    64,
-      73,    69,    75,    76,    81,    95,    77,    86,    80,    83,
-       0,     0,     0,    85,    80,    87,    85,     0,     0,    91,
-      78,     0,     0,     0,    94,     0,    91,    71,    94,     0,
-      71,     1,     2,     0,     0,     0,     3,     0,     0,     0,
-       4,     5,     0,     6,     7,     8,     9,    10,     0,    11,
-      12,    35,     0,    36,     0,     0,     0,    37,    38,    39
+      40,    41,    42,    43,    56,    58,    28,    46,    96,    32,
+      34,    53,    35,    97,    36,    32,    59,    32,    69,    38,
+      39,    50,    89,    28,    44,    30,    31,    33,    73,    74,
+      35,    44,    36,    32,    47,    48,    37,    38,    39,    52,
+      70,    28,    32,    87,    88,   101,    32,    96,    32,    72,
+      49,    72,    60,    72,    67,    77,    66,    79,    70,    78,
+      80,    81,    86,   100,    61,    62,    63,    95,    64,    65,
+      35,   103,    36,    82,    90,    85,    37,    38,    39,    93,
+      99,     0,     0,     0,    92,    85,    94,    92,     1,     2,
+      98,    83,     0,     3,     0,    72,     0,   102,    72,    98,
+       0,   102,     4,     5,     0,     6,     7,     8,     9,    10,
+       0,    11,    12
 };
 
 static const yytype_int8 yycheck[] =
 {
-       5,     6,     7,     8,     4,    30,    31,    10,     5,     6,
-      23,     6,    25,    10,    25,     2,     3,     4,     0,     3,
+       5,     6,     7,     8,    30,    31,    30,    10,     5,     6,
+       4,     6,     3,    10,     5,     6,    14,     6,     9,    10,
+      11,    28,     3,    30,     5,     2,     3,     4,    12,    13,
        3,     5,     5,     6,    11,    12,     9,    10,    11,    16,
-      25,     5,     6,     5,     6,     5,    14,     6,     3,     6,
-       5,     6,    76,    26,     9,    10,    11,    24,    11,    54,
-      50,    56,     9,    58,    41,    42,    43,    82,    45,    46,
-      24,    26,    20,    24,     7,    90,    66,    74,    68,    72,
-      -1,    -1,    -1,    73,    74,    75,    76,    -1,    -1,    79,
-      67,    -1,    -1,    -1,    84,    -1,    86,    92,    88,    -1,
-      95,     3,     4,    -1,    -1,    -1,     8,    -1,    -1,    -1,
-      12,    13,    -1,    15,    16,    17,    18,    19,    -1,    21,
-      22,     3,    -1,     5,    -1,    -1,    -1,     9,    10,    11
+      31,    30,     6,    15,    16,     5,     6,     5,     6,    54,
+       0,    56,    19,    58,    29,    11,    50,     9,    31,    29,
+      25,    29,     7,    89,    41,    42,    43,    81,    45,    46,
+       3,    97,     5,    67,    77,    69,     9,    10,    11,    79,
+      88,    -1,    -1,    -1,    78,    79,    80,    81,     3,     4,
+      84,    68,    -1,     8,    -1,   100,    -1,    91,   103,    93,
+      -1,    95,    17,    18,    -1,    20,    21,    22,    23,    24,
+      -1,    26,    27
 };
 
 /* YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
    state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     3,     4,     8,    12,    13,    15,    16,    17,    18,
-      19,    21,    22,    28,    29,    30,    31,    34,    35,    36,
-      37,    38,    39,    40,    41,    42,    43,    44,    25,    45,
-      45,    45,     6,    45,    48,     3,     5,     9,    10,    11,
-      52,    52,    52,    52,     5,    49,    49,    45,    45,     0,
-      23,    32,    45,     6,    50,    52,    50,    51,    50,    14,
-      45,    45,    45,    45,    45,    48,    24,    33,     9,    26,
-      48,    52,    11,    24,     9,    20,    24,    48,    45,    47,
-      48,     7,     3,    49,    46,    48,    47,    48,    46,     5,
-      10,    48,    50,     5,    48,    50
+       0,     3,     4,     8,    17,    18,    20,    21,    22,    23,
+      24,    26,    27,    33,    34,    35,    36,    39,    40,    41,
+      42,    43,    44,    45,    46,    47,    48,    49,    30,    50,
+      50,    50,     6,    50,    53,     3,     5,     9,    10,    11,
+      59,    59,    59,    59,     5,    56,    56,    50,    50,     0,
+      28,    37,    50,     6,    57,    59,    57,    58,    57,    14,
+      19,    50,    50,    50,    50,    50,    53,    29,    38,     9,
+      31,    53,    59,    12,    13,    54,    55,    11,    29,     9,
+      25,    29,    53,    50,    52,    53,     7,    15,    16,     3,
+      56,    51,    53,    52,    53,    51,     5,    10,    53,    55,
+      57,     5,    53,    57
 };
 
 /* YYR1[RULE-NUM] -- Symbol kind of the left-hand side of rule RULE-NUM.  */
 static const yytype_int8 yyr1[] =
 {
-       0,    27,    28,    29,    29,    29,    29,    29,    29,    29,
-      29,    29,    29,    29,    29,    30,    30,    30,    31,    32,
-      33,    34,    35,    36,    37,    37,    38,    38,    39,    40,
-      41,    42,    42,    43,    43,    44,    45,    45,    46,    46,
-      46,    47,    47,    47,    48,    49,    50,    50,    50,    50,
-      51,    51,    52,    52,    52,    52,    52
+       0,    32,    33,    34,    34,    34,    34,    34,    34,    34,
+      34,    34,    34,    34,    34,    35,    35,    35,    36,    37,
+      38,    39,    40,    41,    42,    42,    43,    43,    44,    45,
+      46,    47,    47,    48,    48,    49,    50,    50,    51,    51,
+      51,    52,    52,    52,    53,    53,    54,    54,    55,    55,
+      56,    57,    57,    57,    57,    58,    58,    59,    59,    59,
+      59,    59
 };
 
 /* YYR2[RULE-NUM] -- Number of symbols on the right-hand side of rule RULE-NUM.  */
@@ -792,8 +820,9 @@ static const yytype_int8 yyr2[] =
        1,     1,     1,     1,     1,     2,     4,     2,     2,     2,
        2,     3,     2,     2,     6,     5,     3,     5,     3,     5,
        5,     5,     3,     7,     5,     3,     0,     2,     1,     2,
-       2,     1,     2,     2,     1,     1,     1,     2,     2,     3,
-       0,     1,     1,     1,     1,     1,     1
+       2,     1,     2,     2,     1,     4,     1,     3,     1,     1,
+       1,     1,     2,     2,     3,     0,     1,     1,     1,     1,
+       1,     1
 };
 
 
@@ -1257,297 +1286,343 @@ yyreduce:
   switch (yyn)
     {
   case 15: /* connectsql: ESQL_CONNECT otherdb  */
-#line 125 "esql-parser.y"
+#line 143 "esql-parser.y"
                          {
       /* CONNECT (short form) */
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT_SHORT);
     }
-#line 1266 "esql-parser.c"
+#line 1295 "esql-parser.c"
     break;
 
   case 16: /* connectsql: connect_user identified using otherdb  */
-#line 129 "esql-parser.y"
+#line 147 "esql-parser.y"
                                           {
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT);
     }
-#line 1274 "esql-parser.c"
+#line 1303 "esql-parser.c"
     break;
 
   case 17: /* connectsql: connect_user otherdb  */
-#line 132 "esql-parser.y"
+#line 150 "esql-parser.y"
                          {
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT_INFORMAL);
     }
-#line 1282 "esql-parser.c"
+#line 1311 "esql-parser.c"
     break;
 
   case 18: /* connect_user: ESQL_CONNECT host_reference  */
-#line 138 "esql-parser.y"
+#line 156 "esql-parser.y"
                                 {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1290 "esql-parser.c"
+#line 1319 "esql-parser.c"
     break;
 
   case 19: /* identified: ESQL_IDENTIFIED_BY host_reference  */
-#line 144 "esql-parser.y"
+#line 162 "esql-parser.y"
                                       {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1298 "esql-parser.c"
+#line 1327 "esql-parser.c"
     break;
 
   case 20: /* using: ESQL_USING host_reference  */
-#line 150 "esql-parser.y"
+#line 168 "esql-parser.y"
                               {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1306 "esql-parser.c"
+#line 1335 "esql-parser.c"
     break;
 
   case 21: /* disconnectsql: ESQL_DISCONNECT otherdb token_list_opt  */
-#line 157 "esql-parser.y"
+#line 175 "esql-parser.y"
                                            {
       esql_parsed_result = esql_build_node(CB_SQL_DISCONNECT);
     }
-#line 1314 "esql-parser.c"
+#line 1343 "esql-parser.c"
     break;
 
   case 22: /* commitsql: ESQL_COMMIT_WORK otherdb  */
-#line 164 "esql-parser.y"
+#line 182 "esql-parser.y"
                              {
       esql_parsed_result = esql_build_node(CB_SQL_COMMIT);
     }
-#line 1322 "esql-parser.c"
+#line 1351 "esql-parser.c"
     break;
 
   case 23: /* rollbacksql: ESQL_ROLLBACK_WORK otherdb  */
-#line 170 "esql-parser.y"
+#line 188 "esql-parser.y"
                                {
       esql_parsed_result = esql_build_node(CB_SQL_ROLLBACK);
     }
-#line 1330 "esql-parser.c"
+#line 1359 "esql-parser.c"
     break;
 
   case 24: /* declaresql: ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR ESQL_SELECT token_list  */
-#line 178 "esql-parser.y"
+#line 196 "esql-parser.y"
                              {
       esql_set_cursor((yyvsp[-4].s));
       esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_DECLARE_CURSOR_PARAMS
                             : CB_SQL_DECLARE_CURSOR);
     }
-#line 1341 "esql-parser.c"
+#line 1370 "esql-parser.c"
     break;
 
   case 25: /* declaresql: ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR prepared_stname  */
-#line 184 "esql-parser.y"
+#line 202 "esql-parser.y"
                                                            {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_DECLARE_CURSOR);
     }
-#line 1350 "esql-parser.c"
+#line 1379 "esql-parser.c"
     break;
 
   case 26: /* opensql: ESQL_OPEN expr otherdb  */
-#line 192 "esql-parser.y"
+#line 210 "esql-parser.y"
                            {
       esql_set_cursor((yyvsp[-1].s));
       esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR);
     }
-#line 1359 "esql-parser.c"
+#line 1388 "esql-parser.c"
     break;
 
   case 27: /* opensql: ESQL_OPEN expr otherdb ESQL_USING host_references  */
-#line 196 "esql-parser.y"
+#line 214 "esql-parser.y"
                                                       {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
     }
-#line 1368 "esql-parser.c"
+#line 1397 "esql-parser.c"
     break;
 
   case 28: /* closesql: ESQL_CLOSE expr otherdb  */
-#line 204 "esql-parser.y"
+#line 222 "esql-parser.y"
                             {
       esql_set_cursor((yyvsp[-1].s));
       esql_parsed_result = esql_build_node(CB_SQL_CLOSE_CURSOR);
     }
-#line 1377 "esql-parser.c"
+#line 1406 "esql-parser.c"
     break;
 
   case 29: /* fetchsql: ESQL_FETCH expr otherdb ESQL_INTO res_host_references  */
-#line 212 "esql-parser.y"
+#line 230 "esql-parser.y"
                                                           {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_FETCH_ONE);
     }
-#line 1386 "esql-parser.c"
+#line 1415 "esql-parser.c"
     break;
 
   case 30: /* preparesql: ESQL_PREPARE prepared_stname otherdb ESQL_FROM host_reference  */
-#line 220 "esql-parser.y"
+#line 238 "esql-parser.y"
                                                                   {
       esql_add_host_var((yyvsp[0].s));
       esql_parsed_result = esql_build_node(CB_SQL_PREPARE);
     }
-#line 1395 "esql-parser.c"
+#line 1424 "esql-parser.c"
     break;
 
   case 31: /* executesql: ESQL_EXECUTE prepared_stname otherdb ESQL_USING host_references  */
-#line 228 "esql-parser.y"
+#line 246 "esql-parser.y"
                                                                     {
       esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
-#line 1403 "esql-parser.c"
+#line 1432 "esql-parser.c"
     break;
 
   case 32: /* executesql: ESQL_EXECUTE prepared_stname otherdb  */
-#line 231 "esql-parser.y"
+#line 249 "esql-parser.y"
                                          {
       esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
-#line 1411 "esql-parser.c"
+#line 1440 "esql-parser.c"
     break;
 
   case 33: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references ESQL_SELECTFROM token_list  */
-#line 239 "esql-parser.y"
+#line 257 "esql-parser.y"
                                  {
       esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
-#line 1421 "esql-parser.c"
+#line 1450 "esql-parser.c"
     break;
 
   case 34: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references  */
-#line 244 "esql-parser.y"
+#line 262 "esql-parser.y"
                                                                  {
       esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
-#line 1431 "esql-parser.c"
+#line 1460 "esql-parser.c"
     break;
 
   case 35: /* othersql: ESQL_OTHERFUNC otherdb token_list  */
-#line 253 "esql-parser.y"
+#line 271 "esql-parser.y"
                                       {
       esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
     }
-#line 1440 "esql-parser.c"
+#line 1469 "esql-parser.c"
     break;
 
   case 36: /* otherdb: %empty  */
-#line 261 "esql-parser.y"
+#line 279 "esql-parser.y"
                 { }
-#line 1446 "esql-parser.c"
+#line 1475 "esql-parser.c"
     break;
 
   case 37: /* otherdb: ESQL_AT ESQL_HOSTTOKEN  */
-#line 262 "esql-parser.y"
+#line 280 "esql-parser.y"
                            {
       esql_set_dbname((yyvsp[0].s));
     }
-#line 1454 "esql-parser.c"
+#line 1483 "esql-parser.c"
     break;
 
   case 38: /* host_references: host_reference  */
-#line 268 "esql-parser.y"
+#line 286 "esql-parser.y"
                    {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1462 "esql-parser.c"
+#line 1491 "esql-parser.c"
     break;
 
   case 40: /* host_references: host_references host_reference  */
-#line 272 "esql-parser.y"
+#line 290 "esql-parser.y"
                                    {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1470 "esql-parser.c"
+#line 1499 "esql-parser.c"
     break;
 
   case 41: /* res_host_references: host_reference  */
-#line 278 "esql-parser.y"
+#line 296 "esql-parser.y"
                    {
       esql_add_res_host_var((yyvsp[0].s));
     }
-#line 1478 "esql-parser.c"
+#line 1507 "esql-parser.c"
     break;
 
   case 43: /* res_host_references: res_host_references host_reference  */
-#line 282 "esql-parser.y"
+#line 300 "esql-parser.y"
                                        {
       esql_add_res_host_var((yyvsp[0].s));
     }
-#line 1486 "esql-parser.c"
+#line 1515 "esql-parser.c"
     break;
 
   case 44: /* host_reference: ESQL_HOSTTOKEN  */
-#line 288 "esql-parser.y"
-                   { (yyval.s) = (yyvsp[0].s); }
-#line 1492 "esql-parser.c"
+#line 306 "esql-parser.y"
+                   {
+      (yyval.s) = (yyvsp[0].s);
+      esql_pending_subs = NULL;
+    }
+#line 1524 "esql-parser.c"
     break;
 
-  case 45: /* prepared_stname: ESQL_TOKEN  */
-#line 292 "esql-parser.y"
+  case 45: /* host_reference: ESQL_HOSTTOKEN ESQL_HOSTSUB_LPAREN subscript_list ESQL_HOSTSUB_RPAREN  */
+#line 310 "esql-parser.y"
+                                                                          {
+      (yyval.s) = (yyvsp[-3].s);
+      /* parser.y の subref と同じく cb_reference->subs は leaf→root の
+         並びで構築する必要があるため、ここで反転する。 */
+      esql_pending_subs = esql_subs_reverse((yyvsp[-1].t));
+    }
+#line 1535 "esql-parser.c"
+    break;
+
+  case 46: /* subscript_list: subscript  */
+#line 319 "esql-parser.y"
+              {
+      (yyval.t) = esql_subs_list_init((yyvsp[0].t));
+    }
+#line 1543 "esql-parser.c"
+    break;
+
+  case 47: /* subscript_list: subscript_list ESQL_HOSTSUB_COMMA subscript  */
+#line 322 "esql-parser.y"
+                                                {
+      (yyval.t) = esql_subs_list_add((yyvsp[-2].t), (yyvsp[0].t));
+    }
+#line 1551 "esql-parser.c"
+    break;
+
+  case 48: /* subscript: ESQL_HOSTSUB_NUMBER  */
+#line 328 "esql-parser.y"
+                        {
+      (yyval.t) = esql_build_subs_number((yyvsp[0].s));
+    }
+#line 1559 "esql-parser.c"
+    break;
+
+  case 49: /* subscript: ESQL_HOSTSUB_IDENT  */
+#line 331 "esql-parser.y"
+                       {
+      (yyval.t) = cb_build_reference((yyvsp[0].s));
+    }
+#line 1567 "esql-parser.c"
+    break;
+
+  case 50: /* prepared_stname: ESQL_TOKEN  */
+#line 337 "esql-parser.y"
                {
       esql_set_prepare((yyvsp[0].s));
       (yyval.s) = (yyvsp[0].s);
     }
-#line 1501 "esql-parser.c"
+#line 1576 "esql-parser.c"
     break;
 
-  case 48: /* token_list: token_list host_reference  */
-#line 301 "esql-parser.y"
+  case 53: /* token_list: token_list host_reference  */
+#line 346 "esql-parser.y"
                               {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1509 "esql-parser.c"
+#line 1584 "esql-parser.c"
     break;
 
-  case 49: /* token_list: token_list ESQL_WHERECURRENTOF ESQL_CURNAME  */
-#line 304 "esql-parser.y"
+  case 54: /* token_list: token_list ESQL_WHERECURRENTOF ESQL_CURNAME  */
+#line 349 "esql-parser.y"
                                                 {
       esql_set_cursor((yyvsp[0].s));
     }
-#line 1517 "esql-parser.c"
+#line 1592 "esql-parser.c"
     break;
 
-  case 52: /* expr: ESQL_TOKEN  */
-#line 315 "esql-parser.y"
+  case 57: /* expr: ESQL_TOKEN  */
+#line 360 "esql-parser.y"
                { (yyval.s) = (yyvsp[0].s); }
-#line 1523 "esql-parser.c"
+#line 1598 "esql-parser.c"
     break;
 
-  case 53: /* expr: ESQL_SELECT  */
-#line 316 "esql-parser.y"
+  case 58: /* expr: ESQL_SELECT  */
+#line 361 "esql-parser.y"
                 { (yyval.s) = (yyvsp[0].s); }
-#line 1529 "esql-parser.c"
+#line 1604 "esql-parser.c"
     break;
 
-  case 54: /* expr: ESQL_FOR  */
-#line 317 "esql-parser.y"
+  case 59: /* expr: ESQL_FOR  */
+#line 362 "esql-parser.y"
              { (yyval.s) = (yyvsp[0].s); }
-#line 1535 "esql-parser.c"
+#line 1610 "esql-parser.c"
     break;
 
-  case 55: /* expr: ESQL_SELECTFROM  */
-#line 318 "esql-parser.y"
+  case 60: /* expr: ESQL_SELECTFROM  */
+#line 363 "esql-parser.y"
                     { (yyval.s) = (yyvsp[0].s); }
-#line 1541 "esql-parser.c"
+#line 1616 "esql-parser.c"
     break;
 
-  case 56: /* expr: ESQL_INTO  */
-#line 319 "esql-parser.y"
+  case 61: /* expr: ESQL_INTO  */
+#line 364 "esql-parser.y"
               { (yyval.s) = (yyvsp[0].s); }
-#line 1547 "esql-parser.c"
+#line 1622 "esql-parser.c"
     break;
 
 
-#line 1551 "esql-parser.c"
+#line 1626 "esql-parser.c"
 
       default: break;
     }
@@ -1740,5 +1815,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 322 "esql-parser.y"
+#line 367 "esql-parser.y"
 

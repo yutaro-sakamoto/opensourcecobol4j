@@ -71,21 +71,26 @@ extern int esql_debug;
     ESQL_INTO = 264,               /* ESQL_INTO  */
     ESQL_SELECTFROM = 265,         /* ESQL_SELECTFROM  */
     ESQL_FOR = 266,                /* ESQL_FOR  */
-    ESQL_CONNECT = 267,            /* ESQL_CONNECT  */
-    ESQL_DECLARE = 268,            /* ESQL_DECLARE  */
-    ESQL_CURSOR = 269,             /* ESQL_CURSOR  */
-    ESQL_OPEN = 270,               /* ESQL_OPEN  */
-    ESQL_CLOSE = 271,              /* ESQL_CLOSE  */
-    ESQL_FETCH = 272,              /* ESQL_FETCH  */
-    ESQL_PREPARE = 273,            /* ESQL_PREPARE  */
-    ESQL_EXECUTE = 274,            /* ESQL_EXECUTE  */
-    ESQL_FROM = 275,               /* ESQL_FROM  */
-    ESQL_COMMIT_WORK = 276,        /* ESQL_COMMIT_WORK  */
-    ESQL_ROLLBACK_WORK = 277,      /* ESQL_ROLLBACK_WORK  */
-    ESQL_IDENTIFIED_BY = 278,      /* ESQL_IDENTIFIED_BY  */
-    ESQL_USING = 279,              /* ESQL_USING  */
-    ESQL_AT = 280,                 /* ESQL_AT  */
-    ESQL_WHERECURRENTOF = 281      /* ESQL_WHERECURRENTOF  */
+    ESQL_HOSTSUB_NUMBER = 267,     /* ESQL_HOSTSUB_NUMBER  */
+    ESQL_HOSTSUB_IDENT = 268,      /* ESQL_HOSTSUB_IDENT  */
+    ESQL_HOSTSUB_LPAREN = 269,     /* ESQL_HOSTSUB_LPAREN  */
+    ESQL_HOSTSUB_RPAREN = 270,     /* ESQL_HOSTSUB_RPAREN  */
+    ESQL_HOSTSUB_COMMA = 271,      /* ESQL_HOSTSUB_COMMA  */
+    ESQL_CONNECT = 272,            /* ESQL_CONNECT  */
+    ESQL_DECLARE = 273,            /* ESQL_DECLARE  */
+    ESQL_CURSOR = 274,             /* ESQL_CURSOR  */
+    ESQL_OPEN = 275,               /* ESQL_OPEN  */
+    ESQL_CLOSE = 276,              /* ESQL_CLOSE  */
+    ESQL_FETCH = 277,              /* ESQL_FETCH  */
+    ESQL_PREPARE = 278,            /* ESQL_PREPARE  */
+    ESQL_EXECUTE = 279,            /* ESQL_EXECUTE  */
+    ESQL_FROM = 280,               /* ESQL_FROM  */
+    ESQL_COMMIT_WORK = 281,        /* ESQL_COMMIT_WORK  */
+    ESQL_ROLLBACK_WORK = 282,      /* ESQL_ROLLBACK_WORK  */
+    ESQL_IDENTIFIED_BY = 283,      /* ESQL_IDENTIFIED_BY  */
+    ESQL_USING = 284,              /* ESQL_USING  */
+    ESQL_AT = 285,                 /* ESQL_AT  */
+    ESQL_WHERECURRENTOF = 286      /* ESQL_WHERECURRENTOF  */
   };
   typedef enum esql_tokentype esql_token_kind_t;
 #endif
@@ -94,11 +99,12 @@ extern int esql_debug;
 #if ! defined ESQL_STYPE && ! defined ESQL_STYPE_IS_DECLARED
 union ESQL_STYPE
 {
-#line 85 "esql-parser.y"
+#line 99 "esql-parser.y"
 
   char *s;
+  cb_tree t;
 
-#line 102 "esql-parser.h"
+#line 108 "esql-parser.h"
 
 };
 typedef union ESQL_STYPE ESQL_STYPE;

@@ -12,6 +12,15 @@ typedef struct cb_tree_common *cb_tree;
 extern cb_tree cb_error_node;
 extern cb_tree cb_build_reference(const char *name);
 
+/* Helpers used from esql-parser.y to build :VAR(添字) subs.
+   esql-parser.y は tree.h を include しない (YYSTYPE が衝突する) ため、
+   subs リスト操作と数値リテラル生成は esql.c のラッパ経由で行う。 */
+extern cb_tree esql_subs_list_init(cb_tree x);
+extern cb_tree esql_subs_list_add(cb_tree l, cb_tree x);
+extern cb_tree esql_subs_reverse(cb_tree l);
+extern cb_tree esql_build_subs_number(const char *text);
+extern void esql_set_ref_subs(cb_tree ref, cb_tree subs);
+
 /* Host variable list */
 struct cb_sql_host_var;
 extern struct cb_sql_host_var *cb_build_sql_host_var(char *name, cb_tree ref);

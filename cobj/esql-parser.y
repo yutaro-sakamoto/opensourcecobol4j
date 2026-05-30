@@ -30,6 +30,11 @@ static char esql_cursor_name[256];
 static char esql_prepare_name[256];
 static char esql_db_name[256];
 static int esql_conn_use_other_db;
+/* host_reference の :VAR(添字) で構築した subs を、
+   親規則の esql_add_host_var が消費するためのサイドチャネル。
+   各 host_reference の還元直後に親規則が必ず消費するので、
+   1 つの静的変数で十分。 */
+static cb_tree esql_pending_subs;
 
 void esql_parser_init(void) {
   esql_host_list = NULL;
@@ -40,10 +45,15 @@ void esql_parser_init(void) {
   memset(esql_prepare_name, 0, sizeof(esql_prepare_name));
   memset(esql_db_name, 0, sizeof(esql_db_name));
   esql_conn_use_other_db = 0;
+  esql_pending_subs = NULL;
 }
 
 static void esql_add_host_var(const char *name) {
   cb_tree ref = cb_build_reference((char *)name);
+  if (esql_pending_subs) {
+    esql_set_ref_subs(ref, esql_pending_subs);
+    esql_pending_subs = NULL;
+  }
   struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
   esql_host_list = cb_sql_host_var_list_add(esql_host_list, hv);
   esql_host_count++;
@@ -51,6 +61,10 @@ static void esql_add_host_var(const char *name) {
 
 static void esql_add_res_host_var(const char *name) {
   cb_tree ref = cb_build_reference((char *)name);
+  if (esql_pending_subs) {
+    esql_set_ref_subs(ref, esql_pending_subs);
+    esql_pending_subs = NULL;
+  }
   struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
   esql_res_host_list = cb_sql_host_var_list_add(esql_res_host_list, hv);
   esql_res_host_count++;
@@ -84,12 +98,15 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
 
 %union {
   char *s;
+  cb_tree t;
 }
 
 %token<s> ESQL_SELECT ESQL_DISCONNECT
 %token<s> ESQL_TOKEN ESQL_HOSTTOKEN ESQL_CURNAME ESQL_OTHERFUNC
 %token<s> ESQL_INTO ESQL_SELECTFROM
 %token<s> ESQL_FOR
+%token<s> ESQL_HOSTSUB_NUMBER ESQL_HOSTSUB_IDENT
+%token ESQL_HOSTSUB_LPAREN ESQL_HOSTSUB_RPAREN ESQL_HOSTSUB_COMMA
 %token ESQL_CONNECT ESQL_DECLARE ESQL_CURSOR
 %token ESQL_OPEN ESQL_CLOSE ESQL_FETCH
 %token ESQL_PREPARE ESQL_EXECUTE ESQL_FROM
@@ -98,6 +115,7 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
 %token ESQL_WHERECURRENTOF
 
 %type<s> host_reference expr prepared_stname
+%type<t> subscript_list subscript
 
 %%
 
@@ -285,7 +303,34 @@ res_host_references:
   ;
 
 host_reference:
-    ESQL_HOSTTOKEN { $$ = $1; }
+    ESQL_HOSTTOKEN {
+      $$ = $1;
+      esql_pending_subs = NULL;
+    }
+  | ESQL_HOSTTOKEN ESQL_HOSTSUB_LPAREN subscript_list ESQL_HOSTSUB_RPAREN {
+      $$ = $1;
+      /* parser.y の subref と同じく cb_reference->subs は leaf→root の
+         並びで構築する必要があるため、ここで反転する。 */
+      esql_pending_subs = esql_subs_reverse($3);
+    }
+  ;
+
+subscript_list:
+    subscript {
+      $$ = esql_subs_list_init($1);
+    }
+  | subscript_list ESQL_HOSTSUB_COMMA subscript {
+      $$ = esql_subs_list_add($1, $3);
+    }
+  ;
+
+subscript:
+    ESQL_HOSTSUB_NUMBER {
+      $$ = esql_build_subs_number($1);
+    }
+  | ESQL_HOSTSUB_IDENT {
+      $$ = cb_build_reference($1);
+    }
   ;
 
 prepared_stname:

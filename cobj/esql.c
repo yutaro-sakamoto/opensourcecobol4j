@@ -37,6 +37,26 @@ extern void esql_scanner_reset(void);
 extern void esql_parser_init(void);
 extern cb_tree esql_parsed_result;
 
+/* Helpers exposed to esql-parser.y via esql-common.h.
+   esql-parser.y は tree.h と YYSTYPE が衝突するため tree.h を
+   直接 include できない。subs リスト構築用の薄いラッパを
+   ここで実装する。 */
+cb_tree esql_subs_list_init(cb_tree x) { return cb_list_init(x); }
+
+cb_tree esql_subs_list_add(cb_tree l, cb_tree x) { return cb_list_add(l, x); }
+
+cb_tree esql_subs_reverse(cb_tree l) { return cb_list_reverse(l); }
+
+cb_tree esql_build_subs_number(const char *text) {
+  return cb_build_numeric_literal(0, (const unsigned char *)text, 0);
+}
+
+void esql_set_ref_subs(cb_tree ref, cb_tree subs) {
+  if (ref && subs) {
+    CB_REFERENCE(ref)->subs = subs;
+  }
+}
+
 /*
  * Resolve host variable type from cb_field properties.
  * Maps COBOL field attributes to HVARTYPE_* constants.

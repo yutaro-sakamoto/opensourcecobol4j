@@ -12,6 +12,7 @@
 
 %{
 #include <string.h>
+#include "esql-common.h"
 #include "esql-parser.h"
 
 #define YY_NO_INPUT
@@ -73,7 +74,7 @@ const char *esql_get_sqlbody(void) {
 
 %}
 
-%x ESQL_STATE ESQL_DBNAME_STATE WHERE_CURRENT_OF
+%x ESQL_STATE ESQL_DBNAME_STATE WHERE_CURRENT_OF ESQL_HOSTSUB_STATE
 
 ZENSPC [\x81][\x40]
 JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
@@ -316,6 +317,18 @@ COMMA ","
     return ESQL_TOKEN;
   }
 
+  {HOSTWORD}/"(" {
+    /* :VAR(...) のような添字付きホスト変数。
+       直後の '(' は入力に残し、ESQL_HOSTSUB_STATE で
+       添字要素を SQL 本体に混入させずに字句化する。 */
+    if (!esql_flag_select_into) {
+      esql_sqlbody_append("?");
+    }
+    esql_lval.s = strdup(yytext + 1); /* strip ':' */
+    yy_push_state(ESQL_HOSTSUB_STATE);
+    return ESQL_HOSTTOKEN;
+  }
+
   {HOSTWORD} {
     if (!esql_flag_select_into) {
       esql_sqlbody_append("?");
@@ -352,6 +365,31 @@ COMMA ","
     esql_sqlbody_append(yytext);
     esql_lval.s = strdup(yytext);
     return ESQL_TOKEN;
+  }
+}
+
+ /* === ESQL_HOSTSUB_STATE: subscripts of :VAR(...) host vars ===
+    SQL 本体には書き込まず、添字構成要素 (整数リテラル, COBOL 識別子,
+    ',', '(', ')') をトークンとしてパーサに渡す。閉じ括弧で元の状態に戻る。 */
+<ESQL_HOSTSUB_STATE>{
+  [ \t\r\n]+ { /* skip whitespace */ }
+  "(" {
+    return ESQL_HOSTSUB_LPAREN;
+  }
+  ")" {
+    yy_pop_state();
+    return ESQL_HOSTSUB_RPAREN;
+  }
+  "," {
+    return ESQL_HOSTSUB_COMMA;
+  }
+  [0-9]+ {
+    esql_lval.s = strdup(yytext);
+    return ESQL_HOSTSUB_NUMBER;
+  }
+  ([A-Za-z_]|{JPNWORD}|{MBWORD})([A-Za-z0-9_\-]|{JPNWORD}|{MBWORD})* {
+    esql_lval.s = strdup(yytext);
+    return ESQL_HOSTSUB_IDENT;
   }
 }
 
