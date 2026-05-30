@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "cobj.h"
+#include "esql-common.h"
 #include "tree.h"
 
 /* ESQL bison/flex parser declarations */
