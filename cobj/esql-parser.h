@@ -99,7 +99,7 @@ extern int esql_debug;
 #if ! defined ESQL_STYPE && ! defined ESQL_STYPE_IS_DECLARED
 union ESQL_STYPE
 {
-#line 99 "esql-parser.y"
+#line 101 "esql-parser.y"
 
   char *s;
   cb_tree t;

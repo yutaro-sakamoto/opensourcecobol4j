@@ -49,23 +49,25 @@ void esql_parser_init(void) {
 }
 
 static void esql_add_host_var(const char *name) {
-  cb_tree ref = cb_build_reference((char *)name);
+  cb_tree ref = esql_build_qualified_ref(name);
+  const char *leaf = esql_qualified_leaf_name(name);
   if (esql_pending_subs) {
     esql_set_ref_subs(ref, esql_pending_subs);
     esql_pending_subs = NULL;
   }
-  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
+  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(leaf), ref);
   esql_host_list = cb_sql_host_var_list_add(esql_host_list, hv);
   esql_host_count++;
 }
 
 static void esql_add_res_host_var(const char *name) {
-  cb_tree ref = cb_build_reference((char *)name);
+  cb_tree ref = esql_build_qualified_ref(name);
+  const char *leaf = esql_qualified_leaf_name(name);
   if (esql_pending_subs) {
     esql_set_ref_subs(ref, esql_pending_subs);
     esql_pending_subs = NULL;
   }
-  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
+  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(leaf), ref);
   esql_res_host_list = cb_sql_host_var_list_add(esql_res_host_list, hv);
   esql_res_host_count++;
 }

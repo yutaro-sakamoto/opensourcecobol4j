@@ -20,6 +20,11 @@ extern cb_tree esql_subs_list_add(cb_tree l, cb_tree x);
 extern cb_tree esql_subs_reverse(cb_tree l);
 extern cb_tree esql_build_subs_number(const char *text);
 extern void esql_set_ref_subs(cb_tree ref, cb_tree subs);
+/* :GRP.SUB.X 形式の dotted ホスト変数名から、chain 連結された
+   cb_reference を構築する (leaf を head とする)。leaf 名は別途 helper で
+   取り出して hv->name に保持する。 */
+extern cb_tree esql_build_qualified_ref(const char *dotted_name);
+extern const char *esql_qualified_leaf_name(const char *dotted_name);
 
 /* Host variable list */
 struct cb_sql_host_var;

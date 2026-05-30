@@ -58,6 +58,49 @@ void esql_set_ref_subs(cb_tree ref, cb_tree subs) {
   }
 }
 
+/* :GRP.SUB.X 形式の dotted ホスト変数名から、ESQL 内部で利用する
+   cb_reference を構築する。COBOL 通常の "X OF SUB OF GRP" と同じ意味、
+   すなわち X (leaf) を最右側として、chain を leaf → 親 → 祖父 ... と
+   たどる構造を生成する。返却値は leaf (resolve 対象) の cb_reference。 */
+cb_tree esql_build_qualified_ref(const char *dotted_name) {
+  char *buf;
+  char *p;
+  char *segments[16];
+  int n = 0;
+  cb_tree leaf;
+  cb_tree current;
+  int i;
+
+  if (!strchr(dotted_name, '.')) {
+    return cb_build_reference(dotted_name);
+  }
+
+  buf = strdup(dotted_name);
+  p = strtok(buf, ".");
+  while (p && n < 16) {
+    segments[n++] = p;
+    p = strtok(NULL, ".");
+  }
+  /* dotted の右端が leaf */
+  leaf = cb_build_reference(segments[n - 1]);
+  current = leaf;
+  for (i = n - 2; i >= 0; i--) {
+    cb_tree parent = cb_build_reference(segments[i]);
+    CB_REFERENCE(current)->chain = parent;
+    current = parent;
+  }
+  free(buf);
+  return leaf;
+}
+
+/* dotted 形式から leaf 部分 (最右セグメント) を取り出す。
+   ESQL 側で保持するホスト変数名 (hv->name) はソース表記そのものではなく
+   leaf 部分のみを採用する。 */
+const char *esql_qualified_leaf_name(const char *dotted_name) {
+  const char *dot = strrchr(dotted_name, '.');
+  return dot ? dot + 1 : dotted_name;
+}
+
 /*
  * Resolve host variable type from cb_field properties.
  * Maps COBOL field attributes to HVARTYPE_* constants.

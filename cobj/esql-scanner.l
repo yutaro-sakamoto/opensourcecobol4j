@@ -79,7 +79,7 @@ const char *esql_get_sqlbody(void) {
 ZENSPC [\x81][\x40]
 JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 MBWORD ([\xC0-\xDF][\x80-\xBF])|([\xE0-\xEF][\x80-\xBF]{2})|([\xF0-\xF7][\x80-\xBF]{3})
-HOSTWORD ":"([A-Za-z\-0-9_]|{JPNWORD}|{MBWORD})+
+HOSTWORD ":"([A-Za-z\-0-9_]|{JPNWORD}|{MBWORD})+("\."([A-Za-z\-0-9_]|{JPNWORD}|{MBWORD})+)*
 IDENT ([A-Za-z\+\-0-9_]|[(]|[)]|{JPNWORD}|{MBWORD})
 STRVALUE ("N"?"\""[^\"]+"\""|"N"?"\'"[^\']+"\'")
 SELF [,()\[\].;\:\+\-\*\/\%\^\<\>\=]

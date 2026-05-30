@@ -120,23 +120,25 @@ void esql_parser_init(void) {
 }
 
 static void esql_add_host_var(const char *name) {
-  cb_tree ref = cb_build_reference((char *)name);
+  cb_tree ref = esql_build_qualified_ref(name);
+  const char *leaf = esql_qualified_leaf_name(name);
   if (esql_pending_subs) {
     esql_set_ref_subs(ref, esql_pending_subs);
     esql_pending_subs = NULL;
   }
-  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
+  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(leaf), ref);
   esql_host_list = cb_sql_host_var_list_add(esql_host_list, hv);
   esql_host_count++;
 }
 
 static void esql_add_res_host_var(const char *name) {
-  cb_tree ref = cb_build_reference((char *)name);
+  cb_tree ref = esql_build_qualified_ref(name);
+  const char *leaf = esql_qualified_leaf_name(name);
   if (esql_pending_subs) {
     esql_set_ref_subs(ref, esql_pending_subs);
     esql_pending_subs = NULL;
   }
-  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(name), ref);
+  struct cb_sql_host_var *hv = cb_build_sql_host_var(strdup(leaf), ref);
   esql_res_host_list = cb_sql_host_var_list_add(esql_res_host_list, hv);
   esql_res_host_count++;
 }
@@ -166,7 +168,7 @@ static cb_tree esql_build_node(enum cb_sql_command cmd) {
 }
 
 
-#line 170 "esql-parser.c"
+#line 172 "esql-parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -642,13 +644,13 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   123,   123,   127,   128,   129,   130,   131,   132,   133,
-     134,   135,   136,   137,   138,   143,   147,   150,   156,   162,
-     168,   175,   182,   188,   195,   202,   210,   214,   222,   230,
-     238,   246,   249,   256,   262,   271,   279,   280,   286,   289,
-     290,   296,   299,   300,   306,   310,   319,   322,   328,   331,
-     337,   344,   345,   346,   349,   354,   356,   360,   361,   362,
-     363,   364
+       0,   125,   125,   129,   130,   131,   132,   133,   134,   135,
+     136,   137,   138,   139,   140,   145,   149,   152,   158,   164,
+     170,   177,   184,   190,   197,   204,   212,   216,   224,   232,
+     240,   248,   251,   258,   264,   273,   281,   282,   288,   291,
+     292,   298,   301,   302,   308,   312,   321,   324,   330,   333,
+     339,   346,   347,   348,   351,   356,   358,   362,   363,   364,
+     365,   366
 };
 #endif
 
@@ -1286,343 +1288,343 @@ yyreduce:
   switch (yyn)
     {
   case 15: /* connectsql: ESQL_CONNECT otherdb  */
-#line 143 "esql-parser.y"
+#line 145 "esql-parser.y"
                          {
       /* CONNECT (short form) */
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT_SHORT);
     }
-#line 1295 "esql-parser.c"
+#line 1297 "esql-parser.c"
     break;
 
   case 16: /* connectsql: connect_user identified using otherdb  */
-#line 147 "esql-parser.y"
+#line 149 "esql-parser.y"
                                           {
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT);
     }
-#line 1303 "esql-parser.c"
+#line 1305 "esql-parser.c"
     break;
 
   case 17: /* connectsql: connect_user otherdb  */
-#line 150 "esql-parser.y"
+#line 152 "esql-parser.y"
                          {
       esql_parsed_result = esql_build_node(CB_SQL_CONNECT_INFORMAL);
     }
-#line 1311 "esql-parser.c"
+#line 1313 "esql-parser.c"
     break;
 
   case 18: /* connect_user: ESQL_CONNECT host_reference  */
-#line 156 "esql-parser.y"
+#line 158 "esql-parser.y"
                                 {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1319 "esql-parser.c"
+#line 1321 "esql-parser.c"
     break;
 
   case 19: /* identified: ESQL_IDENTIFIED_BY host_reference  */
-#line 162 "esql-parser.y"
+#line 164 "esql-parser.y"
                                       {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1327 "esql-parser.c"
+#line 1329 "esql-parser.c"
     break;
 
   case 20: /* using: ESQL_USING host_reference  */
-#line 168 "esql-parser.y"
+#line 170 "esql-parser.y"
                               {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1335 "esql-parser.c"
+#line 1337 "esql-parser.c"
     break;
 
   case 21: /* disconnectsql: ESQL_DISCONNECT otherdb token_list_opt  */
-#line 175 "esql-parser.y"
+#line 177 "esql-parser.y"
                                            {
       esql_parsed_result = esql_build_node(CB_SQL_DISCONNECT);
     }
-#line 1343 "esql-parser.c"
+#line 1345 "esql-parser.c"
     break;
 
   case 22: /* commitsql: ESQL_COMMIT_WORK otherdb  */
-#line 182 "esql-parser.y"
+#line 184 "esql-parser.y"
                              {
       esql_parsed_result = esql_build_node(CB_SQL_COMMIT);
     }
-#line 1351 "esql-parser.c"
+#line 1353 "esql-parser.c"
     break;
 
   case 23: /* rollbacksql: ESQL_ROLLBACK_WORK otherdb  */
-#line 188 "esql-parser.y"
+#line 190 "esql-parser.y"
                                {
       esql_parsed_result = esql_build_node(CB_SQL_ROLLBACK);
     }
-#line 1359 "esql-parser.c"
+#line 1361 "esql-parser.c"
     break;
 
   case 24: /* declaresql: ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR ESQL_SELECT token_list  */
-#line 196 "esql-parser.y"
+#line 198 "esql-parser.y"
                              {
       esql_set_cursor((yyvsp[-4].s));
       esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_DECLARE_CURSOR_PARAMS
                             : CB_SQL_DECLARE_CURSOR);
     }
-#line 1370 "esql-parser.c"
+#line 1372 "esql-parser.c"
     break;
 
   case 25: /* declaresql: ESQL_DECLARE expr ESQL_CURSOR ESQL_FOR prepared_stname  */
-#line 202 "esql-parser.y"
+#line 204 "esql-parser.y"
                                                            {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_DECLARE_CURSOR);
     }
-#line 1379 "esql-parser.c"
+#line 1381 "esql-parser.c"
     break;
 
   case 26: /* opensql: ESQL_OPEN expr otherdb  */
-#line 210 "esql-parser.y"
+#line 212 "esql-parser.y"
                            {
       esql_set_cursor((yyvsp[-1].s));
       esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR);
     }
-#line 1388 "esql-parser.c"
+#line 1390 "esql-parser.c"
     break;
 
   case 27: /* opensql: ESQL_OPEN expr otherdb ESQL_USING host_references  */
-#line 214 "esql-parser.y"
+#line 216 "esql-parser.y"
                                                       {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_OPEN_CURSOR_PARAMS);
     }
-#line 1397 "esql-parser.c"
+#line 1399 "esql-parser.c"
     break;
 
   case 28: /* closesql: ESQL_CLOSE expr otherdb  */
-#line 222 "esql-parser.y"
+#line 224 "esql-parser.y"
                             {
       esql_set_cursor((yyvsp[-1].s));
       esql_parsed_result = esql_build_node(CB_SQL_CLOSE_CURSOR);
     }
-#line 1406 "esql-parser.c"
+#line 1408 "esql-parser.c"
     break;
 
   case 29: /* fetchsql: ESQL_FETCH expr otherdb ESQL_INTO res_host_references  */
-#line 230 "esql-parser.y"
+#line 232 "esql-parser.y"
                                                           {
       esql_set_cursor((yyvsp[-3].s));
       esql_parsed_result = esql_build_node(CB_SQL_FETCH_ONE);
     }
-#line 1415 "esql-parser.c"
+#line 1417 "esql-parser.c"
     break;
 
   case 30: /* preparesql: ESQL_PREPARE prepared_stname otherdb ESQL_FROM host_reference  */
-#line 238 "esql-parser.y"
+#line 240 "esql-parser.y"
                                                                   {
       esql_add_host_var((yyvsp[0].s));
       esql_parsed_result = esql_build_node(CB_SQL_PREPARE);
     }
-#line 1424 "esql-parser.c"
+#line 1426 "esql-parser.c"
     break;
 
   case 31: /* executesql: ESQL_EXECUTE prepared_stname otherdb ESQL_USING host_references  */
-#line 246 "esql-parser.y"
+#line 248 "esql-parser.y"
                                                                     {
       esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
-#line 1432 "esql-parser.c"
+#line 1434 "esql-parser.c"
     break;
 
   case 32: /* executesql: ESQL_EXECUTE prepared_stname otherdb  */
-#line 249 "esql-parser.y"
+#line 251 "esql-parser.y"
                                          {
       esql_parsed_result = esql_build_node(CB_SQL_EXECUTE_PREPARED);
     }
-#line 1440 "esql-parser.c"
+#line 1442 "esql-parser.c"
     break;
 
   case 33: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references ESQL_SELECTFROM token_list  */
-#line 257 "esql-parser.y"
+#line 259 "esql-parser.y"
                                  {
       esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
-#line 1450 "esql-parser.c"
+#line 1452 "esql-parser.c"
     break;
 
   case 34: /* selectintosql: ESQL_SELECT otherdb token_list ESQL_INTO res_host_references  */
-#line 262 "esql-parser.y"
+#line 264 "esql-parser.y"
                                                                  {
       esql_parsed_result = esql_build_node(
         (esql_host_count > 0 || esql_res_host_count > 0)
           ? CB_SQL_SELECT_INTO_ONE : CB_SQL_EXEC);
     }
-#line 1460 "esql-parser.c"
+#line 1462 "esql-parser.c"
     break;
 
   case 35: /* othersql: ESQL_OTHERFUNC otherdb token_list  */
-#line 271 "esql-parser.y"
+#line 273 "esql-parser.y"
                                       {
       esql_parsed_result = esql_build_node(
         esql_host_count > 0 ? CB_SQL_EXEC_PARAMS : CB_SQL_EXEC);
     }
-#line 1469 "esql-parser.c"
+#line 1471 "esql-parser.c"
     break;
 
   case 36: /* otherdb: %empty  */
-#line 279 "esql-parser.y"
+#line 281 "esql-parser.y"
                 { }
-#line 1475 "esql-parser.c"
+#line 1477 "esql-parser.c"
     break;
 
   case 37: /* otherdb: ESQL_AT ESQL_HOSTTOKEN  */
-#line 280 "esql-parser.y"
+#line 282 "esql-parser.y"
                            {
       esql_set_dbname((yyvsp[0].s));
     }
-#line 1483 "esql-parser.c"
+#line 1485 "esql-parser.c"
     break;
 
   case 38: /* host_references: host_reference  */
-#line 286 "esql-parser.y"
+#line 288 "esql-parser.y"
                    {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1491 "esql-parser.c"
+#line 1493 "esql-parser.c"
     break;
 
   case 40: /* host_references: host_references host_reference  */
-#line 290 "esql-parser.y"
+#line 292 "esql-parser.y"
                                    {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1499 "esql-parser.c"
+#line 1501 "esql-parser.c"
     break;
 
   case 41: /* res_host_references: host_reference  */
-#line 296 "esql-parser.y"
+#line 298 "esql-parser.y"
                    {
       esql_add_res_host_var((yyvsp[0].s));
     }
-#line 1507 "esql-parser.c"
+#line 1509 "esql-parser.c"
     break;
 
   case 43: /* res_host_references: res_host_references host_reference  */
-#line 300 "esql-parser.y"
+#line 302 "esql-parser.y"
                                        {
       esql_add_res_host_var((yyvsp[0].s));
     }
-#line 1515 "esql-parser.c"
+#line 1517 "esql-parser.c"
     break;
 
   case 44: /* host_reference: ESQL_HOSTTOKEN  */
-#line 306 "esql-parser.y"
+#line 308 "esql-parser.y"
                    {
       (yyval.s) = (yyvsp[0].s);
       esql_pending_subs = NULL;
     }
-#line 1524 "esql-parser.c"
+#line 1526 "esql-parser.c"
     break;
 
   case 45: /* host_reference: ESQL_HOSTTOKEN ESQL_HOSTSUB_LPAREN subscript_list ESQL_HOSTSUB_RPAREN  */
-#line 310 "esql-parser.y"
+#line 312 "esql-parser.y"
                                                                           {
       (yyval.s) = (yyvsp[-3].s);
       /* parser.y の subref と同じく cb_reference->subs は leaf→root の
          並びで構築する必要があるため、ここで反転する。 */
       esql_pending_subs = esql_subs_reverse((yyvsp[-1].t));
     }
-#line 1535 "esql-parser.c"
+#line 1537 "esql-parser.c"
     break;
 
   case 46: /* subscript_list: subscript  */
-#line 319 "esql-parser.y"
+#line 321 "esql-parser.y"
               {
       (yyval.t) = esql_subs_list_init((yyvsp[0].t));
     }
-#line 1543 "esql-parser.c"
+#line 1545 "esql-parser.c"
     break;
 
   case 47: /* subscript_list: subscript_list ESQL_HOSTSUB_COMMA subscript  */
-#line 322 "esql-parser.y"
+#line 324 "esql-parser.y"
                                                 {
       (yyval.t) = esql_subs_list_add((yyvsp[-2].t), (yyvsp[0].t));
     }
-#line 1551 "esql-parser.c"
+#line 1553 "esql-parser.c"
     break;
 
   case 48: /* subscript: ESQL_HOSTSUB_NUMBER  */
-#line 328 "esql-parser.y"
+#line 330 "esql-parser.y"
                         {
       (yyval.t) = esql_build_subs_number((yyvsp[0].s));
     }
-#line 1559 "esql-parser.c"
+#line 1561 "esql-parser.c"
     break;
 
   case 49: /* subscript: ESQL_HOSTSUB_IDENT  */
-#line 331 "esql-parser.y"
+#line 333 "esql-parser.y"
                        {
       (yyval.t) = cb_build_reference((yyvsp[0].s));
     }
-#line 1567 "esql-parser.c"
+#line 1569 "esql-parser.c"
     break;
 
   case 50: /* prepared_stname: ESQL_TOKEN  */
-#line 337 "esql-parser.y"
+#line 339 "esql-parser.y"
                {
       esql_set_prepare((yyvsp[0].s));
       (yyval.s) = (yyvsp[0].s);
     }
-#line 1576 "esql-parser.c"
+#line 1578 "esql-parser.c"
     break;
 
   case 53: /* token_list: token_list host_reference  */
-#line 346 "esql-parser.y"
+#line 348 "esql-parser.y"
                               {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1584 "esql-parser.c"
+#line 1586 "esql-parser.c"
     break;
 
   case 54: /* token_list: token_list ESQL_WHERECURRENTOF ESQL_CURNAME  */
-#line 349 "esql-parser.y"
+#line 351 "esql-parser.y"
                                                 {
       esql_set_cursor((yyvsp[0].s));
     }
-#line 1592 "esql-parser.c"
+#line 1594 "esql-parser.c"
     break;
 
   case 57: /* expr: ESQL_TOKEN  */
-#line 360 "esql-parser.y"
+#line 362 "esql-parser.y"
                { (yyval.s) = (yyvsp[0].s); }
-#line 1598 "esql-parser.c"
+#line 1600 "esql-parser.c"
     break;
 
   case 58: /* expr: ESQL_SELECT  */
-#line 361 "esql-parser.y"
+#line 363 "esql-parser.y"
                 { (yyval.s) = (yyvsp[0].s); }
-#line 1604 "esql-parser.c"
+#line 1606 "esql-parser.c"
     break;
 
   case 59: /* expr: ESQL_FOR  */
-#line 362 "esql-parser.y"
+#line 364 "esql-parser.y"
              { (yyval.s) = (yyvsp[0].s); }
-#line 1610 "esql-parser.c"
+#line 1612 "esql-parser.c"
     break;
 
   case 60: /* expr: ESQL_SELECTFROM  */
-#line 363 "esql-parser.y"
+#line 365 "esql-parser.y"
                     { (yyval.s) = (yyvsp[0].s); }
-#line 1616 "esql-parser.c"
+#line 1618 "esql-parser.c"
     break;
 
   case 61: /* expr: ESQL_INTO  */
-#line 364 "esql-parser.y"
+#line 366 "esql-parser.y"
               { (yyval.s) = (yyvsp[0].s); }
-#line 1622 "esql-parser.c"
+#line 1624 "esql-parser.c"
     break;
 
 
-#line 1626 "esql-parser.c"
+#line 1628 "esql-parser.c"
 
       default: break;
     }
@@ -1815,5 +1817,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 367 "esql-parser.y"
+#line 369 "esql-parser.y"
 
