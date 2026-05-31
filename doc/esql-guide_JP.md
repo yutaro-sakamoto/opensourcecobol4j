@@ -94,6 +94,36 @@ dbname@host:port
            END-EXEC.
 ```
 
+### ホスト変数の表記
+
+ホスト変数として以下の形式を受け付けます。
+
+| 表記 | 意味 |
+|---|---|
+| `:VAR` | 単純なホスト変数 |
+| `:VAR(IDX)` | OCCURS 要素。`IDX` は整数リテラルまたは COBOL 変数。 |
+| `:VAR(I, J)` | 多次元 OCCURS 要素 |
+| `:GRP.SUB` | 集団項目で修飾されたホスト変数 (`GRP` 配下の `SUB`) |
+| `:GRP.SUB(IDX)` | 集団修飾 + 添字 |
+| `:GRP.SUB(GRP2.IDX)` | 添字値も集団修飾された COBOL 変数 |
+
+添字に使う変数自身は添字を持てない (`:VAR(IDX(1))` のような入れ子添字は不可) という制約があります。間接的な添字が必要なら、COBOL 側でいったん作業変数に MOVE してから渡してください。
+
+```cobol
+       01  GRP.
+         03 ROW OCCURS 5.
+           05 VAL PIC 9(4).
+       01  GRP2.
+         03 TMP-IDX PIC S9(2).
+       01  IDX PIC S9(2).
+       ...
+           MOVE 3 TO TMP-IDX OF GRP2.
+           EXEC SQL
+               SELECT FIELD INTO :GRP.VAL(GRP2.TMP-IDX)
+                 FROM TESTTABLE WHERE N = :IDX
+           END-EXEC.
+```
+
 ### SQLCA（SQL通信領域）
 
 SQLCAは、`EXEC SQL` 文を使用するプログラムで自動的に定義されます。各SQL文の実行後に `SQLCODE`、`SQLSTATE`、`SQLERRMC` などの診断フィールドが利用可能になります。
@@ -307,9 +337,12 @@ java program
 
 ## 制限事項
 
-- GROUP修飾されたホスト変数（例: `:GROUP.FIELD`）はサポートされていません。基本項目を直接使用してください。
+- COBOL 標準の `OF` 修飾 (`:VAR OF GRP`) はサポートされません。dotted 修飾 (`:GRP.VAR`) を使用してください。
+- 添字の値に算術式 (`:VAR(I+1)`) を書いたり、添字値そのものが添字を持つホスト変数 (`:VAR(IDX(1))`) を書いたりすることはできません。間接的な添字が必要な場合は、COBOL 側でいったん作業変数に MOVE してから渡してください。
 - SJISモードでのUTF-8変数名はサポートされていません。UTF-8ソースファイルの場合は `--enable-utf8` ビルドオプションを使用してください。
 - 対象データベースはPostgreSQLのみサポートされています。
+
+内部アーキテクチャ (どのように解析・コード生成されているか) については [esql-design_JP.md](./esql-design_JP.md) を参照してください。
 
 ## サンプル
 

@@ -94,6 +94,36 @@ For example: `"testdb@localhost:5432"`.
            END-EXEC.
 ```
 
+### Host variable forms
+
+Host variables can take the following forms:
+
+| Form | Meaning |
+|---|---|
+| `:VAR` | Plain host variable |
+| `:VAR(IDX)` | OCCURS element; `IDX` is a literal integer or a COBOL variable |
+| `:VAR(I, J)` | Multi-dimensional OCCURS element |
+| `:GRP.SUB` | Group-qualified host variable (`SUB` inside `GRP`) |
+| `:GRP.SUB(IDX)` | Group-qualified + subscripted |
+| `:GRP.SUB(GRP2.IDX)` | The subscript value itself is a group-qualified COBOL variable |
+
+The constraint on subscript values is that the variable used as a subscript cannot itself carry a subscript (i.e. `:VAR(IDX(1))` is not supported). If you need an indirected index, MOVE it into a scratch variable first.
+
+```cobol
+       01  GRP.
+         03 ROW OCCURS 5.
+           05 VAL PIC 9(4).
+       01  GRP2.
+         03 TMP-IDX PIC S9(2).
+       01  IDX PIC S9(2).
+       ...
+           MOVE 3 TO TMP-IDX OF GRP2.
+           EXEC SQL
+               SELECT FIELD INTO :GRP.VAL(GRP2.TMP-IDX)
+                 FROM TESTTABLE WHERE N = :IDX
+           END-EXEC.
+```
+
 ### SQLCA (SQL Communication Area)
 
 The SQLCA is automatically defined when a program uses `EXEC SQL` statements. It provides `SQLCODE`, `SQLSTATE`, `SQLERRMC`, and other diagnostic fields that are updated after each SQL statement.
@@ -307,9 +337,12 @@ The `-I` flag specifies the directory containing COPY files.
 
 ## Limitations
 
-- GROUP-qualified host variables (e.g., `:GROUP.FIELD`) are not supported; use elementary items directly.
+- COBOL-classic `OF` qualification (`:VAR OF GRP`) is not supported. Use dotted qualification (`:GRP.VAR`) instead.
+- Subscript values cannot be arithmetic expressions (`:VAR(I+1)`) and cannot themselves be subscripted host variables (`:VAR(IDX(1))`). Compute the index into a scratch COBOL variable first.
 - UTF-8 variable names in SJIS mode are not supported; use the `--enable-utf8` build option for UTF-8 source files.
 - Only PostgreSQL is supported as the target database.
+
+For the internal architecture and how these forms are parsed and translated into Java, see [esql-design.md](./esql-design.md).
 
 ## Examples
 
