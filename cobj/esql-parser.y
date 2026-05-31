@@ -331,7 +331,10 @@ subscript:
       $$ = esql_build_subs_number($1);
     }
   | ESQL_HOSTSUB_IDENT {
-      $$ = cb_build_reference($1);
+      /* 添字の値となる変数も dotted 修飾を許す
+         (ただし入れ子添字は不可)。esql_build_qualified_ref は
+         dotted でなければ単純な cb_build_reference にフォールバックする。 */
+      $$ = esql_build_qualified_ref($1);
     }
   ;
 

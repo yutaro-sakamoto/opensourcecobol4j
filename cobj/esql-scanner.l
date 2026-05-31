@@ -390,7 +390,10 @@ COMMA ","
     esql_lval.s = strdup(yytext);
     return ESQL_HOSTSUB_NUMBER;
   }
-  ([A-Za-z_]|{JPNWORD}|{MBWORD})([A-Za-z0-9_\-]|{JPNWORD}|{MBWORD})* {
+  ([A-Za-z_]|{JPNWORD}|{MBWORD})([A-Za-z0-9_\-]|{JPNWORD}|{MBWORD})*("\."([A-Za-z_]|{JPNWORD}|{MBWORD})([A-Za-z0-9_\-]|{JPNWORD}|{MBWORD})*)* {
+    /* GRP.SUB のような修飾名を 1 つの ESQL_HOSTSUB_IDENT として返す。
+       添字の中身は値として参照されるだけで自分自身は添字を持てない、
+       という制約のもとで dotted qualification のみを許す。 */
     esql_lval.s = strdup(yytext);
     return ESQL_HOSTSUB_IDENT;
   }

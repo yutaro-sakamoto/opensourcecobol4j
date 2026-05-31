@@ -649,8 +649,8 @@ static const yytype_int16 yyrline[] =
      170,   177,   184,   190,   197,   204,   212,   216,   224,   232,
      240,   248,   251,   258,   264,   273,   281,   282,   288,   291,
      292,   298,   301,   302,   308,   312,   321,   324,   330,   333,
-     339,   346,   347,   348,   351,   356,   358,   362,   363,   364,
-     365,   366
+     342,   349,   350,   351,   354,   359,   361,   365,   366,   367,
+     368,   369
 };
 #endif
 
@@ -1563,68 +1563,71 @@ yyreduce:
   case 49: /* subscript: ESQL_HOSTSUB_IDENT  */
 #line 333 "esql-parser.y"
                        {
-      (yyval.t) = cb_build_reference((yyvsp[0].s));
+      /* 添字の値となる変数も dotted 修飾を許す
+         (ただし入れ子添字は不可)。esql_build_qualified_ref は
+         dotted でなければ単純な cb_build_reference にフォールバックする。 */
+      (yyval.t) = esql_build_qualified_ref((yyvsp[0].s));
     }
-#line 1569 "esql-parser.c"
+#line 1572 "esql-parser.c"
     break;
 
   case 50: /* prepared_stname: ESQL_TOKEN  */
-#line 339 "esql-parser.y"
+#line 342 "esql-parser.y"
                {
       esql_set_prepare((yyvsp[0].s));
       (yyval.s) = (yyvsp[0].s);
     }
-#line 1578 "esql-parser.c"
+#line 1581 "esql-parser.c"
     break;
 
   case 53: /* token_list: token_list host_reference  */
-#line 348 "esql-parser.y"
+#line 351 "esql-parser.y"
                               {
       esql_add_host_var((yyvsp[0].s));
     }
-#line 1586 "esql-parser.c"
+#line 1589 "esql-parser.c"
     break;
 
   case 54: /* token_list: token_list ESQL_WHERECURRENTOF ESQL_CURNAME  */
-#line 351 "esql-parser.y"
+#line 354 "esql-parser.y"
                                                 {
       esql_set_cursor((yyvsp[0].s));
     }
-#line 1594 "esql-parser.c"
+#line 1597 "esql-parser.c"
     break;
 
   case 57: /* expr: ESQL_TOKEN  */
-#line 362 "esql-parser.y"
+#line 365 "esql-parser.y"
                { (yyval.s) = (yyvsp[0].s); }
-#line 1600 "esql-parser.c"
+#line 1603 "esql-parser.c"
     break;
 
   case 58: /* expr: ESQL_SELECT  */
-#line 363 "esql-parser.y"
+#line 366 "esql-parser.y"
                 { (yyval.s) = (yyvsp[0].s); }
-#line 1606 "esql-parser.c"
+#line 1609 "esql-parser.c"
     break;
 
   case 59: /* expr: ESQL_FOR  */
-#line 364 "esql-parser.y"
+#line 367 "esql-parser.y"
              { (yyval.s) = (yyvsp[0].s); }
-#line 1612 "esql-parser.c"
+#line 1615 "esql-parser.c"
     break;
 
   case 60: /* expr: ESQL_SELECTFROM  */
-#line 365 "esql-parser.y"
+#line 368 "esql-parser.y"
                     { (yyval.s) = (yyvsp[0].s); }
-#line 1618 "esql-parser.c"
+#line 1621 "esql-parser.c"
     break;
 
   case 61: /* expr: ESQL_INTO  */
-#line 366 "esql-parser.y"
+#line 369 "esql-parser.y"
               { (yyval.s) = (yyvsp[0].s); }
-#line 1624 "esql-parser.c"
+#line 1627 "esql-parser.c"
     break;
 
 
-#line 1628 "esql-parser.c"
+#line 1631 "esql-parser.c"
 
       default: break;
     }
@@ -1817,5 +1820,5 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 369 "esql-parser.y"
+#line 372 "esql-parser.y"
 
