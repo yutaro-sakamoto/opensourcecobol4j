@@ -539,11 +539,65 @@ static enum cb_string_category get_string_category(const unsigned char *s,
   return category;
 }
 
+/* Java 文字列リテラルの中身 ("..." の二重引用符の内側) を出力する。
+   "、\、\n だけをエスケープし、その他のバイトは生で出力する。
+   非UTF-8 (SJIS) ビルドでは output_multibyte で SJIS マルチバイトの第2バイトを
+   追跡し、第2バイトが 0x22 や 0x5c の場合に誤エスケープしないようにする。
+   tmp_sgmt_sizes が非NULLのとき、'&' で連結された各セグメントの境界で
+   "..." を一旦閉じて + で連結し改行を挿入する (非UTF-8ビルドのみ)。
+   呼び出し側 (joutput_string_write / joutput_inline_java_string) が前後の
+   二重引用符とラッパーを出力する。 */
+static void joutput_escaped_string_body(const unsigned char *s, int size,
+                                        const size_t *tmp_sgmt_sizes) {
+  int i;
+#ifdef I18N_UTF8
+  (void)tmp_sgmt_sizes;
+  for (i = 0; i < size; i++) {
+    int c = s[i];
+    if (c == '\"' || c == '\\') {
+      joutput("\\%c", c);
+    } else if (c == '\n') {
+      joutput("\\n");
+    } else {
+      joutput("%c", c);
+    }
+  }
+#else
+  int output_multibyte = 0;
+  int sum_sgmt_size = 0;
+  int sgmt_index = 0;
+  for (i = 0; i < size; i++) {
+    int c = s[i];
+    if (!output_multibyte && (c == '\"' || c == '\\')) {
+      joutput("\\%c", c);
+    } else if (!output_multibyte && (c == '\n')) {
+      joutput("\\n");
+    } else {
+      joutput("%c", c);
+    }
+
+    // insert line breaks between segments concatenated with '&'
+    if (tmp_sgmt_sizes && i < size - 1) {
+      size_t segment_end_position =
+          sum_sgmt_size + tmp_sgmt_sizes[sgmt_index] - 1;
+      if (i == segment_end_position) {
+        joutput("\" + ");
+        joutput_newline();
+        joutput_prefix();
+        joutput("\"");
+        sum_sgmt_size += tmp_sgmt_sizes[sgmt_index];
+        sgmt_index++;
+      }
+    }
+    output_multibyte = !output_multibyte &&
+                       ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
+  }
+#endif
+}
+
 static void joutput_string_write(const unsigned char *s, int size,
                                  enum cb_string_category category,
                                  const size_t *tmp_sgmt_sizes) {
-  int i;
-
 #ifdef I18N_UTF8
   int multi_byte = 0;
   if (utf8_ext_pick(s)) {
@@ -569,48 +623,8 @@ static void joutput_string_write(const unsigned char *s, int size,
     }
     joutput("\"");
 
-#ifdef I18N_UTF8
-    for (i = 0; i < size; i++) {
-      int c = s[i];
-      if (c == '\"' || c == '\\') {
-        joutput("\\%c", c);
-      } else if (c == '\n') {
-        joutput("\\n");
-      } else {
-        joutput("%c", c);
-      }
-    }
-#else
-    int output_multibyte = 0;
-    int sum_sgmt_size = 0;
-    int sgmt_index = 0;
-    for (i = 0; i < size; i++) {
-      int c = s[i];
-      if (!output_multibyte && (c == '\"' || c == '\\')) {
-        joutput("\\%c", c);
-      } else if (!output_multibyte && (c == '\n')) {
-        joutput("\\n");
-      } else {
-        joutput("%c", c);
-      }
+    joutput_escaped_string_body(s, size, tmp_sgmt_sizes);
 
-      // insert line breaks between segments concatenated with '&'
-      if (tmp_sgmt_sizes && i < size - 1) {
-        size_t segment_end_position =
-            sum_sgmt_size + tmp_sgmt_sizes[sgmt_index] - 1;
-        if (i == segment_end_position) {
-          joutput("\" + ");
-          joutput_newline();
-          joutput_prefix();
-          joutput("\"");
-          sum_sgmt_size += tmp_sgmt_sizes[sgmt_index];
-          sgmt_index++;
-        }
-      }
-      output_multibyte = !output_multibyte &&
-                         ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
-    }
-#endif
     if (tmp_sgmt_sizes) {
       joutput("\"");
       joutput_newline();
@@ -627,6 +641,7 @@ static void joutput_string_write(const unsigned char *s, int size,
       joutput("CobolUtil.toBytes(");
     }
 
+    int i;
     for (i = 0; i < size; i++) {
       joutput("(byte)0x%02x", s[i]);
       if (i < size - 1) {
@@ -654,45 +669,16 @@ int cb_literal_is_java_string_inlineable(const unsigned char *data, int size) {
          CB_STRING_CATEGORY_CONTAINS_UNCOMMON;
 }
 
-/* Java 文字列リテラル "..." を出力する。joutput_string_write の本体と同じく
-   "、\、\n だけをエスケープし、その他のバイトは生で出力する。
-   非UTF-8 (SJIS) ビルドでは output_multibyte で SJIS マルチバイトの第2バイトを
-   追跡し、第2バイトが 0x22 や 0x5c の場合に誤エスケープしないようにする。
-   呼び出し側 (cb_literal_is_java_string_inlineable) は get_string_category で
-   CONTAINS_UNCOMMON を弾くため LF を含むデータは渡ってこないが、
-   joutput_string_write の文字列リテラル分岐と規則を揃える意味で \n の
-   エスケープ分岐も残してある。 */
+/* Java 文字列リテラル "..." を出力する。エスケープ規則は
+   joutput_escaped_string_body に集約しており、joutput_string_write の
+   文字列リテラル分岐と完全に同じ規則 ("、\、\n のみエスケープ、SJIS第2バイト
+   追跡) になる。MOVE単一リテラルにはセグメント連結が無いため tmp_sgmt_sizes は
+   NULL を渡す。呼び出し側 (cb_literal_is_java_string_inlineable) は
+   get_string_category で CONTAINS_UNCOMMON を弾くため LF を含むデータは
+   渡ってこないが、規則を揃える意味で \n のエスケープ分岐も残してある。 */
 static void joutput_inline_java_string(const unsigned char *data, int size) {
-  int i;
   joutput("\"");
-#ifdef I18N_UTF8
-  for (i = 0; i < size; i++) {
-    int c = data[i];
-    if (c == '"' || c == '\\') {
-      joutput("\\%c", c);
-    } else if (c == '\n') {
-      joutput("\\n");
-    } else {
-      joutput("%c", c);
-    }
-  }
-#else
-  {
-    int output_multibyte = 0;
-    for (i = 0; i < size; i++) {
-      int c = data[i];
-      if (!output_multibyte && (c == '"' || c == '\\')) {
-        joutput("\\%c", c);
-      } else if (!output_multibyte && c == '\n') {
-        joutput("\\n");
-      } else {
-        joutput("%c", c);
-      }
-      output_multibyte = !output_multibyte &&
-                         ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
-    }
-  }
-#endif
+  joutput_escaped_string_body(data, size, NULL);
   joutput("\"");
 }
 
