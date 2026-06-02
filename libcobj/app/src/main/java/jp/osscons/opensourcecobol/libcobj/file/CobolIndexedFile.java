@@ -31,21 +31,20 @@ import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteErrorCode;
 
 /**
- * Concrete {@link CobolFile} implementation for INDEXED files ({@code ORGANIZATION IS INDEXED}).
+ * INDEXEDファイル（{@code ORGANIZATION IS INDEXED}）向けの{@link CobolFile}の具象実装。
  *
- * <p>Each INDEXED file is backed by a single SQLite database (one file = one database, accessed
- * through the xerial {@code sqlite-jdbc} driver). The primary key is stored in table {@code table0}
- * and each alternate key in {@code tableI}; file-wide locks are held in a {@code file_lock} table
- * and record locks in the {@code locked_by} column of {@code table0}; file metadata (record size
- * and key layout) is kept in the {@code metadata_*} tables.
+ * <p>各INDEXEDファイルは1つのSQLiteデータベースをバックエンドとする（1ファイル＝1データベースであり、xerialの{@code
+ * sqlite-jdbc}ドライバ経由でアクセスする）。主キーは{@code table0}テーブルに、各副キーは{@code
+ * tableI}に格納される。ファイル全体のロックは{@code file_lock}テーブルで、レコードロックは{@code table0}の{@code
+ * locked_by}列で管理する。ファイルのメタデータ（レコードサイズとキーのレイアウト）は{@code metadata_*}テーブルに保持する。
  *
- * <p>This class overrides the {@code *_} hook methods of {@link CobolFile} (such as {@link
- * #open_}, {@link #read_}, {@link #write_}, {@link #rewrite_}, {@link #delete_} and {@link
- * #start_}) and translates each COBOL I/O verb into the corresponding SQL operations. Sequential
- * navigation ({@code READ NEXT}/{@code READ PREVIOUS}) is emulated with an {@link IndexedCursor}.
+ * <p>このクラスは{@link CobolFile}の{@code *_}フックメソッド（{@link #open_}、{@link #read_}、{@link
+ * #write_}、{@link #rewrite_}、{@link #delete_}、{@link
+ * #start_}など）をオーバーライドし、各COBOLのI/O動詞を対応するSQL操作へ変換する。順次ナビゲーション（{@code READ NEXT}／{@code
+ * READ PREVIOUS}）は{@link IndexedCursor}でエミュレートする。
  *
- * <p>All SQL runs inside an explicit transaction ({@code setAutoCommit(false)},
- * {@code TRANSACTION_SERIALIZABLE}); each statement commits on success and rolls back on failure.
+ * <p>すべてのSQLは明示的なトランザクション内で実行され（{@code setAutoCommit(false)}、{@code
+ * TRANSACTION_SERIALIZABLE}）、各文は成功時にコミット、失敗時にロールバックする。
  */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
@@ -56,61 +55,58 @@ public class CobolIndexedFile extends CobolFile {
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
-    /** Comparison condition for {@code START}/{@code READ}: key is equal ({@code =}). */
+    /** {@code START}/{@code READ}の比較条件：キーが等しい（{@code =}）。 */
     public static final int COB_EQ = 1;
 
-    /** Comparison condition for {@code START}/{@code READ}: key is less than ({@code <}). */
+    /** {@code START}/{@code READ}の比較条件：キーが小さい（{@code <}）。 */
     public static final int COB_LT = 2;
 
-    /** Comparison condition for {@code START}/{@code READ}: key is less than or equal ({@code <=}). */
+    /** {@code START}/{@code READ}の比較条件：キーが小さいか等しい（{@code <=}）。 */
     public static final int COB_LE = 3;
 
-    /** Comparison condition for {@code START}/{@code READ}: key is greater than ({@code >}). */
+    /** {@code START}/{@code READ}の比較条件：キーが大きい（{@code >}）。 */
     public static final int COB_GT = 4;
 
-    /**
-     * Comparison condition for {@code START}/{@code READ}: key is greater than or equal ({@code
-     * >=}).
-     */
+    /** {@code START}/{@code READ}の比較条件：キーが大きいか等しい（{@code >=}）。 */
     public static final int COB_GE = 5;
 
-    /** Comparison condition for {@code START}/{@code READ}: key is not equal ({@code <>}). */
+    /** {@code START}/{@code READ}の比較条件：キーが等しくない（{@code <>}）。 */
     public static final int COB_NE = 6;
 
     private static String storedProcessUuid = null;
     private static String storedProcessId = null;
 
     /**
-     * Constructs an INDEXED file instance. This constructor is normally invoked indirectly from the
-     * generated Java code through {@link CobolFileFactory#makeCobolFileInstance}; its arguments
-     * mirror the attributes of the COBOL {@code SELECT}/{@code FD} declaration.
+     * INDEXEDファイルのインスタンスを構築する。通常このコンストラクタは、生成されたJavaコードから{@link
+     * CobolFileFactory#makeCobolFileInstance}を介して間接的に呼び出される。引数はCOBOLの{@code SELECT}／{@code
+     * FD}宣言の属性に対応する。
      *
-     * @param selectName the name given in the {@code SELECT} clause
-     * @param fileStatus the COBOL {@code FILE STATUS} storage (a 4-byte buffer)
-     * @param assign the field holding the assignment name (file path)
-     * @param record the field that represents the record area
-     * @param recordSize the field that holds the current record length
-     * @param recordMin the minimum record length
-     * @param recordMax the maximum record length
-     * @param nkeys the number of keys (1 primary plus the alternate keys)
-     * @param keys the key descriptors; index {@code 0} is the primary key
-     * @param organization the file organization ({@code COB_ORG_INDEXED} for this class)
-     * @param accessMode the access mode (sequential, dynamic, or random)
-     * @param lockMode the lock mode flags ({@code COB_LOCK_*})
-     * @param openMode the initial open mode
-     * @param flagOptional whether the file is declared {@code OPTIONAL}
-     * @param lastOpenMode the most recent open mode
-     * @param special the special-file flag
-     * @param flagNonexistent whether the file is currently known to be nonexistent
-     * @param flagEndOfFile whether the cursor is positioned at end of file
-     * @param flagBeginOfFile whether the cursor is positioned at beginning of file
-     * @param flagFirstRead whether the next read is the first read
-     * @param flagReadDone whether a read has been performed
-     * @param flagSelectFeatures the OR of select-feature flags ({@code FILE STATUS}, {@code
-     *     LINAGE}, {@code EXTERNAL})
-     * @param flagNeedsNl whether a trailing newline is needed
-     * @param flagNeedsTop whether a top-of-page is needed
-     * @param fileVersion the on-disk format version ({@code COB_FILE_VERSION})
+     * @param selectName {@code SELECT}句で指定された名前
+     * @param fileStatus COBOLの{@code FILE STATUS}用ストレージ（4バイトのバッファ）
+     * @param assign 割り当て名（ファイルパス）を保持するフィールド
+     * @param record レコード領域を表すフィールド
+     * @param recordSize 現在のレコード長を保持するフィールド
+     * @param recordMin 最小レコード長
+     * @param recordMax 最大レコード長
+     * @param nkeys キーの数（主キー1つと副キーの合計）
+     * @param keys キー記述子。インデックス{@code 0}が主キー
+     * @param organization ファイル組織（このクラスでは{@code COB_ORG_INDEXED}）
+     * @param accessMode アクセスモード（順次、動的、またはランダム）
+     * @param lockMode ロックモードフラグ（{@code COB_LOCK_*}）
+     * @param openMode 初期オープンモード
+     * @param flagOptional ファイルが{@code OPTIONAL}と宣言されているか
+     * @param lastOpenMode 直近のオープンモード
+     * @param special 特殊ファイルフラグ
+     * @param flagNonexistent ファイルが現在存在しないと判明しているか
+     * @param flagEndOfFile カーソルがファイル終端に位置しているか
+     * @param flagBeginOfFile カーソルがファイル先頭に位置しているか
+     * @param flagFirstRead 次の読み込みが最初の読み込みか
+     * @param flagReadDone 読み込みが実行済みか
+     * @param flagSelectFeatures select機能フラグのOR（{@code FILE STATUS}、{@code LINAGE}、{@code
+     *     EXTERNAL}）
+     * @param flagNeedsNl 末尾の改行が必要か
+     * @param flagNeedsTop 改ページ（先頭出し）が必要か
+     * @param fileVersion ディスク上のフォーマットバージョン（{@code COB_FILE_VERSION}）
      */
     public CobolIndexedFile(
             String selectName,
@@ -193,21 +189,20 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * Returns the SQLite table name for the key with the given index.
+     * 指定したインデックスのキーに対応するSQLiteテーブル名を返す。
      *
-     * @param index the key index ({@code 0} for the primary key, {@code >= 1} for alternate keys)
-     * @return the table name, e.g. {@code "table0"}, {@code "table1"}, ...
+     * @param index キーのインデックス（主キーは{@code 0}、副キーは{@code 1}以上）
+     * @return テーブル名（例：{@code "table0"}、{@code "table1"}、…）
      */
     public static String getTableName(int index) {
         return String.format("table%d", index);
     }
 
     /**
-     * Returns the cursor name for the key with the given index.
+     * 指定したインデックスのキーに対応するカーソル名を返す。
      *
-     * @param index the key index
-     * @return the cursor name, e.g. {@code "cursor0"}, {@code "cursor1"}, ... (currently unused, but
-     *     kept for compatibility)
+     * @param index キーのインデックス
+     * @return カーソル名（例：{@code "cursor0"}、{@code "cursor1"}、…。現在は未使用だが互換性のため残されている）
      */
     public static String getCursorName(int index) {
         return String.format("cursor%d", index);
@@ -218,15 +213,13 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * Controls whether each modifying statement ({@code WRITE}/{@code REWRITE}/{@code DELETE})
-     * commits its transaction immediately.
+     * 各更新文（{@code WRITE}／{@code REWRITE}／{@code DELETE}）がトランザクションを即座にコミットするかどうかを制御する。
      *
-     * <p>By default this is {@code true}. Bulk loaders such as {@code cobj-idx load} set it to
-     * {@code false} to suppress per-record commits for speed and commit once at the end via {@link
-     * #commitJdbcTransaction()}.
+     * <p>デフォルトは{@code true}。{@code cobj-idx
+     * load}のような一括ローダは、速度のためにレコードごとのコミットを抑制するため{@code false}に設定し、最後に{@link
+     * #commitJdbcTransaction()}で一度だけコミットする。
      *
-     * @param commitOnModification {@code true} to commit after every modification, {@code false} to
-     *     defer committing
+     * @param commitOnModification 更新のたびにコミットする場合は{@code true}、コミットを遅延させる場合は{@code false}
      */
     public void setCommitOnModification(boolean commitOnModification) {
         this.commitOnModification = commitOnModification;
@@ -621,23 +614,21 @@ public class CobolIndexedFile extends CobolFile {
 
     // Equivalent to indexed_start_internal in libcob/fileio.c
     /**
-     * Positions the cursor on the first record matching the given key and comparison condition.
+     * 指定したキーと比較条件に一致する最初のレコードにカーソルを位置づける。
      *
-     * <p>The key field address is matched against the declared keys to determine which key (and
-     * therefore which SQLite table) to use, a fresh {@link IndexedCursor} is created for that key,
-     * and a single record is fetched. On success the current key/record buffers ({@code p.key} /
-     * {@code p.data}) are updated. This is the shared implementation behind {@link #start_(int,
-     * AbstractCobolField)} and the random {@link #read_(AbstractCobolField, int)}.
+     * <p>キーフィールドのアドレスを宣言済みのキーと照合してどのキー（したがってどのSQLiteテーブル）を使うかを判定し、そのキー向けに新しい{@link
+     * IndexedCursor}を生成して、1件のレコードをフェッチする。成功時には現在のキー／レコードバッファ（{@code p.key}／{@code
+     * p.data}）が更新される。これは{@link #start_(int,
+     * AbstractCobolField)}とランダムな{@link #read_(AbstractCobolField, int)}の共通実装である。
      *
-     * @param cond the comparison condition ({@link #COB_EQ}, {@link #COB_GT}, {@link #COB_GE},
-     *     {@link #COB_LT}, or {@link #COB_LE}; {@link #COB_NE} is not supported and causes the
-     *     cursor to fail)
-     * @param key the field holding the key value to search for
-     * @param readOpts the read option flags ({@code COB_READ_*})
-     * @param testLock whether to test record locks (currently unused by this method)
-     * @return {@code COB_STATUS_00_SUCCESS} if a record was found, {@code
-     *     COB_STATUS_23_KEY_NOT_EXISTS} if none matched, or {@code COB_STATUS_30_PERMANENT_ERROR}
-     *     on a cursor creation failure
+     * @param cond 比較条件（{@link #COB_EQ}、{@link #COB_GT}、{@link #COB_GE}、{@link
+     *     #COB_LT}、{@link #COB_LE}のいずれか。{@link #COB_NE}はサポートされておらず、カーソルの生成に失敗する）
+     * @param key 検索するキー値を保持するフィールド
+     * @param readOpts 読み込みオプションフラグ（{@code COB_READ_*}）
+     * @param testLock レコードロックをテストするか（現状このメソッドでは未使用）
+     * @return レコードが見つかった場合は{@code COB_STATUS_00_SUCCESS}、一致するものがなかった場合は{@code
+     *     COB_STATUS_23_KEY_NOT_EXISTS}、カーソル生成に失敗した場合は{@code
+     *     COB_STATUS_30_PERMANENT_ERROR}
      */
     public int indexed_start_internal(
             int cond, AbstractCobolField key, int readOpts, boolean testLock) {
@@ -1402,11 +1393,10 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * Commits the current JDBC transaction explicitly.
+     * 現在のJDBCトランザクションを明示的にコミットする。
      *
-     * <p>Intended for use together with {@link #setCommitOnModification(boolean)}{@code (false)}:
-     * after a batch of modifications has been performed with per-statement committing suppressed,
-     * this method flushes them all in a single commit.
+     * <p>{@link #setCommitOnModification(boolean)}{@code
+     * (false)}と組み合わせて使うことを想定している。文ごとのコミットを抑制した状態で一連の更新を行った後、このメソッドがそれらをまとめて1回のコミットでフラッシュする。
      */
     public void commitJdbcTransaction() {
         IndexedFile p = this.filei;

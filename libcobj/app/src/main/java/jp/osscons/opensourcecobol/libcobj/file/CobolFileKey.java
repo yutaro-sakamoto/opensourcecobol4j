@@ -21,20 +21,19 @@ package jp.osscons.opensourcecobol.libcobj.file;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
 /**
- * Describes a single key (primary or alternate) of an INDEXED file.
+ * INDEXEDファイルの1つのキー（主キーまたは副キー）を表す。
  *
- * <p>The compiler ({@code cobj}) generates one {@code CobolFileKey} per {@code RECORD KEY} / {@code
- * ALTERNATE RECORD KEY} declared in a {@code SELECT} clause and passes the resulting array to
- * {@link CobolFileFactory#makeCobolFileInstance}. Each entry carries the COBOL field that holds the
- * key value, a duplicates flag, the byte offset of the key within the record, and—when the key is a
- * SPLIT KEY—the list of {@link KeyComponent}s that make it up.
+ * <p>コンパイラ（{@code cobj}）は、{@code SELECT}句で宣言された{@code RECORD KEY} / {@code ALTERNATE RECORD
+ * KEY}ごとに{@code CobolFileKey}を1つ生成し、その配列を{@link
+ * CobolFileFactory#makeCobolFileInstance}に渡す。各要素は、キー値を保持するCOBOLフィールド、重複フラグ、レコード内でのキーのバイトオフセット、そしてキーがSPLIT
+ * KEYの場合はそれを構成する{@link KeyComponent}のリストを保持する。
  *
- * <p>In the SQLite storage used by {@link CobolIndexedFile}, the entry at index {@code 0} is the
- * primary key (stored in {@code table0}) and entries at index {@code i >= 1} are alternate keys
- * (stored in {@code tableI}).
+ * <p>{@link
+ * CobolIndexedFile}が利用するSQLiteストレージでは、インデックス{@code 0}の要素が主キー（{@code table0}に格納）であり、インデックス{@code
+ * i >= 1}の要素が副キー（{@code tableI}に格納）である。
  */
 public class CobolFileKey {
-    /** The maximum number of {@link KeyComponent}s a single SPLIT KEY may consist of. */
+    /** 1つのSPLIT KEYを構成できる{@link KeyComponent}の最大数。 */
     public static final int COB_MAX_KEY_COMPONENTS = 8;
 
     private AbstractCobolField field;
@@ -44,107 +43,105 @@ public class CobolFileKey {
     private KeyComponent[] component = new KeyComponent[COB_MAX_KEY_COMPONENTS];
 
     /**
-     * Returns the COBOL field that holds the value of this key.
+     * このキーの値を保持するCOBOLフィールドを返す。
      *
-     * @return the key field
+     * @return キーフィールド
      */
     public AbstractCobolField getField() {
         return field;
     }
 
     /**
-     * Sets the COBOL field that holds the value of this key.
+     * このキーの値を保持するCOBOLフィールドを設定する。
      *
-     * @param field the key field
+     * @param field キーフィールド
      */
     public void setField(AbstractCobolField field) {
         this.field = field;
     }
 
     /**
-     * Returns the duplicates flag of this key.
+     * このキーの重複フラグを返す。
      *
-     * @return {@code 0} if duplicate values are not allowed (primary key or {@code ALTERNATE RECORD
-     *     KEY} without {@code WITH DUPLICATES}), or a non-zero value if duplicates are allowed
-     *     ({@code ALTERNATE RECORD KEY ... WITH DUPLICATES})
+     * @return 重複値を許可しない場合（主キー、または{@code WITH DUPLICATES}なしの{@code ALTERNATE RECORD
+     *     KEY}）は{@code 0}、重複値を許可する場合（{@code ALTERNATE RECORD KEY ... WITH
+     *     DUPLICATES}）は非ゼロ値
      */
     public int getFlag() {
         return flag;
     }
 
     /**
-     * Sets the duplicates flag of this key.
+     * このキーの重複フラグを設定する。
      *
-     * @param flag {@code 0} to disallow duplicate values, or a non-zero value to allow them
+     * @param flag 重複値を許可しない場合は{@code 0}、許可する場合は非ゼロ値
      */
     public void setFlag(int flag) {
         this.flag = flag;
     }
 
     /**
-     * Returns the byte offset of this key within the record.
+     * レコード内でのこのキーのバイトオフセットを返す。
      *
-     * @return the 0-origin byte offset from the beginning of the record, or {@code -1} when the key
-     *     is a SPLIT KEY (in which case the layout is described by {@link #getComponent()})
+     * @return レコード先頭からの0始まりのバイトオフセット。キーがSPLIT KEYの場合は{@code
+     *     -1}（その場合のレイアウトは{@link #getComponent()}で記述される）
      */
     public int getOffset() {
         return offset;
     }
 
     /**
-     * Sets the byte offset of this key within the record.
+     * レコード内でのこのキーのバイトオフセットを設定する。
      *
-     * @param offset the 0-origin byte offset from the beginning of the record, or {@code -1} for a
-     *     SPLIT KEY
+     * @param offset レコード先頭からの0始まりのバイトオフセット。SPLIT KEYの場合は{@code -1}
      */
     public void setOffset(int offset) {
         this.offset = offset;
     }
 
     /**
-     * Returns the number of {@link KeyComponent}s that make up this key.
+     * このキーを構成する{@link KeyComponent}の数を返す。
      *
-     * @return the number of valid entries in the array returned by {@link #getComponent()}; a SPLIT
-     *     KEY has two or more, an ordinary key has zero
+     * @return {@link
+     *     #getComponent()}が返す配列のうち有効な要素数。SPLIT KEYは2以上、通常のキーは0
      */
     public int getCountComponents() {
         return countComponents;
     }
 
     /**
-     * Sets the number of {@link KeyComponent}s that make up this key.
+     * このキーを構成する{@link KeyComponent}の数を設定する。
      *
-     * @param countComponents the number of valid entries in the component array
+     * @param countComponents 構成要素配列のうち有効な要素数
      */
     public void setCountComponents(int countComponents) {
         this.countComponents = countComponents;
     }
 
     /**
-     * Returns the array of {@link KeyComponent}s describing a SPLIT KEY.
+     * SPLIT KEYを記述する{@link KeyComponent}の配列を返す。
      *
-     * <p>Only the first {@link #getCountComponents()} entries are meaningful.
+     * <p>有効なのは先頭{@link #getCountComponents()}個の要素のみである。
      *
-     * @return the component array (never {@code null}; its capacity is {@link
-     *     #COB_MAX_KEY_COMPONENTS})
+     * @return 構成要素配列（{@code null}にはならない。容量は{@link #COB_MAX_KEY_COMPONENTS}）
      */
     public KeyComponent[] getComponent() {
         return component;
     }
 
     /**
-     * Sets the array of {@link KeyComponent}s describing a SPLIT KEY.
+     * SPLIT KEYを記述する{@link KeyComponent}の配列を設定する。
      *
-     * @param component the component array
+     * @param component 構成要素配列
      */
     public void setComponent(KeyComponent[] component) {
         this.component = component;
     }
 
     /**
-     * Returns the maximum number of components a SPLIT KEY may consist of.
+     * SPLIT KEYを構成できる要素の最大数を返す。
      *
-     * @return the value of {@link #COB_MAX_KEY_COMPONENTS}
+     * @return {@link #COB_MAX_KEY_COMPONENTS}の値
      */
     public static int getCobMaxKeyComponents() {
         return COB_MAX_KEY_COMPONENTS;

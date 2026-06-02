@@ -8,28 +8,26 @@ import java.util.Optional;
 
 /** Represents a result of fetching a data from SQLite tables. */
 class FetchResult {
-    /** The key value of the fetched row (the {@code key} column). */
+    /** 取得した行のキー値（{@code key}列）。 */
     byte[] key;
 
     /**
-     * The {@code value} column of the fetched row.
+     * 取得した行の{@code value}列。
      *
-     * <p>Its meaning depends on the query that produced this result: for the primary table, and for
-     * the JOIN-based queries used while stepping through an alternate-key table, it holds the record
-     * body (from {@code table0.value}); for the direct (non-JOIN) sub-table queries it holds the
-     * primary-key reference.
+     * <p>この値の意味は、結果を生成したクエリによって異なる。主テーブルに対するクエリ、および副キーテーブルを走査する際に使用されるJOINベースのクエリでは、レコード本体（{@code
+     * table0.value}由来）を保持する。副テーブルに対する直接（JOINなし）のクエリでは、主キーへの参照を保持する。
      */
     byte[] value;
 
-    /** The duplicate number of the fetched row for a duplicates-enabled key; {@code 0} otherwise. */
+    /** 重複を許可するキーにおける取得行の重複番号。それ以外の場合は{@code 0}。 */
     int dupNo;
 
     /**
-     * Constructs a fetch result for a duplicates-enabled key.
+     * 重複を許可するキー向けのフェッチ結果を構築する。
      *
-     * @param key the key value of the fetched row
-     * @param value the value of the fetched row
-     * @param dupNo the duplicate number of the fetched row
+     * @param key 取得した行のキー値
+     * @param value 取得した行の値
+     * @param dupNo 取得した行の重複番号
      */
     FetchResult(byte[] key, byte[] value, int dupNo) {
         this.key = key;
@@ -38,10 +36,10 @@ class FetchResult {
     }
 
     /**
-     * Constructs a fetch result with a duplicate number of {@code 0}.
+     * 重複番号を{@code 0}としてフェッチ結果を構築する。
      *
-     * @param key the key value of the fetched row
-     * @param value the value of the fetched row
+     * @param key 取得した行のキー値
+     * @param value 取得した行の値
      */
     FetchResult(byte[] key, byte[] value) {
         this.key = key;

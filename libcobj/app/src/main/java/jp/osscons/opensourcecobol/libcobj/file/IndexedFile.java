@@ -22,63 +22,55 @@ import java.sql.Connection;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /**
- * Holds the runtime state of one opened INDEXED file.
+ * オープン中の1つのINDEXEDファイルの実行時状態を保持する。
  *
- * <p>An instance is created by {@link CobolIndexedFile#open_(String, int, int)} and kept in {@code
- * CobolFile.filei} for the lifetime of the open. It bundles the JDBC connection to the backing
- * SQLite database together with the current key/record buffers and other bookkeeping used while
- * executing COBOL I/O statements. This is a package-private plain data holder; the actual logic
- * lives in {@link CobolIndexedFile}.
+ * <p>インスタンスは{@link CobolIndexedFile#open_(String, int, int)}で生成され、オープンの間{@code
+ * CobolFile.filei}に保持される。バックエンドのSQLiteデータベースへのJDBC接続に加え、現在のキー／レコードバッファや、COBOLのI/O文を実行する際に使用するその他の管理情報をまとめて保持する。これはパッケージプライベートな単純なデータ保持クラスであり、実際のロジックは{@link
+ * CobolIndexedFile}に存在する。
  */
 class IndexedFile {
-    /** Index into the key array identifying the key most recently used (e.g. by {@code START}). */
+    /** 直近に使用されたキー（例：{@code START}で使用）を示すキー配列へのインデックス。 */
     int key_index;
 
-    /** The primary key value written by the previous {@code WRITE}, used for sequential ordering. */
+    /** 直前の{@code WRITE}で書き込まれた主キー値。順次書き込み時の順序チェックに使用する。 */
     CobolDataStorage last_key;
 
-    /** A scratch buffer large enough to hold the largest key, sized at open time. */
+    /** 最大のキーを格納できる大きさのスクラッチバッファ。オープン時にサイズが決定される。 */
     CobolDataStorage temp_key;
 
-    /** The JDBC connection to the SQLite database that backs this file. */
+    /** このファイルのバックエンドであるSQLiteデータベースへのJDBC接続。 */
     Connection connection;
 
-    /** The current key value (raw bytes) being read or written. */
+    /** 読み書き中の現在のキー値（生のバイト列）。 */
     byte[] key;
 
-    /** The current record value (raw bytes) being read or written. */
+    /** 読み書き中の現在のレコード値（生のバイト列）。 */
     byte[] data;
 
-    /** Reserved for per-key read bookkeeping; not actively used by the current implementation. */
+    /** キーごとの読み込み管理用に予約されているが、現在の実装では実際には使用されていない。 */
     byte[][] last_readkey;
 
-    /**
-     * Reserved per-key duplicate-number ({@code dupNo}) state; allocated at open time but not
-     * actively read by the current implementation.
-     */
+    /** キーごとの重複番号（{@code dupNo}）状態として予約されているが、オープン時に確保されるのみで現在の実装では読み取られない。 */
     int[] last_dupno;
 
-    /**
-     * Reserved per-key state for REWRITE; allocated at open time but not actively used by the
-     * current implementation, which instead threads duplicate numbers through a local array.
-     */
+    /** REWRITE用のキーごとの状態として予約されているが、オープン時に確保されるのみで、現在の実装では代わりにローカル配列で重複番号を受け渡しており、実際には使用されていない。 */
     int[] rewrite_sec_key;
 
-    /** The resolved path of the SQLite database file. */
+    /** 解決済みのSQLiteデータベースファイルのパス。 */
     String filename;
 
-    /** Reserved for record-lock bookkeeping. */
+    /** レコードロックの管理用に予約されている。 */
     Object record_lock;
 
-    /** {@code true} while a write cursor is open during a WRITE/REWRITE/DELETE operation. */
+    /** WRITE/REWRITE/DELETE操作中に書き込みカーソルがオープンしている間は{@code true}。 */
     boolean write_cursor_open;
 
-    /** Reserved lock identifier. */
+    /** 予約済みのロック識別子。 */
     int lock_id;
 
-    /** {@code true} while this process currently holds a record lock. */
+    /** このプロセスが現在レコードロックを保持している間は{@code true}。 */
     boolean record_locked;
 
-    /** The length, in characters, of {@link #filename}. */
+    /** {@link #filename}の文字数。 */
     int filenamelen;
 }
