@@ -8,21 +8,28 @@ import java.util.Optional;
 
 /** Represents a result of fetching a data from SQLite tables. */
 class FetchResult {
-    /** TODO: 準備中 */
+    /** The key value of the fetched row (the {@code key} column). */
     byte[] key;
 
-    /** TODO: 準備中 */
+    /**
+     * The {@code value} column of the fetched row.
+     *
+     * <p>Its meaning depends on the query that produced this result: for the primary table, and for
+     * the JOIN-based queries used while stepping through an alternate-key table, it holds the record
+     * body (from {@code table0.value}); for the direct (non-JOIN) sub-table queries it holds the
+     * primary-key reference.
+     */
     byte[] value;
 
-    /** TODO: 準備中 */
+    /** The duplicate number of the fetched row for a duplicates-enabled key; {@code 0} otherwise. */
     int dupNo;
 
     /**
-     * TODO: 準備中
+     * Constructs a fetch result for a duplicates-enabled key.
      *
-     * @param key TODO: 準備中
-     * @param value TODO: 準備中
-     * @param dupNo TODO: 準備中
+     * @param key the key value of the fetched row
+     * @param value the value of the fetched row
+     * @param dupNo the duplicate number of the fetched row
      */
     FetchResult(byte[] key, byte[] value, int dupNo) {
         this.key = key;
@@ -31,10 +38,10 @@ class FetchResult {
     }
 
     /**
-     * TODO: 準備中
+     * Constructs a fetch result with a duplicate number of {@code 0}.
      *
-     * @param key TODO: 準備中
-     * @param value TODO: 準備中
+     * @param key the key value of the fetched row
+     * @param value the value of the fetched row
      */
     FetchResult(byte[] key, byte[] value) {
         this.key = key;

@@ -30,7 +30,23 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteErrorCode;
 
-/** TODO: 準備中 */
+/**
+ * Concrete {@link CobolFile} implementation for INDEXED files ({@code ORGANIZATION IS INDEXED}).
+ *
+ * <p>Each INDEXED file is backed by a single SQLite database (one file = one database, accessed
+ * through the xerial {@code sqlite-jdbc} driver). The primary key is stored in table {@code table0}
+ * and each alternate key in {@code tableI}; file-wide locks are held in a {@code file_lock} table
+ * and record locks in the {@code locked_by} column of {@code table0}; file metadata (record size
+ * and key layout) is kept in the {@code metadata_*} tables.
+ *
+ * <p>This class overrides the {@code *_} hook methods of {@link CobolFile} (such as {@link
+ * #open_}, {@link #read_}, {@link #write_}, {@link #rewrite_}, {@link #delete_} and {@link
+ * #start_}) and translates each COBOL I/O verb into the corresponding SQL operations. Sequential
+ * navigation ({@code READ NEXT}/{@code READ PREVIOUS}) is emulated with an {@link IndexedCursor}.
+ *
+ * <p>All SQL runs inside an explicit transaction ({@code setAutoCommit(false)},
+ * {@code TRANSACTION_SERIALIZABLE}); each statement commits on success and rolls back on failure.
+ */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
     private boolean updateWhileReading = false;
@@ -40,55 +56,61 @@ public class CobolIndexedFile extends CobolFile {
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
-    /** TODO: 準備中 */
+    /** Comparison condition for {@code START}/{@code READ}: key is equal ({@code =}). */
     public static final int COB_EQ = 1;
 
-    /** TODO: 準備中 */
+    /** Comparison condition for {@code START}/{@code READ}: key is less than ({@code <}). */
     public static final int COB_LT = 2;
 
-    /** TODO: 準備中 */
+    /** Comparison condition for {@code START}/{@code READ}: key is less than or equal ({@code <=}). */
     public static final int COB_LE = 3;
 
-    /** TODO: 準備中 */
+    /** Comparison condition for {@code START}/{@code READ}: key is greater than ({@code >}). */
     public static final int COB_GT = 4;
 
-    /** TODO: 準備中 */
+    /**
+     * Comparison condition for {@code START}/{@code READ}: key is greater than or equal ({@code
+     * >=}).
+     */
     public static final int COB_GE = 5;
 
-    /** TODO: 準備中 */
+    /** Comparison condition for {@code START}/{@code READ}: key is not equal ({@code <>}). */
     public static final int COB_NE = 6;
 
     private static String storedProcessUuid = null;
     private static String storedProcessId = null;
 
     /**
-     * TODO: 準備中
+     * Constructs an INDEXED file instance. This constructor is normally invoked indirectly from the
+     * generated Java code through {@link CobolFileFactory#makeCobolFileInstance}; its arguments
+     * mirror the attributes of the COBOL {@code SELECT}/{@code FD} declaration.
      *
-     * @param selectName TODO: 準備中
-     * @param fileStatus TODO: 準備中
-     * @param assign TODO: 準備中
-     * @param record TODO: 準備中
-     * @param recordSize TODO: 準備中
-     * @param recordMin TODO: 準備中
-     * @param recordMax TODO: 準備中
-     * @param nkeys TODO: 準備中
-     * @param keys TODO: 準備中
-     * @param organization TODO: 準備中
-     * @param accessMode TODO: 準備中
-     * @param lockMode TODO: 準備中
-     * @param openMode TODO: 準備中
-     * @param flagOptional TODO: 準備中
-     * @param lastOpenMode TODO: 準備中
-     * @param special TODO: 準備中
-     * @param flagNonexistent TODO: 準備中
-     * @param flagEndOfFile TODO: 準備中
-     * @param flagBeginOfFile TODO: 準備中
-     * @param flagFirstRead TODO: 準備中
-     * @param flagReadDone TODO: 準備中
-     * @param flagSelectFeatures TODO: 準備中
-     * @param flagNeedsNl TODO: 準備中
-     * @param flagNeedsTop TODO: 準備中
-     * @param fileVersion TODO: 準備中
+     * @param selectName the name given in the {@code SELECT} clause
+     * @param fileStatus the COBOL {@code FILE STATUS} storage (a 4-byte buffer)
+     * @param assign the field holding the assignment name (file path)
+     * @param record the field that represents the record area
+     * @param recordSize the field that holds the current record length
+     * @param recordMin the minimum record length
+     * @param recordMax the maximum record length
+     * @param nkeys the number of keys (1 primary plus the alternate keys)
+     * @param keys the key descriptors; index {@code 0} is the primary key
+     * @param organization the file organization ({@code COB_ORG_INDEXED} for this class)
+     * @param accessMode the access mode (sequential, dynamic, or random)
+     * @param lockMode the lock mode flags ({@code COB_LOCK_*})
+     * @param openMode the initial open mode
+     * @param flagOptional whether the file is declared {@code OPTIONAL}
+     * @param lastOpenMode the most recent open mode
+     * @param special the special-file flag
+     * @param flagNonexistent whether the file is currently known to be nonexistent
+     * @param flagEndOfFile whether the cursor is positioned at end of file
+     * @param flagBeginOfFile whether the cursor is positioned at beginning of file
+     * @param flagFirstRead whether the next read is the first read
+     * @param flagReadDone whether a read has been performed
+     * @param flagSelectFeatures the OR of select-feature flags ({@code FILE STATUS}, {@code
+     *     LINAGE}, {@code EXTERNAL})
+     * @param flagNeedsNl whether a trailing newline is needed
+     * @param flagNeedsTop whether a top-of-page is needed
+     * @param fileVersion the on-disk format version ({@code COB_FILE_VERSION})
      */
     public CobolIndexedFile(
             String selectName,
@@ -171,20 +193,21 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * Returns the SQLite table name for the key with the given index.
      *
-     * @param index TODO: 準備中
-     * @return TODO: 準備中
+     * @param index the key index ({@code 0} for the primary key, {@code >= 1} for alternate keys)
+     * @return the table name, e.g. {@code "table0"}, {@code "table1"}, ...
      */
     public static String getTableName(int index) {
         return String.format("table%d", index);
     }
 
     /**
-     * TODO: 準備中
+     * Returns the cursor name for the key with the given index.
      *
-     * @param index TODO: 準備中
-     * @return TODO: 準備中
+     * @param index the key index
+     * @return the cursor name, e.g. {@code "cursor0"}, {@code "cursor1"}, ... (currently unused, but
+     *     kept for compatibility)
      */
     public static String getCursorName(int index) {
         return String.format("cursor%d", index);
@@ -195,9 +218,15 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * TODO: 準備中
+     * Controls whether each modifying statement ({@code WRITE}/{@code REWRITE}/{@code DELETE})
+     * commits its transaction immediately.
      *
-     * @param commitOnModification TODO: 準備中
+     * <p>By default this is {@code true}. Bulk loaders such as {@code cobj-idx load} set it to
+     * {@code false} to suppress per-record commits for speed and commit once at the end via {@link
+     * #commitJdbcTransaction()}.
+     *
+     * @param commitOnModification {@code true} to commit after every modification, {@code false} to
+     *     defer committing
      */
     public void setCommitOnModification(boolean commitOnModification) {
         this.commitOnModification = commitOnModification;
@@ -592,13 +621,23 @@ public class CobolIndexedFile extends CobolFile {
 
     // Equivalent to indexed_start_internal in libcob/fileio.c
     /**
-     * TODO: 準備中
+     * Positions the cursor on the first record matching the given key and comparison condition.
      *
-     * @param cond TODO: 準備中
-     * @param key TODO: 準備中
-     * @param readOpts TODO: 準備中
-     * @param testLock TODO: 準備中
-     * @return TODO: 準備中
+     * <p>The key field address is matched against the declared keys to determine which key (and
+     * therefore which SQLite table) to use, a fresh {@link IndexedCursor} is created for that key,
+     * and a single record is fetched. On success the current key/record buffers ({@code p.key} /
+     * {@code p.data}) are updated. This is the shared implementation behind {@link #start_(int,
+     * AbstractCobolField)} and the random {@link #read_(AbstractCobolField, int)}.
+     *
+     * @param cond the comparison condition ({@link #COB_EQ}, {@link #COB_GT}, {@link #COB_GE},
+     *     {@link #COB_LT}, or {@link #COB_LE}; {@link #COB_NE} is not supported and causes the
+     *     cursor to fail)
+     * @param key the field holding the key value to search for
+     * @param readOpts the read option flags ({@code COB_READ_*})
+     * @param testLock whether to test record locks (currently unused by this method)
+     * @return {@code COB_STATUS_00_SUCCESS} if a record was found, {@code
+     *     COB_STATUS_23_KEY_NOT_EXISTS} if none matched, or {@code COB_STATUS_30_PERMANENT_ERROR}
+     *     on a cursor creation failure
      */
     public int indexed_start_internal(
             int cond, AbstractCobolField key, int readOpts, boolean testLock) {
@@ -1362,7 +1401,13 @@ public class CobolIndexedFile extends CobolFile {
         System.err.println("Unlocking INDEXED file is not implemented");
     }
 
-    /** TODO: 準備中 */
+    /**
+     * Commits the current JDBC transaction explicitly.
+     *
+     * <p>Intended for use together with {@link #setCommitOnModification(boolean)}{@code (false)}:
+     * after a batch of modifications has been performed with per-statement committing suppressed,
+     * this method flushes them all in a single commit.
+     */
     public void commitJdbcTransaction() {
         IndexedFile p = this.filei;
         try {

@@ -20,9 +20,21 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 
-/** TODO: 準備中 */
+/**
+ * Describes a single key (primary or alternate) of an INDEXED file.
+ *
+ * <p>The compiler ({@code cobj}) generates one {@code CobolFileKey} per {@code RECORD KEY} / {@code
+ * ALTERNATE RECORD KEY} declared in a {@code SELECT} clause and passes the resulting array to
+ * {@link CobolFileFactory#makeCobolFileInstance}. Each entry carries the COBOL field that holds the
+ * key value, a duplicates flag, the byte offset of the key within the record, and—when the key is a
+ * SPLIT KEY—the list of {@link KeyComponent}s that make it up.
+ *
+ * <p>In the SQLite storage used by {@link CobolIndexedFile}, the entry at index {@code 0} is the
+ * primary key (stored in {@code table0}) and entries at index {@code i >= 1} are alternate keys
+ * (stored in {@code tableI}).
+ */
 public class CobolFileKey {
-    /** TODO: 準備中 */
+    /** The maximum number of {@link KeyComponent}s a single SPLIT KEY may consist of. */
     public static final int COB_MAX_KEY_COMPONENTS = 8;
 
     private AbstractCobolField field;
@@ -32,99 +44,107 @@ public class CobolFileKey {
     private KeyComponent[] component = new KeyComponent[COB_MAX_KEY_COMPONENTS];
 
     /**
-     * TODO: 準備中
+     * Returns the COBOL field that holds the value of this key.
      *
-     * @return TODO: 準備中
+     * @return the key field
      */
     public AbstractCobolField getField() {
         return field;
     }
 
     /**
-     * TODO: 準備中
+     * Sets the COBOL field that holds the value of this key.
      *
-     * @param field TODO: 準備中
+     * @param field the key field
      */
     public void setField(AbstractCobolField field) {
         this.field = field;
     }
 
     /**
-     * TODO: 準備中
+     * Returns the duplicates flag of this key.
      *
-     * @return TODO: 準備中
+     * @return {@code 0} if duplicate values are not allowed (primary key or {@code ALTERNATE RECORD
+     *     KEY} without {@code WITH DUPLICATES}), or a non-zero value if duplicates are allowed
+     *     ({@code ALTERNATE RECORD KEY ... WITH DUPLICATES})
      */
     public int getFlag() {
         return flag;
     }
 
     /**
-     * TODO: 準備中
+     * Sets the duplicates flag of this key.
      *
-     * @param flag TODO: 準備中
+     * @param flag {@code 0} to disallow duplicate values, or a non-zero value to allow them
      */
     public void setFlag(int flag) {
         this.flag = flag;
     }
 
     /**
-     * TODO: 準備中
+     * Returns the byte offset of this key within the record.
      *
-     * @return TODO: 準備中
+     * @return the 0-origin byte offset from the beginning of the record, or {@code -1} when the key
+     *     is a SPLIT KEY (in which case the layout is described by {@link #getComponent()})
      */
     public int getOffset() {
         return offset;
     }
 
     /**
-     * TODO: 準備中
+     * Sets the byte offset of this key within the record.
      *
-     * @param offset TODO: 準備中
+     * @param offset the 0-origin byte offset from the beginning of the record, or {@code -1} for a
+     *     SPLIT KEY
      */
     public void setOffset(int offset) {
         this.offset = offset;
     }
 
     /**
-     * TODO: 準備中
+     * Returns the number of {@link KeyComponent}s that make up this key.
      *
-     * @return TODO: 準備中
+     * @return the number of valid entries in the array returned by {@link #getComponent()}; a SPLIT
+     *     KEY has two or more, an ordinary key has zero
      */
     public int getCountComponents() {
         return countComponents;
     }
 
     /**
-     * TODO: 準備中
+     * Sets the number of {@link KeyComponent}s that make up this key.
      *
-     * @param countComponents TODO: 準備中
+     * @param countComponents the number of valid entries in the component array
      */
     public void setCountComponents(int countComponents) {
         this.countComponents = countComponents;
     }
 
     /**
-     * TODO: 準備中
+     * Returns the array of {@link KeyComponent}s describing a SPLIT KEY.
      *
-     * @return TODO: 準備中
+     * <p>Only the first {@link #getCountComponents()} entries are meaningful.
+     *
+     * @return the component array (never {@code null}; its capacity is {@link
+     *     #COB_MAX_KEY_COMPONENTS})
      */
     public KeyComponent[] getComponent() {
         return component;
     }
 
     /**
-     * TODO: 準備中
+     * Sets the array of {@link KeyComponent}s describing a SPLIT KEY.
      *
-     * @param component TODO: 準備中
+     * @param component the component array
      */
     public void setComponent(KeyComponent[] component) {
         this.component = component;
     }
 
     /**
-     * TODO: 準備中
+     * Returns the maximum number of components a SPLIT KEY may consist of.
      *
-     * @return TODO: 準備中
+     * @return the value of {@link #COB_MAX_KEY_COMPONENTS}
      */
     public static int getCobMaxKeyComponents() {
         return COB_MAX_KEY_COMPONENTS;

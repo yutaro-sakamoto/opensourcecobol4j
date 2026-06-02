@@ -21,50 +21,64 @@ package jp.osscons.opensourcecobol.libcobj.file;
 import java.sql.Connection;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** TODO: 準備中 */
+/**
+ * Holds the runtime state of one opened INDEXED file.
+ *
+ * <p>An instance is created by {@link CobolIndexedFile#open_(String, int, int)} and kept in {@code
+ * CobolFile.filei} for the lifetime of the open. It bundles the JDBC connection to the backing
+ * SQLite database together with the current key/record buffers and other bookkeeping used while
+ * executing COBOL I/O statements. This is a package-private plain data holder; the actual logic
+ * lives in {@link CobolIndexedFile}.
+ */
 class IndexedFile {
-    /** TODO: 準備中 */
+    /** Index into the key array identifying the key most recently used (e.g. by {@code START}). */
     int key_index;
 
-    /** TODO: 準備中 */
+    /** The primary key value written by the previous {@code WRITE}, used for sequential ordering. */
     CobolDataStorage last_key;
 
-    /** TODO: 準備中 */
+    /** A scratch buffer large enough to hold the largest key, sized at open time. */
     CobolDataStorage temp_key;
 
-    /** TODO: 準備中 */
+    /** The JDBC connection to the SQLite database that backs this file. */
     Connection connection;
 
-    /** TODO: 準備中 */
+    /** The current key value (raw bytes) being read or written. */
     byte[] key;
 
-    /** TODO: 準備中 */
+    /** The current record value (raw bytes) being read or written. */
     byte[] data;
 
-    /** TODO: 準備中 */
+    /** Reserved for per-key read bookkeeping; not actively used by the current implementation. */
     byte[][] last_readkey;
 
-    /** TODO: 準備中 */
+    /**
+     * Reserved per-key duplicate-number ({@code dupNo}) state; allocated at open time but not
+     * actively read by the current implementation.
+     */
     int[] last_dupno;
 
-    /** TODO: 準備中 */
+    /**
+     * Reserved per-key state for REWRITE; allocated at open time but not actively used by the
+     * current implementation, which instead threads duplicate numbers through a local array.
+     */
     int[] rewrite_sec_key;
 
-    /** TODO: 準備中 */
+    /** The resolved path of the SQLite database file. */
     String filename;
 
-    /** TODO: 準備中 */
+    /** Reserved for record-lock bookkeeping. */
     Object record_lock;
 
-    /** TODO: 準備中 */
+    /** {@code true} while a write cursor is open during a WRITE/REWRITE/DELETE operation. */
     boolean write_cursor_open;
 
-    /** TODO: 準備中 */
+    /** Reserved lock identifier. */
     int lock_id;
 
-    /** TODO: 準備中 */
+    /** {@code true} while this process currently holds a record lock. */
     boolean record_locked;
 
-    /** TODO: 準備中 */
+    /** The length, in characters, of {@link #filename}. */
     int filenamelen;
 }
