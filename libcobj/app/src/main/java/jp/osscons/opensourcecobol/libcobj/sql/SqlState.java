@@ -28,19 +28,6 @@ final class SqlState {
     }
 
     /**
-     * Get a connection by ID, or the default connection if id is null.
-     *
-     * @param id the connection identifier, or null for the default
-     * @return the connection, or null if not found
-     */
-    static SqlConnection getConnection(String id) {
-        if (id == null) {
-            return getDefaultConnection();
-        }
-        return connections.get(id);
-    }
-
-    /**
      * Get the default connection.
      *
      * @return the default connection, or null if none registered
@@ -89,15 +76,6 @@ final class SqlState {
      */
     static SqlCursor getCursor(String name) {
         return cursors.get(name);
-    }
-
-    /**
-     * Remove a cursor by name.
-     *
-     * @param name the cursor name
-     */
-    static void removeCursor(String name) {
-        cursors.remove(name);
     }
 
     /**

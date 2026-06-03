@@ -32,19 +32,13 @@ class SqlStateTest {
     // ---------- Connection management ----------
 
     @Test
-    void testAddAndGetConnection() {
-        SqlConnection conn = new SqlConnection("test", null);
-        SqlState.addConnection("test", conn);
-        assertSame(
-                conn, SqlState.getConnection("test"), "Should retrieve the same connection by id");
-    }
-
-    @Test
     void testFirstConnectionBecomesDefault() {
         SqlConnection conn1 = new SqlConnection("c1", null);
         SqlState.addConnection("c1", conn1);
         assertSame(
-                conn1, SqlState.getConnection(null), "First connection should become the default");
+                conn1,
+                SqlState.getDefaultConnection(),
+                "First connection should become the default");
     }
 
     @Test
@@ -54,34 +48,14 @@ class SqlStateTest {
         SqlState.addConnection("c1", conn1);
         SqlState.addConnection("c2", conn2);
         assertSame(
-                conn1, SqlState.getConnection(null), "Default should remain the first connection");
-    }
-
-    @Test
-    void testGetConnectionById() {
-        SqlConnection conn1 = new SqlConnection("c1", null);
-        SqlConnection conn2 = new SqlConnection("c2", null);
-        SqlState.addConnection("c1", conn1);
-        SqlState.addConnection("c2", conn2);
-        assertSame(conn2, SqlState.getConnection("c2"), "Should retrieve connection c2 by id");
-    }
-
-    @Test
-    void testGetConnection_NonExistent() {
-        assertNull(SqlState.getConnection("nope"), "Non-existent connection should return null");
+                conn1,
+                SqlState.getDefaultConnection(),
+                "Default should remain the first connection");
     }
 
     @Test
     void testGetDefaultConnection_Empty() {
         assertNull(SqlState.getDefaultConnection(), "Default connection should be null when empty");
-    }
-
-    @Test
-    void testRemoveConnection() {
-        SqlConnection conn1 = new SqlConnection("c1", null);
-        SqlState.addConnection("c1", conn1);
-        SqlState.removeConnection("c1");
-        assertNull(SqlState.getConnection("c1"), "Removed connection should return null");
     }
 
     @Test
@@ -94,7 +68,7 @@ class SqlStateTest {
         // default should be reassigned to c2
         assertSame(
                 conn2,
-                SqlState.getConnection(null),
+                SqlState.getDefaultConnection(),
                 "Default should be reassigned to remaining connection");
     }
 
@@ -117,7 +91,7 @@ class SqlStateTest {
         SqlState.removeConnection("c2");
         assertSame(
                 conn1,
-                SqlState.getConnection(null),
+                SqlState.getDefaultConnection(),
                 "Default should remain unchanged after removing non-default");
     }
 
@@ -133,14 +107,6 @@ class SqlStateTest {
     @Test
     void testGetCursor_NonExistent() {
         assertNull(SqlState.getCursor("nope"), "Non-existent cursor should return null");
-    }
-
-    @Test
-    void testRemoveCursor() {
-        SqlCursor cursor = new SqlCursor("cur1", "SELECT 1", 0);
-        SqlState.addCursor("cur1", cursor);
-        SqlState.removeCursor("cur1");
-        assertNull(SqlState.getCursor("cur1"), "Removed cursor should return null");
     }
 
     @Test

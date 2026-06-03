@@ -26,3 +26,11 @@ jobs:
       - name: Run unit tests with coverage verification
         working-directory: libcobj
         run: ./gradlew test jacocoTestCoverageVerification
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: libcobj/app/build/reports/jacoco/test/
+          if-no-files-found: ignore
