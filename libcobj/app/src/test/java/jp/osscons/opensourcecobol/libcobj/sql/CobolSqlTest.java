@@ -578,6 +578,22 @@ class CobolSqlTest {
     }
 
     @Test
+    void testDeclareCursor_EmptyName() {
+        CobolSql.declareCursor(sqlca, "", "SELECT 1");
+        assertEquals(
+                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with empty name should return ECPG_EMPTY");
+    }
+
+    @Test
+    void testDeclareCursor_EmptyQuery() {
+        CobolSql.declareCursor(sqlca, "c1", "");
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "Declare with empty query should return ECPG_EMPTY");
+    }
+
+    @Test
     void testDeclareCursor_AlreadyOpened() {
         SqlCursor cursor = new SqlCursor("c1", "SELECT 1", 0);
         cursor.isOpened = true;
@@ -765,6 +781,24 @@ class CobolSqlTest {
                 SqlCA.ECPG_EMPTY,
                 getSqlCode(),
                 "DeclareCursorWithParams with empty query should return ECPG_EMPTY");
+    }
+
+    @Test
+    void testDeclareCursorWithParams_EmptyName() {
+        CobolSql.declareCursorWithParams(sqlca, "", "SELECT 1");
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "DeclareCursorWithParams with empty name should return ECPG_EMPTY");
+    }
+
+    @Test
+    void testDeclareCursorWithParams_NullQuery() {
+        CobolSql.declareCursorWithParams(sqlca, "c1", null);
+        assertEquals(
+                SqlCA.ECPG_EMPTY,
+                getSqlCode(),
+                "DeclareCursorWithParams with null query should return ECPG_EMPTY");
     }
 
     @Test
@@ -1050,232 +1084,6 @@ class CobolSqlTest {
     }
 
     // ============================================================
-    // idConnect / idExec / idDisconnect / idCommit / idRollback
-    // ============================================================
-
-    @Test
-    void testIdExec_NoConnection() {
-        byte[] atdb = "mydb".getBytes();
-        CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "SELECT 1");
-        assertEquals(
-                SqlCA.ECPG_NO_CONN,
-                getSqlCode(),
-                "IdExec without connection should return ECPG_NO_CONN");
-    }
-
-    @Test
-    void testIdExec_NullQuery() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, null);
-        assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "IdExec with null query should return ECPG_EMPTY");
-        realConn.close();
-    }
-
-    @Test
-    void testIdExec_Success() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "SELECT 1");
-        assertEquals(0, getSqlCode(), "IdExec should succeed");
-        realConn.close();
-    }
-
-    @Test
-    void testIdDisconnect_NoConnection() {
-        byte[] atdb = "mydb".getBytes();
-        CobolSql.idDisconnect(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(
-                SqlCA.ECPG_NO_CONN,
-                getSqlCode(),
-                "IdDisconnect without connection should return ECPG_NO_CONN");
-    }
-
-    @Test
-    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void testIdDisconnect_Success() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idDisconnect(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode(), "IdDisconnect should succeed");
-        assertTrue(realConn.isClosed(), "Connection should be closed after idDisconnect");
-    }
-
-    @Test
-    void testIdCommit_NoConnection() {
-        byte[] atdb = "mydb".getBytes();
-        CobolSql.idCommit(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(
-                SqlCA.ECPG_NO_CONN,
-                getSqlCode(),
-                "IdCommit without connection should return ECPG_NO_CONN");
-    }
-
-    @Test
-    void testIdCommit_Success() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idCommit(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode(), "IdCommit should succeed");
-        realConn.close();
-    }
-
-    @Test
-    void testIdRollback_NoConnection() {
-        byte[] atdb = "mydb".getBytes();
-        CobolSql.idRollback(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(
-                SqlCA.ECPG_NO_CONN,
-                getSqlCode(),
-                "IdRollback without connection should return ECPG_NO_CONN");
-    }
-
-    @Test
-    void testIdRollback_Success() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idRollback(sqlca, new CobolDataStorage(atdb), atdb.length);
-        assertEquals(0, getSqlCode(), "IdRollback should succeed");
-        realConn.close();
-    }
-
-    @Test
-    void testIdExecParams_NoConnection() {
-        byte[] atdb = "mydb".getBytes();
-        CobolSql.idExecParams(
-                sqlca,
-                new CobolDataStorage(atdb),
-                atdb.length,
-                "INSERT INTO t VALUES(?)",
-                1,
-                makeNumericField(4, "0042".getBytes()));
-        assertEquals(
-                SqlCA.ECPG_NO_CONN,
-                getSqlCode(),
-                "IdExecParams without connection should return ECPG_NO_CONN");
-    }
-
-    @Test
-    void testIdExecParams_NullQuery() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idExecParams(sqlca, new CobolDataStorage(atdb), atdb.length, null, 0);
-        assertEquals(
-                SqlCA.ECPG_EMPTY,
-                getSqlCode(),
-                "IdExecParams with null query should return ECPG_EMPTY");
-        realConn.close();
-    }
-
-    @Test
-    void testIdExecParams_Success() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-            stmt.execute("DROP TABLE IF EXISTS id_param_test");
-            stmt.execute("CREATE TABLE id_param_test (id INTEGER)");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-
-        CobolSql.idExecParams(
-                sqlca,
-                new CobolDataStorage(atdb),
-                atdb.length,
-                "INSERT INTO id_param_test VALUES (?)",
-                1,
-                makeNumericField(4, "0042".getBytes()));
-        assertEquals(0, getSqlCode(), "IdExecParams should succeed");
-
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("DROP TABLE id_param_test");
-        }
-        realConn.close();
-    }
-
-    @Test
-    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void testIdExec_Commit() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
-        SqlState.getCursor("c1").isOpened = true;
-        CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "COMMIT");
-        assertEquals(0, getSqlCode(), "IdExec COMMIT should succeed");
-        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
-        realConn.close();
-    }
-
-    @Test
-    void testIdExec_Rollback() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idExec(sqlca, new CobolDataStorage(atdb), atdb.length, "ROLLBACK");
-        assertEquals(0, getSqlCode(), "IdExec ROLLBACK should succeed");
-        realConn.close();
-    }
-
-    // ============================================================
     // Error handling
     // ============================================================
 
@@ -1513,81 +1321,6 @@ class CobolSqlTest {
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(prepared[0].contains("?"), "Host var should be replaced with ?");
         assertTrue(prepared[0].contains(")"), "Parenthesis should be preserved");
-    }
-
-    // ============================================================
-    // idExecParams with commit/rollback
-    // ============================================================
-
-    @Test
-    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void testIdExecParams_Commit() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
-        SqlState.getCursor("c1").isOpened = true;
-        CobolSql.idExecParams(sqlca, new CobolDataStorage(atdb), atdb.length, "COMMIT", 0);
-        assertEquals(0, getSqlCode(), "IdExecParams COMMIT should succeed");
-        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
-        realConn.close();
-    }
-
-    @Test
-    void testIdExecParams_NullParams() throws Exception {
-        byte[] atdb = "mydb".getBytes();
-        Connection realConn =
-                DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-        realConn.setAutoCommit(true);
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("BEGIN");
-            stmt.execute("DROP TABLE IF EXISTS id_null_test");
-            stmt.execute("CREATE TABLE id_null_test (id INTEGER)");
-        }
-        SqlState.addConnection("mydb", new SqlConnection("mydb", realConn));
-        CobolSql.idExecParams(
-                sqlca,
-                new CobolDataStorage(atdb),
-                atdb.length,
-                "INSERT INTO id_null_test VALUES (1)",
-                0,
-                (AbstractCobolField[]) null);
-        assertEquals(0, getSqlCode(), "IdExecParams with null params should succeed");
-        try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("DROP TABLE id_null_test");
-        }
-        realConn.close();
-    }
-
-    @Test
-    void testIdConnect() {
-        String dbSpec =
-                "testdb@"
-                        + postgres.getHost()
-                        + ":"
-                        + postgres.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT);
-        byte[] atdb = "myconn".getBytes();
-        byte[] user = postgres.getUsername().getBytes();
-        byte[] passwd = postgres.getPassword().getBytes();
-        byte[] dbname = dbSpec.getBytes();
-        CobolSql.idConnect(
-                sqlca,
-                new CobolDataStorage(atdb),
-                atdb.length,
-                new CobolDataStorage(user),
-                user.length,
-                new CobolDataStorage(passwd),
-                passwd.length,
-                new CobolDataStorage(dbname),
-                dbname.length);
-        assertEquals(0, getSqlCode(), "idConnect failed: " + getSqlState());
     }
 
     // ============================================================

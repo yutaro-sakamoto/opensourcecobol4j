@@ -17,7 +17,7 @@ ESQL サポートは大きく次の 2 層に分かれます。
 | `cobj/esql-parser.y` | bison パーサ。トークン列からホスト変数情報を取り出して `cb_exec_sql` ノードを構築する。 |
 | `cobj/esql-common.h` | `esql-parser.y` / `esql-scanner.l` と `esql.c` が共有する型と関数のヘッダ。tree.h を含めない (`YYSTYPE` の衝突を避けるため)。 |
 | `cobj/esql.c` | `esql_build_and_resolve()` を提供。ホスト変数の型解決、GROUP の子展開、SELECT INTO/FETCH OCCURS への昇格、`cb_tree` 構築のラッパ関数群を持つ。 |
-| `cobj/codegen.c` (`joutput_exec_sql` 周辺) | `cb_exec_sql` ノードを Java の `CobolSql.idExec(...)` 等の呼び出しに展開する。 |
+| `cobj/codegen.c` (`joutput_exec_sql` 周辺) | `cb_exec_sql` ノードを Java の `CobolSql.exec(...)` 等の呼び出しに展開する。 |
 | `cobj/typeck.c` | SQLCA が必要なプログラムに `01 SQLCA GLOBAL.` を暗黙挿入する。 |
 
 ### 解析パイプライン
@@ -56,7 +56,7 @@ typeck.c / codegen.c
         │  は joutput_param 経由で b_X.getSubDataStorage(...) を含む
         │  AbstractCobolField 引数に変換される。
         ▼
-Java ソース (CobolSql.idExec / .idSelectInto / .idFetchCursor ...)
+Java ソース (CobolSql.exec / .selectInto / .fetchCursor ...)
 ```
 
 ### ホスト変数の AST 表現
@@ -106,7 +106,7 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 | クラス | 可視性 | 役割 |
 |---|---|---|
-| `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`idConnect`, `idExec`, `idExecParams`, `idSelectInto`, `idDeclareCursor`, `idOpenCursor`, `idFetchCursor`, `idCloseCursor`, `idPrepare`, `idExecPrepared`, `idCommit`, `idRollback`, `idSavepoint`, `idDisconnect` を提供。 |
+| `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`connect`, `disconnect`, `exec`, `execWithParams`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback` を提供。 |
 | `SqlState` | package-private | 接続テーブル (`addConnection`/`getConnection`)、PREPARE テーブル、カーソルテーブルを保持する内部状態管理。 |
 | `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、デフォルト DB 名解決などを担う。 |
 | `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。 |

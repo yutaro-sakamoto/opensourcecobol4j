@@ -17,7 +17,7 @@ ESQL support is split into two layers:
 | `cobj/esql-parser.y` | bison parser. Builds host-variable lists and a `cb_exec_sql` node. |
 | `cobj/esql-common.h` | Shared types and prototypes between `esql-parser.y` / `esql-scanner.l` and `esql.c`. Deliberately does NOT include `tree.h` (its `YYSTYPE` would collide with the ESQL parser's). |
 | `cobj/esql.c` | `esql_build_and_resolve()` lives here, along with host-var type resolution, GROUP expansion for SELECT INTO / FETCH OCCURS, and thin wrappers that build `cb_tree`s without exposing `tree.h` to the ESQL parser. |
-| `cobj/codegen.c` (around `joutput_exec_sql`) | Expands a `cb_exec_sql` node into Java calls like `CobolSql.idExec(...)`. |
+| `cobj/codegen.c` (around `joutput_exec_sql`) | Expands a `cb_exec_sql` node into Java calls like `CobolSql.exec(...)`. |
 | `cobj/typeck.c` | Auto-injects `01 SQLCA GLOBAL.` into programs that contain `EXEC SQL`. |
 
 ### Parsing pipeline
@@ -57,7 +57,7 @@ typeck.c / codegen.c
         │  yielding AbstractCobolField arguments that include
         │  b_X.getSubDataStorage(...) for subscripted hosts.
         ▼
-Java source (CobolSql.idExec / .idSelectInto / .idFetchCursor / ...)
+Java source (CobolSql.exec / .selectInto / .fetchCursor / ...)
 ```
 
 ### Host variable AST representation
@@ -107,7 +107,7 @@ For `SELECT INTO` / `FETCH`, `esql_build_and_resolve()` checks whether the leaf 
 
 | Class | Visibility | Role |
 |---|---|---|
-| `CobolSql` | `public` | The single public API called from generated Java. Provides `idConnect`, `idExec`, `idExecParams`, `idSelectInto`, `idDeclareCursor`, `idOpenCursor`, `idFetchCursor`, `idCloseCursor`, `idPrepare`, `idExecPrepared`, `idCommit`, `idRollback`, `idSavepoint`, `idDisconnect`. |
+| `CobolSql` | `public` | The single public API called from generated Java. Provides `connect`, `disconnect`, `exec`, `execWithParams`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback`. |
 | `SqlState` | package-private | Internal state: connection table (`addConnection`/`getConnection`), prepared-statement table, cursor table. |
 | `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; resolves the default DB name. |
 | `SqlCursor` | package-private | Holds cursor state (open/closed), `ResultSet`, `PreparedStatement`. |
