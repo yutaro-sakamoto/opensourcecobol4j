@@ -73,68 +73,6 @@ public final class CobolSql {
     }
 
     /**
-     * Establish a database connection using a "user/passwd@dbname" format string.
-     *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param connInfo connection info storage in "user/passwd@dbname" format
-     * @param len byte length of connInfo
-     */
-    static void connectInformal(CobolDataStorage sqlca, CobolDataStorage connInfo, int len) {
-        try {
-            String info = storageToString(connInfo, len);
-            if (info == null || info.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", "Connection info is NULL");
-                return;
-            }
-
-            // Parse "user/passwd@dbname" format
-            String user = null;
-            String passwd = null;
-            String dbname = null;
-
-            int atIdx = info.lastIndexOf('@');
-            String rest = info;
-            if (atIdx >= 0) {
-                dbname = info.substring(atIdx + 1);
-                rest = info.substring(0, atIdx);
-            }
-
-            int slashIdx = rest.indexOf('/');
-            if (slashIdx >= 0) {
-                user = rest.substring(0, slashIdx);
-                passwd = rest.substring(slashIdx + 1);
-            } else {
-                user = rest;
-            }
-
-            SqlConnection conn = SqlConnection.connect(user, passwd, dbname);
-            SqlState.addConnection(conn.getId(), conn);
-            SqlCA.setSuccess(sqlca);
-        } catch (SQLException e) {
-            SqlCA.setResultFromException(sqlca, e);
-        } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
-        }
-    }
-
-    /**
-     * Establish a database connection using only environment variable defaults.
-     *
-     * @param sqlca the SQLCA data storage for status reporting
-     */
-    static void connectShort(CobolDataStorage sqlca) {
-        try {
-            SqlConnection conn = SqlConnection.connect(null, null, null);
-            SqlState.addConnection(conn.getId(), conn);
-            SqlCA.setSuccess(sqlca);
-        } catch (SQLException e) {
-            SqlCA.setResultFromException(sqlca, e);
-        } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
-        }
-    }
-
-    /**
      * Disconnect the default database connection after committing.
      *
      * @param sqlca the SQLCA data storage for status reporting

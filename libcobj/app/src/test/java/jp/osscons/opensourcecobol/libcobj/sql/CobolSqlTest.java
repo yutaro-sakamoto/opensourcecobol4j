@@ -1050,36 +1050,6 @@ class CobolSqlTest {
     }
 
     // ============================================================
-    // connectInformal / connectShort
-    // ============================================================
-
-    @Test
-    void testConnectInformal_NullInfo() {
-        CobolSql.connectInformal(sqlca, null, 0);
-        assertEquals(
-                SqlCA.ECPG_CONNECT,
-                getSqlCode(),
-                "ConnectInformal with null should return ECPG_CONNECT");
-    }
-
-    @Test
-    void testConnectInformal_EmptyInfo() {
-        CobolDataStorage info = new CobolDataStorage(new byte[0]);
-        CobolSql.connectInformal(sqlca, info, 0);
-        assertEquals(
-                SqlCA.ECPG_CONNECT,
-                getSqlCode(),
-                "ConnectInformal with empty info should return ECPG_CONNECT");
-    }
-
-    @Test
-    void testConnectShort() {
-        CobolSql.connectShort(sqlca);
-        // Will fail because no env vars set - exercises code path
-        assertNotEquals(0, getSqlCode(), "ConnectShort without env vars should fail");
-    }
-
-    // ============================================================
     // idConnect / idExec / idDisconnect / idCommit / idRollback
     // ============================================================
 
@@ -1324,33 +1294,6 @@ class CobolSqlTest {
                 "INSERT INTO table_that_does_not_exist VALUES (?)",
                 makeNumericField(4, "0001".getBytes()));
         assertNotEquals(0, getSqlCode(), "Insert into nonexistent table should fail");
-    }
-
-    // ============================================================
-    // connectInformal with real DB
-    // ============================================================
-
-    @Test
-    void testConnectInformal_WithUserPassDb() {
-        // NOTE: This test only verifies the error path because connectInformal parses
-        // "user/passwd@dbname" format, and the @ character in the container's JDBC URL
-        // conflicts with the @ delimiter used to separate user/pass from dbname.
-        String info = postgres.getUsername() + "/" + postgres.getPassword();
-        byte[] data = info.getBytes();
-        CobolDataStorage infoStorage = new CobolDataStorage(data);
-        CobolSql.connectInformal(sqlca, infoStorage, data.length);
-        // Will fail because no dbname => uses env var or defaults => won't find the container DB
-        assertNotEquals(0, getSqlCode(), "ConnectInformal without proper dbname should fail");
-    }
-
-    @Test
-    void testConnectInformal_UserOnly() {
-        // NOTE: This test only verifies the error path because without @dbname,
-        // connectInformal falls through to connect with just a username
-        byte[] data = "testuser".getBytes();
-        CobolDataStorage info = new CobolDataStorage(data);
-        CobolSql.connectInformal(sqlca, info, data.length);
-        assertNotEquals(0, getSqlCode(), "ConnectInformal with user only should fail");
     }
 
     // ============================================================
