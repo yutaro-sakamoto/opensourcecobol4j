@@ -3674,43 +3674,60 @@ static void joutput_sql_field_ref(struct cb_sql_host_var *hv) {
   joutput("%s%s", CB_PREFIX_FIELD, java_name);
 }
 
+/* 生成 Java 内でホスト変数を列挙するとき、何個ごとに改行して折り返すか。
+ * 1 行が長くなりすぎて可読性が落ちるのを防ぐため、この個数ごとに
+ * ",\n" + インデントを挟む。 */
+#define SQL_HOST_VAR_WRAP 5
+
 /* Helper: ホスト変数列を改行して出力する。
  * list が空でなければ ",\n" と現在のインデントを出力したうえで、
  * f_FIELD 参照を ", " 区切りで列挙する。生成 Java の可読性のため、
- * SQL 文字列やカーソル名のあとに続くホスト変数を次行に折り返す。 */
+ * SQL 文字列やカーソル名のあとに続くホスト変数を次行に折り返す。
+ * さらに SQL_HOST_VAR_WRAP 個ごとに改行して 1 行が長くなりすぎないようにする。
+ */
 static void joutput_sql_host_list_newline(struct cb_sql_host_var *list) {
   struct cb_sql_host_var *hv;
-  int first = 1;
+  int idx = 0;
   if (!list) {
     return;
   }
   joutput(",\n");
   joutput_prefix();
   for (hv = list; hv; hv = hv->next) {
-    if (!first) {
-      joutput(", ");
+    if (idx > 0) {
+      if (idx % SQL_HOST_VAR_WRAP == 0) {
+        joutput(",\n");
+        joutput_prefix();
+      } else {
+        joutput(", ");
+      }
     }
     joutput_sql_field_ref(hv);
-    first = 0;
+    idx++;
   }
 }
 
-/* Helper: output an AbstractCobolField[] array literal */
+/* Helper: output an AbstractCobolField[] array literal.
+ * SQL_HOST_VAR_WRAP 個ごとに改行して 1 行が長くなりすぎないようにする。 */
 static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   struct cb_sql_host_var *hv;
-  int first;
+  int idx = 0;
   if (!list) {
     joutput("new AbstractCobolField[0]");
     return;
   }
   joutput("new AbstractCobolField[]{");
-  first = 1;
   for (hv = list; hv; hv = hv->next) {
-    if (!first) {
-      joutput(", ");
+    if (idx > 0) {
+      if (idx % SQL_HOST_VAR_WRAP == 0) {
+        joutput(",\n");
+        joutput_prefix();
+      } else {
+        joutput(", ");
+      }
     }
     joutput_sql_field_ref(hv);
-    first = 0;
+    idx++;
   }
   joutput("}");
 }

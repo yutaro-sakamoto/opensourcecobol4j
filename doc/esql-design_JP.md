@@ -154,6 +154,7 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 - **scanner 状態を分離する**: 添字や修飾名の解析を `ESQL_HOSTSUB_STATE` に閉じ込めることで、SQL 本体への文字列追記 (`esql_sqlbody_append`) を **その状態では絶対に行わない** という構造的保証を作っている。`?` 以外がプレースホルダ位置に混入する事故が起きない。
 - **dblibj を捨てる**: Open-COBOL-ESQL の Scala 実装 (dblibj) への依存を撤廃し、純粋な Java で `libcobj.jar` 内に閉じる。配布物が `libcobj.jar` 1 本になり、PostgreSQL JDBC ドライバもバンドルする。
 - **`OF` 修飾を採用しない**: COBOL 本体は `X OF Y` も受け付けるが、ESQL の修飾は dotted 形式 (`:Y.X`) のみに統一する。スキャナの状態数を抑えるためと、Embedded SQL の文脈で `OF` が予約語衝突を招きにくくするため。
+- **生成 Java のホスト変数リストを折り返す**: `CobolSql.*` 呼び出しに渡すホスト変数は、`codegen.c` の `joutput_sql_host_list_newline` (引数リスト) と `joutput_sql_field_array` (`new AbstractCobolField[]{...}` リテラル) が出力する。どちらも全要素を 1 行に並べるのではなく `SQL_HOST_VAR_WRAP` (= 5) 個ごとに改行を入れるため、ホスト変数が多い文でも生成ソースが読みやすく保たれる。これは見た目だけの調整で、渡す引数自体は変わらない。
 
 ## 関連ドキュメント
 
