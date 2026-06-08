@@ -75,4 +75,12 @@ java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSq
 
 ## テスト
 
-ログ出力のテストには`com.github.valfirst:slf4j-test`を使用しています。`CobolSqlLoggingTest`で各操作のログ出力レベル・メッセージ内容を検証しています。
+### ユニットテスト
+
+ログ出力のユニットテストには`com.github.valfirst:slf4j-test`を使用しています。`CobolSqlLoggingTest`で各操作のログ出力レベル・メッセージ内容を検証しています。
+
+### 統合テスト
+
+`tests/esql-*` の各統合テストでは、生成Javaプログラムを実行した際に標準エラー出力へ出力される実行時ログ（DEBUG/ERROR）を期待値と照合しています。これらのテストはプログラム実行に `tests/atlocal.in` で定義された `RUN_MODULE_LOG` を使用します。`RUN_MODULE_LOG` はslf4j-simpleで `CobolSql` ロガーのDEBUGレベルを有効化し、ログ行を期待値と比較しやすくするため日時・スレッド名・ロガー名・レベルの角括弧表示を抑制します。
+
+なお、コンパイルのみのテストや、テストスイートに登録されていない非実行テストは、実行時ログが発生しないためログ検証の対象外です。
