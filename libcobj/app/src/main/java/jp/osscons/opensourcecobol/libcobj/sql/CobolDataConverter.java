@@ -585,19 +585,19 @@ final class CobolDataConverter {
             HvarType hvarType, int length, int scale, CobolDataStorage storage, byte[] resultData) {
         switch (hvarType) {
             case UNSIGNED_NUMERIC:
-                writeUnsignedNumeric(length, scale, storage, resultData);
+                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.UNSIGNED);
                 break;
             case SIGNED_TRAILING_COMBINED:
-                writeSignedTrailingCombined(length, scale, storage, resultData);
+                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.TRAILING_COMBINED);
                 break;
             case SIGNED_TRAILING_SEPARATE:
-                writeSignedTrailingSeparate(length, scale, storage, resultData);
+                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.TRAILING_SEPARATE);
                 break;
             case SIGNED_LEADING_SEPARATE:
-                writeSignedLeadingSeparate(length, scale, storage, resultData);
+                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.LEADING_SEPARATE);
                 break;
             case SIGNED_LEADING_COMBINED:
-                writeSignedLeadingCombined(length, scale, storage, resultData);
+                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.LEADING_COMBINED);
                 break;
             case UNSIGNED_PACKED:
                 writeUnsignedPacked(length, scale, storage, resultData);
@@ -631,8 +631,13 @@ final class CobolDataConverter {
         }
     }
 
-    private static void writeUnsignedNumeric(
-            int length, int scale, CobolDataStorage storage, byte[] str) {
+    /**
+     * Write a numeric value (rendered as an ASCII string, optionally with a leading '-' and a
+     * '.') into a PIC 9 DISPLAY (zoned decimal) field. All five sign variants share this path;
+     * they only differ in where the digit region sits and how the sign is applied.
+     */
+    private static void writeNumericDisplay(
+            int length, int scale, CobolDataStorage storage, byte[] str, DisplaySign sign) {
         byte[] finalBuf = new byte[length];
         java.util.Arrays.fill(finalBuf, (byte) '0');
         boolean isNegative = str.length > 0 && str[0] == (byte) '-';
@@ -642,193 +647,81 @@ final class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        if (scale >= 0) {
-            for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
-                if (pos >= 0 && pos < finalBuf.length) {
-                    finalBuf[pos] = str[i];
-                }
-            }
-        } else {
-            int fi = length + scale - 1;
-            int si = indexOfDecimalPoint - 1;
-            while (fi >= 0 && si >= valueFirstIndex) {
-                finalBuf[fi] = str[si];
-                fi--;
-                si--;
-            }
-            fi = length + scale;
-            si = indexOfDecimalPoint + 1;
-            while (fi < length && si < str.length) {
-                finalBuf[fi] = str[si];
-                fi++;
-                si++;
-            }
-        }
+        // Digit region within finalBuf; a separate sign byte sits just outside it
+        // (leading -> index 0, trailing -> the last index).
+        int regionStart = (sign == DisplaySign.LEADING_SEPARATE) ? 1 : 0;
+        int regionEnd = (sign == DisplaySign.TRAILING_SEPARATE) ? length - 1 : length;
 
+        placeDisplayDigits(
+                finalBuf, str, valueFirstIndex, indexOfDecimalPoint, scale, regionStart, regionEnd);
+        applyWriteSign(finalBuf, sign, isNegative);
         storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedTrailingCombined(
-            int length, int scale, CobolDataStorage storage, byte[] str) {
-        byte[] finalBuf = new byte[length];
-        java.util.Arrays.fill(finalBuf, (byte) '0');
-        boolean isNegative = str.length > 0 && str[0] == (byte) '-';
-        int valueFirstIndex = isNegative ? 1 : 0;
-        int indexOfDecimalPoint = indexOf(str, (byte) '.');
-        if (indexOfDecimalPoint < 0) {
-            indexOfDecimalPoint = str.length;
-        }
-
+    /**
+     * Place the (sign-stripped) digits of {@code str} into the digit region [{@code regionStart},
+     * {@code regionEnd}) of {@code finalBuf}, aligned so that {@code scale} gives the implied
+     * decimal position (scale &lt; 0 means {@code -scale} fractional digits; scale &ge; 0 is an
+     * integer / trailing-P value).
+     */
+    private static void placeDisplayDigits(
+            byte[] finalBuf,
+            byte[] str,
+            int valueFirstIndex,
+            int indexOfDecimalPoint,
+            int scale,
+            int regionStart,
+            int regionEnd) {
         if (scale >= 0) {
             for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
-                if (pos >= 0 && pos < finalBuf.length) {
+                int pos = i + regionEnd - (indexOfDecimalPoint + scale);
+                if (pos >= regionStart && pos < regionEnd) {
                     finalBuf[pos] = str[i];
                 }
             }
         } else {
-            int fi = length + scale - 1;
+            int fi = regionEnd + scale - 1;
             int si = indexOfDecimalPoint - 1;
-            while (fi >= 0 && si >= valueFirstIndex) {
+            while (fi >= regionStart && si >= valueFirstIndex) {
                 finalBuf[fi] = str[si];
                 fi--;
                 si--;
             }
-            fi = length + scale;
+            fi = regionEnd + scale;
             si = indexOfDecimalPoint + 1;
-            while (fi < length && si < str.length) {
+            while (fi < regionEnd && si < str.length) {
                 finalBuf[fi] = str[si];
                 fi++;
                 si++;
             }
         }
-
-        if (isNegative) {
-            int last = finalBuf.length - 1;
-            finalBuf[last] = (byte) ((finalBuf[last] & 0xFF) + 0x40);
-        }
-        storage.memcpy(finalBuf, finalBuf.length);
     }
 
-    private static void writeSignedTrailingSeparate(
-            int length, int scale, CobolDataStorage storage, byte[] str) {
-        byte[] finalBuf = new byte[length];
-        java.util.Arrays.fill(finalBuf, (byte) '0');
-        boolean isNegative = str.length > 0 && str[0] == (byte) '-';
-        int valueFirstIndex = isNegative ? 1 : 0;
-        int indexOfDecimalPoint = indexOf(str, (byte) '.');
-        if (indexOfDecimalPoint < 0) {
-            indexOfDecimalPoint = str.length;
-        }
-        int digitLen = length - 1;
-
-        if (scale >= 0) {
-            for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + digitLen - (indexOfDecimalPoint + scale);
-                if (pos >= 0 && pos < digitLen) {
-                    finalBuf[pos] = str[i];
+    /** Apply the operational sign to an already-formatted zoned-decimal buffer, in place. */
+    private static void applyWriteSign(byte[] finalBuf, DisplaySign sign, boolean isNegative) {
+        switch (sign) {
+            case UNSIGNED:
+                break;
+            case LEADING_COMBINED:
+                if (isNegative) {
+                    finalBuf[0] = (byte) ((finalBuf[0] & 0xFF) + 0x40);
                 }
-            }
-        } else {
-            int fi = digitLen + scale - 1;
-            int si = indexOfDecimalPoint - 1;
-            while (fi >= 0 && si >= valueFirstIndex) {
-                finalBuf[fi] = str[si];
-                fi--;
-                si--;
-            }
-            fi = digitLen + scale;
-            si = indexOfDecimalPoint + 1;
-            while (fi < digitLen && si < str.length) {
-                finalBuf[fi] = str[si];
-                fi++;
-                si++;
-            }
-        }
-
-        finalBuf[length - 1] = isNegative ? (byte) '-' : (byte) '+';
-        storage.memcpy(finalBuf, finalBuf.length);
-    }
-
-    private static void writeSignedLeadingSeparate(
-            int length, int scale, CobolDataStorage storage, byte[] str) {
-        byte[] finalBuf = new byte[length];
-        java.util.Arrays.fill(finalBuf, (byte) '0');
-        boolean isNegative = str.length > 0 && str[0] == (byte) '-';
-        int valueFirstIndex = isNegative ? 1 : 0;
-        int indexOfDecimalPoint = indexOf(str, (byte) '.');
-        if (indexOfDecimalPoint < 0) {
-            indexOfDecimalPoint = str.length;
-        }
-
-        if (scale >= 0) {
-            for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
-                if (pos >= 0 && pos < finalBuf.length) {
-                    finalBuf[pos] = str[i];
+                break;
+            case TRAILING_COMBINED:
+                if (isNegative) {
+                    int last = finalBuf.length - 1;
+                    finalBuf[last] = (byte) ((finalBuf[last] & 0xFF) + 0x40);
                 }
-            }
-        } else {
-            int fi = length + scale;
-            int si = indexOfDecimalPoint - 1;
-            while (fi >= 1 && si >= valueFirstIndex) {
-                finalBuf[fi] = str[si];
-                fi--;
-                si--;
-            }
-            fi = length + scale + 1;
-            si = indexOfDecimalPoint + 1;
-            while (fi < length && si < str.length) {
-                finalBuf[fi] = str[si];
-                fi++;
-                si++;
-            }
+                break;
+            case LEADING_SEPARATE:
+                finalBuf[0] = isNegative ? (byte) '-' : (byte) '+';
+                break;
+            case TRAILING_SEPARATE:
+                finalBuf[finalBuf.length - 1] = isNegative ? (byte) '-' : (byte) '+';
+                break;
+            default:
+                break;
         }
-
-        finalBuf[0] = isNegative ? (byte) '-' : (byte) '+';
-        storage.memcpy(finalBuf, finalBuf.length);
-    }
-
-    private static void writeSignedLeadingCombined(
-            int length, int scale, CobolDataStorage storage, byte[] str) {
-        byte[] finalBuf = new byte[length];
-        java.util.Arrays.fill(finalBuf, (byte) '0');
-        boolean isNegative = str.length > 0 && str[0] == (byte) '-';
-        int valueFirstIndex = isNegative ? 1 : 0;
-        int indexOfDecimalPoint = indexOf(str, (byte) '.');
-        if (indexOfDecimalPoint < 0) {
-            indexOfDecimalPoint = str.length;
-        }
-
-        if (scale >= 0) {
-            for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + finalBuf.length - (indexOfDecimalPoint + scale);
-                if (pos >= 0 && pos < finalBuf.length) {
-                    finalBuf[pos] = str[i];
-                }
-            }
-        } else {
-            int fi = length + scale - 1;
-            int si = indexOfDecimalPoint - 1;
-            while (fi >= 0 && si >= valueFirstIndex) {
-                finalBuf[fi] = str[si];
-                fi--;
-                si--;
-            }
-            fi = length + scale;
-            si = indexOfDecimalPoint + 1;
-            while (fi < length && si < str.length) {
-                finalBuf[fi] = str[si];
-                fi++;
-                si++;
-            }
-        }
-
-        if (isNegative) {
-            finalBuf[0] = (byte) ((finalBuf[0] & 0xFF) + 0x40);
-        }
-        storage.memcpy(finalBuf, finalBuf.length);
     }
 
     private static void writeUnsignedPacked(
