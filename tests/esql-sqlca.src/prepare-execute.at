@@ -26,10 +26,7 @@ AT_DATA([prog.cbl], [
          03  READ-TBL    OCCURS  1.
            05  READ-V PIC X(5).
 
-       01 SQL-COMMAND.
-         03 SQL-COMMAND-LEN PIC 9(9) VALUE 50.
-         03 SQL-COMMAND-ARR PIC X(50)
-            VALUE "DELETE FROM TESTTABLE WHERE ID > ?".
+       01 SQL-COMMAND PIC X(50) VARYING.
        01 SQL-COMMAND-ARG PIC 99 VALUE 2.
 
        01 INVALID-COMMAND PIC X(50)
@@ -49,6 +46,9 @@ AT_DATA([prog.cbl], [
            
          PERFORM SETUP-DB.
 
+         MOVE "DELETE FROM TESTTABLE WHERE ID > ?" TO SQL-COMMAND-ARR.
+         MOVE 34 TO SQL-COMMAND-LEN.
+
          EXEC SQL
              PREPARE st FROM :SQL-COMMAND
          END-EXEC.
@@ -60,6 +60,7 @@ AT_DATA([prog.cbl], [
          PERFORM SHOW-STATUS.
 
          MOVE INVALID-COMMAND TO SQL-COMMAND-ARR.
+         MOVE 39 TO SQL-COMMAND-LEN.
 
          EXEC SQL
              PREPARE st FROM :SQL-COMMAND

@@ -28,10 +28,7 @@ AT_DATA([prog.cbl], [
        01  IDX                     PIC  9(02).
        01 LOG-COUNT PIC 9999 VALUE 1.
 
-       01 SQL-COMMAND.
-         03 SQL-COMMAND-LEN PIC 9(9) VALUE 50.
-         03 SQL-COMMAND-ARR PIC X(50)
-            VALUE "DELETE FROM EMP WHERE EMP_NO > ?".
+       01 SQL-COMMAND PIC X(50) VARYING.
        01 SQL-COMMAND-ARG PIC 99 VALUE 5.
 
        01  DBNAME                  PIC  X(30) VALUE SPACE.
@@ -49,6 +46,10 @@ AT_DATA([prog.cbl], [
        MAIN-RTN.
            
        PERFORM SETUP-DB.
+
+      *    Set the VARYING host variable (SQL text + length)
+           MOVE "DELETE FROM EMP WHERE EMP_NO > ?" TO SQL-COMMAND-ARR.
+           MOVE 32 TO SQL-COMMAND-LEN.
 
       *    PREPARE
            EXEC SQL

@@ -776,21 +776,16 @@ public final class CobolSql {
             if (queryField != null
                     && queryField.getDataStorage() != null
                     && queryField.getSize() > 0) {
-                byte[] bytes = queryField.getDataStorage().getByteArray(0, queryField.getSize());
-                String rawStr = new String(bytes, SHIFT_JIS);
-                // VARYING structure: leading numeric length field followed by data
-                // Detect by checking if the string starts with digits
-                int dataStart = 0;
-                while (dataStart < rawStr.length() && Character.isDigit(rawStr.charAt(dataStart))) {
-                    dataStart++;
-                }
-                if (dataStart > 0 && dataStart < rawStr.length()) {
-                    // Skip the numeric length prefix
-                    query = rawStr.substring(dataStart).trim();
-                } else {
-                    query = rawStr.trim();
-                }
+                // Extract the SQL text honoring the host variable's COBOL type.
+                // CobolDataConverter handles VARYING (binary length header + data),
+                // plain alphanumeric / group, national, etc., so PREPARE works with a
+                // proper `PIC X(n) VARYING` host variable as well as a fixed-length field.
+                query = CobolDataConverter.cobolToString(queryField).trim();
             } else {
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
+                return;
+            }
+            if (query.isEmpty()) {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }

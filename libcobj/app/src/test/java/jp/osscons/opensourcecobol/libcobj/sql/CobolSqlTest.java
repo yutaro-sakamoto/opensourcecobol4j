@@ -1287,14 +1287,31 @@ class CobolSqlTest {
 
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void testPrepare_WithVaryingPrefix() {
-        byte[] data = "123SELECT * FROM t".getBytes();
-        AbstractCobolField field = makeAlphaField(data.length, data);
+    void testPrepare_VaryingHostVariable() {
+        // Proper VARYING host variable: 4-byte binary length header followed by the
+        // data (mirrors a COBOL `PIC X(n) VARYING` field). The SQL text must be read
+        // from the data using the length header, not by sniffing leading digits.
+        byte[] sql = "SELECT * FROM t".getBytes();
+        byte[] data = new byte[4 + sql.length];
+        ByteBuffer.wrap(data, 0, 4).putInt(sql.length);
+        System.arraycopy(sql, 0, data, 4, sql.length);
+        CobolFieldAttribute attr =
+                new CobolFieldAttribute(
+                        CobolFieldAttribute.COB_TYPE_GROUP,
+                        0,
+                        0,
+                        CobolFieldAttribute.COB_FLAG_VARYING,
+                        null);
+        AbstractCobolField field =
+                CobolFieldFactory.makeCobolField(data.length, new CobolDataStorage(data), attr);
         CobolSql.prepare(sqlca, "stmt3", field);
-        assertEquals(0, getSqlCode(), "Prepare with varying prefix should succeed");
+        assertEquals(0, getSqlCode(), "Prepare with VARYING host variable should succeed");
         String[] prepared = SqlState.getPrepared("stmt3");
         assertNotNull(prepared, "Prepared statement should be registered");
-        assertEquals("SELECT * FROM t", prepared[0], "Prepared query should strip varying prefix");
+        assertEquals(
+                "SELECT * FROM t",
+                prepared[0],
+                "Prepared query should be read from VARYING data via its length header");
     }
 
     @Test
