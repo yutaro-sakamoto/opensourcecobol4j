@@ -197,9 +197,9 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         assertEquals(
-                "+1234",
+                "1234",
                 CobolDataConverter.cobolToString(field),
-                "Positive signed leading separate");
+                "Positive signed leading separate (sign dropped, leading zeros stripped)");
     }
 
     @Test
@@ -259,6 +259,59 @@ class CobolDataConverterTest {
                 "-1234",
                 CobolDataConverter.cobolToString(field),
                 "Negative signed leading combined");
+    }
+
+    // ============================================================
+    // cobolToString: NUMERIC DISPLAY edge cases (shared formatting path)
+    // ============================================================
+
+    @Test
+    void testCobolToString_SignedTrailingSeparate_NegativeZero() {
+        // A signed zero must render as plain "0" (no sign).
+        byte[] data = "0000-".getBytes();
+        AbstractCobolField field =
+                makeField(
+                        5,
+                        data,
+                        CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
+                        4,
+                        0,
+                        CobolFieldAttribute.COB_FLAG_HAVE_SIGN
+                                | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE);
+        assertEquals(
+                "0", CobolDataConverter.cobolToString(field), "Negative zero should render as 0");
+    }
+
+    @Test
+    void testCobolToString_UnsignedNumeric_FullyFractional() {
+        // PIC V9(6) = all fractional digits: "000123" => 0.000123
+        byte[] data = "000123".getBytes();
+        AbstractCobolField field =
+                makeField(6, data, CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY, 6, 6, 0);
+        assertEquals(
+                "0.000123",
+                CobolDataConverter.cobolToString(field),
+                "Fully-fractional value should keep its leading 0.");
+    }
+
+    @Test
+    void testCobolToString_SignedLeadingSeparate_FullyFractional() {
+        // PIC SV9(6) LEADING SEPARATE: "-000123" => -0.000123
+        byte[] data = "-000123".getBytes();
+        AbstractCobolField field =
+                makeField(
+                        6,
+                        data,
+                        CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
+                        6,
+                        6,
+                        CobolFieldAttribute.COB_FLAG_HAVE_SIGN
+                                | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
+                                | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
+        assertEquals(
+                "-0.000123",
+                CobolDataConverter.cobolToString(field),
+                "Fully-fractional leading separate should render -0.000123");
     }
 
     // ============================================================

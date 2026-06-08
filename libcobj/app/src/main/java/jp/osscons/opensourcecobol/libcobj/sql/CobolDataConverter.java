@@ -151,7 +151,7 @@ final class CobolDataConverter {
             case SIGNED_LEADING_COMBINED:
                 return readNumericDisplay(length, scale, storage, DisplaySign.LEADING_COMBINED);
             case SIGNED_LEADING_SEPARATE:
-                return readSignedLeadingSeparate(length, scale, storage);
+                return readNumericDisplay(length, scale, storage, DisplaySign.LEADING_SEPARATE);
             case UNSIGNED_PACKED:
                 return appendTrailingZeros(
                         readUnsignedPacked(packedLength, scale, storage), ppCount);
@@ -185,22 +185,25 @@ final class CobolDataConverter {
         LEADING_COMBINED,
         /** Sign overpunched onto the trailing digit. */
         TRAILING_COMBINED,
+        /** Separate leading sign byte ('+' / '-'). */
+        LEADING_SEPARATE,
         /** Separate trailing sign byte ('+' / '-'). */
         TRAILING_SEPARATE
     }
 
     /**
-     * Read a PIC 9 DISPLAY (zoned decimal) value.
-     *
-     * <p>The UNSIGNED / LEADING COMBINED / TRAILING COMBINED / TRAILING SEPARATE variants only
-     * differ in how the operational sign is located; once the sign and the digit bytes are
-     * identified they share the same formatting path. (LEADING SEPARATE is handled by its own
-     * method because it keeps its sign character verbatim and does not strip leading zeros.)
+     * Read a PIC 9 DISPLAY (zoned decimal) value. All five variants (UNSIGNED, LEADING /
+     * TRAILING COMBINED, LEADING / TRAILING SEPARATE) only differ in where the operational sign
+     * lives; once the sign and the run of digit bytes are identified they share the same
+     * formatting path.
      */
     private static String readNumericDisplay(
             int length, int scale, CobolDataStorage storage, DisplaySign sign) {
-        byte[] data = storage.getByteArray(0, length);
+        // A leading separate sign occupies an extra byte ahead of the `length` digits.
+        int byteLen = (sign == DisplaySign.LEADING_SEPARATE) ? length + 1 : length;
+        byte[] data = storage.getByteArray(0, byteLen);
         boolean negative = false;
+        int digitStart = 0;
         int digitCount = length;
 
         switch (sign) {
@@ -218,6 +221,10 @@ final class CobolDataConverter {
                     data[length - 1] = clearOverpunch(data[length - 1]);
                 }
                 break;
+            case LEADING_SEPARATE:
+                negative = data[0] == (byte) '-';
+                digitStart = 1; // the leading byte is the separate sign
+                break;
             case TRAILING_SEPARATE:
                 negative = data[length - 1] == (byte) '-';
                 digitCount = length - 1; // the trailing byte is the separate sign
@@ -226,7 +233,7 @@ final class CobolDataConverter {
                 break;
         }
 
-        String digits = formatDisplayDigits(data, digitCount, scale);
+        String digits = formatDisplayDigits(data, digitStart, digitCount, scale);
         if (negative && !"0".equals(digits)) {
             return "-" + digits;
         }
@@ -234,19 +241,19 @@ final class CobolDataConverter {
     }
 
     /**
-     * Build the (sign-less) decimal string from {@code digitCount} digit bytes at the start of
-     * {@code data}: zero-fill the working buffer, insert a decimal point when {@code scale < 0},
-     * and strip leading zeros.
+     * Build the (sign-less) decimal string from {@code digitCount} digit bytes starting at
+     * {@code digitStart} in {@code data}: zero-fill the working buffer, insert a decimal point
+     * when {@code scale < 0}, and strip leading zeros.
      *
      * <p>A single leading pad byte is reserved so that a fully-fractional value (decimal places
      * &ge; digit count, e.g. {@code PIC SV9(6)}) still renders its leading {@code "0."}; in every
      * other case it is simply a leading zero that {@link #removeLeadingZeros} drops.
      */
-    private static String formatDisplayDigits(byte[] data, int digitCount, int scale) {
+    private static String formatDisplayDigits(byte[] data, int digitStart, int digitCount, int scale) {
         int realDataLength = (scale < 0) ? digitCount + 2 : digitCount + scale + 1;
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
-        System.arraycopy(data, 0, realData, 1, digitCount);
+        System.arraycopy(data, digitStart, realData, 1, digitCount);
 
         if (scale < 0) {
             int pointIndex = realDataLength + scale - 1;
@@ -270,25 +277,6 @@ final class CobolDataConverter {
     /** Strip the overpunch sign from a zoned-decimal byte, restoring the plain digit. */
     private static byte clearOverpunch(byte b) {
         return (byte) ((b & 0xFF) - 0x40);
-    }
-
-    private static String readSignedLeadingSeparate(
-            int length, int scale, CobolDataStorage storage) {
-        byte[] data = storage.getByteArray(0, length + 1);
-        String rawStr = new String(data);
-
-        if (scale < 0) {
-            int splitAt = length + scale;
-            String fst = rawStr.substring(0, splitAt);
-            String snd = rawStr.substring(splitAt);
-            return fst + "." + snd;
-        } else {
-            StringBuilder sb = new StringBuilder(rawStr);
-            for (int i = 0; i < scale; i++) {
-                sb.append('0');
-            }
-            return sb.toString();
-        }
     }
 
     private static String readUnsignedPacked(int length, int scale, CobolDataStorage storage) {
