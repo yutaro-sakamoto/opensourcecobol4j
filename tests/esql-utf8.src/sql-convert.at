@@ -141,7 +141,16 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
 [+0001, 北海　太郎          , +0400
-], [ignore])
+],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS EMP
+DEBUG EXEC SQL: CREATE TABLE EMP ( EMP_NO NUMERIC(4,0) NOT NULL, EMP_NAME CHAR(20), EMP_SALARY NUMERIC(4,0), CONSTRAINT IEMP_0 PRIMARY KEY (EMP_NO) )
+DEBUG EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT EMP_NO, EMP_NAME, EMP_SALARY FROM EMP ORDER BY EMP_NO
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS EMP
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
 
 AT_CLEANUP
 
@@ -289,7 +298,16 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
 [+0001, 北海　太郎          , +0400
-], [ignore])
+],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS EMP
+DEBUG EXEC SQL: CREATE TABLE EMP ( EMP_NO NUMERIC(4,0) NOT NULL, EMP_NAME CHAR(20), EMP_?? NUMERIC(4,0), CONSTRAINT IEMP_0 PRIMARY KEY (EMP_NO) )
+DEBUG EXEC SQL (params=3): INSERT INTO EMP VALUES (?,?,?)
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT EMP_NO, EMP_NAME, EMP_?? FROM EMP ORDER BY EMP_NO
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS EMP
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
 
 AT_CLEANUP
 
@@ -420,7 +438,17 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz                                               abcdef
-], [ignore])
+],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+DEBUG EXEC SQL: CREATE TABLE MSG ( MSG_DATA CHAR(105) )
+DEBUG EXEC SQL: INSERT INTO MSG VALUES ('abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz abcdef')
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT MSG_DATA FROM MSG
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+ERROR EXEC SQL failed: DROP TABLE IF EXISTS MSG - ERROR: cannot DROP TABLE "msg" because it is being used by active queries in this session
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
 
 AT_CLEANUP
 
@@ -551,7 +579,17 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [abcdefghijklmnopqrstuvwxyz'abcdefghijklmnopqrstuvwxyz'                                             abcdef
-], [ignore])
+],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+DEBUG EXEC SQL: CREATE TABLE MSG ( MSG_DATA CHAR(105) )
+DEBUG EXEC SQL: INSERT INTO MSG VALUES ('abcdefghijklmnopqrstuvwxyz''abcdefghijklmnopqrstuvwxyz'' abcdef')
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT MSG_DATA FROM MSG
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+ERROR EXEC SQL failed: DROP TABLE IF EXISTS MSG - ERROR: cannot DROP TABLE "msg" because it is being used by active queries in this session
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
 
 AT_CLEANUP
 
@@ -686,6 +724,16 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE_LOG} prog], [0],
 [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-], [ignore])
+],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+DEBUG EXEC SQL: CREATE TABLE MSG ( MSG_DATA CHAR(428) )
+DEBUG EXEC SQL: INSERT INTO MSG VALUES ('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg')
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT MSG_DATA FROM MSG
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS MSG
+ERROR EXEC SQL failed: DROP TABLE IF EXISTS MSG - ERROR: cannot DROP TABLE "msg" because it is being used by active queries in this session
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
 
 AT_CLEANUP
