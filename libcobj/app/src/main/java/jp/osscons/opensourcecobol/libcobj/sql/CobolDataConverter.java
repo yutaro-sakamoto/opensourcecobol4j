@@ -458,23 +458,30 @@ final class CobolDataConverter {
 
     private static String readNational(int length, int scale, CobolDataStorage storage) {
         byte[] data = storage.getByteArray(0, length);
-        return new String(data, SHIFT_JIS);
+        String str = new String(data, SHIFT_JIS);
+        // National items are padded with the full-width (ideographic) space U+3000.
+        int end = str.length();
+        while (end > 0 && str.charAt(end - 1) == '\u3000') {
+            end--;
+        }
+        return str.substring(0, end);
+    }
+
+    /** Read the big-endian length stored in the VARYING header (first 4 bytes). */
+    private static int readVaryingHeaderLength(CobolDataStorage storage) {
+        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, OCDB_VARCHAR_HEADER_BYTE));
+        bb.order(ByteOrder.BIG_ENDIAN);
+        return bb.getInt();
     }
 
     private static String readAlphanumericVarying(int length, int scale, CobolDataStorage storage) {
-        int lenSize = 0;
-        for (int i = 0; i < OCDB_VARCHAR_HEADER_BYTE; i++) {
-            lenSize = lenSize * 256 + (storage.getByte(i) & 0xFF);
-        }
+        int lenSize = readVaryingHeaderLength(storage);
         byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, lenSize);
         return new String(data, SHIFT_JIS);
     }
 
     private static String readJapaneseVarying(int length, int scale, CobolDataStorage storage) {
-        int charCount = 0;
-        for (int i = 0; i < OCDB_VARCHAR_HEADER_BYTE; i++) {
-            charCount = charCount * 256 + (storage.getByte(i) & 0xFF);
-        }
+        int charCount = readVaryingHeaderLength(storage);
         byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, charCount * 2);
         return new String(data, SHIFT_JIS);
     }
