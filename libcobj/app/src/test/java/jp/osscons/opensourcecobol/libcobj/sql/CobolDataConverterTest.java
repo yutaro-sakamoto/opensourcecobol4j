@@ -2135,7 +2135,8 @@ class CobolDataConverterTest {
                                 | CobolFieldAttribute.COB_FLAG_SIGN_SEPARATE
                                 | CobolFieldAttribute.COB_FLAG_SIGN_LEADING);
         String result = CobolDataConverter.cobolToString(field);
-        assertEquals("42", result, "Signed leading separate no scale (sign dropped, zeros stripped)");
+        assertEquals(
+                "42", result, "Signed leading separate no scale (sign dropped, zeros stripped)");
     }
 
     @Test

@@ -249,7 +249,8 @@ final class CobolDataConverter {
      * &ge; digit count, e.g. {@code PIC SV9(6)}) still renders its leading {@code "0."}; in every
      * other case it is simply a leading zero that {@link #removeLeadingZeros} drops.
      */
-    private static String formatDisplayDigits(byte[] data, int digitStart, int digitCount, int scale) {
+    private static String formatDisplayDigits(
+            byte[] data, int digitStart, int digitCount, int scale) {
         int realDataLength = (scale < 0) ? digitCount + 2 : digitCount + scale + 1;
         byte[] realData = new byte[realDataLength];
         java.util.Arrays.fill(realData, (byte) '0');
@@ -595,16 +596,20 @@ final class CobolDataConverter {
                 writeNumericDisplay(length, scale, storage, resultData, DisplaySign.UNSIGNED);
                 break;
             case SIGNED_TRAILING_COMBINED:
-                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.TRAILING_COMBINED);
+                writeNumericDisplay(
+                        length, scale, storage, resultData, DisplaySign.TRAILING_COMBINED);
                 break;
             case SIGNED_TRAILING_SEPARATE:
-                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.TRAILING_SEPARATE);
+                writeNumericDisplay(
+                        length, scale, storage, resultData, DisplaySign.TRAILING_SEPARATE);
                 break;
             case SIGNED_LEADING_SEPARATE:
-                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.LEADING_SEPARATE);
+                writeNumericDisplay(
+                        length, scale, storage, resultData, DisplaySign.LEADING_SEPARATE);
                 break;
             case SIGNED_LEADING_COMBINED:
-                writeNumericDisplay(length, scale, storage, resultData, DisplaySign.LEADING_COMBINED);
+                writeNumericDisplay(
+                        length, scale, storage, resultData, DisplaySign.LEADING_COMBINED);
                 break;
             case UNSIGNED_PACKED:
                 writeUnsignedPacked(length, scale, storage, resultData);
