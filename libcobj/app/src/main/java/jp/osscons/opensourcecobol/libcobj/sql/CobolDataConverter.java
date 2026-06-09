@@ -201,6 +201,8 @@ final class CobolDataConverter {
             int length, int scale, CobolDataStorage storage, DisplaySign sign) {
         // A leading separate sign occupies an extra byte ahead of the `length` digits.
         int byteLen = (sign == DisplaySign.LEADING_SEPARATE) ? length + 1 : length;
+        // A copy is required here (not getByteArrayRef): the combined-sign cases overwrite a
+        // digit byte in `data` to strip its overpunch, which must not mutate the COBOL storage.
         byte[] data = storage.getByteArray(0, byteLen);
         boolean negative = false;
         int digitStart = 0;
@@ -376,8 +378,7 @@ final class CobolDataConverter {
 
     private static String readUnsignedBinaryNative(
             int length, int scale, CobolDataStorage storage) {
-        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, length));
-        bb.order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer bb = bigEndianRef(storage, 0, length);
         long value;
         switch (length) {
             case 1:
@@ -400,8 +401,7 @@ final class CobolDataConverter {
     }
 
     private static String readSignedBinaryNative(int length, int scale, CobolDataStorage storage) {
-        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, length));
-        bb.order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer bb = bigEndianRef(storage, 0, length);
         long value;
         switch (length) {
             case 1:
@@ -440,9 +440,32 @@ final class CobolDataConverter {
         return str;
     }
 
+    /**
+     * Wrap the storage's backing array (no copy) as a big-endian {@link ByteBuffer} positioned over
+     * the {@code length} bytes starting at {@code index}.
+     */
+    private static ByteBuffer bigEndianRef(CobolDataStorage storage, int index, int length) {
+        ByteBuffer bb =
+                ByteBuffer.wrap(
+                        storage.getByteArrayRef(index, length), storage.getIndex() + index, length);
+        bb.order(ByteOrder.BIG_ENDIAN);
+        return bb;
+    }
+
+    /**
+     * Decode {@code length} bytes starting at {@code index} of the storage's backing array as
+     * Shift-JIS, without copying the slice.
+     */
+    private static String shiftJisRef(CobolDataStorage storage, int index, int length) {
+        return new String(
+                storage.getByteArrayRef(index, length),
+                storage.getIndex() + index,
+                length,
+                SHIFT_JIS);
+    }
+
     private static String readAlphanumeric(int length, int scale, CobolDataStorage storage) {
-        byte[] data = storage.getByteArray(0, length);
-        String str = new String(data, SHIFT_JIS);
+        String str = shiftJisRef(storage, 0, length);
         int end = str.length();
         while (end > 0 && str.charAt(end - 1) == ' ') {
             end--;
@@ -451,40 +474,36 @@ final class CobolDataConverter {
     }
 
     private static String readFloat(int length, int scale, CobolDataStorage storage) {
-        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, 8));
-        bb.order(ByteOrder.BIG_ENDIAN);
-        double value = bb.getDouble();
-        return Double.toString(value);
+        return Double.toString(bigEndianRef(storage, 0, 8).getDouble());
     }
 
     private static String readNational(int length, int scale, CobolDataStorage storage) {
-        byte[] data = storage.getByteArray(0, length);
-        String str = new String(data, SHIFT_JIS);
-        // National items are padded with the full-width (ideographic) space U+3000.
-        int end = str.length();
-        while (end > 0 && str.charAt(end - 1) == '\u3000') {
-            end--;
+        byte[] data = storage.getByteArrayRef(0, length);
+        int start = storage.getIndex();
+        int end = start + length;
+        // National items are padded with the full-width (ideographic) space, encoded as the two
+        // bytes 0x81 0x40 in Shift-JIS; strip it at the byte level to avoid decoding the padding.
+        while (end - start >= 2
+                && (data[end - 2] & 0xFF) == 0x81
+                && (data[end - 1] & 0xFF) == 0x40) {
+            end -= 2;
         }
-        return str.substring(0, end);
+        return new String(data, start, end - start, SHIFT_JIS);
     }
 
     /** Read the big-endian length stored in the VARYING header (first 4 bytes). */
     private static int readVaryingHeaderLength(CobolDataStorage storage) {
-        ByteBuffer bb = ByteBuffer.wrap(storage.getByteArray(0, OCDB_VARCHAR_HEADER_BYTE));
-        bb.order(ByteOrder.BIG_ENDIAN);
-        return bb.getInt();
+        return bigEndianRef(storage, 0, OCDB_VARCHAR_HEADER_BYTE).getInt();
     }
 
     private static String readAlphanumericVarying(int length, int scale, CobolDataStorage storage) {
         int lenSize = readVaryingHeaderLength(storage);
-        byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, lenSize);
-        return new String(data, SHIFT_JIS);
+        return shiftJisRef(storage, OCDB_VARCHAR_HEADER_BYTE, lenSize);
     }
 
     private static String readJapaneseVarying(int length, int scale, CobolDataStorage storage) {
         int charCount = readVaryingHeaderLength(storage);
-        byte[] data = storage.getByteArray(OCDB_VARCHAR_HEADER_BYTE, charCount * 2);
-        return new String(data, SHIFT_JIS);
+        return shiftJisRef(storage, OCDB_VARCHAR_HEADER_BYTE, charCount * 2);
     }
 
     private static String removeLeadingZeros(byte[] data, boolean hasLeadingSign) {

@@ -907,8 +907,7 @@ public final class CobolSql {
         if (storage == null || len <= 0) {
             return null;
         }
-        byte[] bytes = storage.getByteArray(0, len);
-        return new String(bytes, SHIFT_JIS);
+        return new String(storage.getByteArrayRef(0, len), storage.getIndex(), len, SHIFT_JIS);
     }
 
     private static String fieldToString(AbstractCobolField field) {

@@ -141,7 +141,11 @@ final class SqlCA {
         if (sqlca == null) {
             return 0;
         }
-        return ByteBuffer.wrap(sqlca.getByteArray(OFFSET_SQLCODE, 4)).getInt();
+        return ByteBuffer.wrap(
+                        sqlca.getByteArrayRef(OFFSET_SQLCODE, 4),
+                        sqlca.getIndex() + OFFSET_SQLCODE,
+                        4)
+                .getInt();
     }
 
     /**
