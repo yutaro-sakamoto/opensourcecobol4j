@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01 READ-DATA.
          03  READ-TBL    OCCURS  1.
            05  READ-V PIC X(5).

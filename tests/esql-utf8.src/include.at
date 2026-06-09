@@ -65,6 +65,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
 
        EXEC SQL INCLUDE "テストデータ" END-EXEC.
 

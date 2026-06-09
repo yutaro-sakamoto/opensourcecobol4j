@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  TEST-DATA.
          03 FILLER       PIC X(18) VALUE "0000A         9990".
          03 FILLER       PIC X(18) VALUE "0001AB        9991".
@@ -219,6 +220,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  TEST-DATA.
          03 FILLER       PIC X(10) VALUE "0".
          03 FILLER       PIC X(10) VALUE "01".
@@ -427,6 +429,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  TEST-DATA.
          03 FILLER  PIC X(28) VALUE "0000一　　　　　　　　　9990".
          03 FILLER  PIC X(28) VALUE "0001一二　　　　　　　　9991".
@@ -639,6 +642,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  TEST-DATA.
          03 FILLER       PIC N(10) VALUE "一".
          03 FILLER       PIC N(10) VALUE "一二".

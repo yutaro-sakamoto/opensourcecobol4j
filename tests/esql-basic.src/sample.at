@@ -9,6 +9,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  TEST-DATA.
          03 FILLER       PIC X(28) VALUE "0001北海　太郎          0400".
          03 FILLER       PIC X(28) VALUE "0002青森　次郎          0350".

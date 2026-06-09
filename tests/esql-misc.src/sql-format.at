@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
 
        01  DBNAME                  PIC  X(30) VALUE SPACE.
        01  USERNAME                PIC  X(30) VALUE SPACE.

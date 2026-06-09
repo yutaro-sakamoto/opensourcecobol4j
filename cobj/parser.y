@@ -110,7 +110,7 @@ static size_t			samearea = 1;
 static size_t			organized_seen = 0;
 static size_t			inspect_keyword = 0;
 static int			next_label_id = 0;
-static int			esql_program_seen = 0;
+static int			esql_sqlca_injected = 0;
 static int			eval_level = 0;
 static int			eval_inc = 0;
 static int			eval_inc2 = 0;
@@ -956,6 +956,8 @@ identification_division:
   {
 	current_section = NULL;
 	current_paragraph = NULL;
+	/* SQLCA 注入フラグはプログラム単位でリセットする。 */
+	esql_sqlca_injected = 0;
 	if (CB_LITERAL_P ($3)) {
 		stack_progid[depth] = (char *)(CB_LITERAL ($3)->data);
 	} else {
@@ -2621,15 +2623,14 @@ record_description_list_2:
 exec_sql_data_statement:
   EXEC_SQL_STATEMENT
   {
-	/* Handle EXEC SQL in DATA DIVISION (BEGIN/END DECLARE SECTION, INCLUDE SQLCA) */
-	/* Mark this as an ESQL program so SQLCA will be injected */
-	esql_program_seen = 1;
-	(void)CB_LITERAL ($1)->data;
+	/* DATA DIVISION に渡ってきた EXEC SQL。INCLUDE SQLCA や DECLARE SECTION は
+	   前処理 (pplex) 側で消費されるため通常ここには来ないが、その他の EXEC SQL
+	   が来た場合に備えて受け取り (実行コードは生成しない)。 */
+	(void) CB_LITERAL ($1)->data;
   }
 | EXEC_SQL_STATEMENT '.'
   {
-	esql_program_seen = 1;
-	(void)CB_LITERAL ($1)->data;
+	(void) CB_LITERAL ($1)->data;
   }
 ;
 
@@ -3528,9 +3529,10 @@ screen_section:
 procedure_division:
 | PROCEDURE DIVISION procedure_using_chaining procedure_returning '.'
   {
-	if (esql_program_seen) {
-		esql_inject_sqlca ();
-	}
+	/* SQLCA は実際の埋め込み SQL を最初に検出した時点で注入する
+	   (esql_inject_sqlca。下記 exec_sql_statement を参照)。
+	   ここでは注入しない: INCLUDE SQLCA や DECLARE SECTION だけで
+	   実 SQL の無いプログラムには SQLCA を入れないため。 */
 	current_section = NULL;
 	current_paragraph = NULL;
 	cb_define_system_name ("CONSOLE");
@@ -7330,12 +7332,17 @@ exec_sql_statement:
   EXEC_SQL_STATEMENT
   {
 	cb_tree sql_node;
-	/* If no DECLARE SECTION was seen in DATA DIVISION, the first
-	   EXEC SQL in PROCEDURE DIVISION also marks the program as ESQL
-	   so SQLCA gets injected. */
-	if (!esql_program_seen) {
-		esql_program_seen = 1;
+	/* 実際の埋め込み SQL (PROCEDURE DIVISION の EXEC SQL) を初めて検出した
+	   時点で SQLCA を一度だけ暗黙に注入する。EXEC SQL INCLUDE SQLCA END-EXEC が
+	   書かれていない場合はコンパイル時に警告する (INCLUDE SQLCA の有無は
+	   前処理段で cb_sqlca_include_seen に記録される)。 */
+	if (!esql_sqlca_injected) {
+		esql_sqlca_injected = 1;
 		esql_inject_sqlca ();
+		if (!cb_sqlca_include_seen) {
+			cb_warning_x ($1,
+				_("embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declared implicitly"));
+		}
 	}
 	BEGIN_STATEMENT ("EXEC SQL", 0);
 	/* BEGIN_STATEMENT は cb_source_line (= END-EXEC 行) を入れる。

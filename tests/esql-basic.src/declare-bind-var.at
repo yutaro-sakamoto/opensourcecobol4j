@@ -6,6 +6,7 @@ AT_DATA([prog.cbl], [
        PROGRAM-ID.                 prog.
        DATA                        DIVISION.
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01 EMP-NO-MAX PIC S9(04).
        01 EMP-NO-MIN PIC S9(04).
 

@@ -7,6 +7,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
 
        01 TBL.
          02 TBL-REC OCCURS 30.

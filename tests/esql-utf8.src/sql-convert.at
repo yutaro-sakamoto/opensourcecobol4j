@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
@@ -165,6 +166,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
@@ -322,6 +324,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
@@ -463,6 +466,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 
@@ -604,6 +608,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01  IDX                     PIC  9(02).
        01 TEST-CASE-COUNT PIC 9999 VALUE 1.
 

@@ -165,6 +165,7 @@ char *cb_oc_build_stamp = NULL;
 char *source_name;
 char *demangle_name;
 int cb_source_line = 0;
+int cb_sqlca_include_seen = 0;
 
 FILE *cb_storage_file;
 char *cb_storage_file_name;
@@ -1630,6 +1631,8 @@ static int preprocess(struct filename *fn) {
   struct cb_text_list *l;
 
   errorcount = 0;
+  /* INCLUDE SQLCA 検出フラグをソースファイルごとにリセットする。 */
+  cb_sqlca_include_seen = 0;
 
   if (output_name || cb_compile_level > CB_LEVEL_PREPROCESS) {
     ppout = fopen(fn->preprocess, "w");

@@ -207,8 +207,10 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
-	/* No-op: SQLCA is injected by the compiler.
-	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
+	/* No-op: SQLCA はコンパイラが暗黙に注入する。
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。
+	 * INCLUDE SQLCA が明示されたことを記録する (未記述時の警告判定に使う)。 */
+	cb_sqlca_include_seen = 1;
 }
 
 "EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {

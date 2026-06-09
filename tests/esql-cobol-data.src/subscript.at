@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
 
       *    Two groups containing identically named VAL force the parser
       *    to use group-qualification (:GRPB.VAL) for disambiguation

@@ -8,6 +8,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01 VV PIC 9(4)V9(2).
        01 VP PIC 9(4)PP.
        01 V PIC 9(4).

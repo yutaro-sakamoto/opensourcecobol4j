@@ -9,6 +9,7 @@ AT_DATA([prog.cbl], [
        DATA                        DIVISION.
       ******************************************************************
        WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
        01 INPUT-DATA-0 PIC 9(11) VALUE 12345678901.
        01 OUTPUT-DATA-0-TBL.
          03 OUTPUT-DATA-0-ARR OCCURS 1.

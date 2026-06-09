@@ -137,6 +137,9 @@ extern int has_external;
 extern char *cb_oc_build_stamp;
 extern char *cb_source_file;
 extern int cb_source_line;
+/* EXEC SQL INCLUDE SQLCA END-EXEC が前処理段で検出されたら 1。
+   ソースファイルごとに preprocess() でリセットされる。 */
+extern int cb_sqlca_include_seen;
 
 extern const char *cob_config_dir;
 

@@ -1,0 +1,42 @@
+AT_SETUP([warn when EXEC SQL INCLUDE SQLCA is missing])
+
+dnl 埋め込み SQL があるのに EXEC SQL INCLUDE SQLCA END-EXEC が無い場合、
+dnl コンパイル時に警告が出ることを検証する。
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           EXEC SQL
+               DROP TABLE IF EXISTS DUMMY
+           END-EXEC.
+           STOP RUN.
+])
+AT_CHECK([${COMPILE_MODULE} prog.cbl 2>cobj-warn.err], [0], [ignore])
+AT_CHECK([grep -F "EXEC SQL INCLUDE SQLCA END-EXEC" cobj-warn.err], [0], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([no warning when EXEC SQL INCLUDE SQLCA is present])
+
+dnl EXEC SQL INCLUDE SQLCA END-EXEC があれば警告は出ない (stderr が空)。
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           EXEC SQL
+               DROP TABLE IF EXISTS DUMMY
+           END-EXEC.
+           STOP RUN.
+])
+AT_CHECK([${COMPILE_MODULE} prog.cbl], [0])
+
+AT_CLEANUP
