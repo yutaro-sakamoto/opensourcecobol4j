@@ -1,6 +1,6 @@
-#line 2 "esql-scanner.c"
+#line 1 "esql-scanner.c"
 
-#line 4 "esql-scanner.c"
+#line 3 "esql-scanner.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -2100,9 +2100,9 @@ const char *esql_get_sqlbody(void) {
   return esql_sqlbody;
 }
 
-#line 2104 "esql-scanner.c"
+#line 2103 "esql-scanner.c"
 
-#line 2106 "esql-scanner.c"
+#line 2105 "esql-scanner.c"
 
 #define INITIAL 0
 #define ESQL_STATE 1
@@ -2329,7 +2329,7 @@ YY_DECL
 #line 93 "esql-scanner.l"
  /* === Initial state: match first SQL keyword === */
 
-#line 2333 "esql-scanner.c"
+#line 2332 "esql-scanner.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2851,7 +2851,7 @@ YY_RULE_SETUP
 #line 416 "esql-scanner.l"
 ECHO;
 	YY_BREAK
-#line 2855 "esql-scanner.c"
+#line 2854 "esql-scanner.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(ESQL_STATE):
 case YY_STATE_EOF(ESQL_DBNAME_STATE):

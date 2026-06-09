@@ -1,6 +1,6 @@
-#line 2 "pplex.c"
+#line 1 "pplex.c"
 
-#line 4 "pplex.c"
+#line 3 "pplex.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -1938,9 +1938,9 @@ static int esql_passthru_in_quote = 0;
 static int esql_passthru_active = 0;
 
 
-#line 1942 "pplex.c"
+#line 1941 "pplex.c"
 
-#line 1944 "pplex.c"
+#line 1943 "pplex.c"
 
 #define INITIAL 0
 #define PROCESS_STATE 1
@@ -2164,7 +2164,7 @@ YY_DECL
 
 
 
-#line 2168 "pplex.c"
+#line 2167 "pplex.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2947,7 +2947,7 @@ YY_RULE_SETUP
 #line 510 "pplex.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 2951 "pplex.c"
+#line 2950 "pplex.c"
 
 	case YY_END_OF_BUFFER:
 		{

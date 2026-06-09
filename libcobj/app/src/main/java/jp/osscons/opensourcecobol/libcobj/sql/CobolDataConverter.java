@@ -465,12 +465,11 @@ final class CobolDataConverter {
     }
 
     private static String readAlphanumeric(int length, int scale, CobolDataStorage storage) {
-        String str = shiftJisRef(storage, 0, length);
-        int end = str.length();
-        while (end > 0 && str.charAt(end - 1) == ' ') {
+        int end = length;
+        while (end > 0 && (storage.getByte(end - 1) & 0xFF) == 0x20) {
             end--;
         }
-        return str.substring(0, end);
+        return shiftJisRef(storage, 0, end);
     }
 
     private static String readFloat(int length, int scale, CobolDataStorage storage) {

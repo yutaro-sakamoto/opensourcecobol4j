@@ -1,6 +1,6 @@
-#line 2 "scanner.c"
+#line 1 "scanner.c"
 
-#line 4 "scanner.c"
+#line 3 "scanner.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -1313,9 +1313,9 @@ static int scan_numeric (char *text);
 static int scan_picture (char *text);
 static void count_lines (char *text);
 
-#line 1317 "scanner.c"
+#line 1316 "scanner.c"
 
-#line 1319 "scanner.c"
+#line 1318 "scanner.c"
 
 #define INITIAL 0
 #define DECIMAL_IS_PERIOD 1
@@ -1559,7 +1559,7 @@ YY_DECL
 	}
 
 
-#line 1563 "scanner.c"
+#line 1562 "scanner.c"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -2717,7 +2717,7 @@ YY_RULE_SETUP
 #line 866 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 2721 "scanner.c"
+#line 2720 "scanner.c"
 
 	case YY_END_OF_BUFFER:
 		{
