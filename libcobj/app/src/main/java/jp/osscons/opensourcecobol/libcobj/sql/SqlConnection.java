@@ -8,7 +8,7 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Wraps a JDBC Connection with a COBOL connection identifier. */
+/** JDBC の Connection を COBOL の接続識別子とともにラップする。 */
 class SqlConnection {
 
     private static final Logger LOG = LoggerFactory.getLogger(SqlConnection.class);
@@ -22,27 +22,27 @@ class SqlConnection {
     }
 
     /**
-     * Get the connection identifier.
+     * 接続識別子を取得する。
      *
-     * @return the connection ID string
+     * @return 接続 ID 文字列
      */
     String getId() {
         return id;
     }
 
     /**
-     * Get the underlying JDBC connection.
+     * 内部で保持する JDBC 接続を取得する。
      *
-     * @return the JDBC Connection
+     * @return JDBC の Connection
      */
     Connection getConnection() {
         return conn;
     }
 
     /**
-     * Close the underlying JDBC connection if it is open.
+     * 内部で保持する JDBC 接続が開いていればクローズする。
      *
-     * @throws SQLException if a database access error occurs
+     * @throws SQLException データベースアクセスエラーが発生した場合
      */
     void close() throws SQLException {
         if (conn != null && !conn.isClosed()) {
@@ -51,9 +51,9 @@ class SqlConnection {
     }
 
     /**
-     * Begin a new transaction by executing a SQL BEGIN statement.
+     * SQL の BEGIN 文を実行して新しいトランザクションを開始する。
      *
-     * @throws SQLException if a database access error occurs
+     * @throws SQLException データベースアクセスエラーが発生した場合
      */
     void beginTransaction() throws SQLException {
         if (conn != null && !conn.isClosed()) {
@@ -71,7 +71,7 @@ class SqlConnection {
         String port = "";
         String dbname = dbSpec;
 
-        // Parse "dbname@host:port"
+        // "dbname@host:port" を解析する
         int atIndex = dbname.lastIndexOf('@');
         if (atIndex >= 0) {
             host = dbname.substring(atIndex + 1);
@@ -84,8 +84,8 @@ class SqlConnection {
             host = host.substring(0, colonIndex);
         }
 
-        // Also check if dbname itself has ":port" (format: "dbname@host:port")
-        // Already handled above since we split host first
+        // dbname 自体に ":port" が含まれているか (フォーマット: "dbname@host:port") も確認する
+        // 先に host を分割しているため、上記で既に処理済み
 
         if (host.isEmpty()) {
             host = "localhost";
@@ -95,7 +95,7 @@ class SqlConnection {
     }
 
     static SqlConnection connect(String user, String passwd, String dbname) throws SQLException {
-        // Strip trailing spaces (COBOL padding)
+        // 末尾の空白を除去する (COBOL のパディング)
         if (user != null) {
             user = stripTrailingSpaces(user);
         }
@@ -106,7 +106,7 @@ class SqlConnection {
             dbname = stripTrailingSpaces(dbname);
         }
 
-        // Environment variable fallbacks
+        // 環境変数によるフォールバック
         if (dbname == null || dbname.isEmpty()) {
             dbname = System.getenv("OCDB_DB_NAME");
         }
@@ -140,7 +140,7 @@ class SqlConnection {
         String connId = "OCDB_DEFAULT_DBNAME";
         SqlConnection sqlConn = new SqlConnection(connId, connection);
 
-        // Start transaction
+        // トランザクションを開始する
         sqlConn.beginTransaction();
         LOG.debug("Connected successfully (id={})", connId);
 

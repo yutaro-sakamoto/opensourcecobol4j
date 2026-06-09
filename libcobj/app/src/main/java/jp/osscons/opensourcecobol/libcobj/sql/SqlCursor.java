@@ -8,30 +8,30 @@ import java.sql.Statement;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** Represents a SQL cursor for iterating over query results in COBOL embedded SQL. */
+/** COBOL の埋め込み SQL においてクエリ結果を反復処理するための SQL カーソルを表す。 */
 class SqlCursor {
 
-    /** Cursor name used in DECLARE/OPEN/FETCH/CLOSE statements. */
+    /** DECLARE/OPEN/FETCH/CLOSE 文で使用されるカーソル名。 */
     String name;
 
-    /** SQL query associated with this cursor. */
+    /** このカーソルに紐づく SQL クエリ。 */
     String query;
 
-    /** Number of host variable parameters in the query. */
+    /** クエリ中のホスト変数パラメータの数。 */
     int nParams;
 
-    /** Whether this cursor is currently open. */
+    /** このカーソルが現在オープンされているかどうか。 */
     boolean isOpened;
 
-    /** Host variable parameters bound at DECLARE time. */
+    /** DECLARE 時にバインドされたホスト変数パラメータ。 */
     AbstractCobolField[] params;
 
     /**
-     * Create a new cursor descriptor.
+     * 新しいカーソル記述子を生成する。
      *
-     * @param name the cursor name
-     * @param query the SQL query for this cursor
-     * @param nParams the number of host variable parameters
+     * @param name カーソル名
+     * @param query このカーソル用の SQL クエリ
+     * @param nParams ホスト変数パラメータの数
      */
     SqlCursor(String name, String query, int nParams) {
         this.name = name;
@@ -42,11 +42,11 @@ class SqlCursor {
     }
 
     /**
-     * Open this cursor by executing a DECLARE CURSOR statement.
+     * DECLARE CURSOR 文を実行してこのカーソルをオープンする。
      *
-     * @param conn the JDBC connection
-     * @param openParams host variable parameters for the query, or null to use stored params
-     * @throws SQLException if a database access error occurs
+     * @param conn JDBC コネクション
+     * @param openParams クエリ用のホスト変数パラメータ。保存済みパラメータを使用する場合は null
+     * @throws SQLException データベースアクセスエラーが発生した場合
      */
     void open(Connection conn, AbstractCobolField[] openParams) throws SQLException {
         String command = "DECLARE " + name + " CURSOR FOR " + query;
@@ -80,18 +80,18 @@ class SqlCursor {
     }
 
     /**
-     * Fetch the next row from this cursor and write results to COBOL host variables.
+     * このカーソルから次の行をフェッチし、結果を COBOL のホスト変数へ書き込む。
      *
-     * <p>If any column comes back SQL NULL while indicator variables are not supported, sets
-     * {@code sqlca} to ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002"). The row data
-     * is still written (zero-fill for NULL columns), matching ECPG behavior of "row fetched
-     * but flagged".
+     * <p>指標変数がサポートされていない状況でいずれかの列が SQL NULL として返された場合、
+     * {@code sqlca} を ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002") に設定する。
+     * 行データは（NULL の列はゼロ埋めで）書き込まれ、「行はフェッチされたがフラグが立てられた」
+     * という ECPG の挙動に一致する。
      *
-     * @param conn the JDBC connection
-     * @param resultParams output host variables to receive column values
-     * @param sqlca SQLCA storage to flag NULL-without-indicator (may be null)
-     * @return true if a row was fetched, false if no more rows
-     * @throws SQLException if a database access error occurs
+     * @param conn JDBC コネクション
+     * @param resultParams 列の値を受け取る出力用ホスト変数
+     * @param sqlca 指標変数なしの NULL をフラグするための SQLCA ストレージ（null でもよい）
+     * @return 行がフェッチされた場合は true、これ以上行がない場合は false
+     * @throws SQLException データベースアクセスエラーが発生した場合
      */
     boolean fetch(Connection conn, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
@@ -133,10 +133,10 @@ class SqlCursor {
     }
 
     /**
-     * Close this cursor by executing a CLOSE statement.
+     * CLOSE 文を実行してこのカーソルをクローズする。
      *
-     * @param conn the JDBC connection
-     * @throws SQLException if a database access error occurs
+     * @param conn JDBC コネクション
+     * @throws SQLException データベースアクセスエラーが発生した場合
      */
     void close(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {

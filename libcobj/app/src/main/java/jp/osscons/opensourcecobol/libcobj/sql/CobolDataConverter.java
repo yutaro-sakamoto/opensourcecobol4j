@@ -14,10 +14,10 @@ import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 
-/** Converts between COBOL host variable storage and Java/JDBC types. */
+/** COBOL ホスト変数のストレージと Java/JDBC 型との間で相互変換を行う。 */
 final class CobolDataConverter {
 
-    /** Private constructor to prevent instantiation of utility class. */
+    /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private CobolDataConverter() {}
 
     /**
@@ -25,35 +25,35 @@ final class CobolDataConverter {
      * 解決され、本クラス内のディスパッチにのみ使われる (公開しない)。
      */
     private enum HvarType {
-        /** Unsigned numeric display (USAGE DISPLAY, no sign). */
+        /** 符号なし数値 DISPLAY (USAGE DISPLAY、符号なし)。 */
         UNSIGNED_NUMERIC,
-        /** Signed numeric with trailing separate sign character. */
+        /** 末尾に分離符号 (separate sign) 文字を持つ符号付き数値。 */
         SIGNED_TRAILING_SEPARATE,
-        /** Signed numeric with trailing combined (overpunch) sign. */
+        /** 末尾に結合符号 (overpunch) を持つ符号付き数値。 */
         SIGNED_TRAILING_COMBINED,
-        /** Signed numeric with leading separate sign character. */
+        /** 先頭に分離符号 (separate sign) 文字を持つ符号付き数値。 */
         SIGNED_LEADING_SEPARATE,
-        /** Signed numeric with leading combined (overpunch) sign. */
+        /** 先頭に結合符号 (overpunch) を持つ符号付き数値。 */
         SIGNED_LEADING_COMBINED,
-        /** Unsigned packed-decimal (COMP-3, no sign nibble). */
+        /** 符号なし packed-decimal (COMP-3、符号ニブルなし)。 */
         UNSIGNED_PACKED,
-        /** Signed packed-decimal (COMP-3). */
+        /** 符号付き packed-decimal (COMP-3)。 */
         SIGNED_PACKED,
-        /** Unsigned binary native (COMP-5, big-endian). */
+        /** 符号なしネイティブ binary (COMP-5、ビッグエンディアン)。 */
         UNSIGNED_BINARY_NATIVE,
-        /** Signed binary native (COMP-5, big-endian). */
+        /** 符号付きネイティブ binary (COMP-5、ビッグエンディアン)。 */
         SIGNED_BINARY_NATIVE,
-        /** Alphabetic (PIC A). */
+        /** 英字 (PIC A)。 */
         ALPHABETIC,
-        /** Group item (treated as alphanumeric). */
+        /** 集団項目 (英数字として扱う)。 */
         GROUP,
-        /** Floating-point double (COMP-2). */
+        /** 倍精度浮動小数点 (COMP-2)。 */
         FLOAT,
-        /** National character (PIC N). */
+        /** 各国文字 (PIC N)。 */
         NATIONAL,
-        /** Alphanumeric varying-length string. */
+        /** 英数字の可変長 (varying) 文字列。 */
         ALPHANUMERIC_VARYING,
-        /** Japanese (DBCS) varying-length string. */
+        /** 日本語 (DBCS) の可変長 (varying) 文字列。 */
         JAPANESE_VARYING
     }
 
@@ -61,10 +61,10 @@ final class CobolDataConverter {
     private static final int OCDB_VARCHAR_HEADER_BYTE = 4;
 
     /**
-     * Resolve the internal HvarType from an AbstractCobolField's attributes.
+     * AbstractCobolField の属性から内部用の HvarType を解決する。
      *
-     * @param field the COBOL field
-     * @return the HvarType for internal dispatch
+     * @param field COBOL フィールド
+     * @return 内部ディスパッチ用の HvarType
      */
     private static HvarType resolveHvarType(AbstractCobolField field) {
         CobolFieldAttribute attr = field.getAttribute();
@@ -111,34 +111,34 @@ final class CobolDataConverter {
     }
 
     /**
-     * Convert a COBOL host variable to its string representation for SQL binding.
+     * COBOL ホスト変数を SQL バインド用の文字列表現に変換する。
      *
-     * @param field the COBOL host variable field
-     * @return the string representation, or empty string if field is null
+     * @param field COBOL ホスト変数フィールド
+     * @return 文字列表現。field が null の場合は空文字列
      */
     static String cobolToString(AbstractCobolField field) {
         if (field == null || field.getDataStorage() == null) {
             return "";
         }
         int length = field.getSize();
-        // V99 → getScale()=2 → scale=-2; PP → getScale()=-2 → scale=0 (for non-packed)
+        // V99 → getScale()=2 → scale=-2; PP → getScale()=-2 → scale=0 (packed 以外の場合)
         int scale = Math.min(0, -field.getAttribute().getScale());
         CobolDataStorage storage = field.getDataStorage();
         HvarType hvarType = resolveHvarType(field);
 
-        // For VARYING, length = ARR size (total - 4 byte header)
+        // VARYING の場合、length = ARR サイズ (全体 - 4 バイトのヘッダ)
         if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
 
-        // For packed decimal, use digit count instead of byte size.
-        // Exclude PP digits (negative scale) since they are not physically stored.
+        // packed decimal の場合、バイトサイズではなく桁数を使う。
+        // PP の桁 (負の scale) は物理的に格納されないため除外する。
         int rawScale = field.getAttribute().getScale();
         int packedLength = field.getAttribute().getDigits();
         int ppCount = 0;
         if (rawScale < 0) {
             ppCount = -rawScale;
-            packedLength += rawScale; // subtract PP digits (rawScale is negative)
+            packedLength += rawScale; // PP の桁を減算する (rawScale は負の値)
         }
 
         switch (hvarType) {
@@ -177,32 +177,32 @@ final class CobolDataConverter {
         }
     }
 
-    /** Sign representation of a PIC 9 DISPLAY (zoned decimal) item. */
+    /** PIC 9 DISPLAY (ゾーン10進 zoned decimal) 項目の符号表現。 */
     private enum DisplaySign {
-        /** No operational sign. */
+        /** 演算符号 (operational sign) なし。 */
         UNSIGNED,
-        /** Sign overpunched onto the leading digit. */
+        /** 先頭桁に overpunch された符号。 */
         LEADING_COMBINED,
-        /** Sign overpunched onto the trailing digit. */
+        /** 末尾桁に overpunch された符号。 */
         TRAILING_COMBINED,
-        /** Separate leading sign byte ('+' / '-'). */
+        /** 先頭の分離符号バイト ('+' / '-')。 */
         LEADING_SEPARATE,
-        /** Separate trailing sign byte ('+' / '-'). */
+        /** 末尾の分離符号バイト ('+' / '-')。 */
         TRAILING_SEPARATE
     }
 
     /**
-     * Read a PIC 9 DISPLAY (zoned decimal) value. All five variants (UNSIGNED, LEADING /
-     * TRAILING COMBINED, LEADING / TRAILING SEPARATE) only differ in where the operational sign
-     * lives; once the sign and the run of digit bytes are identified they share the same
-     * formatting path.
+     * PIC 9 DISPLAY (ゾーン10進 zoned decimal) の値を読み取る。5 つのバリアント (UNSIGNED、LEADING /
+     * TRAILING COMBINED、LEADING / TRAILING SEPARATE) は演算符号 (operational sign) の置かれる
+     * 位置だけが異なり、符号と桁バイトの並びが特定できれば、同じフォーマット処理パスを共有する。
      */
     private static String readNumericDisplay(
             int length, int scale, CobolDataStorage storage, DisplaySign sign) {
-        // A leading separate sign occupies an extra byte ahead of the `length` digits.
+        // 先頭の分離符号は `length` 桁の手前に追加で 1 バイトを占有する。
         int byteLen = (sign == DisplaySign.LEADING_SEPARATE) ? length + 1 : length;
-        // A copy is required here (not getByteArrayRef): the combined-sign cases overwrite a
-        // digit byte in `data` to strip its overpunch, which must not mutate the COBOL storage.
+        // ここでは (getByteArrayRef ではなく) コピーが必要である。結合符号 (combined sign) のケースでは
+        // overpunch を取り除くために `data` 内の桁バイトを上書きするが、これが COBOL ストレージを
+        // 変更してはならないためである。
         byte[] data = storage.getByteArray(0, byteLen);
         boolean negative = false;
         int digitStart = 0;
@@ -225,11 +225,11 @@ final class CobolDataConverter {
                 break;
             case LEADING_SEPARATE:
                 negative = data[0] == (byte) '-';
-                digitStart = 1; // the leading byte is the separate sign
+                digitStart = 1; // 先頭バイトが分離符号である
                 break;
             case TRAILING_SEPARATE:
                 negative = data[length - 1] == (byte) '-';
-                digitCount = length - 1; // the trailing byte is the separate sign
+                digitCount = length - 1; // 末尾バイトが分離符号である
                 break;
             default:
                 break;
@@ -243,13 +243,13 @@ final class CobolDataConverter {
     }
 
     /**
-     * Build the (sign-less) decimal string from {@code digitCount} digit bytes starting at
-     * {@code digitStart} in {@code data}: zero-fill the working buffer, insert a decimal point
-     * when {@code scale < 0}, and strip leading zeros.
+     * {@code data} 内の {@code digitStart} から始まる {@code digitCount} 個の桁バイトから、
+     * (符号なしの) 10進文字列を構築する。作業バッファをゼロ埋めし、{@code scale < 0} のときに
+     * 小数点を挿入し、先頭のゼロを取り除く。
      *
-     * <p>A single leading pad byte is reserved so that a fully-fractional value (decimal places
-     * &ge; digit count, e.g. {@code PIC SV9(6)}) still renders its leading {@code "0."}; in every
-     * other case it is simply a leading zero that {@link #removeLeadingZeros} drops.
+     * <p>fully-fractional な値 (小数桁数 &ge; 桁数。例: {@code PIC SV9(6)}) でも先頭の {@code "0."}
+     * を正しく表現できるよう、先頭に 1 バイトのパディングを確保する。それ以外のケースでは、これは
+     * 単なる先頭のゼロであり、{@link #removeLeadingZeros} によって取り除かれる。
      */
     private static String formatDisplayDigits(
             byte[] data, int digitStart, int digitCount, int scale) {
@@ -271,13 +271,13 @@ final class CobolDataConverter {
         return removeLeadingZeros(realData, false);
     }
 
-    /** True if a zoned-decimal byte carries a negative overpunch sign (0x70-0x79). */
+    /** ゾーン10進 (zoned decimal) のバイトが負の overpunch 符号 (0x70-0x79) を持つ場合に true。 */
     private static boolean isNegativeOverpunch(byte b) {
         int v = b & 0xFF;
         return v >= 0x70 && v <= 0x79;
     }
 
-    /** Strip the overpunch sign from a zoned-decimal byte, restoring the plain digit. */
+    /** ゾーン10進 (zoned decimal) のバイトから overpunch 符号を取り除き、通常の桁に戻す。 */
     private static byte clearOverpunch(byte b) {
         return (byte) ((b & 0xFF) - 0x40);
     }
@@ -300,7 +300,7 @@ final class CobolDataConverter {
         if (count <= 0) {
             return value;
         }
-        // Insert zeros before the sign if negative, otherwise append
+        // 末尾にゼロを追加する（負の場合は符号を復元する）
         boolean neg = value.startsWith("-");
         String abs = neg ? value.substring(1) : value;
         StringBuilder sb = new StringBuilder(abs);
@@ -441,8 +441,8 @@ final class CobolDataConverter {
     }
 
     /**
-     * Wrap the storage's backing array (no copy) as a big-endian {@link ByteBuffer} positioned over
-     * the {@code length} bytes starting at {@code index}.
+     * ストレージの内部配列を (コピーせずに) ビッグエンディアンの {@link ByteBuffer} としてラップし、
+     * {@code index} から始まる {@code length} バイトの範囲に位置付ける。
      */
     private static ByteBuffer bigEndianRef(CobolDataStorage storage, int index, int length) {
         ByteBuffer bb =
@@ -453,8 +453,8 @@ final class CobolDataConverter {
     }
 
     /**
-     * Decode {@code length} bytes starting at {@code index} of the storage's backing array as
-     * Shift-JIS, without copying the slice.
+     * ストレージの内部配列の {@code index} から始まる {@code length} バイトを、スライスをコピーせずに
+     * Shift-JIS としてデコードする。
      */
     private static String shiftJisRef(CobolDataStorage storage, int index, int length) {
         return new String(
@@ -481,8 +481,8 @@ final class CobolDataConverter {
         byte[] data = storage.getByteArrayRef(0, length);
         int start = storage.getIndex();
         int end = start + length;
-        // National items are padded with the full-width (ideographic) space, encoded as the two
-        // bytes 0x81 0x40 in Shift-JIS; strip it at the byte level to avoid decoding the padding.
+        // National 項目は全角 (表意文字) スペースでパディングされ、これは Shift-JIS で 0x81 0x40 の
+        // 2 バイトとして符号化される。パディングをデコードしないよう、バイトレベルで取り除く。
         while (end - start >= 2
                 && (data[end - 2] & 0xFF) == 0x81
                 && (data[end - 1] & 0xFF) == 0x40) {
@@ -491,7 +491,7 @@ final class CobolDataConverter {
         return new String(data, start, end - start, SHIFT_JIS);
     }
 
-    /** Read the big-endian length stored in the VARYING header (first 4 bytes). */
+    /** VARYING ヘッダ (先頭 4 バイト) に格納されたビッグエンディアンの長さを読み取る。 */
     private static int readVaryingHeaderLength(CobolDataStorage storage) {
         return bigEndianRef(storage, 0, OCDB_VARCHAR_HEADER_BYTE).getInt();
     }
@@ -533,22 +533,22 @@ final class CobolDataConverter {
     }
 
     // -------------------------------------------------------
-    // stringToCobol: Write SQL result data back to COBOL storage
+    // stringToCobol: SQL の結果データを COBOL ストレージへ書き戻す
     // -------------------------------------------------------
     /**
-     * Write SQL result data back into COBOL host variable storage.
+     * SQL の結果データを COBOL ホスト変数のストレージへ書き戻す。
      *
-     * @param field the target COBOL host variable field
-     * @param resultData the raw byte data from the SQL result
+     * @param field 書き込み先の COBOL ホスト変数フィールド
+     * @param resultData SQL 結果から得られた生のバイトデータ
      */
     /**
-     * Write SQL result data to a specific COBOL storage location.
-     * Used for OCCURS arrays where the storage offset varies per row.
+     * SQL の結果データを特定の COBOL ストレージ位置へ書き込む。
+     * 行ごとにストレージのオフセットが変わる OCCURS 配列で使用する。
      *
-     * @param field the COBOL field (for type resolution)
-     * @param storage the target storage location
-     * @param length the field byte length
-     * @param resultData the SQL result data as bytes
+     * @param field COBOL フィールド（型解決用）
+     * @param storage 書き込み先のストレージ位置
+     * @param length フィールドのバイト長
+     * @param resultData バイト列としての SQL 結果データ
      */
     static void stringToCobolRaw(
             AbstractCobolField field, CobolDataStorage storage, int length, byte[] resultData) {
@@ -557,17 +557,17 @@ final class CobolDataConverter {
         }
         int scale = Math.min(0, -field.getAttribute().getScale());
         HvarType hvarType = resolveHvarType(field);
-        // For VARYING, length = ARR size
+        // VARYING の場合、length = ARR サイズ
         if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
-        // For packed decimal, use digit count (excluding PP) instead of byte size
+        // packed decimal の場合、バイトサイズではなく (PP を除いた) 桁数を使う
         if (hvarType == HvarType.UNSIGNED_PACKED || hvarType == HvarType.SIGNED_PACKED) {
             int rawScale = field.getAttribute().getScale();
             length = field.getAttribute().getDigits();
             if (rawScale < 0) {
                 length += rawScale;
-                // PP: strip trailing zeros from SQL result, use positive scale for alignment
+                // PP: SQL 結果から末尾のゼロを取り除き、位置合わせには正の scale を使う
                 resultData = stripTrailingDigits(resultData, -rawScale);
             }
         }
@@ -575,10 +575,10 @@ final class CobolDataConverter {
     }
 
     /**
-     * Write SQL result data back to a COBOL host variable field.
+     * SQL の結果データを COBOL ホスト変数フィールドへ書き戻す。
      *
-     * @param field the target COBOL field
-     * @param resultData the SQL result data as bytes
+     * @param field 書き込み先の COBOL フィールド
+     * @param resultData バイト列としての SQL 結果データ
      */
     static void stringToCobol(AbstractCobolField field, byte[] resultData) {
         if (field == null || field.getDataStorage() == null || resultData == null) {
@@ -586,17 +586,17 @@ final class CobolDataConverter {
         }
         HvarType hvarType = resolveHvarType(field);
         int length = field.getSize();
-        // For packed decimal, use digit count (excluding PP) instead of byte size
+        // packed decimal の場合、バイトサイズではなく (PP を除いた) 桁数を使う
         if (hvarType == HvarType.UNSIGNED_PACKED || hvarType == HvarType.SIGNED_PACKED) {
             int rawScale = field.getAttribute().getScale();
             length = field.getAttribute().getDigits();
             if (rawScale < 0) {
                 length += rawScale;
-                // PP: strip trailing zeros from SQL result
+                // PP: SQL 結果から末尾のゼロを取り除く
                 resultData = stripTrailingDigits(resultData, -rawScale);
             }
         }
-        // For VARYING, length = ARR size (total - 4 byte header)
+        // VARYING の場合、length = ARR サイズ (全体 - 4 バイトのヘッダ)
         if (hvarType == HvarType.ALPHANUMERIC_VARYING || hvarType == HvarType.JAPANESE_VARYING) {
             length = field.getSize() - OCDB_VARCHAR_HEADER_BYTE;
         }
@@ -663,9 +663,9 @@ final class CobolDataConverter {
     }
 
     /**
-     * Write a numeric value (rendered as an ASCII string, optionally with a leading '-' and a
-     * '.') into a PIC 9 DISPLAY (zoned decimal) field. All five sign variants share this path;
-     * they only differ in where the digit region sits and how the sign is applied.
+     * 数値 (ASCII 文字列として表現され、必要に応じて先頭の '-' と '.' を伴う) を
+     * PIC 9 DISPLAY (ゾーン10進 zoned decimal) フィールドへ書き込む。5 つの符号バリアントは
+     * この処理パスを共有し、桁領域の位置と符号の適用方法だけが異なる。
      */
     private static void writeNumericDisplay(
             int length, int scale, CobolDataStorage storage, byte[] str, DisplaySign sign) {
@@ -678,8 +678,8 @@ final class CobolDataConverter {
             indexOfDecimalPoint = str.length;
         }
 
-        // Digit region within finalBuf; a separate sign byte sits just outside it
-        // (leading -> index 0, trailing -> the last index).
+        // finalBuf 内の桁領域。分離符号バイトはこの領域のすぐ外側に置かれる
+        // (leading -> インデックス 0、trailing -> 最後のインデックス)。
         int regionStart = (sign == DisplaySign.LEADING_SEPARATE) ? 1 : 0;
         int regionEnd = (sign == DisplaySign.TRAILING_SEPARATE) ? length - 1 : length;
 
@@ -690,10 +690,10 @@ final class CobolDataConverter {
     }
 
     /**
-     * Place the (sign-stripped) digits of {@code str} into the digit region [{@code regionStart},
-     * {@code regionEnd}) of {@code finalBuf}, aligned so that {@code scale} gives the implied
-     * decimal position (scale &lt; 0 means {@code -scale} fractional digits; scale &ge; 0 is an
-     * integer / trailing-P value).
+     * {@code str} の (符号を取り除いた) 桁を {@code finalBuf} の桁領域 [{@code regionStart},
+     * {@code regionEnd}) へ配置する。{@code scale} が暗黙の小数位置を与えるよう位置合わせする
+     * (scale &lt; 0 は {@code -scale} 個の小数桁を意味し、scale &ge; 0 は整数 / 末尾 P (trailing-P)
+     * の値である)。
      */
     private static void placeDisplayDigits(
             byte[] finalBuf,
@@ -728,7 +728,7 @@ final class CobolDataConverter {
         }
     }
 
-    /** Apply the operational sign to an already-formatted zoned-decimal buffer, in place. */
+    /** すでにフォーマット済みのゾーン10進 (zoned decimal) バッファに、演算符号 (operational sign) をその場で適用する。 */
     private static void applyWriteSign(byte[] finalBuf, DisplaySign sign, boolean isNegative) {
         switch (sign) {
             case UNSIGNED:
@@ -861,7 +861,7 @@ final class CobolDataConverter {
     }
 
     private static void writeNational(int length, int scale, CobolDataStorage storage, byte[] str) {
-        // length is already byte size (e.g. 10 for PIC N(5))
+        // length はすでにバイトサイズである (例: PIC N(5) なら 10)
         for (int j = 0; j < length; j += 2) {
             storage.setByte(j, (byte) 0x30);
             storage.setByte(j + 1, (byte) 0x00);
@@ -909,25 +909,25 @@ final class CobolDataConverter {
     }
 
     /**
-     * Strip trailing digits from a numeric string for PP (scaling position) fields. For example,
-     * "999900" with count=2 becomes "9999". Handles optional leading sign.
+     * PP (scaling position) フィールド向けに、数値文字列から末尾の桁を取り除く。例えば、
+     * count=2 のとき "999900" は "9999" になる。先頭の符号 (任意) も処理する。
      */
     private static byte[] stripTrailingDigits(byte[] data, int count) {
         if (count <= 0 || data.length == 0) {
             return data;
         }
-        // Find the end of numeric content (skip sign at front if present)
+        // 数値部分の末尾を探す (先頭に符号があればスキップする)
         int start = 0;
         if (data[0] == (byte) '-' || data[0] == (byte) '+') {
             start = 1;
         }
-        // Find decimal point position
+        // 小数点の位置を探す
         int dotPos = indexOf(data, (byte) '.');
         int endPos = dotPos >= 0 ? dotPos : data.length;
-        // Strip 'count' digits from the integer part (before decimal)
+        // 整数部 (小数点より前) から 'count' 個の桁を取り除く
         int intDigits = endPos - start;
         if (count >= intDigits) {
-            // All integer digits would be stripped; return "0" with sign
+            // すべての整数桁が取り除かれてしまう場合、符号付きで "0" を返す
             if (start > 0) {
                 return new byte[] {data[0], (byte) '0'};
             }
@@ -955,16 +955,16 @@ final class CobolDataConverter {
     }
 
     // -------------------------------------------------------
-    // setParam: Bind COBOL value to PreparedStatement
+    // setParam: COBOL の値を PreparedStatement にバインドする
     // -------------------------------------------------------
     /**
-     * Bind a COBOL host variable value to a JDBC PreparedStatement parameter.
+     * COBOL ホスト変数の値を JDBC PreparedStatement のパラメータにバインドする。
      *
-     * @param stmt the JDBC prepared statement
-     * @param index the 1-based parameter index
-     * @param metaData parameter metadata for type inference (may be null)
-     * @param field the COBOL host variable field to bind
-     * @throws SQLException if a JDBC error occurs
+     * @param stmt JDBC の PreparedStatement
+     * @param index 1 始まりのパラメータインデックス
+     * @param metaData 型推論用のパラメータメタデータ (null の場合がある)
+     * @param field バインド対象の COBOL ホスト変数フィールド
+     * @throws SQLException JDBC エラーが発生した場合
      */
     static void setParam(
             PreparedStatement stmt, int index, ParameterMetaData metaData, AbstractCobolField field)
@@ -1038,16 +1038,16 @@ final class CobolDataConverter {
     }
 
     // -------------------------------------------------------
-    // getValueFromResultSet: Extract column value as SHIFT-JIS bytes
+    // getValueFromResultSet: カラムの値を SHIFT-JIS のバイト列として取り出す
     // -------------------------------------------------------
     private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     /**
-     * Extract a column value from a ResultSet as SHIFT-JIS encoded bytes.
+     * ResultSet からカラムの値を SHIFT-JIS でエンコードしたバイト列として取り出す。
      *
-     * @param rs the JDBC result set positioned on the current row
-     * @param columnIndex the 1-based column index
-     * @return the column value as a byte array, or null if the value is SQL NULL
+     * @param rs 現在の行に位置付けられた JDBC result set
+     * @param columnIndex 1 始まりのカラムインデックス
+     * @return カラムの値をバイト配列として返す。値が SQL NULL の場合は null
      */
     static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) {
         try {

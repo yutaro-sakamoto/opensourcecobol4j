@@ -14,18 +14,18 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Entry point for COBOL embedded SQL operations (CONNECT, EXEC SQL, cursors, transactions). */
+/** COBOL の埋め込み SQL 操作（CONNECT、EXEC SQL、カーソル、トランザクション）のエントリポイント。 */
 @SuppressWarnings("PMD.GuardLogStatement")
 public final class CobolSql {
 
     private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
 
-    /** Private constructor to prevent instantiation of utility class. */
+    /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private CobolSql() {}
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
 
-    /** Collapse whitespace (newlines, tabs, multiple spaces) into single spaces for logging. */
+    /** ログ出力用に、空白文字（改行、タブ、連続するスペース）を単一のスペースにまとめる。 */
     private static String collapseWhitespace(String s) {
         return s.replaceAll("\\s+", " ").trim();
     }
@@ -38,15 +38,15 @@ public final class CobolSql {
             new ConcurrentHashMap<>();
 
     // -------------------------------------------------------
-    // Connection
+    // 接続
     // -------------------------------------------------------
     /**
-     * Establish a database connection using separate user, password, and dbname parameters.
+     * user、password、dbname を個別のパラメータとして受け取り、データベース接続を確立する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param user user name field
-     * @param passwd password field
-     * @param dbname database name field
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param user ユーザー名フィールド
+     * @param passwd パスワードフィールド
+     * @param dbname データベース名フィールド
      */
     public static void connect(
             CobolDataStorage sqlca,
@@ -73,9 +73,9 @@ public final class CobolSql {
     }
 
     /**
-     * Disconnect the default database connection after committing.
+     * commit を実行したうえで、デフォルトのデータベース接続を切断する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
+     * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void disconnect(CobolDataStorage sqlca) {
         try {
@@ -85,11 +85,11 @@ public final class CobolSql {
                 return;
             }
             LOG.debug("DISCONNECT (id={})", conn.getId());
-            // Commit before disconnect
+            // 切断前に commit する
             try (Statement stmt = conn.getConnection().createStatement()) {
                 stmt.execute("COMMIT");
             } catch (SQLException ignored) {
-                // Ignore commit errors on disconnect
+                // 切断時の commit エラーは無視する
             }
             conn.close();
             SqlState.removeConnection(conn.getId());
@@ -101,13 +101,13 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Simple SQL execution (no host vars)
+    // 単純な SQL の実行（ホスト変数なし）
     // -------------------------------------------------------
     /**
-     * Execute a SQL statement with no host variable parameters.
+     * ホスト変数パラメータを持たない SQL 文を実行する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param query the SQL query string
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query SQL クエリ文字列
      */
     public static void exec(CobolDataStorage sqlca, String query) {
         try {
@@ -156,7 +156,7 @@ public final class CobolSql {
                     try (Statement sp = conn.createStatement()) {
                         sp.execute(SQL_ROLLBACK_SAVEPOINT);
                     } catch (SQLException ignored) {
-                        // Ignore rollback errors
+                        // rollback エラーは無視する
                     }
                     throw e;
                 }
@@ -169,14 +169,14 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Parameterized SQL execution
+    // パラメータ付き SQL の実行
     // -------------------------------------------------------
     /**
-     * Execute a parameterized SQL statement with COBOL host variable bindings.
+     * COBOL のホスト変数をバインドしたパラメータ付き SQL 文を実行する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param query the SQL query string with '?' placeholders
-     * @param params the COBOL host variable parameters
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query '?' プレースホルダを含む SQL クエリ文字列
+     * @param params COBOL のホスト変数パラメータ
      */
     public static void execWithParams(
             CobolDataStorage sqlca, String query, AbstractCobolField... params) {
@@ -221,7 +221,7 @@ public final class CobolSql {
                 try (Statement sp = conn.createStatement()) {
                     sp.execute(SQL_ROLLBACK_SAVEPOINT);
                 } catch (SQLException ignored) {
-                    // Ignore rollback errors
+                    // rollback エラーは無視する
                 }
                 throw e;
             }
@@ -242,12 +242,12 @@ public final class CobolSql {
     // SELECT INTO
     // -------------------------------------------------------
     /**
-     * Execute a SELECT INTO statement, writing results back to COBOL host variables.
+     * SELECT INTO 文を実行し、結果を COBOL のホスト変数に書き戻す。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param query the SELECT query string
-     * @param inputParams input host variable parameters (WHERE clause bindings)
-     * @param resultParams output host variables to receive selected column values
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query SELECT クエリ文字列
+     * @param inputParams 入力のホスト変数パラメータ（WHERE 句のバインド）
+     * @param resultParams 選択された列の値を受け取る出力ホスト変数
      */
     private static void fetchOccursRows(
             ResultSet rs,
@@ -315,7 +315,7 @@ public final class CobolSql {
             return;
         }
 
-        // Check if this is a GROUP OCCURS pattern (single GROUP result field, multiple rows)
+        // GROUP OCCURS パターン（単一の GROUP 結果フィールドで複数行）かどうかを確認する
         if (resultParams.length == 1
                 && resultParams[0].getAttribute().getType() == CobolFieldAttribute.COB_TYPE_GROUP) {
             AbstractCobolField groupField = resultParams[0];
@@ -326,7 +326,7 @@ public final class CobolSql {
             boolean sawNullWithoutIndicator = false;
 
             do {
-                // Write each column into the correct position within the element
+                // 各列を要素内の正しい位置に書き込む
                 int colOffset = 0;
                 for (int col = 1; col <= columnCount; col++) {
                     byte[] value = CobolDataConverter.getValueFromResultSet(rs, col);
@@ -334,7 +334,7 @@ public final class CobolSql {
                     CobolDataStorage elementStorage =
                             baseStorage.getSubDataStorage(rowIndex * elementSize + colOffset);
                     if (value != null) {
-                        // Pad or truncate to column size
+                        // 列サイズに合わせてパディングまたは切り詰めを行う
                         if (value.length >= colSize) {
                             elementStorage.memcpy(value, colSize);
                         } else {
@@ -359,7 +359,7 @@ public final class CobolSql {
             return;
         }
 
-        // Single row: write columns to individual result fields
+        // 単一行: 列を個々の結果フィールドに書き込む
         int columnCount = rs.getMetaData().getColumnCount();
         boolean sawNullWithoutIndicator = false;
         for (int i = 0; i < resultParams.length && i < columnCount; i++) {
@@ -380,12 +380,12 @@ public final class CobolSql {
     }
 
     /**
-     * Execute a SELECT INTO statement, writing results back to COBOL host variables.
+     * SELECT INTO 文を実行し、結果を COBOL のホスト変数に書き戻す。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param query the SELECT query string
-     * @param inputParams input host variable parameters (WHERE clause bindings)
-     * @param resultParams output host variables to receive selected column values
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query SELECT クエリ文字列
+     * @param inputParams 入力のホスト変数パラメータ（WHERE 句のバインド）
+     * @param resultParams 選択された列の値を受け取る出力ホスト変数
      */
     public static void selectInto(
             CobolDataStorage sqlca,
@@ -428,14 +428,14 @@ public final class CobolSql {
     }
 
     /**
-     * Execute a SELECT INTO statement for OCCURS arrays, writing multiple rows.
+     * OCCURS 配列に対する SELECT INTO 文を実行し、複数行を書き込む。
      *
-     * @param sqlca the SQLCA data storage
-     * @param query the SELECT query string
-     * @param inputParams input host variable parameters
-     * @param resultParams output host variables (one OCCURS element's fields)
-     * @param occursSize bytes per OCCURS element (stride)
-     * @param occursMax maximum number of OCCURS elements
+     * @param sqlca SQLCA データストレージ
+     * @param query SELECT クエリ文字列
+     * @param inputParams 入力のホスト変数パラメータ
+     * @param resultParams 出力ホスト変数（1 つの OCCURS 要素のフィールド群）
+     * @param occursSize OCCURS 要素 1 つあたりのバイト数（ストライド）
+     * @param occursMax OCCURS 要素の最大数
      */
     public static void selectIntoOccurs(
             CobolDataStorage sqlca,
@@ -477,14 +477,14 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Cursor operations
+    // カーソル操作
     // -------------------------------------------------------
     /**
-     * Declare a SQL cursor with no parameters.
+     * パラメータを持たない SQL カーソルを宣言する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name
-     * @param query the SQL query for the cursor
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName カーソル名
+     * @param query カーソル用の SQL クエリ
      */
     public static void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
         try {
@@ -508,12 +508,12 @@ public final class CobolSql {
     }
 
     /**
-     * Declare a SQL cursor with host variable parameters.
+     * ホスト変数パラメータを持つ SQL カーソルを宣言する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name
-     * @param query the SQL query for the cursor
-     * @param params host variable parameters to bind when the cursor is opened
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName カーソル名
+     * @param query カーソル用の SQL クエリ
+     * @param params カーソルをオープンする際にバインドするホスト変数パラメータ
      */
     public static void declareCursorWithParams(
             CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField... params) {
@@ -538,10 +538,10 @@ public final class CobolSql {
     }
 
     /**
-     * Open a previously declared cursor.
+     * 事前に宣言されたカーソルをオープンする。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name to open
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName オープンするカーソル名
      */
     public static void openCursor(CobolDataStorage sqlca, String cursorName) {
         try {
@@ -584,11 +584,11 @@ public final class CobolSql {
     }
 
     /**
-     * Open a previously declared cursor with host variable parameters.
+     * 事前に宣言されたカーソルをホスト変数パラメータ付きでオープンする。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name to open
-     * @param params host variable parameters for the cursor query
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName オープンするカーソル名
+     * @param params カーソルクエリ用のホスト変数パラメータ
      */
     public static void openCursorWithParams(
             CobolDataStorage sqlca, String cursorName, AbstractCobolField... params) {
@@ -615,11 +615,11 @@ public final class CobolSql {
     }
 
     /**
-     * Fetch the next row from an open cursor into COBOL host variables.
+     * オープン済みのカーソルから次の行を取得し、COBOL のホスト変数に格納する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name to fetch from
-     * @param resultParams output host variables to receive column values
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName fetch 対象のカーソル名
+     * @param resultParams 列の値を受け取る出力ホスト変数
      */
     public static void fetchCursor(
             CobolDataStorage sqlca, String cursorName, AbstractCobolField... resultParams) {
@@ -639,8 +639,8 @@ public final class CobolSql {
                 return;
             }
             LOG.trace("FETCH CURSOR {}", cursorName);
-            // Pre-clear so a clean fetch lands on sqlcode=0; fetch() may overwrite with
-            // ECPG_MISSING_INDICATOR if any column is NULL without indicator.
+            // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
+            // ある場合、fetch() が ECPG_MISSING_INDICATOR で上書きすることがある。
             SqlCA.setSuccess(sqlca);
             boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams, sqlca);
             if (!hasRow) {
@@ -654,13 +654,13 @@ public final class CobolSql {
     }
 
     /**
-     * Fetch multiple rows from a cursor into OCCURS array fields.
+     * カーソルから複数行を取得し、OCCURS 配列フィールドに格納する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the name of the cursor to fetch from
-     * @param resultParams the result parameter fields (one per column)
-     * @param occursSize the byte size of each OCCURS element
-     * @param occursMax the maximum number of rows to fetch
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName fetch 対象のカーソル名
+     * @param resultParams 結果パラメータフィールド（列ごとに 1 つ）
+     * @param occursSize OCCURS 要素 1 つあたりのバイトサイズ
+     * @param occursMax 取得する行の最大数
      */
     public static void fetchCursorOccurs(
             CobolDataStorage sqlca,
@@ -727,10 +727,10 @@ public final class CobolSql {
     }
 
     /**
-     * Close an open cursor.
+     * オープン済みのカーソルをクローズする。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param cursorName the cursor name to close
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param cursorName クローズするカーソル名
      */
     public static void closeCursor(CobolDataStorage sqlca, String cursorName) {
         try {
@@ -756,14 +756,14 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Prepared statements
+    // prepared statement の操作
     // -------------------------------------------------------
     /**
-     * Prepare a SQL statement, replacing COBOL host variable references with '?' placeholders.
+     * SQL 文を prepare し、COBOL のホスト変数参照を '?' プレースホルダに置き換える。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param stmtName the name to assign to the prepared statement
-     * @param queryField COBOL field containing the SQL query text
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param stmtName prepared statement に割り当てる名前
+     * @param queryField SQL クエリ文を保持する COBOL フィールド
      */
     public static void prepare(
             CobolDataStorage sqlca, String stmtName, AbstractCobolField queryField) {
@@ -776,10 +776,10 @@ public final class CobolSql {
             if (queryField != null
                     && queryField.getDataStorage() != null
                     && queryField.getSize() > 0) {
-                // Extract the SQL text honoring the host variable's COBOL type.
-                // CobolDataConverter handles VARYING (binary length header + data),
-                // plain alphanumeric / group, national, etc., so PREPARE works with a
-                // proper `PIC X(n) VARYING` host variable as well as a fixed-length field.
+                // ホスト変数の COBOL 型に従って SQL テキストを抽出する。
+                // CobolDataConverter は VARYING（バイナリの長さヘッダ + データ）、
+                // 単純な英数字 / group、national などを処理するため、PREPARE は
+                // 固定長フィールドだけでなく、適切な `PIC X(n) VARYING` のホスト変数でも動作する。
                 query = CobolDataConverter.cobolToString(queryField).trim();
             } else {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
@@ -790,7 +790,7 @@ public final class CobolSql {
                 return;
             }
 
-            // Count and replace host variable placeholders
+            // ホスト変数のプレースホルダを数えて置き換える
             int nParams = 0;
             StringBuilder replaced = new StringBuilder();
             for (int i = 0; i < query.length(); i++) {
@@ -819,11 +819,11 @@ public final class CobolSql {
     }
 
     /**
-     * Execute a previously prepared statement.
+     * 事前に prepare された statement を実行する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
-     * @param stmtName the name of the prepared statement
-     * @param params host variable parameters to bind
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param stmtName prepared statement の名前
+     * @param params バインドするホスト変数パラメータ
      */
     public static void executePrepared(
             CobolDataStorage sqlca, String stmtName, AbstractCobolField... params) {
@@ -850,12 +850,12 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Transaction
+    // トランザクション
     // -------------------------------------------------------
     /**
-     * Commit the current transaction on the default connection and begin a new one.
+     * デフォルト接続の現在の transaction を commit し、新しい transaction を開始する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
+     * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void commit(CobolDataStorage sqlca) {
         try {
@@ -877,9 +877,9 @@ public final class CobolSql {
     }
 
     /**
-     * Roll back the current transaction on the default connection and begin a new one.
+     * デフォルト接続の現在の transaction を rollback し、新しい transaction を開始する。
      *
-     * @param sqlca the SQLCA data storage for status reporting
+     * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void rollback(CobolDataStorage sqlca) {
         try {
@@ -901,7 +901,7 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
-    // Helper methods
+    // ヘルパーメソッド
     // -------------------------------------------------------
     private static String storageToString(CobolDataStorage storage, int len) {
         if (storage == null || len <= 0) {
@@ -937,17 +937,17 @@ public final class CobolSql {
         try {
             return pstmt.getParameterMetaData();
         } catch (SQLException e) {
-            // getParameterMetaData may abort the PostgreSQL transaction
-            // (e.g., if the table does not exist). Recover via savepoint.
+            // getParameterMetaData は PostgreSQL の transaction を中断させることがある
+            // （例: テーブルが存在しない場合）。savepoint を使って復旧する。
             try (Statement sp = conn.createStatement()) {
                 sp.execute(SQL_ROLLBACK_SAVEPOINT);
             } catch (SQLException ignored) {
-                // Ignore
+                // 無視する
             }
             try (Statement sp = conn.createStatement()) {
                 sp.execute(SQL_SAVEPOINT);
             } catch (SQLException ignored) {
-                // Ignore
+                // 無視する
             }
             return null;
         }

@@ -3,10 +3,10 @@ package jp.osscons.opensourcecobol.libcobj.sql;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Global registry for SQL connections, cursors, and prepared statements. */
+/** SQL 接続、カーソル、prepared statement を管理するグローバルなレジストリ。 */
 final class SqlState {
 
-    /** Private constructor to prevent instantiation of utility class. */
+    /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private SqlState() {}
 
     private static Map<String, SqlConnection> connections = new HashMap<>();
@@ -15,10 +15,10 @@ final class SqlState {
     private static String defaultConnId = null;
 
     /**
-     * Register a connection. The first registered connection becomes the default.
+     * 接続を登録する。最初に登録された接続がデフォルトになる。
      *
-     * @param id the connection identifier
-     * @param conn the SQL connection
+     * @param id 接続の識別子
+     * @param conn SQL 接続
      */
     static void addConnection(String id, SqlConnection conn) {
         connections.put(id, conn);
@@ -28,9 +28,9 @@ final class SqlState {
     }
 
     /**
-     * Get the default connection.
+     * デフォルトの接続を取得する。
      *
-     * @return the default connection, or null if none registered
+     * @return デフォルトの接続。登録されていない場合は null
      */
     static SqlConnection getDefaultConnection() {
         if (defaultConnId != null) {
@@ -43,9 +43,9 @@ final class SqlState {
     }
 
     /**
-     * Remove a connection by ID. If it was the default, a new default is chosen.
+     * ID を指定して接続を削除する。それがデフォルトだった場合は、新しいデフォルトが選択される。
      *
-     * @param id the connection identifier to remove
+     * @param id 削除する接続の識別子
      */
     static void removeConnection(String id) {
         connections.remove(id);
@@ -59,47 +59,47 @@ final class SqlState {
     }
 
     /**
-     * Register a cursor by name.
+     * 名前を指定してカーソルを登録する。
      *
-     * @param name the cursor name
-     * @param cursor the cursor descriptor
+     * @param name カーソル名
+     * @param cursor カーソルのディスクリプタ
      */
     static void addCursor(String name, SqlCursor cursor) {
         cursors.put(name, cursor);
     }
 
     /**
-     * Look up a cursor by name.
+     * 名前を指定してカーソルを検索する。
      *
-     * @param name the cursor name
-     * @return the cursor descriptor, or null if not found
+     * @param name カーソル名
+     * @return カーソルのディスクリプタ。見つからない場合は null
      */
     static SqlCursor getCursor(String name) {
         return cursors.get(name);
     }
 
     /**
-     * Register a prepared statement with its query and parameter count.
+     * prepared statement を、その query とパラメータ数とともに登録する。
      *
-     * @param name the statement name
-     * @param query the SQL query string
-     * @param nParams the number of parameters
+     * @param name statement 名
+     * @param query SQL query 文字列
+     * @param nParams パラメータの個数
      */
     static void addPrepared(String name, String query, int nParams) {
         preparedStatements.put(name, new String[] {query, String.valueOf(nParams)});
     }
 
     /**
-     * Look up a prepared statement by name.
+     * 名前を指定して prepared statement を検索する。
      *
-     * @param name the statement name
-     * @return a two-element array [query, nParams], or null if not found
+     * @param name statement 名
+     * @return [query, nParams] の2要素の配列。見つからない場合は null
      */
     static String[] getPrepared(String name) {
         return preparedStatements.get(name);
     }
 
-    /** Mark all cursors as closed (e.g. after COMMIT or ROLLBACK). */
+    /** すべてのカーソルをクローズ済みとしてマークする（例: COMMIT や ROLLBACK の後）。 */
     static void clearCursors() {
         for (SqlCursor cursor : cursors.values()) {
             cursor.isOpened = false;

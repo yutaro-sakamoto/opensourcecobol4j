@@ -4,125 +4,125 @@ import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** Manages the SQLCA (SQL Communication Area) structure for COBOL embedded SQL. */
+/** COBOL の埋め込み SQL で使用する SQLCA (SQL Communication Area) 構造体を管理する。 */
 final class SqlCA {
 
-    /** Private constructor to prevent instantiation of utility class. */
+    /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private SqlCA() {}
 
-    /** Maximum length of the SQLERRMC error message field. */
+    /** SQLERRMC エラーメッセージフィールドの最大長。 */
     static final int SQLERRMC_LEN = 70;
 
-    // Offsets within the SQLCA structure (total 133 bytes)
+    // SQLCA 構造体内のオフセット (全体で 133 バイト)
     // OFFSET_SQLCAID (0), OFFSET_SQLCABC (8), OFFSET_SQLERRP (88), OFFSET_SQLWARN (120)
-    // are defined in the SQLCA spec but not currently used in code.
-    private static final int OFFSET_SQLCODE = 12; // 4 bytes (int)
-    private static final int OFFSET_SQLERRML = 16; // 2 bytes (short)
-    private static final int OFFSET_SQLERRMC = 18; // 70 bytes
-    private static final int OFFSET_SQLERRD = 96; // 24 bytes (6 ints)
-    private static final int OFFSET_SQLSTATE = 128; // 5 bytes
+    // は SQLCA の仕様上定義されているが、現在のコードでは使用していない。
+    private static final int OFFSET_SQLCODE = 12; // 4 バイト (int)
+    private static final int OFFSET_SQLERRML = 16; // 2 バイト (short)
+    private static final int OFFSET_SQLERRMC = 18; // 70 バイト
+    private static final int OFFSET_SQLERRD = 96; // 24 バイト (int 6 個)
+    private static final int OFFSET_SQLSTATE = 128; // 5 バイト
 
-    /** No error. */
+    /** エラーなし。 */
     static final int ECPG_NO_ERROR = 0;
 
-    /** Row not found (SQLSTATE 02000). */
+    /** 行が見つからない (SQLSTATE 02000)。 */
     static final int ECPG_NOT_FOUND = 100;
 
-    /** Out of memory. */
+    /** メモリ不足。 */
     static final int ECPG_OUT_OF_MEMORY = -12;
 
-    /** Unsupported feature. */
+    /** 未対応の機能。 */
     static final int ECPG_UNSUPPORTED = -200;
 
-    /** Too many host variable arguments. */
+    /** ホスト変数の引数が多すぎる。 */
     static final int ECPG_TOO_MANY_ARGUMENTS = -201;
 
-    /** Too few host variable arguments. */
+    /** ホスト変数の引数が少なすぎる。 */
     static final int ECPG_TOO_FEW_ARGUMENTS = -202;
 
-    /** Too many matching rows. */
+    /** 一致する行が多すぎる。 */
     static final int ECPG_TOO_MANY_MATCHES = -203;
 
-    /** Data format error. */
+    /** データ形式エラー。 */
     static final int ECPG_DATA_FORMAT_ERROR = -204;
 
-    /** Empty query or statement. */
+    /** 空のクエリまたは文。 */
     static final int ECPG_EMPTY = -212;
 
-    /** Missing indicator variable. */
+    /** 指標変数が指定されていない。 */
     static final int ECPG_MISSING_INDICATOR = -213;
 
-    /** No active connection. */
+    /** 有効な接続がない。 */
     static final int ECPG_NO_CONN = -220;
 
-    /** Not connected. */
+    /** 未接続。 */
     static final int ECPG_NOT_CONN = -221;
 
-    /** Invalid prepared statement. */
+    /** 不正な準備済みステートメント。 */
     static final int ECPG_INVALID_STMT = -230;
 
-    /** Informix-compatible duplicate key error. */
+    /** Informix 互換の一意キー違反エラー。 */
     static final int ECPG_INFORMIX_DUPLICATE_KEY = -239;
 
-    /** Unknown descriptor. */
+    /** 不明なデスクリプタ。 */
     static final int ECPG_UNKNOWN_DESCRIPTOR = -240;
 
-    /** Invalid descriptor index. */
+    /** 不正なデスクリプタインデックス。 */
     static final int ECPG_INVALID_DESCRIPTOR_INDEX = -241;
 
-    /** Unknown descriptor item. */
+    /** 不明なデスクリプタ項目。 */
     static final int ECPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
 
-    /** Variable is not numeric. */
+    /** 変数が数値型でない。 */
     static final int ECPG_VAR_NOT_NUMERIC = -243;
 
-    /** Variable is not character type. */
+    /** 変数が文字型でない。 */
     static final int ECPG_VAR_NOT_CHAR = -244;
 
-    /** Informix-compatible subselect returned more than one row. */
+    /** Informix 互換の副問い合わせが 2 行以上を返した。 */
     static final int ECPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
 
-    /** PostgreSQL backend error. */
+    /** PostgreSQL バックエンドエラー。 */
     static final int ECPG_PGSQL = -400;
 
-    /** Transaction error. */
+    /** トランザクションエラー。 */
     static final int ECPG_TRANS = -401;
 
-    /** Connection error. */
+    /** 接続エラー。 */
     static final int ECPG_CONNECT = -402;
 
-    /** Duplicate key violation. */
+    /** 一意キー違反。 */
     static final int ECPG_DUPLICATE_KEY = -403;
 
-    /** Subselect returned more than one row. */
+    /** 副問い合わせが 2 行以上を返した。 */
     static final int ECPG_SUBSELECT_NOT_ONE = -404;
 
-    /** Unknown cursor (portal). */
+    /** 不明なカーソル (ポータル)。 */
     static final int ECPG_WARNING_UNKNOWN_PORTAL = -602;
 
-    /** Already in a transaction. */
+    /** 既にトランザクション中。 */
     static final int ECPG_WARNING_IN_TRANSACTION = -603;
 
-    /** No active transaction. */
+    /** 有効なトランザクションがない。 */
     static final int ECPG_WARNING_NO_TRANSACTION = -604;
 
-    /** Cursor (portal) already exists. */
+    /** カーソル (ポータル) が既に存在する。 */
     static final int ECPG_WARNING_PORTAL_EXISTS = -605;
 
-    /** Lock error. */
+    /** ロックエラー。 */
     static final int ECPG_LOCK_ERROR = -606;
 
-    /** JDD (Java Database Driver) error. */
+    /** JDD (Java Database Driver) エラー。 */
     static final int ECPG_JDD_ERROR = -607;
 
-    /** Unrecognized error. */
+    /** 認識できないエラー。 */
     static final int ECPG_UNKNOWN_ERROR = -9999;
 
     /**
-     * Set the SQLCODE field in the SQLCA structure.
+     * SQLCA 構造体の SQLCODE フィールドを設定する。
      *
-     * @param sqlca the SQLCA data storage
-     * @param code the SQLCODE value to set
+     * @param sqlca SQLCA のデータストレージ
+     * @param code 設定する SQLCODE 値
      */
     static void setCode(CobolDataStorage sqlca, int code) {
         if (sqlca == null) {
@@ -132,10 +132,10 @@ final class SqlCA {
     }
 
     /**
-     * Get the SQLCODE field from the SQLCA structure.
+     * SQLCA 構造体から SQLCODE フィールドを取得する。
      *
-     * @param sqlca the SQLCA data storage
-     * @return the current SQLCODE value, or 0 if sqlca is null
+     * @param sqlca SQLCA のデータストレージ
+     * @return 現在の SQLCODE 値。sqlca が null の場合は 0
      */
     static int getCode(CobolDataStorage sqlca) {
         if (sqlca == null) {
@@ -149,10 +149,10 @@ final class SqlCA {
     }
 
     /**
-     * Set the 5-character SQLSTATE field in the SQLCA structure.
+     * SQLCA 構造体の 5 文字の SQLSTATE フィールドを設定する。
      *
-     * @param sqlca the SQLCA data storage
-     * @param state the SQLSTATE string (e.g. "00000")
+     * @param sqlca SQLCA のデータストレージ
+     * @param state SQLSTATE 文字列 (例: "00000")
      */
     static void setState(CobolDataStorage sqlca, String state) {
         if (sqlca == null || state == null) {
@@ -169,10 +169,10 @@ final class SqlCA {
     }
 
     /**
-     * Set the SQLERRMC error message field in the SQLCA structure.
+     * SQLCA 構造体の SQLERRMC エラーメッセージフィールドを設定する。
      *
-     * @param sqlca the SQLCA data storage
-     * @param message the error message (truncated to {@link #SQLERRMC_LEN} bytes)
+     * @param sqlca SQLCA のデータストレージ
+     * @param message エラーメッセージ ({@link #SQLERRMC_LEN} バイトに切り詰められる)
      */
     static void setErrmc(CobolDataStorage sqlca, String message) {
         if (sqlca == null) {
@@ -184,9 +184,9 @@ final class SqlCA {
         }
         byte[] msgBytes = message.getBytes();
         int len = Math.min(msgBytes.length, SQLERRMC_LEN);
-        // Set SQLERRML
+        // SQLERRML を設定する
         sqlca.getSubDataStorage(OFFSET_SQLERRML).set((short) len);
-        // Set SQLERRMC
+        // SQLERRMC を設定する
         for (int i = 0; i < SQLERRMC_LEN; i++) {
             if (i < len) {
                 sqlca.setByte(OFFSET_SQLERRMC + i, msgBytes[i]);
@@ -197,11 +197,11 @@ final class SqlCA {
     }
 
     /**
-     * Set one of the six SQLERRD diagnostic values.
+     * 6 個ある SQLERRD 診断値のうちの 1 つを設定する。
      *
-     * @param sqlca the SQLCA data storage
-     * @param index the SQLERRD index (0-5)
-     * @param value the integer value to set
+     * @param sqlca SQLCA のデータストレージ
+     * @param index SQLERRD のインデックス (0〜5)
+     * @param value 設定する整数値
      */
     static void setErrd(CobolDataStorage sqlca, int index, int value) {
         if (sqlca == null || index < 0 || index >= 6) {
@@ -211,9 +211,9 @@ final class SqlCA {
     }
 
     /**
-     * Clear the SQLERRMC and SQLERRML fields in the SQLCA structure.
+     * SQLCA 構造体の SQLERRMC および SQLERRML フィールドをクリアする。
      *
-     * @param sqlca the SQLCA data storage
+     * @param sqlca SQLCA のデータストレージ
      */
     static void clearErrmc(CobolDataStorage sqlca) {
         if (sqlca == null) {
@@ -226,9 +226,9 @@ final class SqlCA {
     }
 
     /**
-     * Set the SQLCA to indicate successful completion (SQLCODE=0, SQLSTATE="00000").
+     * SQLCA を正常終了を示す状態に設定する (SQLCODE=0, SQLSTATE="00000")。
      *
-     * @param sqlca the SQLCA data storage
+     * @param sqlca SQLCA のデータストレージ
      */
     static void setSuccess(CobolDataStorage sqlca) {
         if (sqlca == null) {
@@ -240,26 +240,26 @@ final class SqlCA {
     }
 
     /**
-     * Set the SQLCA to ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002").
+     * SQLCA を ECPG_MISSING_INDICATOR に設定する (sqlcode=-213, sqlstate="22002")。
      *
-     * <p>Signals "NULL value without indicator variable" — ECPG standard behavior when a fetched
-     * column is SQL NULL and the host variable has no indicator companion. The COBOL field
-     * itself is still written (typically zero-filled) so the row is considered processed;
-     * application code is expected to check SQLCODE/SQLSTATE after the FETCH/SELECT.
+     * <p>「指標変数なしの NULL 値」を通知する。これは、フェッチした列が SQL NULL であり、
+     * かつホスト変数に対応する指標変数がない場合の ECPG 標準の動作である。COBOL フィールド
+     * 自体には依然として値が書き込まれる (通常はゼロ埋め) ため行は処理済みとみなされる。
+     * アプリケーション側のコードは FETCH/SELECT の後に SQLCODE/SQLSTATE を確認することが想定されている。
      *
-     * @param sqlca the SQLCA data storage
+     * @param sqlca SQLCA のデータストレージ
      */
     static void setMissingIndicator(CobolDataStorage sqlca) {
         setError(sqlca, ECPG_MISSING_INDICATOR, "22002", "Null value without indicator");
     }
 
     /**
-     * Set the SQLCA to indicate an error with the given code, state, and message.
+     * SQLCA を、指定したコード・状態・メッセージのエラーを示す状態に設定する。
      *
-     * @param sqlca the SQLCA data storage
-     * @param code the SQLCODE error code
-     * @param state the 5-character SQLSTATE
-     * @param message the error message
+     * @param sqlca SQLCA のデータストレージ
+     * @param code SQLCODE のエラーコード
+     * @param state 5 文字の SQLSTATE
+     * @param message エラーメッセージ
      */
     static void setError(CobolDataStorage sqlca, int code, String state, String message) {
         if (sqlca == null) {
@@ -271,10 +271,10 @@ final class SqlCA {
     }
 
     /**
-     * Populate the SQLCA from a SQLException, mapping the SQLSTATE to an ECPG error code.
+     * SQLException から SQLCA を設定し、SQLSTATE を ECPG エラーコードにマッピングする。
      *
-     * @param sqlca the SQLCA data storage
-     * @param e the SQL exception
+     * @param sqlca SQLCA のデータストレージ
+     * @param e SQL 例外
      */
     static void setResultFromException(CobolDataStorage sqlca, SQLException e) {
         if (sqlca == null) {
@@ -293,10 +293,10 @@ final class SqlCA {
     }
 
     /**
-     * Map a 5-character SQLSTATE string to the corresponding ECPG error code.
+     * 5 文字の SQLSTATE 文字列を対応する ECPG エラーコードにマッピングする。
      *
-     * @param sqlState the SQLSTATE string
-     * @return the ECPG error code constant
+     * @param sqlState SQLSTATE 文字列
+     * @return ECPG エラーコード定数
      */
     static int sqlStateToCode(String sqlState) {
         if (sqlState == null) {
