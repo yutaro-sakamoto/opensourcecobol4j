@@ -199,7 +199,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
-AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE_LOG} prog], [0],
+AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
 [0001 <log> success test_return_code
 +0005, 宮城　五郎          , -0200
 +0006, 福島　六郎          , +0150

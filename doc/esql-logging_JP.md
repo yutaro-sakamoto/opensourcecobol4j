@@ -81,6 +81,6 @@ java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSq
 
 ### 統合テスト
 
-`tests/esql-*` の各統合テストでは、生成Javaプログラムを実行した際に標準エラー出力へ出力される実行時ログ（DEBUG/ERROR）を期待値と照合しています。これらのテストはプログラム実行に `tests/atlocal.in` で定義された `RUN_MODULE_LOG` を使用します。`RUN_MODULE_LOG` はslf4j-simpleで `CobolSql` ロガーのDEBUGレベルを有効化し、ログ行を期待値と比較しやすくするため日時・スレッド名・ロガー名・レベルの角括弧表示を抑制します。
+実行時ログ（DEBUG/ERROR）の検証は、専用テスト `tests/esql-misc.src/logging.at` に一元化しています。このテストは1つのCOBOLプログラムでログ行を出力する各文（CONNECT、通常の `EXEC SQL`、パラメータ付き `EXEC SQL`、SELECT INTO、DECLARE/OPEN CURSOR、ERRORレベルで記録される失敗文、DISCONNECT）を実行し、標準エラー出力に出力される実行時ログを期待値と厳密に照合します。プログラム実行には `tests/atlocal.in` で定義された `RUN_MODULE_LOG` を使用します。`RUN_MODULE_LOG` はslf4j-simpleで `CobolSql` ロガーのDEBUGレベルを有効化し、ログ行を期待値と比較しやすくするため日時・スレッド名・ロガー名・レベルの角括弧表示を抑制します。
 
-なお、コンパイルのみのテストや、テストスイートに登録されていない非実行テストは、実行時ログが発生しないためログ検証の対象外です。
+`tests/esql-*` のその他の統合テストは、機能の動作そのものの検証に専念し、実行時ログ（標準エラー出力）は `[ignore]` として検証対象から除外しています（プログラム実行には通常の `RUN_MODULE` を使用）。これにより、ログのフォーマットや文言を変更した場合でも、更新が必要なのは `logging.at` の1ファイルだけで済みます。

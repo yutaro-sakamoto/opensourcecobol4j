@@ -1,0 +1,121 @@
+AT_SETUP([debug logging output])
+
+dnl This is the dedicated test for the CobolSql debug/error logging output.
+dnl It exercises every statement kind that emits a log line (CONNECT, plain
+dnl EXEC SQL, parameterized EXEC SQL, SELECT INTO, DECLARE/OPEN CURSOR, a
+dnl failing statement that logs at ERROR, and DISCONNECT) and pins the exact
+dnl stderr produced by ${RUN_MODULE_LOG}. The other esql tests intentionally
+dnl ignore stderr so that log-format changes only need to be updated here.
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+       01  EMP-NO                  PIC  9(4).
+       01  EMP-NAME                PIC  X(20).
+       01  OUT-NAME                PIC  X(20).
+
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>" TO DBNAME.
+           MOVE  "<|DB_USER|>"                         TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"                     TO PASSWD.
+
+      *    CONNECT (logs "CONNECT successful")
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+      *    Plain EXEC SQL (DDL)
+           EXEC SQL
+               DROP TABLE IF EXISTS LOGTEST
+           END-EXEC.
+           EXEC SQL
+               CREATE TABLE LOGTEST ( EMP_NO NUMERIC(4,0) NOT NULL,
+                   EMP_NAME CHAR(20), CONSTRAINT ILOGTEST_0
+                   PRIMARY KEY (EMP_NO) )
+           END-EXEC.
+
+      *    Parameterized EXEC SQL (logs "(params=2)")
+           MOVE 1 TO EMP-NO.
+           MOVE "ALICE" TO EMP-NAME.
+           EXEC SQL
+               INSERT INTO LOGTEST VALUES (:EMP-NO, :EMP-NAME)
+           END-EXEC.
+
+      *    SELECT INTO
+           EXEC SQL
+               SELECT EMP_NAME INTO :OUT-NAME FROM LOGTEST
+                   WHERE EMP_NO = 1
+           END-EXEC.
+
+      *    DECLARE / OPEN CURSOR (FETCH and CLOSE are not logged)
+           EXEC SQL
+               DECLARE C1 CURSOR FOR
+                   SELECT EMP_NO, EMP_NAME FROM LOGTEST ORDER BY EMP_NO
+           END-EXEC.
+           EXEC SQL OPEN C1 END-EXEC.
+           EXEC SQL
+               FETCH C1 INTO :EMP-NO, :EMP-NAME
+           END-EXEC.
+           EXEC SQL CLOSE C1 END-EXEC.
+
+      *    Cleanup DROP must run BEFORE the failing statement below:
+      *    once a statement errors, PostgreSQL aborts the transaction and
+      *    rejects every following statement until ROLLBACK, so doing the
+      *    DROP here keeps its log line clean (a plain "EXEC SQL", no error).
+           EXEC SQL
+               DROP TABLE IF EXISTS LOGTEST
+           END-EXEC.
+
+      *    Failing statement (logs at ERROR with PostgreSQL detail)
+           EXEC SQL
+               SELECT EMP_NAME INTO :OUT-NAME FROM NOSUCHTABLE
+           END-EXEC.
+
+      *    ROLLBACK clears the aborted transaction (not logged)
+           EXEC SQL
+               ROLLBACK
+           END-EXEC.
+
+      *    DISCONNECT
+           EXEC SQL
+               DISCONNECT ALL
+           END-EXEC.
+
+           DISPLAY "done".
+           STOP RUN.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+
+dnl Run with the debug logger and capture stderr to a file. We strip the
+dnl "  Position: NN" continuation line that PostgreSQL appends to the error
+dnl detail: its offset is the only part of the output that could shift
+dnl between PostgreSQL versions. Everything else (the libcobj-generated
+dnl DEBUG lines and the stable "relation ... does not exist" message) is
+dnl matched exactly so a log-format regression is still caught here.
+AT_CHECK([${RUN_MODULE_LOG} prog 2>stderr.log], [0],
+[done
+])
+AT_CHECK([grep -v '^  Position:' stderr.log], [0],
+[DEBUG CONNECT successful (id=OCDB_DEFAULT_DBNAME)
+DEBUG EXEC SQL: DROP TABLE IF EXISTS LOGTEST
+DEBUG EXEC SQL: CREATE TABLE LOGTEST ( EMP_NO NUMERIC(4,0) NOT NULL, EMP_NAME CHAR(20), CONSTRAINT ILOGTEST_0 PRIMARY KEY (EMP_NO) )
+DEBUG EXEC SQL (params=2): INSERT INTO LOGTEST VALUES (?, ?)
+DEBUG SELECT INTO: SELECT EMP_NAME FROM LOGTEST WHERE EMP_NO = 1
+DEBUG DECLARE CURSOR prog_C1 FOR: SELECT EMP_NO, EMP_NAME FROM LOGTEST ORDER BY EMP_NO
+DEBUG OPEN CURSOR prog_C1
+DEBUG EXEC SQL: DROP TABLE IF EXISTS LOGTEST
+DEBUG SELECT INTO: SELECT EMP_NAME FROM NOSUCHTABLE
+ERROR SELECT INTO failed: SELECT EMP_NAME FROM NOSUCHTABLE - ERROR: relation "nosuchtable" does not exist
+DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
+])
+
+AT_CLEANUP
