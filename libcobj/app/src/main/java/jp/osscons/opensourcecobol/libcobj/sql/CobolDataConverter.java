@@ -820,29 +820,29 @@ final class CobolDataConverter {
             } else {
                 digit = (byte) '0';
             }
-            int[] result = getPackedIndexAndByte(length, i, digit);
-            int idx = result[0];
-            byte byteValue = (byte) result[1];
-            byte b = storage.getByte(idx);
-            storage.setByte(idx, (byte) (b | byteValue));
+            putPackedDigit(storage, length, i, digit);
         }
     }
 
-    private static int[] getPackedIndexAndByte(int dataLen, int index, byte digit) {
+    /**
+     * BCD 桁 {@code digit} ('0'-'9') を packed-decimal ストレージの該当バイトへ OR 書き込みする。
+     * {@code dataLen} と {@code index} の偶奇で書き込み先バイトと上位/下位ニブルが決まる。
+     * 反復ごとの配列割り当てを避けるため、結果を返さずその場で書き込む。
+     */
+    private static void putPackedDigit(
+            CobolDataStorage storage, int dataLen, int index, byte digit) {
         int d = (digit & 0xFF) - '0';
+        int byteIndex;
+        int nibble;
         if (dataLen % 2 == 0) {
-            if (index % 2 == 0) {
-                return new int[] {(index + 1) / 2, d};
-            } else {
-                return new int[] {(index + 1) / 2, d << 4};
-            }
+            byteIndex = (index + 1) / 2;
+            nibble = (index % 2 == 0) ? d : (d << 4);
         } else {
-            if (index % 2 == 0) {
-                return new int[] {index / 2, d << 4};
-            } else {
-                return new int[] {index / 2, d};
-            }
+            byteIndex = index / 2;
+            nibble = (index % 2 == 0) ? (d << 4) : d;
         }
+        byte b = storage.getByte(byteIndex);
+        storage.setByte(byteIndex, (byte) (b | nibble));
     }
 
     private static void writeAlphanumeric(
