@@ -744,10 +744,11 @@ class CobolSqlTest {
         cursor.isOpened = false;
         SqlState.addCursor("c1", cursor);
         CobolSql.closeCursor(sqlca, "c1");
+        // 登録済みだが未 OPEN のカーソルの CLOSE は成功扱い (Open-COBOL-ESQL-4J に合わせる)。
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.ECPG_NO_ERROR,
                 getSqlCode(),
-                "Close not-opened cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "Close of a registered but not-opened cursor should succeed");
     }
 
     // ============================================================

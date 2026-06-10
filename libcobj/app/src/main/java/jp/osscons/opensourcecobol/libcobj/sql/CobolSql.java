@@ -61,7 +61,8 @@ public final class CobolSql {
             LOG.trace("CONNECT user={} dbname={}", userStr.trim(), dbnameStr.trim());
             SqlConnection conn = SqlConnection.connect(userStr, passwdStr, dbnameStr);
             SqlState.addConnection(conn.getId(), conn);
-            SqlCA.setSuccess(sqlca);
+            // CONNECT 成功時は SQLERRMC を上書きしない (COBOL 初期値のスペースを残す。Open COBOL ESQL 4Jに合わせる)。
+            SqlCA.setSuccessKeepErrmc(sqlca);
             LOG.debug("CONNECT successful (id={})", conn.getId());
         } catch (SQLException e) {
             LOG.error("CONNECT failed: {}", e.getMessage());
@@ -630,7 +631,9 @@ public final class CobolSql {
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
-            if (cursor == null || !cursor.isOpened) {
+            if (cursor == null) {
+                // 未 DECLARE のカーソル。PostgreSQL に問い合わせる相手がいないため、ここで
+                // -602/34000 を返す (Open-COBOL-ESQL-4J も未登録カーソルは同様)。
                 SqlCA.setError(
                         sqlca,
                         SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
@@ -638,6 +641,9 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            // 登録済みだが OPEN に失敗した (未 OPEN の) カーソルでも短絡せず FETCH を実行する。
+            // PostgreSQL が cursor "..." does not exist 等のエラーを返し、その SQLSTATE と
+            // メッセージが下の catch 経由で SQLCA に格納される (Open COBOL ESQL 4Jの挙動に合わせる)。
             LOG.trace("FETCH CURSOR {}", cursorName);
             // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
             // ある場合、fetch() が ECPG_MISSING_INDICATOR で上書きすることがある。
@@ -675,7 +681,8 @@ public final class CobolSql {
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
-            if (cursor == null || !cursor.isOpened) {
+            if (cursor == null) {
+                // 未 DECLARE のカーソル: -602/34000 を返す (Open COBOL ESQL 4Jと同様)。
                 SqlCA.setErrd(sqlca, 2, 0);
                 SqlCA.setError(
                         sqlca,
@@ -684,6 +691,8 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を実行し、PostgreSQL の
+            // エラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4Jの挙動に合わせる)。
             Connection conn = sqlConn.getConnection();
             String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursor.name;
             try (Statement stmt = conn.createStatement();
@@ -722,6 +731,8 @@ public final class CobolSql {
                 }
             }
         } catch (SQLException e) {
+            // フェッチ失敗時は取得行数 SQLERRD(3) を 0 にしてから PostgreSQL エラーを反映する。
+            SqlCA.setErrd(sqlca, 2, 0);
             SqlCA.setResultFromException(sqlca, e);
         }
     }
@@ -740,12 +751,19 @@ public final class CobolSql {
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
-            if (cursor == null || !cursor.isOpened) {
+            if (cursor == null) {
+                // 未 DECLARE のカーソル: -602/34000 を返す (Open COBOL ESQL 4Jと同様)。
                 SqlCA.setError(
                         sqlca,
                         SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
+                return;
+            }
+            if (!cursor.isOpened) {
+                // 登録済みだが未 OPEN のカーソルの CLOSE は成功扱い (Open-COBOL-ESQL-4J
+                // も未 OPEN カーソルの CLOSE は 0 を返す)。
+                SqlCA.setSuccess(sqlca);
                 return;
             }
             cursor.close(sqlConn.getConnection());

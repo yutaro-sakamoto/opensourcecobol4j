@@ -169,6 +169,21 @@ class SqlCATest {
                 () -> SqlCA.clearErrmc(null), "clearErrmc with null sqlca should not throw");
     }
 
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testSetSuccessKeepErrmc() {
+        // SQLERRMC のバイト列は保持しつつ、SQLCODE=0 / SQLSTATE=00000 / SQLERRML=0 にする。
+        SqlCA.setErrmc(sqlca, "stale");
+        SqlCA.setSuccessKeepErrmc(sqlca);
+        assertEquals(SqlCA.ECPG_NO_ERROR, SqlCA.getCode(sqlca), "SQLCODE should be 0");
+        byte[] stateBytes = sqlca.getByteArray(128, 5);
+        assertEquals("00000", new String(stateBytes), "SQLSTATE should be 00000");
+        short len = ByteBuffer.wrap(sqlca.getByteArray(16, 2)).getShort();
+        assertEquals(0, len, "SQLERRML should be 0");
+        byte[] msg = sqlca.getByteArray(18, 5);
+        assertEquals("stale", new String(msg), "SQLERRMC bytes should be left unchanged");
+    }
+
     // ---------- setErrd ----------
 
     @Test

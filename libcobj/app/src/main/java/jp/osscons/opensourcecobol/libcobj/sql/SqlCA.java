@@ -226,6 +226,25 @@ final class SqlCA {
     }
 
     /**
+     * SQLCA を正常終了に設定するが、SQLERRMC のバイト列は変更しない (SQLERRML は 0 にする)。
+     *
+     * <p>CONNECT 成功時に使う。Open-COBOL-ESQL-4J は CONNECT 成功時に SQLERRMC を
+     * 上書きせず、COBOL が初期化した値 (PIC X のスペース) をそのまま残すため、それに合わせる。
+     * メッセージ長 SQLERRML は 0 にして「メッセージなし」と整合させる (直前のエラーの長さが
+     * 残らないようにする)。
+     *
+     * @param sqlca SQLCA のデータストレージ
+     */
+    static void setSuccessKeepErrmc(CobolDataStorage sqlca) {
+        if (sqlca == null) {
+            return;
+        }
+        setCode(sqlca, ECPG_NO_ERROR);
+        setState(sqlca, "00000");
+        sqlca.getSubDataStorage(OFFSET_SQLERRML).set((short) 0);
+    }
+
+    /**
      * SQLCA を正常終了を示す状態に設定する (SQLCODE=0, SQLSTATE="00000")。
      *
      * @param sqlca SQLCA のデータストレージ
