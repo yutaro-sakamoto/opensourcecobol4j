@@ -18,7 +18,7 @@ ESQL サポートは大きく次の 2 層に分かれます。
 | `cobj/esql-common.h` | `esql-parser.y` / `esql-scanner.l` と `esql.c` が共有する型と関数のヘッダ。tree.h を含めない (`YYSTYPE` の衝突を避けるため)。 |
 | `cobj/esql.c` | `esql_build_and_resolve()` を提供。ホスト変数の型解決、GROUP の子展開、SELECT INTO/FETCH OCCURS への昇格、`cb_tree` 構築のラッパ関数群を持つ。 |
 | `cobj/codegen.c` (`joutput_exec_sql` 周辺) | `cb_exec_sql` ノードを Java の `CobolSql.exec(...)` 等の呼び出しに展開する。 |
-| `cobj/typeck.c` | SQLCA が必要なプログラムに `01 SQLCA GLOBAL.` を暗黙挿入する。 |
+| `cobj/esql.c` (`esql_inject_sqlca`) | `01 SQLCA GLOBAL.` を暗黙挿入する。`parser.y` がプログラム内で最初の埋め込み SQL 文を検出した時点で呼び出す。 |
 
 ### 解析パイプライン
 
@@ -121,7 +121,7 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 ### SQLCA の自動定義
 
-`typeck.c` は EXEC SQL を含む `PROGRAM-ID` に対し、明示的な `EXEC SQL INCLUDE SQLCA` がなくても `01 SQLCA GLOBAL.` を WORKING-STORAGE に自動挿入します。`SQLERRMC` などは `OCCURS 6` を含む構造なので、`b_SQLERRD__SQLCA.getSubDataStorage(...)` を生成時に組み立てる対象になります。
+`parser.y` は、プログラム内で最初の実際の埋め込み SQL 文を検出した時点で `esql_inject_sqlca()`（`cobj/esql.c`）を呼び出し、明示的な `EXEC SQL INCLUDE SQLCA` がなくても `01 SQLCA GLOBAL.` を WORKING-STORAGE に自動挿入します。挿入は実際の `EXEC SQL` 文を含むプログラムに対してのみ行われ、`EXEC SQL INCLUDE SQLCA` や `BEGIN/END DECLARE SECTION` だけで実行可能な SQL を持たないプログラムには SQLCA を挿入しません。明示的な `EXEC SQL INCLUDE SQLCA END-EXEC` が記述されていない場合（前処理段（`pplex.l.m4`）で `cb_sqlca_include_seen` に記録される）、`cobj` はコンパイル時に警告を出力します。`SQLERRD` などは `OCCURS 6` を含む構造なので、`b_SQLERRD__SQLCA.getSubDataStorage(...)` を生成時に組み立てる対象になります。
 
 ### NULL 列の通知 (ECPG_MISSING_INDICATOR)
 

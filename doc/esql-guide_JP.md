@@ -23,6 +23,8 @@ opensource COBOL 4Jは、COBOLプログラムからPostgreSQLデータベース�
        DATA                        DIVISION.
        WORKING-STORAGE             SECTION.
 
+       EXEC SQL INCLUDE SQLCA END-EXEC.
+
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME    PIC X(30) VALUE "testdb@localhost:5432".
        01  USERNAME  PIC X(30) VALUE "main_user".
@@ -126,9 +128,13 @@ dbname@host:port
 
 ### SQLCA（SQL通信領域）
 
-SQLCAは、`EXEC SQL` 文を使用するプログラムで自動的に定義されます。各SQL文の実行後に `SQLCODE`、`SQLSTATE`、`SQLERRMC` などの診断フィールドが利用可能になります。
+SQLCAは、`EXEC SQL` 文を実行するプログラムで自動的に定義されます。各SQL文の実行後に `SQLCODE`、`SQLSTATE`、`SQLERRMC` などの診断フィールドが利用可能になります。
 
-後方互換性のため、`EXEC SQL INCLUDE SQLCA END-EXEC` は引き続き使用できますが、記述する必要はありません。
+WORKING-STORAGE SECTIONに `EXEC SQL INCLUDE SQLCA END-EXEC.` を明示的に記述することを推奨します。埋め込みSQLを含むプログラムでこの宣言を省略した場合、`cobj` はSQLCAを暗黙に定義しますが、コンパイル時に以下の警告を出力します。
+
+```
+embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declared implicitly
+```
 
 暗黙に定義されるSQLCAの構造は以下の通りです：
 

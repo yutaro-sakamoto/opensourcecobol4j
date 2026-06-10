@@ -18,7 +18,7 @@ ESQL support is split into two layers:
 | `cobj/esql-common.h` | Shared types and prototypes between `esql-parser.y` / `esql-scanner.l` and `esql.c`. Deliberately does NOT include `tree.h` (its `YYSTYPE` would collide with the ESQL parser's). |
 | `cobj/esql.c` | `esql_build_and_resolve()` lives here, along with host-var type resolution, GROUP expansion for SELECT INTO / FETCH OCCURS, and thin wrappers that build `cb_tree`s without exposing `tree.h` to the ESQL parser. |
 | `cobj/codegen.c` (around `joutput_exec_sql`) | Expands a `cb_exec_sql` node into Java calls like `CobolSql.exec(...)`. |
-| `cobj/typeck.c` | Auto-injects `01 SQLCA GLOBAL.` into programs that contain `EXEC SQL`. |
+| `cobj/esql.c` (`esql_inject_sqlca`) | Auto-injects `01 SQLCA GLOBAL.`, invoked from `parser.y` on the first embedded SQL statement in a program. |
 
 ### Parsing pipeline
 
@@ -122,7 +122,7 @@ Host variables arrive from generated Java as `AbstractCobolField[]`. Because the
 
 ### Implicit SQLCA
 
-`typeck.c` injects `01 SQLCA GLOBAL.` into the WORKING-STORAGE of any program that contains `EXEC SQL`, even without an explicit `EXEC SQL INCLUDE SQLCA`. `SQLERRD OCCURS 6` becomes one of the fields that codegen wires up via `b_SQLERRD__SQLCA.getSubDataStorage(...)`.
+`parser.y` calls `esql_inject_sqlca()` (in `cobj/esql.c`) to inject `01 SQLCA GLOBAL.` into the WORKING-STORAGE the first time an actual embedded SQL statement is seen, even without an explicit `EXEC SQL INCLUDE SQLCA`. Injection happens only for programs that contain a real `EXEC SQL` statement; a program with only `EXEC SQL INCLUDE SQLCA` or `BEGIN/END DECLARE SECTION` and no executable SQL gets no SQLCA. When an explicit `EXEC SQL INCLUDE SQLCA END-EXEC` is absent (tracked via `cb_sqlca_include_seen`, set during preprocessing in `pplex.l.m4`), `cobj` emits a compile-time warning. `SQLERRD OCCURS 6` becomes one of the fields that codegen wires up via `b_SQLERRD__SQLCA.getSubDataStorage(...)`.
 
 ### NULL column notification (`ECPG_MISSING_INDICATOR`)
 

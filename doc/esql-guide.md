@@ -23,6 +23,8 @@ Below is a minimal COBOL program that connects to PostgreSQL, inserts a row, rea
        DATA                        DIVISION.
        WORKING-STORAGE             SECTION.
 
+       EXEC SQL INCLUDE SQLCA END-EXEC.
+
        EXEC SQL BEGIN DECLARE SECTION END-EXEC.
        01  DBNAME    PIC X(30) VALUE "testdb@localhost:5432".
        01  USERNAME  PIC X(30) VALUE "main_user".
@@ -126,9 +128,13 @@ The constraint on subscript values is that the variable used as a subscript cann
 
 ### SQLCA (SQL Communication Area)
 
-The SQLCA is automatically defined when a program uses `EXEC SQL` statements. It provides `SQLCODE`, `SQLSTATE`, `SQLERRMC`, and other diagnostic fields that are updated after each SQL statement.
+The SQLCA is automatically defined when a program executes `EXEC SQL` statements. It provides `SQLCODE`, `SQLSTATE`, `SQLERRMC`, and other diagnostic fields that are updated after each SQL statement.
 
-For backward compatibility, `EXEC SQL INCLUDE SQLCA END-EXEC` is still accepted but is no longer required.
+You should declare it explicitly with `EXEC SQL INCLUDE SQLCA END-EXEC.` in the WORKING-STORAGE SECTION. If a program contains embedded SQL but omits this declaration, `cobj` still defines the SQLCA implicitly but emits the following compile-time warning:
+
+```
+embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declared implicitly
+```
 
 The implicitly defined SQLCA has the following structure:
 
