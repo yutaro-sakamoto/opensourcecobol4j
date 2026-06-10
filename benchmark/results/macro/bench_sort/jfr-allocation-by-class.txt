@@ -1,0 +1,30 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+byte[]                                                                                                           31.24%
+int[]                                                                                                            27.40%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage                                                         13.49%
+java.math.BigDecimal                                                                                             10.49%
+java.nio.HeapByteBuffer                                                                                          10.15%
+java.math.BigInteger                                                                                              1.55%
+char[]                                                                                                            0.98%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              0.94%
+java.math.MutableBigInteger                                                                                       0.92%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     0.89%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField                                                         0.80%
+sun.nio.cs.DoubleByte$Decoder                                                                                     0.22%
+java.nio.HeapCharBuffer                                                                                           0.17%
+java.lang.String                                                                                                  0.14%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute                                                       0.13%
+java.lang.ref.WeakReference                                                                                       0.13%
+long[]                                                                                                            0.11%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField                                                   0.08%
+java.lang.StringBuilder                                                                                           0.06%
+sun.nio.cs.DoubleByte$Encoder                                                                                     0.04%
+jdk.internal.org.objectweb.asm.SymbolTable$Entry[]                                                                0.02%
+sun.util.locale.LocaleObjectCache$CacheEntry                                                                      0.02%
+java.util.HashMap$Node                                                                                            0.01%
+java.lang.Object[]                                                                                                0.01%
+java.util.ArrayList$Itr                                                                                           0.00%

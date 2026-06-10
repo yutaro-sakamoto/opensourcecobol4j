@@ -1,0 +1,21 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+int[]                                                                                                            34.60%
+java.nio.HeapByteBuffer                                                                                          31.79%
+byte[]                                                                                                           17.33%
+java.math.BigDecimal                                                                                             11.10%
+java.math.BigInteger                                                                                              2.18%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              0.88%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     0.83%
+sun.nio.cs.DoubleByte$Decoder                                                                                     0.40%
+char[]                                                                                                            0.39%
+java.lang.ref.WeakReference                                                                                       0.21%
+java.nio.HeapCharBuffer                                                                                           0.18%
+sun.nio.cs.DoubleByte$Encoder                                                                                     0.04%
+java.lang.String                                                                                                  0.03%
+java.lang.Object[]                                                                                                0.02%
+sun.util.locale.BaseLocale$Key                                                                                    0.02%
+java.util.HashMap$Node[]                                                                                          0.01%

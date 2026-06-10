@@ -1,0 +1,19 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.math.BigDecimal.valueOf(long)                                                                           15  25.00%
+bench_table$4.run()                                                                                          11  18.33%
+java.math.BigInteger.shiftRightImpl(int)                                                                      7  11.67%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.set(int)                                                 6  10.00%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                    6  10.00%
+java.nio.Buffer.limit(int)                                                                                    5   8.33%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.intValue()                                           3   5.00%
+jdk.internal.misc.Unsafe.getLongUnaligned(Object, long, boolean)                                              1   1.67%
+java.util.jar.JarFile.getInputStream(ZipEntry)                                                                1   1.67%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.cmpInteger(int)                                    1   1.67%
+java.math.BigDecimal.pow(int)                                                                                 1   1.67%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getBinaryField(AbstractCobolField, int)                  1   1.67%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory.makeCobolField(...)                                 1   1.67%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.getSubDataStorage(int)                               1   1.67%

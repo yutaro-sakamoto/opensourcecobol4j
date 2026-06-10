@@ -1,0 +1,30 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.math.MutableBigInteger.divideMagnitude(MutableBigInteger, MutableBigInteger, boolean)                       19.99%
+java.util.Arrays.copyOfRangeByte(byte[], int, int)                                                               17.46%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.copy()                                                  13.33%
+java.lang.Long.toString(long)                                                                                    12.88%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                       10.15%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                           9.91%
+java.util.Arrays.copyOfRangeInt(int[], int, int)                                                                  6.54%
+java.util.concurrent.ConcurrentHashMap.initTable()                                                                0.89%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory.makeCobolField(...)                                     0.88%
+java.math.BigInteger.smallToString(int, StringBuilder, int)                                                       0.74%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.<init>(long)                                                 0.64%
+java.math.BigInteger.shiftRightImpl(int)                                                                          0.43%
+java.math.BigInteger.square(boolean, boolean, int)                                                                0.37%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                      0.36%
+java.math.BigInteger.multiplyByInt(int[], int, int)                                                               0.33%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.<init>(int)                                              0.33%
+java.math.MutableBigInteger.toBigInteger(int)                                                                     0.32%
+java.math.BigDecimal.valueOf(long)                                                                                0.29%
+java.math.MutableBigInteger.<init>()                                                                              0.25%
+java.math.BigDecimal.pow(int)                                                                                     0.24%
+java.nio.HeapCharBuffer.<init>(int, int, MemorySegment)                                                           0.24%
+java.math.BigInteger.shiftLeft(int)                                                                               0.23%
+sun.nio.cs.SJIS.newDecoder()                                                                                      0.22%
+java.math.BigDecimal.<init>(char[], int, int, MathContext)                                                        0.20%
+jp.osscons.opensourcecobol.libcobj.common.CobolIntrinsic.intrBinop(...)                                           0.19%

@@ -1,0 +1,30 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.math.BigInteger.square(boolean, boolean, int)                                                               36.28%
+java.util.Arrays.copyOfRangeInt(int[], int, int)                                                                 16.28%
+java.math.BigInteger.shiftLeft(int)                                                                              13.07%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.set(int)                                                    11.45%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                       10.49%
+java.math.BigInteger.multiplyByInt(int[], int, int)                                                               4.69%
+java.math.BigInteger.shiftRightImpl(int)                                                                          1.50%
+java.math.BigInteger.squareToLen(int[], int, int[])                                                               1.39%
+java.math.BigInteger.multiply(long)                                                                               0.88%
+java.util.concurrent.ConcurrentHashMap.initTable()                                                                0.65%
+java.math.BigDecimal.valueOf(long)                                                                                0.46%
+java.math.MutableBigInteger.toBigDecimal(int, int)                                                                0.31%
+java.math.MutableBigInteger.<init>()                                                                              0.30%
+java.math.MutableBigInteger.divideOneWord(int, MutableBigInteger)                                                 0.28%
+java.math.BigDecimal.pow(int)                                                                                     0.28%
+java.math.MutableBigInteger.divideMagnitude(MutableBigInteger, MutableBigInteger, boolean)                        0.27%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getField(AbstractCobolField, int)                            0.24%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                      0.22%
+java.math.BigInteger.shiftLeft(int[], int)                                                                        0.20%
+java.math.BigDecimal.multiply(long, BigInteger, int)                                                              0.18%
+java.math.BigDecimal.valueOf(BigInteger, int, int)                                                                0.14%
+java.math.BigDecimal.divideAndRound(BigInteger, long, int, int, int)                                              0.10%
+java.math.BigDecimal.divideAndRound(BigInteger, BigInteger, int, int, int)                                        0.07%
+java.math.BigInteger.add(long)                                                                                    0.06%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getBinaryField(AbstractCobolField, int)                      0.06%

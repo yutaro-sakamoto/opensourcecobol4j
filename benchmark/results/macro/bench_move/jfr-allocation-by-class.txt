@@ -1,0 +1,13 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.HeapByteBuffer                                                                                          96.02%
+char[]                                                                                                            2.17%
+java.math.BigDecimal                                                                                              0.80%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              0.71%
+byte[]                                                                                                            0.19%
+sun.util.locale.BaseLocale$Key                                                                                    0.06%
+char[][][]                                                                                                        0.04%
+java.lang.String                                                                                                  0.00%

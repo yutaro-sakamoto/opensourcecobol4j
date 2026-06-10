@@ -1,0 +1,20 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.HeapByteBuffer                                                                                          47.17%
+byte[]                                                                                                           40.38%
+java.lang.String                                                                                                  3.32%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     2.68%
+java.math.BigDecimal                                                                                              2.22%
+int[]                                                                                                             1.26%
+java.math.BigInteger                                                                                              0.67%
+java.lang.StringBuilder                                                                                           0.67%
+char[]                                                                                                            0.60%
+jp.osscons.opensourcecobol.libcobj.data.CobolAlphanumericField                                                    0.45%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute                                                       0.24%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              0.24%
+java.lang.Object[]                                                                                                0.07%
+java.util.HashMap$TreeNode                                                                                        0.03%
+java.util.ArrayList$Itr                                                                                           0.00%

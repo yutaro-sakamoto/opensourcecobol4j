@@ -1,0 +1,16 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                       96.02%
+java.io.BufferedReader.<init>(Reader, int)                                                                        2.17%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                      0.92%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.<init>(long)                                                 0.53%
+java.util.Arrays.copyOf(byte[], int)                                                                              0.10%
+java.util.zip.InflaterInputStream.<init>(InputStream, Inflater, int)                                              0.09%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.cmpInteger(long)                                       0.07%
+java.lang.CharacterData00.<clinit>()                                                                              0.04%
+sun.util.locale.BaseLocale.getInstance(String, String, String, String)                                            0.04%
+sun.util.locale.BaseLocale$Key.normalize(BaseLocale$Key)                                                          0.02%
+N/A                                                                                                               0.00%

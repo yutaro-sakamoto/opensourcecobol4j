@@ -1,0 +1,11 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+sun.nio.ch.FileChannelImpl.read(ByteBuffer)                                                                   4  30.77%
+sun.nio.ch.NativeThread.currentNativeThread()                                                                 3  23.08%
+jp.osscons.opensourcecobol.libcobj.file.FileIO.getc()                                                         3  23.08%
+sun.nio.ch.Util.getTemporaryDirectBuffer(int)                                                                 1   7.69%
+sun.nio.ch.UnixFileDispatcherImpl.read(FileDescriptor, long, int)                                             1   7.69%
+sun.nio.ch.IOUtil.releaseScope(ByteBuffer)                                                                    1   7.69%

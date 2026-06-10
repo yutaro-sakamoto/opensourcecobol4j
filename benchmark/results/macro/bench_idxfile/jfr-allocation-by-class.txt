@@ -1,0 +1,30 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                    24.14%
+byte[]                                                                                                           21.45%
+java.util.Formatter                                                                                              12.39%
+int[]                                                                                                             7.19%
+java.math.BigInteger                                                                                              4.39%
+java.nio.HeapByteBuffer                                                                                           3.58%
+org.sqlite.core.SafeStmtPtr                                                                                       2.38%
+java.lang.String                                                                                                  2.06%
+java.math.MutableBigInteger                                                                                       1.79%
+java.lang.ref.WeakReference                                                                                       1.79%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage                                                          1.65%
+sun.nio.fs.UnixPath                                                                                               1.38%
+java.util.HashMap$Node[]                                                                                          1.19%
+java.nio.DirectByteBuffer                                                                                         1.19%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField                                                         1.19%
+java.util.Formatter$FormatSpecifier                                                                               1.19%
+java.lang.Object[]                                                                                                1.06%
+java.math.BigDecimal                                                                                              1.06%
+java.lang.ref.SoftReference[]                                                                                     0.92%
+java.util.ArrayList$Itr                                                                                           0.64%
+java.util.ArrayList                                                                                               0.60%
+java.util.Formatter$FixedString                                                                                   0.60%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute                                                       0.60%
+org.sqlite.core.DB$$Lambda.0x00007f30e40934b8                                                                     0.60%
+org.sqlite.jdbc4.JDBC4ResultSet                                                                                   0.60%

@@ -1,0 +1,21 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.HeapByteBuffer                                                                                          64.15%
+jp.osscons.opensourcecobol.libcobj.common.CobolModule                                                            31.08%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField[]                                                      2.55%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     0.95%
+java.math.BigDecimal                                                                                              0.32%
+byte[]                                                                                                            0.21%
+java.util.Optional                                                                                                0.17%
+java.lang.Object[]                                                                                                0.16%
+char[]                                                                                                            0.10%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField                                                         0.08%
+bench_sub$4$1                                                                                                     0.07%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute                                                       0.07%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage                                                          0.05%
+int[]                                                                                                             0.02%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              0.02%
+java.lang.String                                                                                                  0.00%

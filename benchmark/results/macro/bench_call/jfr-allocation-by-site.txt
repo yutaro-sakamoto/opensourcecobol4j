@@ -1,0 +1,26 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                       64.15%
+bench_sub.run_module(int)                                                                                        31.08%
+bench_call$4.run()                                                                                                2.55%
+java.util.concurrent.ConcurrentHashMap.initTable()                                                                0.95%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                      0.19%
+java.util.Optional.of(Object)                                                                                     0.17%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.moveBinaryToDisplay(AbstractCobolField)                 0.15%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getNumericField()                                 0.15%
+java.util.ArrayList.grow(int)                                                                                     0.14%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                           0.11%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.<init>(long)                                                 0.11%
+bench_sub$4.run()                                                                                                 0.07%
+java.util.Arrays.copyOf(byte[], int)                                                                              0.05%
+jdk.internal.misc.Unsafe.allocateUninitializedArray0(Class, int)                                                  0.03%
+jp.osscons.opensourcecobol.libcobj.common.CobolInspect.initString()                                               0.02%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.cmpInteger(long)                                       0.02%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.<init>(int)                                              0.02%
+sun.util.locale.LocaleUtils.toLowerString(String)                                                                 0.02%
+java.util.ImmutableCollections$SetN.<init>(Object[])                                                              0.02%
+java.util.Arrays.copyOfRangeByte(byte[], int, int)                                                                0.01%
+N/A                                                                                                               0.00%

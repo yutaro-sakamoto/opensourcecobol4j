@@ -1,0 +1,1 @@
+{"cmd": "java -Xmx512m bench_sort", "wall_s": 3.904, "user_s": 5.975, "sys_s": 0.194, "maxrss_kb": 330556, "exit": 0}

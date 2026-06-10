@@ -1,0 +1,19 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.nio.HeapByteBuffer                                                                                          41.15%
+int[]                                                                                                            37.37%
+jp.osscons.opensourcecobol.libcobj.common.Dlm                                                                    10.06%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     3.61%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              2.39%
+java.math.BigDecimal                                                                                              2.38%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage                                                          1.90%
+jp.osscons.opensourcecobol.libcobj.data.CobolAlphanumericField                                                    0.45%
+byte[]                                                                                                            0.33%
+java.math.BigInteger                                                                                              0.11%
+char[]                                                                                                            0.09%
+java.lang.Object[]                                                                                                0.09%
+sun.util.locale.BaseLocale                                                                                        0.07%
+java.lang.String                                                                                                  0.00%

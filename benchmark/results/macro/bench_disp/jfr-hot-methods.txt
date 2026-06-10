@@ -1,0 +1,30 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.math.BigInteger.trustedStripLeadingZeroInts(int[])                                                      15  14.15%
+bench_disp$4.run()                                                                                            9   8.49%
+java.lang.Long.getChars(long, int, byte[])                                                                    8   7.55%
+java.math.BigInteger.shiftLeftImplWorker(int[], int[], int, int, int)                                         7   6.60%
+java.math.MutableBigInteger.clear()                                                                           6   5.66%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                       5   4.72%
+java.math.MutableBigInteger.divideOneWord(int, MutableBigInteger)                                             5   4.72%
+java.nio.ByteBuffer.limit(int)                                                                                5   4.72%
+java.math.BigDecimal.<init>(char[], int, int, MathContext)                                                    4   3.77%
+java.math.MutableBigInteger.copyAndShift(int[], int, int, int[], int, int)                                    4   3.77%
+java.math.BigInteger.multiplyByInt(int[], int, int)                                                           3   2.83%
+java.math.BigInteger.<init>(int[], int)                                                                       3   2.83%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.addInt(int, int)                                    3   2.83%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.setByte(int, byte)                                   2   1.89%
+jdk.internal.misc.Unsafe.putIntUnaligned(Object, long, int, boolean)                                          2   1.89%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                    2   1.89%
+java.lang.String.length()                                                                                     2   1.89%
+java.math.BigDecimal.<init>(char[], int, int)                                                                 2   1.89%
+sun.nio.cs.DoubleByte$Decoder.decodeLoop(ByteBuffer, CharBuffer)                                              2   1.89%
+java.math.MutableBigInteger.divideMagnitude(MutableBigInteger, MutableBigInteger, boolean)                    2   1.89%
+java.math.BigInteger.pow(int)                                                                                 1   0.94%
+java.math.BigInteger.multiply(long)                                                                           1   0.94%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.compareTo(AbstractCobolField)                      1   0.94%
+java.math.MutableBigInteger.mulsub(int[], int[], int, int, int)                                               1   0.94%
+java.math.MutableBigInteger.primitiveLeftShift(int)                                                           1   0.94%

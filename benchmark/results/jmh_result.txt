@@ -1,0 +1,1219 @@
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.addDisplay_current
+
+# Run progress: 0.00% complete, ETA 00:05:04
+# Fork: 1 of 1
+# Warmup Iteration   1: 283.569 ns/op
+# Warmup Iteration   2: 212.956 ns/op
+# Warmup Iteration   3: 202.806 ns/op
+Iteration   1: 228.672 ns/op
+Iteration   2: 211.584 ns/op
+Iteration   3: 207.196 ns/op
+Iteration   4: 206.505 ns/op
+Iteration   5: 214.254 ns/op
+
+
+Result "bench.ComputeBench.addDisplay_current":
+  213.642 ±(99.9%) 34.602 ns/op [Average]
+  (min, avg, max) = (206.505, 213.642, 228.672), stdev = 8.986
+  CI (99.9%): [179.040, 248.244] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.addDisplay_longBaseline
+
+# Run progress: 2.63% complete, ETA 00:05:14
+# Fork: 1 of 1
+# Warmup Iteration   1: 0.618 ns/op
+# Warmup Iteration   2: 0.578 ns/op
+# Warmup Iteration   3: 0.614 ns/op
+Iteration   1: 0.594 ns/op
+Iteration   2: 0.718 ns/op
+Iteration   3: 0.650 ns/op
+Iteration   4: 0.622 ns/op
+Iteration   5: 0.624 ns/op
+
+
+Result "bench.ComputeBench.addDisplay_longBaseline":
+  0.641 ±(99.9%) 0.181 ns/op [Average]
+  (min, avg, max) = (0.594, 0.641, 0.718), stdev = 0.047
+  CI (99.9%): [0.460, 0.823] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.computePacked_current
+
+# Run progress: 5.26% complete, ETA 00:05:04
+# Fork: 1 of 1
+# Warmup Iteration   1: 390.085 ns/op
+# Warmup Iteration   2: 215.658 ns/op
+# Warmup Iteration   3: 261.889 ns/op
+Iteration   1: 218.230 ns/op
+Iteration   2: 205.377 ns/op
+Iteration   3: 198.094 ns/op
+Iteration   4: 187.958 ns/op
+Iteration   5: 191.604 ns/op
+
+
+Result "bench.ComputeBench.computePacked_current":
+  200.253 ±(99.9%) 46.370 ns/op [Average]
+  (min, avg, max) = (187.958, 200.253, 218.230), stdev = 12.042
+  CI (99.9%): [153.883, 246.623] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.computePacked_longBaseline
+
+# Run progress: 7.89% complete, ETA 00:04:55
+# Fork: 1 of 1
+# Warmup Iteration   1: 1.233 ns/op
+# Warmup Iteration   2: 1.139 ns/op
+# Warmup Iteration   3: 1.001 ns/op
+Iteration   1: 1.017 ns/op
+Iteration   2: 0.998 ns/op
+Iteration   3: 0.987 ns/op
+Iteration   4: 1.165 ns/op
+Iteration   5: 0.995 ns/op
+
+
+Result "bench.ComputeBench.computePacked_longBaseline":
+  1.032 ±(99.9%) 0.288 ns/op [Average]
+  (min, avg, max) = (0.987, 1.032, 1.165), stdev = 0.075
+  CI (99.9%): [0.744, 1.321] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.getDecimal_packed
+
+# Run progress: 10.53% complete, ETA 00:04:45
+# Fork: 1 of 1
+# Warmup Iteration   1: 15.696 ns/op
+# Warmup Iteration   2: 14.256 ns/op
+# Warmup Iteration   3: 14.591 ns/op
+Iteration   1: 16.766 ns/op
+Iteration   2: 13.835 ns/op
+Iteration   3: 14.291 ns/op
+Iteration   4: 14.112 ns/op
+Iteration   5: 15.498 ns/op
+
+
+Result "bench.ComputeBench.getDecimal_packed":
+  14.900 ±(99.9%) 4.703 ns/op [Average]
+  (min, avg, max) = (13.835, 14.900, 16.766), stdev = 1.221
+  CI (99.9%): [10.197, 19.603] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ComputeBench.getInt_display
+
+# Run progress: 13.16% complete, ETA 00:04:36
+# Fork: 1 of 1
+# Warmup Iteration   1: 12.411 ns/op
+# Warmup Iteration   2: 10.310 ns/op
+# Warmup Iteration   3: 9.730 ns/op
+Iteration   1: 9.527 ns/op
+Iteration   2: 9.686 ns/op
+Iteration   3: 9.750 ns/op
+Iteration   4: 9.593 ns/op
+Iteration   5: 9.921 ns/op
+
+
+Result "bench.ComputeBench.getInt_display":
+  9.695 ±(99.9%) 0.586 ns/op [Average]
+  (min, avg, max) = (9.527, 9.695, 9.921), stdev = 0.152
+  CI (99.9%): [9.109, 10.282] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ControlFlowBench.performParagraph_current
+
+# Run progress: 15.79% complete, ETA 00:04:28
+# Fork: 1 of 1
+# Warmup Iteration   1: 2.304 ns/op
+# Warmup Iteration   2: 2.581 ns/op
+# Warmup Iteration   3: 2.182 ns/op
+Iteration   1: 2.199 ns/op
+Iteration   2: 2.321 ns/op
+Iteration   3: 2.500 ns/op
+Iteration   4: 2.330 ns/op
+Iteration   5: 2.236 ns/op
+
+
+Result "bench.ControlFlowBench.performParagraph_current":
+  2.317 ±(99.9%) 0.448 ns/op [Average]
+  (min, avg, max) = (2.199, 2.317, 2.500), stdev = 0.116
+  CI (99.9%): [1.869, 2.765] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.ControlFlowBench.performParagraph_directCall
+
+# Run progress: 18.42% complete, ETA 00:04:19
+# Fork: 1 of 1
+# Warmup Iteration   1: 0.480 ns/op
+# Warmup Iteration   2: 0.461 ns/op
+# Warmup Iteration   3: 0.430 ns/op
+Iteration   1: 0.542 ns/op
+Iteration   2: 0.494 ns/op
+Iteration   3: 0.467 ns/op
+Iteration   4: 0.469 ns/op
+Iteration   5: 0.494 ns/op
+
+
+Result "bench.ControlFlowBench.performParagraph_directCall":
+  0.493 ±(99.9%) 0.117 ns/op [Average]
+  (min, avg, max) = (0.467, 0.493, 0.542), stdev = 0.030
+  CI (99.9%): [0.377, 0.610] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_equal
+# Parameters: (size = 10)
+
+# Run progress: 21.05% complete, ETA 00:04:11
+# Fork: 1 of 1
+# Warmup Iteration   1: 8.048 ns/op
+# Warmup Iteration   2: 6.514 ns/op
+# Warmup Iteration   3: 7.807 ns/op
+Iteration   1: 7.595 ns/op
+Iteration   2: 6.805 ns/op
+Iteration   3: 6.586 ns/op
+Iteration   4: 7.260 ns/op
+Iteration   5: 6.400 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_equal":
+  6.929 ±(99.9%) 1.892 ns/op [Average]
+  (min, avg, max) = (6.400, 6.929, 7.595), stdev = 0.491
+  CI (99.9%): [5.037, 8.821] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_equal
+# Parameters: (size = 100)
+
+# Run progress: 23.68% complete, ETA 00:04:02
+# Fork: 1 of 1
+# Warmup Iteration   1: 32.274 ns/op
+# Warmup Iteration   2: 30.773 ns/op
+# Warmup Iteration   3: 36.488 ns/op
+Iteration   1: 34.715 ns/op
+Iteration   2: 33.401 ns/op
+Iteration   3: 33.630 ns/op
+Iteration   4: 35.819 ns/op
+Iteration   5: 39.055 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_equal":
+  35.324 ±(99.9%) 8.845 ns/op [Average]
+  (min, avg, max) = (33.401, 35.324, 39.055), stdev = 2.297
+  CI (99.9%): [26.478, 44.169] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_equal
+# Parameters: (size = 1000)
+
+# Run progress: 26.32% complete, ETA 00:03:54
+# Fork: 1 of 1
+# Warmup Iteration   1: 271.111 ns/op
+# Warmup Iteration   2: 265.979 ns/op
+# Warmup Iteration   3: 315.373 ns/op
+Iteration   1: 299.383 ns/op
+Iteration   2: 291.673 ns/op
+Iteration   3: 343.088 ns/op
+Iteration   4: 337.236 ns/op
+Iteration   5: 309.847 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_equal":
+  316.246 ±(99.9%) 88.024 ns/op [Average]
+  (min, avg, max) = (291.673, 316.246, 343.088), stdev = 22.859
+  CI (99.9%): [228.222, 404.269] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_mismatch
+# Parameters: (size = 10)
+
+# Run progress: 28.95% complete, ETA 00:03:45
+# Fork: 1 of 1
+# Warmup Iteration   1: 1.777 ns/op
+# Warmup Iteration   2: 1.701 ns/op
+# Warmup Iteration   3: 1.596 ns/op
+Iteration   1: 1.614 ns/op
+Iteration   2: 1.600 ns/op
+Iteration   3: 1.841 ns/op
+Iteration   4: 1.777 ns/op
+Iteration   5: 1.677 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_mismatch":
+  1.702 ±(99.9%) 0.402 ns/op [Average]
+  (min, avg, max) = (1.600, 1.702, 1.841), stdev = 0.104
+  CI (99.9%): [1.300, 2.104] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_mismatch
+# Parameters: (size = 100)
+
+# Run progress: 31.58% complete, ETA 00:03:37
+# Fork: 1 of 1
+# Warmup Iteration   1: 1.682 ns/op
+# Warmup Iteration   2: 1.802 ns/op
+# Warmup Iteration   3: 1.786 ns/op
+Iteration   1: 1.692 ns/op
+Iteration   2: 1.665 ns/op
+Iteration   3: 1.673 ns/op
+Iteration   4: 1.602 ns/op
+Iteration   5: 1.875 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_mismatch":
+  1.701 ±(99.9%) 0.395 ns/op [Average]
+  (min, avg, max) = (1.602, 1.701, 1.875), stdev = 0.103
+  CI (99.9%): [1.306, 2.097] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_current_mismatch
+# Parameters: (size = 1000)
+
+# Run progress: 34.21% complete, ETA 00:03:28
+# Fork: 1 of 1
+# Warmup Iteration   1: 1.826 ns/op
+# Warmup Iteration   2: 1.763 ns/op
+# Warmup Iteration   3: 1.629 ns/op
+Iteration   1: 1.693 ns/op
+Iteration   2: 2.181 ns/op
+Iteration   3: 1.784 ns/op
+Iteration   4: 1.587 ns/op
+Iteration   5: 1.636 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_current_mismatch":
+  1.776 ±(99.9%) 0.915 ns/op [Average]
+  (min, avg, max) = (1.587, 1.776, 2.181), stdev = 0.238
+  CI (99.9%): [0.861, 2.691] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_equal
+# Parameters: (size = 10)
+
+# Run progress: 36.84% complete, ETA 00:03:20
+# Fork: 1 of 1
+# Warmup Iteration   1: 5.012 ns/op
+# Warmup Iteration   2: 5.677 ns/op
+# Warmup Iteration   3: 5.057 ns/op
+Iteration   1: 4.878 ns/op
+Iteration   2: 5.015 ns/op
+Iteration   3: 6.247 ns/op
+Iteration   4: 5.071 ns/op
+Iteration   5: 5.953 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_equal":
+  5.433 ±(99.9%) 2.394 ns/op [Average]
+  (min, avg, max) = (4.878, 5.433, 6.247), stdev = 0.622
+  CI (99.9%): [3.039, 7.827] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_equal
+# Parameters: (size = 100)
+
+# Run progress: 39.47% complete, ETA 00:03:11
+# Fork: 1 of 1
+# Warmup Iteration   1: 8.521 ns/op
+# Warmup Iteration   2: 8.002 ns/op
+# Warmup Iteration   3: 7.659 ns/op
+Iteration   1: 6.464 ns/op
+Iteration   2: 6.956 ns/op
+Iteration   3: 6.758 ns/op
+Iteration   4: 6.265 ns/op
+Iteration   5: 6.232 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_equal":
+  6.535 ±(99.9%) 1.213 ns/op [Average]
+  (min, avg, max) = (6.232, 6.535, 6.956), stdev = 0.315
+  CI (99.9%): [5.322, 7.748] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_equal
+# Parameters: (size = 1000)
+
+# Run progress: 42.11% complete, ETA 00:03:03
+# Fork: 1 of 1
+# Warmup Iteration   1: 29.831 ns/op
+# Warmup Iteration   2: 29.783 ns/op
+# Warmup Iteration   3: 30.486 ns/op
+Iteration   1: 31.541 ns/op
+Iteration   2: 30.758 ns/op
+Iteration   3: 29.757 ns/op
+Iteration   4: 30.566 ns/op
+Iteration   5: 30.403 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_equal":
+  30.605 ±(99.9%) 2.481 ns/op [Average]
+  (min, avg, max) = (29.757, 30.605, 31.541), stdev = 0.644
+  CI (99.9%): [28.124, 33.086] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_firstByte
+# Parameters: (size = 10)
+
+# Run progress: 44.74% complete, ETA 00:02:55
+# Fork: 1 of 1
+# Warmup Iteration   1: 3.106 ns/op
+# Warmup Iteration   2: 3.135 ns/op
+# Warmup Iteration   3: 2.642 ns/op
+Iteration   1: 2.430 ns/op
+Iteration   2: 2.500 ns/op
+Iteration   3: 2.465 ns/op
+Iteration   4: 2.464 ns/op
+Iteration   5: 2.464 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_firstByte":
+  2.465 ±(99.9%) 0.095 ns/op [Average]
+  (min, avg, max) = (2.430, 2.465, 2.500), stdev = 0.025
+  CI (99.9%): [2.370, 2.559] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_firstByte
+# Parameters: (size = 100)
+
+# Run progress: 47.37% complete, ETA 00:02:46
+# Fork: 1 of 1
+# Warmup Iteration   1: 3.130 ns/op
+# Warmup Iteration   2: 3.010 ns/op
+# Warmup Iteration   3: 2.554 ns/op
+Iteration   1: 2.469 ns/op
+Iteration   2: 2.513 ns/op
+Iteration   3: 2.467 ns/op
+Iteration   4: 2.485 ns/op
+Iteration   5: 2.471 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_firstByte":
+  2.481 ±(99.9%) 0.074 ns/op [Average]
+  (min, avg, max) = (2.467, 2.481, 2.513), stdev = 0.019
+  CI (99.9%): [2.408, 2.555] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcmp_mismatch_firstByte
+# Parameters: (size = 1000)
+
+# Run progress: 50.00% complete, ETA 00:02:38
+# Fork: 1 of 1
+# Warmup Iteration   1: 2.959 ns/op
+# Warmup Iteration   2: 3.494 ns/op
+# Warmup Iteration   3: 2.748 ns/op
+Iteration   1: 2.613 ns/op
+Iteration   2: 2.456 ns/op
+Iteration   3: 2.478 ns/op
+Iteration   4: 2.409 ns/op
+Iteration   5: 2.435 ns/op
+
+
+Result "bench.DataStorageBench.memcmp_mismatch_firstByte":
+  2.478 ±(99.9%) 0.307 ns/op [Average]
+  (min, avg, max) = (2.409, 2.478, 2.613), stdev = 0.080
+  CI (99.9%): [2.171, 2.786] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_arraycopy
+# Parameters: (size = 10)
+
+# Run progress: 52.63% complete, ETA 00:02:29
+# Fork: 1 of 1
+# Warmup Iteration   1: 4.607 ns/op
+# Warmup Iteration   2: 5.001 ns/op
+# Warmup Iteration   3: 4.585 ns/op
+Iteration   1: 4.519 ns/op
+Iteration   2: 4.650 ns/op
+Iteration   3: 4.682 ns/op
+Iteration   4: 4.626 ns/op
+Iteration   5: 4.518 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_arraycopy":
+  4.599 ±(99.9%) 0.292 ns/op [Average]
+  (min, avg, max) = (4.518, 4.599, 4.682), stdev = 0.076
+  CI (99.9%): [4.307, 4.891] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_arraycopy
+# Parameters: (size = 100)
+
+# Run progress: 55.26% complete, ETA 00:02:21
+# Fork: 1 of 1
+# Warmup Iteration   1: 5.263 ns/op
+# Warmup Iteration   2: 5.776 ns/op
+# Warmup Iteration   3: 5.290 ns/op
+Iteration   1: 5.316 ns/op
+Iteration   2: 5.193 ns/op
+Iteration   3: 5.131 ns/op
+Iteration   4: 5.297 ns/op
+Iteration   5: 5.173 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_arraycopy":
+  5.222 ±(99.9%) 0.310 ns/op [Average]
+  (min, avg, max) = (5.131, 5.222, 5.316), stdev = 0.081
+  CI (99.9%): [4.912, 5.532] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_arraycopy
+# Parameters: (size = 1000)
+
+# Run progress: 57.89% complete, ETA 00:02:13
+# Fork: 1 of 1
+# Warmup Iteration   1: 15.499 ns/op
+# Warmup Iteration   2: 15.753 ns/op
+# Warmup Iteration   3: 15.721 ns/op
+Iteration   1: 15.829 ns/op
+Iteration   2: 15.788 ns/op
+Iteration   3: 15.647 ns/op
+Iteration   4: 15.901 ns/op
+Iteration   5: 15.750 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_arraycopy":
+  15.783 ±(99.9%) 0.363 ns/op [Average]
+  (min, avg, max) = (15.647, 15.783, 15.901), stdev = 0.094
+  CI (99.9%): [15.420, 16.147] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_current
+# Parameters: (size = 10)
+
+# Run progress: 60.53% complete, ETA 00:02:04
+# Fork: 1 of 1
+# Warmup Iteration   1: 6.342 ns/op
+# Warmup Iteration   2: 6.028 ns/op
+# Warmup Iteration   3: 6.262 ns/op
+Iteration   1: 6.444 ns/op
+Iteration   2: 6.381 ns/op
+Iteration   3: 6.270 ns/op
+Iteration   4: 6.910 ns/op
+Iteration   5: 4.554 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_current":
+  6.112 ±(99.9%) 3.482 ns/op [Average]
+  (min, avg, max) = (4.554, 6.112, 6.910), stdev = 0.904
+  CI (99.9%): [2.630, 9.594] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_current
+# Parameters: (size = 100)
+
+# Run progress: 63.16% complete, ETA 00:01:56
+# Fork: 1 of 1
+# Warmup Iteration   1: 28.348 ns/op
+# Warmup Iteration   2: 25.645 ns/op
+# Warmup Iteration   3: 24.212 ns/op
+Iteration   1: 25.078 ns/op
+Iteration   2: 24.736 ns/op
+Iteration   3: 28.927 ns/op
+Iteration   4: 23.623 ns/op
+Iteration   5: 23.904 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_current":
+  25.253 ±(99.9%) 8.230 ns/op [Average]
+  (min, avg, max) = (23.623, 25.253, 28.927), stdev = 2.137
+  CI (99.9%): [17.023, 33.483] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memcpy_current
+# Parameters: (size = 1000)
+
+# Run progress: 65.79% complete, ETA 00:01:48
+# Fork: 1 of 1
+# Warmup Iteration   1: 181.286 ns/op
+# Warmup Iteration   2: 179.027 ns/op
+# Warmup Iteration   3: 189.631 ns/op
+Iteration   1: 179.894 ns/op
+Iteration   2: 176.618 ns/op
+Iteration   3: 178.555 ns/op
+Iteration   4: 176.243 ns/op
+Iteration   5: 186.234 ns/op
+
+
+Result "bench.DataStorageBench.memcpy_current":
+  179.509 ±(99.9%) 15.560 ns/op [Average]
+  (min, avg, max) = (176.243, 179.509, 186.234), stdev = 4.041
+  CI (99.9%): [163.949, 195.068] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_current
+# Parameters: (size = 10)
+
+# Run progress: 68.42% complete, ETA 00:01:39
+# Fork: 1 of 1
+# Warmup Iteration   1: 5.419 ns/op
+# Warmup Iteration   2: 5.814 ns/op
+# Warmup Iteration   3: 5.773 ns/op
+Iteration   1: 5.799 ns/op
+Iteration   2: 6.329 ns/op
+Iteration   3: 6.594 ns/op
+Iteration   4: 5.882 ns/op
+Iteration   5: 6.752 ns/op
+
+
+Result "bench.DataStorageBench.memset_current":
+  6.271 ±(99.9%) 1.626 ns/op [Average]
+  (min, avg, max) = (5.799, 6.271, 6.752), stdev = 0.422
+  CI (99.9%): [4.645, 7.898] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_current
+# Parameters: (size = 100)
+
+# Run progress: 71.05% complete, ETA 00:01:31
+# Fork: 1 of 1
+# Warmup Iteration   1: 16.566 ns/op
+# Warmup Iteration   2: 16.056 ns/op
+# Warmup Iteration   3: 12.094 ns/op
+Iteration   1: 11.971 ns/op
+Iteration   2: 11.591 ns/op
+Iteration   3: 12.319 ns/op
+Iteration   4: 14.879 ns/op
+Iteration   5: 12.802 ns/op
+
+
+Result "bench.DataStorageBench.memset_current":
+  12.712 ±(99.9%) 4.970 ns/op [Average]
+  (min, avg, max) = (11.591, 12.712, 14.879), stdev = 1.291
+  CI (99.9%): [7.742, 17.682] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_current
+# Parameters: (size = 1000)
+
+# Run progress: 73.68% complete, ETA 00:01:23
+# Fork: 1 of 1
+# Warmup Iteration   1: 34.080 ns/op
+# Warmup Iteration   2: 32.817 ns/op
+# Warmup Iteration   3: 33.201 ns/op
+Iteration   1: 32.820 ns/op
+Iteration   2: 33.563 ns/op
+Iteration   3: 33.345 ns/op
+Iteration   4: 37.423 ns/op
+Iteration   5: 33.561 ns/op
+
+
+Result "bench.DataStorageBench.memset_current":
+  34.142 ±(99.9%) 7.157 ns/op [Average]
+  (min, avg, max) = (32.820, 34.142, 37.423), stdev = 1.859
+  CI (99.9%): [26.985, 41.300] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_fill
+# Parameters: (size = 10)
+
+# Run progress: 76.32% complete, ETA 00:01:14
+# Fork: 1 of 1
+# Warmup Iteration   1: 4.638 ns/op
+# Warmup Iteration   2: 4.556 ns/op
+# Warmup Iteration   3: 4.418 ns/op
+Iteration   1: 4.397 ns/op
+Iteration   2: 4.954 ns/op
+Iteration   3: 4.792 ns/op
+Iteration   4: 4.585 ns/op
+Iteration   5: 4.902 ns/op
+
+
+Result "bench.DataStorageBench.memset_fill":
+  4.726 ±(99.9%) 0.894 ns/op [Average]
+  (min, avg, max) = (4.397, 4.726, 4.954), stdev = 0.232
+  CI (99.9%): [3.832, 5.620] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_fill
+# Parameters: (size = 100)
+
+# Run progress: 78.95% complete, ETA 00:01:06
+# Fork: 1 of 1
+# Warmup Iteration   1: 8.325 ns/op
+# Warmup Iteration   2: 9.464 ns/op
+# Warmup Iteration   3: 7.941 ns/op
+Iteration   1: 7.569 ns/op
+Iteration   2: 7.374 ns/op
+Iteration   3: 8.904 ns/op
+Iteration   4: 10.015 ns/op
+Iteration   5: 7.569 ns/op
+
+
+Result "bench.DataStorageBench.memset_fill":
+  8.286 ±(99.9%) 4.404 ns/op [Average]
+  (min, avg, max) = (7.374, 8.286, 10.015), stdev = 1.144
+  CI (99.9%): [3.882, 12.690] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.DataStorageBench.memset_fill
+# Parameters: (size = 1000)
+
+# Run progress: 81.58% complete, ETA 00:00:58
+# Fork: 1 of 1
+# Warmup Iteration   1: 27.019 ns/op
+# Warmup Iteration   2: 26.435 ns/op
+# Warmup Iteration   3: 34.854 ns/op
+Iteration   1: 36.246 ns/op
+Iteration   2: 36.647 ns/op
+Iteration   3: 37.590 ns/op
+Iteration   4: 34.187 ns/op
+Iteration   5: 33.397 ns/op
+
+
+Result "bench.DataStorageBench.memset_fill":
+  35.614 ±(99.9%) 6.759 ns/op [Average]
+  (min, avg, max) = (33.397, 35.614, 37.590), stdev = 1.755
+  CI (99.9%): [28.855, 42.372] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.getStringAlnum
+
+# Run progress: 84.21% complete, ETA 00:00:49
+# Fork: 1 of 1
+# Warmup Iteration   1: 53.330 ns/op
+# Warmup Iteration   2: 42.738 ns/op
+# Warmup Iteration   3: 39.849 ns/op
+Iteration   1: 39.640 ns/op
+Iteration   2: 44.206 ns/op
+Iteration   3: 44.933 ns/op
+Iteration   4: 40.037 ns/op
+Iteration   5: 40.919 ns/op
+
+
+Result "bench.MoveBench.getStringAlnum":
+  41.947 ±(99.9%) 9.442 ns/op [Average]
+  (min, avg, max) = (39.640, 41.947, 44.933), stdev = 2.452
+  CI (99.9%): [32.505, 51.389] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.getStringDisplay
+
+# Run progress: 86.84% complete, ETA 00:00:41
+# Fork: 1 of 1
+# Warmup Iteration   1: 55.340 ns/op
+# Warmup Iteration   2: 61.279 ns/op
+# Warmup Iteration   3: 50.117 ns/op
+Iteration   1: 55.063 ns/op
+Iteration   2: 50.334 ns/op
+Iteration   3: 50.179 ns/op
+Iteration   4: 56.140 ns/op
+Iteration   5: 52.181 ns/op
+
+
+Result "bench.MoveBench.getStringDisplay":
+  52.780 ±(99.9%) 10.477 ns/op [Average]
+  (min, avg, max) = (50.179, 52.780, 56.140), stdev = 2.721
+  CI (99.9%): [42.303, 63.256] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.moveAlnum100to100
+
+# Run progress: 89.47% complete, ETA 00:00:33
+# Fork: 1 of 1
+# Warmup Iteration   1: 26.977 ns/op
+# Warmup Iteration   2: 26.319 ns/op
+# Warmup Iteration   3: 26.342 ns/op
+Iteration   1: 27.503 ns/op
+Iteration   2: 25.929 ns/op
+Iteration   3: 26.649 ns/op
+Iteration   4: 26.302 ns/op
+Iteration   5: 26.649 ns/op
+
+
+Result "bench.MoveBench.moveAlnum100to100":
+  26.606 ±(99.9%) 2.244 ns/op [Average]
+  (min, avg, max) = (25.929, 26.606, 27.503), stdev = 0.583
+  CI (99.9%): [24.362, 28.850] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.moveAlnum100to30
+
+# Run progress: 92.11% complete, ETA 00:00:25
+# Fork: 1 of 1
+# Warmup Iteration   1: 16.083 ns/op
+# Warmup Iteration   2: 14.137 ns/op
+# Warmup Iteration   3: 14.125 ns/op
+Iteration   1: 15.973 ns/op
+Iteration   2: 14.383 ns/op
+Iteration   3: 15.393 ns/op
+Iteration   4: 14.099 ns/op
+Iteration   5: 14.298 ns/op
+
+
+Result "bench.MoveBench.moveAlnum100to30":
+  14.829 ±(99.9%) 3.128 ns/op [Average]
+  (min, avg, max) = (14.099, 14.829, 15.973), stdev = 0.812
+  CI (99.9%): [11.701, 17.958] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.moveDisplayToBinary
+
+# Run progress: 94.74% complete, ETA 00:00:16
+# Fork: 1 of 1
+# Warmup Iteration   1: 39.519 ns/op
+# Warmup Iteration   2: 39.843 ns/op
+# Warmup Iteration   3: 37.478 ns/op
+Iteration   1: 41.391 ns/op
+Iteration   2: 36.582 ns/op
+Iteration   3: 36.628 ns/op
+Iteration   4: 34.990 ns/op
+Iteration   5: 35.950 ns/op
+
+
+Result "bench.MoveBench.moveDisplayToBinary":
+  37.108 ±(99.9%) 9.564 ns/op [Average]
+  (min, avg, max) = (34.990, 37.108, 41.391), stdev = 2.484
+  CI (99.9%): [27.544, 46.672] (assumes normal distribution)
+
+
+# JMH version: 1.37
+# VM version: JDK 21.0.9, OpenJDK 64-Bit Server VM, 21.0.9+10-LTS
+# VM invoker: /usr/lib/jvm/java-21-openjdk-21.0.9.0.10-2.el9.alma.1.x86_64/bin/java
+# VM options: -Xmx256m
+# Blackhole mode: compiler (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 3 iterations, 1 s each
+# Measurement: 5 iterations, 1 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Average time, time/op
+# Benchmark: bench.MoveBench.moveDisplayToPacked
+
+# Run progress: 97.37% complete, ETA 00:00:08
+# Fork: 1 of 1
+# Warmup Iteration   1: 44.249 ns/op
+# Warmup Iteration   2: 41.421 ns/op
+# Warmup Iteration   3: 40.079 ns/op
+Iteration   1: 42.773 ns/op
+Iteration   2: 45.640 ns/op
+Iteration   3: 54.116 ns/op
+Iteration   4: 45.918 ns/op
+Iteration   5: 41.843 ns/op
+
+
+Result "bench.MoveBench.moveDisplayToPacked":
+  46.058 ±(99.9%) 18.636 ns/op [Average]
+  (min, avg, max) = (41.843, 46.058, 54.116), stdev = 4.840
+  CI (99.9%): [27.422, 64.694] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:05:16
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+NOTE: Current JVM experimentally supports Compiler Blackholes, and they are in use. Please exercise
+extra caution when trusting the results, look into the generated code to check the benchmark still
+works, and factor in a small probability of new VM bugs. Additionally, while comparisons between
+different JVMs are already problematic, the performance difference caused by different Blackhole
+modes can be very significant. Please make sure you use the consistent Blackhole mode for comparisons.
+
+Benchmark                                     (size)  Mode  Cnt    Score    Error  Units
+ComputeBench.addDisplay_current                  N/A  avgt    5  213.642 ± 34.602  ns/op
+ComputeBench.addDisplay_longBaseline             N/A  avgt    5    0.641 ±  0.181  ns/op
+ComputeBench.computePacked_current               N/A  avgt    5  200.253 ± 46.370  ns/op
+ComputeBench.computePacked_longBaseline          N/A  avgt    5    1.032 ±  0.288  ns/op
+ComputeBench.getDecimal_packed                   N/A  avgt    5   14.900 ±  4.703  ns/op
+ComputeBench.getInt_display                      N/A  avgt    5    9.695 ±  0.586  ns/op
+ControlFlowBench.performParagraph_current        N/A  avgt    5    2.317 ±  0.448  ns/op
+ControlFlowBench.performParagraph_directCall     N/A  avgt    5    0.493 ±  0.117  ns/op
+DataStorageBench.memcmp_current_equal             10  avgt    5    6.929 ±  1.892  ns/op
+DataStorageBench.memcmp_current_equal            100  avgt    5   35.324 ±  8.845  ns/op
+DataStorageBench.memcmp_current_equal           1000  avgt    5  316.246 ± 88.024  ns/op
+DataStorageBench.memcmp_current_mismatch          10  avgt    5    1.702 ±  0.402  ns/op
+DataStorageBench.memcmp_current_mismatch         100  avgt    5    1.701 ±  0.395  ns/op
+DataStorageBench.memcmp_current_mismatch        1000  avgt    5    1.776 ±  0.915  ns/op
+DataStorageBench.memcmp_mismatch_equal            10  avgt    5    5.433 ±  2.394  ns/op
+DataStorageBench.memcmp_mismatch_equal           100  avgt    5    6.535 ±  1.213  ns/op
+DataStorageBench.memcmp_mismatch_equal          1000  avgt    5   30.605 ±  2.481  ns/op
+DataStorageBench.memcmp_mismatch_firstByte        10  avgt    5    2.465 ±  0.095  ns/op
+DataStorageBench.memcmp_mismatch_firstByte       100  avgt    5    2.481 ±  0.074  ns/op
+DataStorageBench.memcmp_mismatch_firstByte      1000  avgt    5    2.478 ±  0.307  ns/op
+DataStorageBench.memcpy_arraycopy                 10  avgt    5    4.599 ±  0.292  ns/op
+DataStorageBench.memcpy_arraycopy                100  avgt    5    5.222 ±  0.310  ns/op
+DataStorageBench.memcpy_arraycopy               1000  avgt    5   15.783 ±  0.363  ns/op
+DataStorageBench.memcpy_current                   10  avgt    5    6.112 ±  3.482  ns/op
+DataStorageBench.memcpy_current                  100  avgt    5   25.253 ±  8.230  ns/op
+DataStorageBench.memcpy_current                 1000  avgt    5  179.509 ± 15.560  ns/op
+DataStorageBench.memset_current                   10  avgt    5    6.271 ±  1.626  ns/op
+DataStorageBench.memset_current                  100  avgt    5   12.712 ±  4.970  ns/op
+DataStorageBench.memset_current                 1000  avgt    5   34.142 ±  7.157  ns/op
+DataStorageBench.memset_fill                      10  avgt    5    4.726 ±  0.894  ns/op
+DataStorageBench.memset_fill                     100  avgt    5    8.286 ±  4.404  ns/op
+DataStorageBench.memset_fill                    1000  avgt    5   35.614 ±  6.759  ns/op
+MoveBench.getStringAlnum                         N/A  avgt    5   41.947 ±  9.442  ns/op
+MoveBench.getStringDisplay                       N/A  avgt    5   52.780 ± 10.477  ns/op
+MoveBench.moveAlnum100to100                      N/A  avgt    5   26.606 ±  2.244  ns/op
+MoveBench.moveAlnum100to30                       N/A  avgt    5   14.829 ±  3.128  ns/op
+MoveBench.moveDisplayToBinary                    N/A  avgt    5   37.108 ±  9.564  ns/op
+MoveBench.moveDisplayToPacked                    N/A  avgt    5   46.058 ± 18.636  ns/op
+
+Benchmark result is saved to /root/project_oss/opensourcecobol4j/.sakamoto/perf/opensourcecobol4j/benchmark/results/jmh_result.json

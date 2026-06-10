@@ -1,0 +1,12 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.util.concurrent.ConcurrentHashMap.initTable()                                                               86.50%
+java.util.Arrays.copyOf(byte[], int)                                                                              4.69%
+java.util.Arrays.copyOfRangeByte(byte[], int, int)                                                                2.50%
+jp.osscons.opensourcecobol.libcobj.common.CobolInspect.initString()                                               2.06%
+jp.osscons.opensourcecobol.libcobj.common.CobolUtil.cob_init(String[], boolean)                                   1.63%
+java.util.ImmutableCollections$SetN.<init>(Object[])                                                              1.62%
+java.util.zip.InflaterInputStream.<init>(InputStream, Inflater, int)                                              1.00%

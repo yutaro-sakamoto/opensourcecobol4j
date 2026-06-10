@@ -1,0 +1,30 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.math.BigInteger.shiftRightImpl(int)                                                                         40.37%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.set(int)                                                    26.84%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                       23.39%
+java.math.BigDecimal.valueOf(long)                                                                                4.41%
+java.math.BigInteger.shiftLeft(int)                                                                               1.56%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory.makeCobolField(...)                                     1.16%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.getSubDataStorage(int)                                   0.95%
+java.util.concurrent.ConcurrentHashMap.initTable()                                                                0.54%
+java.math.BigInteger.shiftLeft(int[], int)                                                                        0.53%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                      0.05%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.<init>(long)                                                 0.04%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getField(AbstractCobolField, int)                            0.04%
+java.util.Arrays.copyOf(byte[], int)                                                                              0.02%
+java.math.BigDecimal.pow(int)                                                                                     0.02%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getBinaryField(AbstractCobolField, int)                      0.02%
+java.io.BufferedReader.<init>(Reader, int)                                                                        0.01%
+java.lang.ClassLoader.defineClass1(ClassLoader, String, byte[], int, int, ProtectionDomain, String)               0.01%
+sun.util.locale.LocaleObjectCache.get(Object)                                                                     0.01%
+java.lang.StringBuilder.toString()                                                                                0.01%
+jp.osscons.opensourcecobol.libcobj.common.CobolUtil.cob_init(String[], boolean)                                   0.01%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.cmpInteger(long)                                       0.01%
+jp.osscons.opensourcecobol.libcobj.call.CobolResolve.<clinit>()                                                   0.01%
+java.util.Arrays.copyOf(Object[], int)                                                                            0.01%
+java.util.zip.ZipFile$Source.initCEN(int)                                                                         0.00%
+N/A                                                                                                               0.00%

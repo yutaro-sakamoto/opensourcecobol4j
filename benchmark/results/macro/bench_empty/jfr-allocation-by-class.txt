@@ -1,0 +1,10 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                    86.50%
+byte[]                                                                                                            8.19%
+int[]                                                                                                             2.06%
+java.lang.String                                                                                                  1.63%
+java.lang.Object[]                                                                                                1.62%

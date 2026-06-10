@@ -1,0 +1,30 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.math.BigInteger.trustedStripLeadingZeroInts(int[])                                                      10  13.33%
+java.math.BigInteger.multiplyByInt(int[], int, int)                                                           9  12.00%
+java.math.BigInteger.shiftLeftImplWorker(int[], int[], int, int, int)                                         8  10.67%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                    5   6.67%
+java.math.BigDecimal.pow(int)                                                                                 4   5.33%
+java.math.BigInteger.pow(int)                                                                                 3   4.00%
+java.math.BigInteger.multiply(long)                                                                           3   4.00%
+java.math.BigDecimal.multiply(long, BigInteger, int)                                                          3   4.00%
+java.math.MutableBigInteger.clear()                                                                           3   4.00%
+java.math.BigDecimal.<init>(long)                                                                             3   4.00%
+java.math.MutableBigInteger.copyAndShift(int[], int, int, int[], int, int)                                    3   4.00%
+java.math.BigInteger.bitLengthForInt(int)                                                                     2   2.67%
+java.math.MutableBigInteger.mulsub(int[], int[], int, int, int)                                               2   2.67%
+java.math.BigInteger.<init>(int[], int)                                                                       2   2.67%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.set(int)                                                 1   1.33%
+java.math.BigInteger.addOne(int[], int, int, int)                                                             1   1.33%
+java.lang.String.getBytesNoRepl1(String, Charset)                                                             1   1.33%
+java.math.MutableBigInteger.primitiveLeftShift(int)                                                           1   1.33%
+java.math.BigDecimal.checkScale(long, long)                                                                   1   1.33%
+java.math.BigDecimal.valueOf(BigInteger, int, int)                                                            1   1.33%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericBinaryField.getDecimal()                                  1   1.33%
+java.math.BigDecimal.signum()                                                                                 1   1.33%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.intValue()                                           1   1.33%
+java.math.BigDecimal.add(long, int, BigInteger, int)                                                          1   1.33%
+java.math.BigDecimal.divideAndRound(BigInteger, long, int, int, int)                                          1   1.33%

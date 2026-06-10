@@ -1,0 +1,1 @@
+{"cmd": "java -Xmx512m bench_disp", "wall_s": 1.848, "user_s": 2.83, "sys_s": 0.154, "maxrss_kb": 205256, "exit": 0}

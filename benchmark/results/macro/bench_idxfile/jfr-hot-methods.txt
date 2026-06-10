@@ -1,0 +1,20 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.util.Iterator.forEachRemaining(Consumer)                                                                 1   6.67%
+org.sqlite.SQLiteConnection.checkCursor(int, int, int)                                                        1   6.67%
+org.sqlite.SQLiteJDBCLoader.contentsEquals(InputStream, InputStream)                                          1   6.67%
+java.util.Formatter.getZero(Locale)                                                                           1   6.67%
+bench_idxfile$4.run()                                                                                         1   6.67%
+java.util.Formatter.getDecimalFormatSymbols(Locale)                                                           1   6.67%
+java.util.concurrent.ConcurrentHashMap.putVal(Object, Object, boolean)                                        1   6.67%
+org.sqlite.util.LoggerFactory$SLF4JLogger.trace(Supplier)                                                     1   6.67%
+java.util.Formatter.toString()                                                                                1   6.67%
+java.lang.StringBuilder.<init>()                                                                              1   6.67%
+java.util.Formatter.<init>()                                                                                  1   6.67%
+java.util.Formatter$FormatSpecifier.print(Formatter, long, Locale)                                            1   6.67%
+java.lang.StringBuilder.append(char)                                                                          1   6.67%
+java.io.BufferedInputStream.getBufIfOpen(boolean)                                                             1   6.67%
+java.lang.Integer.getChars(int, int, byte[])                                                                  1   6.67%

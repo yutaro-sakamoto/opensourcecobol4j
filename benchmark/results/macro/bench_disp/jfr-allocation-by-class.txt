@@ -1,0 +1,22 @@
+
+                                                  Allocation by Class
+
+Object Type                                                                                         Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.math.BigInteger                                                                                             44.62%
+java.math.BigDecimal                                                                                             22.52%
+int[]                                                                                                            20.56%
+java.math.MutableBigInteger                                                                                       5.52%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal                                                              2.43%
+byte[]                                                                                                            0.99%
+java.nio.HeapByteBuffer                                                                                           0.80%
+char[]                                                                                                            0.77%
+java.util.concurrent.ConcurrentHashMap$Node[]                                                                     0.60%
+sun.nio.cs.DoubleByte$Decoder                                                                                     0.57%
+java.nio.HeapCharBuffer                                                                                           0.34%
+java.lang.ref.WeakReference                                                                                       0.17%
+java.lang.String                                                                                                  0.06%
+sun.nio.cs.DoubleByte$Encoder                                                                                     0.03%
+jdk.internal.perf.PerfCounter                                                                                     0.02%
+char[][]                                                                                                          0.01%
+sun.util.locale.LocaleObjectCache$CacheEntry                                                                      0.01%

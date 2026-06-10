@@ -1,0 +1,30 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.util.concurrent.ConcurrentHashMap.initTable()                                                               24.14%
+java.lang.String.format(String, Object[])                                                                        12.39%
+java.lang.AbstractStringBuilder.<init>(int)                                                                       4.17%
+java.util.Arrays.copyOf(byte[], int)                                                                              3.93%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                        3.58%
+java.lang.Long.toString(long)                                                                                     2.98%
+java.util.regex.Matcher.<init>(Pattern, CharSequence)                                                             2.88%
+sun.nio.fs.UnixPath.getFileName()                                                                                 2.84%
+java.util.Formatter.parse(String)                                                                                 2.38%
+org.sqlite.core.NativeDB.prepare(String)                                                                          2.38%
+java.lang.Object.clone()                                                                                          2.38%
+java.util.Arrays.copyOfRangeInt(int[], int, int)                                                                  1.79%
+java.nio.charset.CharsetEncoder.isLegalReplacement(byte[])                                                        1.79%
+sun.nio.fs.UnixPath.resolve(byte[], byte[])                                                                       1.38%
+jp.osscons.opensourcecobol.libcobj.common.CobolIntrinsic.makeFieldEntry(AbstractCobolField)                       1.19%
+java.math.BigInteger.smallToString(int, StringBuilder, int)                                                       1.19%
+java.util.HashMap.resize()                                                                                        1.19%
+java.math.BigInteger.square(boolean, boolean, int)                                                                1.19%
+org.sqlite.core.NativeDB.column_name_utf8(long, int)                                                              1.19%
+jp.osscons.opensourcecobol.libcobj.data.CobolFieldFactory.makeCobolField(...)                                     1.19%
+java.math.BigInteger.shiftLeft(int)                                                                               1.19%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                           1.19%
+java.lang.StringBuilder.toString()                                                                                1.18%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.moveBinaryToDisplay(AbstractCobolField)                 1.06%
+java.lang.invoke.MethodTypeForm.<init>(MethodType)                                                                0.92%

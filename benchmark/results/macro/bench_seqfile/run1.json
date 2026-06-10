@@ -1,0 +1,1 @@
+{"cmd": "java -Xmx512m bench_seqfile", "wall_s": 4.444, "user_s": 2.666, "sys_s": 2.47, "maxrss_kb": 80808, "exit": 0}

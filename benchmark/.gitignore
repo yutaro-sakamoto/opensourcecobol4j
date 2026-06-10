@@ -1,0 +1,7 @@
+# コンパイル産物・作業ディレクトリ
+work/
+jmh/target/
+jmh/dependency-reduced-pom.xml
+
+# 計測生データのうちサイズが大きいもの (要約テキスト/CSV/JSONは残す)
+results/macro/*/profile.jfr

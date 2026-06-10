@@ -1,0 +1,30 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.lang.Long.getChars(long, int, byte[])                                                                    8  12.50%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.numericCompareTo(AbstractCobolField)                4   6.25%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.setBytes(CobolDataStorage, int, int, int)            4   6.25%
+jp.osscons.opensourcecobol.libcobj.file.CobolFileSort$1.compare(CobolDataStorage, CobolDataStorage)           4   6.25%
+bench_sort$6.run()                                                                                            3   4.69%
+java.util.TimSort.mergeLo(int, int, int, int)                                                                 3   4.69%
+java.math.BigInteger.smallToString(int, StringBuilder, int)                                                   3   4.69%
+java.math.BigInteger.pow(int)                                                                                 2   3.13%
+java.math.BigInteger.subtract(int[], long)                                                                    2   3.13%
+java.math.BigInteger.toString(BigInteger, StringBuilder, int, int)                                            2   3.13%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getBinaryField(AbstractCobolField, int)                  2   3.13%
+java.math.MutableBigInteger.mulsub(int[], int[], int, int, int)                                               2   3.13%
+java.math.BigDecimal.signum()                                                                                 2   3.13%
+jp.osscons.opensourcecobol.libcobj.common.CobolIntrinsic.intrBinop(...)                                       2   3.13%
+java.util.Arrays.fill(int[], int)                                                                             2   3.13%
+java.math.MutableBigInteger.clear()                                                                           1   1.56%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.moveBinaryToDisplay(AbstractCobolField)             1   1.56%
+java.math.BigDecimal.divideAndRound(BigInteger, BigInteger, int, int, int)                                    1   1.56%
+java.math.BigDecimal.<init>(char[], int, int, MathContext)                                                    1   1.56%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                    1   1.56%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                       1   1.56%
+java.util.TimSort.gallopRight(Object, Object[], int, int, int, Comparator)                                    1   1.56%
+java.lang.String.length()                                                                                     1   1.56%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.storeCommonRegion(...)                              1   1.56%
+java.math.BigDecimal.divideAndRound(BigInteger, long, int, int, int)                                          1   1.56%

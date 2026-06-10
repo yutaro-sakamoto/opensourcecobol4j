@@ -1,0 +1,30 @@
+
+                                                   Allocation by Site
+
+Method                                                                                              Allocation Pressure
+--------------------------------------------------------------------------------------------------- -------------------
+java.math.BigInteger.square(boolean, boolean, int)                                                               18.41%
+java.util.Arrays.copyOfRangeInt(int[], int, int)                                                                 17.04%
+java.math.BigInteger.multiply(long)                                                                              15.73%
+java.math.BigDecimal.pow(int)                                                                                    15.01%
+java.math.BigInteger.shiftRightImpl(int)                                                                          9.51%
+jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField.getDecimal()                                           7.17%
+java.math.BigDecimal.divideAndRound(BigInteger, BigInteger, int, int, int)                                        5.52%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.getField(AbstractCobolField, int)                            2.37%
+java.math.BigInteger.multiplyByInt(int[], int, int)                                                               2.01%
+java.math.BigInteger.squareToLen(int[], int, int[])                                                               0.82%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                        0.80%
+java.math.MutableBigInteger.divideMagnitude(MutableBigInteger, MutableBigInteger, boolean)                        0.71%
+java.util.concurrent.ConcurrentHashMap.initTable()                                                                0.60%
+sun.nio.cs.SJIS.newDecoder()                                                                                      0.57%
+jp.osscons.opensourcecobol.libcobj.data.CobolNumericField.addInt(int, int)                                        0.56%
+java.math.MutableBigInteger.toBigDecimal(int, int)                                                                0.38%
+java.nio.HeapCharBuffer.<init>(int, int, MemorySegment)                                                           0.34%
+java.nio.CharBuffer.allocate(int)                                                                                 0.34%
+java.nio.charset.CharsetEncoder.<init>(Charset, float, float)                                                     0.31%
+java.math.BigInteger.shiftLeft(int[], int)                                                                        0.28%
+java.math.BigDecimal.valueOf(long)                                                                                0.25%
+java.math.BigInteger.shiftLeft(int)                                                                               0.25%
+java.math.MutableBigInteger.<init>()                                                                              0.25%
+java.nio.charset.CharsetEncoder.isLegalReplacement(byte[])                                                        0.17%
+jp.osscons.opensourcecobol.libcobj.data.CobolDecimal.set(int)                                                     0.12%

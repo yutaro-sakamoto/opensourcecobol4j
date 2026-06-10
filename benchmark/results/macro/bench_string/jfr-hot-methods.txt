@@ -1,0 +1,21 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+jp.osscons.opensourcecobol.libcobj.common.CobolInspect.common(...)                                           68  64.76%
+jp.osscons.opensourcecobol.libcobj.data.CobolAlphanumericField.moveAlphanumToAlphanum(...)                    7   6.67%
+jp.osscons.opensourcecobol.libcobj.common.CobolString.unstringInto(...)                                       6   5.71%
+java.nio.HeapByteBuffer.putInt(int)                                                                           4   3.81%
+jp.osscons.opensourcecobol.libcobj.common.CobolString.unstringInit(...)                                       4   3.81%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.memcpy(CobolDataStorage, int)                        3   2.86%
+jp.osscons.opensourcecobol.libcobj.common.CobolInspect.init(AbstractCobolField, int)                          2   1.90%
+bench_string$4.run()                                                                                          2   1.90%
+jp.osscons.opensourcecobol.libcobj.common.CobolString.stringInit(...)                                         2   1.90%
+java.math.BigDecimal.pow(int)                                                                                 1   0.95%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.memcmp(int, CobolDataStorage, int)                   1   0.95%
+jp.osscons.opensourcecobol.libcobj.common.CobolString.stringDelimited(AbstractCobolField)                     1   0.95%
+java.math.BigDecimal.signum()                                                                                 1   0.95%
+jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException.setException(int)                         1   0.95%
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                    1   0.95%
+java.math.BigInteger.shiftRightImpl(int)                                                                      1   0.95%

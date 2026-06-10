@@ -1,0 +1,12 @@
+
+                                          Java Methods that Executes the Most
+
+Method                                                                                                  Samples Percent
+------------------------------------------------------------------------------------------------------- ------- -------
+java.nio.ByteBuffer.wrap(byte[], int, int)                                                                   23  46.00%
+jp.osscons.opensourcecobol.libcobj.data.CobolAlphanumericField.moveAlphanumToAlphanum(...)                   12  24.00%
+java.nio.ByteBuffer.limit(int)                                                                               11  22.00%
+java.nio.Buffer.position(int)                                                                                 1   2.00%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.fillBytes(int, byte, int)                            1   2.00%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.fillBytes(int, int, int)                             1   2.00%
+jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage.intValue()                                           1   2.00%

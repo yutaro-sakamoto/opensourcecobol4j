@@ -1,0 +1,4 @@
+[0.002s][info][gc] Using G1
+[0.184s][info][gc] GC(0) Pause Young (Normal) (G1 Evacuation Pause) 24M->2M(50M) 2.813ms
+[0.212s][info][gc] GC(1) Pause Young (Normal) (G1 Evacuation Pause) 28M->2M(50M) 2.646ms
+[0.235s][info][gc] GC(2) Pause Young (Normal) (G1 Evacuation Pause) 28M->2M(50M) 1.955ms
