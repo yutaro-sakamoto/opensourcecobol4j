@@ -61,6 +61,12 @@ final class CobolDataConverter {
     private static final int OCDB_VARCHAR_HEADER_BYTE = 4;
 
     /**
+     * Shift-JIS の全角 (表意文字) スペース。National (PIC N) 項目および日本語 VARYING 項目の
+     * パディングに使われ、読み取り時にも末尾のこのバイト列を取り除く。
+     */
+    private static final byte[] SJIS_FULLWIDTH_SPACE = {(byte) 0x81, (byte) 0x40};
+
+    /**
      * AbstractCobolField の属性から内部用の HvarType を解決する。
      *
      * @param field COBOL フィールド
@@ -483,8 +489,8 @@ final class CobolDataConverter {
         // National 項目は全角 (表意文字) スペースでパディングされ、これは Shift-JIS で 0x81 0x40 の
         // 2 バイトとして符号化される。パディングをデコードしないよう、バイトレベルで取り除く。
         while (end - start >= 2
-                && (data[end - 2] & 0xFF) == 0x81
-                && (data[end - 1] & 0xFF) == 0x40) {
+                && data[end - 2] == SJIS_FULLWIDTH_SPACE[0]
+                && data[end - 1] == SJIS_FULLWIDTH_SPACE[1]) {
             end -= 2;
         }
         return new String(data, start, end - start, SHIFT_JIS);
@@ -703,26 +709,36 @@ final class CobolDataConverter {
             int regionStart,
             int regionEnd) {
         if (scale >= 0) {
-            for (int i = valueFirstIndex; i < indexOfDecimalPoint; i++) {
-                int pos = i + regionEnd - (indexOfDecimalPoint + scale);
-                if (pos >= regionStart && pos < regionEnd) {
-                    finalBuf[pos] = str[i];
-                }
+            // 整数桁を暗黙の小数点位置へ右詰めでコピーする (finalBuf[i + delta] = str[i])。
+            // src/dest 双方を桁領域 [regionStart, regionEnd) に収まる範囲へクランプする。
+            int delta = regionEnd - (indexOfDecimalPoint + scale);
+            int srcStart = Math.max(valueFirstIndex, regionStart - delta);
+            int srcEnd = Math.min(indexOfDecimalPoint, regionEnd - delta);
+            int len = srcEnd - srcStart;
+            if (len > 0) {
+                System.arraycopy(str, srcStart, finalBuf, srcStart + delta, len);
             }
         } else {
-            int fi = regionEnd + scale - 1;
-            int si = indexOfDecimalPoint - 1;
-            while (fi >= regionStart && si >= valueFirstIndex) {
-                finalBuf[fi] = str[si];
-                fi--;
-                si--;
+            // 整数桁を小数点直前まで後方詰めでコピーする。
+            int intLen =
+                    Math.max(
+                            0,
+                            Math.min(
+                                    regionEnd + scale - regionStart,
+                                    indexOfDecimalPoint - valueFirstIndex));
+            if (intLen > 0) {
+                System.arraycopy(
+                        str,
+                        indexOfDecimalPoint - intLen,
+                        finalBuf,
+                        regionEnd + scale - intLen,
+                        intLen);
             }
-            fi = regionEnd + scale;
-            si = indexOfDecimalPoint + 1;
-            while (fi < regionEnd && si < str.length) {
-                finalBuf[fi] = str[si];
-                fi++;
-                si++;
+            // 小数桁 (小数点の次から) を桁領域の末尾へコピーする。
+            int fracLen = Math.max(0, Math.min(-scale, str.length - indexOfDecimalPoint - 1));
+            if (fracLen > 0) {
+                System.arraycopy(
+                        str, indexOfDecimalPoint + 1, finalBuf, regionEnd + scale, fracLen);
             }
         }
     }
@@ -756,48 +772,26 @@ final class CobolDataConverter {
 
     private static void writeUnsignedPacked(
             int length, int scale, CobolDataStorage storage, byte[] str) {
-        int strStartIndex = 0;
-        if (str.length > 0 && (str[0] == (byte) '+' || str[0] == (byte) '-')) {
-            strStartIndex = 1;
-        }
-        int strPointIndex = indexOf(str, (byte) '.');
-        if (strPointIndex < 0) {
-            strPointIndex = str.length;
-        }
-        int dataPointIndex = length + scale;
-        int realDataLength = (length / 2) + 1;
-
-        storage.memset((byte) 0, realDataLength);
-        storage.setByte(realDataLength - 1, (byte) 0x0F);
-
-        for (int i = 0; i < length; i++) {
-            int strIndex = i - dataPointIndex + strPointIndex;
-            if (strIndex >= strPointIndex) {
-                strIndex += 1;
-            }
-            byte digit;
-            if (strIndex >= strStartIndex && strIndex < str.length) {
-                digit = str[strIndex];
-            } else {
-                digit = (byte) '0';
-            }
-            int[] result = getPackedIndexAndByte(length, i, digit);
-            int idx = result[0];
-            byte byteValue = (byte) result[1];
-            byte b = storage.getByte(idx);
-            storage.setByte(idx, (byte) (b | byteValue));
-        }
+        writePackedDecimal(length, scale, storage, str, false);
     }
 
     private static void writeSignedPacked(
             int length, int scale, CobolDataStorage storage, byte[] str) {
+        writePackedDecimal(length, scale, storage, str, true);
+    }
+
+    /**
+     * 数値文字列を packed-decimal (COMP-3) ストレージへ書き込む。符号なし (unsigned) と
+     * 符号付き (signed) の唯一の違いは末尾バイトの符号ニブルである: unsigned は 0x0F、
+     * signed は 正 = 0x0C / 負 = 0x0D。桁の配置処理は両者で共通である。
+     */
+    private static void writePackedDecimal(
+            int length, int scale, CobolDataStorage storage, byte[] str, boolean signed) {
         int strStartIndex = 0;
-        int sign = 1;
-        if (str.length > 0 && str[0] == (byte) '-') {
+        boolean negative = false;
+        if (str.length > 0 && (str[0] == (byte) '+' || str[0] == (byte) '-')) {
             strStartIndex = 1;
-            sign = -1;
-        } else if (str.length > 0 && str[0] == (byte) '+') {
-            strStartIndex = 1;
+            negative = str[0] == (byte) '-';
         }
         int strPointIndex = indexOf(str, (byte) '.');
         if (strPointIndex < 0) {
@@ -807,11 +801,13 @@ final class CobolDataConverter {
         int realDataLength = (length / 2) + 1;
 
         storage.memset((byte) 0, realDataLength);
-        if (sign > 0) {
-            storage.setByte(realDataLength - 1, (byte) 0x0C);
+        byte signNibble;
+        if (!signed) {
+            signNibble = (byte) 0x0F;
         } else {
-            storage.setByte(realDataLength - 1, (byte) 0x0D);
+            signNibble = negative ? (byte) 0x0D : (byte) 0x0C;
         }
+        storage.setByte(realDataLength - 1, signNibble);
 
         for (int i = 0; i < length; i++) {
             int strIndex = i - dataPointIndex + strPointIndex;
@@ -860,10 +856,13 @@ final class CobolDataConverter {
     }
 
     private static void writeNational(int length, int scale, CobolDataStorage storage, byte[] str) {
-        // length はすでにバイトサイズである (例: PIC N(5) なら 10)
-        for (int j = 0; j < length; j += 2) {
-            storage.setByte(j, (byte) 0x30);
-            storage.setByte(j + 1, (byte) 0x00);
+        // length はすでにバイトサイズである (例: PIC N(5) なら 10)。National 項目は全角
+        // (表意文字) スペース (Shift-JIS 0x81 0x40) でパディングする。readNational が末尾の
+        // 全角スペースを取り除くため、これで読み書きが対称になる。
+        // SQL の結果は既に Shift-JIS。COBOL の MOVE 時と異なり半角→全角変換
+        // (CobolNationalField.han2zen) は適用しない (Open COBOL ESQL 4J の実装に準拠)。
+        for (int j = 0; j + 1 < length; j += 2) {
+            storage.memcpy(j, SJIS_FULLWIDTH_SPACE, 2);
         }
         int copyLen = Math.min(length, str.length);
         storage.memcpy(str, copyLen);
@@ -874,7 +873,7 @@ final class CobolDataConverter {
         if (length <= 0) {
             return;
         }
-        byte[] lengthBytes = new byte[4];
+        byte[] lengthBytes = new byte[OCDB_VARCHAR_HEADER_BYTE];
         if (str.length >= length) {
             ByteBuffer.wrap(lengthBytes).putInt(length);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
@@ -889,17 +888,19 @@ final class CobolDataConverter {
 
     private static void writeJapaneseVarying(
             int length, int scale, CobolDataStorage storage, byte[] str) {
-        byte[] lengthBytes = new byte[4];
+        // SQL の結果は既に Shift-JIS。COBOL の MOVE 時と異なり半角→全角変換
+        // (CobolNationalField.han2zen) は適用しない (Open COBOL ESQL 4J の実装に準拠)。
+        byte[] lengthBytes = new byte[OCDB_VARCHAR_HEADER_BYTE];
         if (str.length >= length) {
             ByteBuffer.wrap(lengthBytes).putInt(length / 2);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
             storage.memcpy(OCDB_VARCHAR_HEADER_BYTE, str, length);
         } else {
-            byte[] fillPair = new byte[] {(byte) 0x81, (byte) 0x40};
+            // 全角 (表意文字) スペースでデータ領域をパディングする。
             for (int i = OCDB_VARCHAR_HEADER_BYTE;
                     i < OCDB_VARCHAR_HEADER_BYTE + length - 1;
                     i += 2) {
-                storage.memcpy(i, fillPair, 2);
+                storage.memcpy(i, SJIS_FULLWIDTH_SPACE, 2);
             }
             ByteBuffer.wrap(lengthBytes).putInt(str.length / 2);
             storage.memcpy(0, lengthBytes, OCDB_VARCHAR_HEADER_BYTE);
