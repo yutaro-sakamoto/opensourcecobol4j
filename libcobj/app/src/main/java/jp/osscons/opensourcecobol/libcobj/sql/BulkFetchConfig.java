@@ -15,7 +15,7 @@ final class BulkFetchConfig {
     /** 先読み件数を指定する環境変数名。 */
     static final String FETCH_RECORDS_ENV = "OCESQL4J_FETCH_RECORDS";
 
-    private static volatile int fetchRecords = readFromEnv();
+    private static int fetchRecords = readFromEnv();
 
     private static int readFromEnv() {
         String value = System.getenv(FETCH_RECORDS_ENV);
