@@ -938,7 +938,9 @@ class CobolSqlTest {
                 stmt.execute("INSERT INTO wco_test VALUES (" + i + ", 'Name" + i + "')");
             }
         }
-        CobolSql.declareCursor(sqlca, "wc", "SELECT name FROM wco_test ORDER BY id");
+        // 更新対象カーソルは ORDER BY を持たない単純スキャン（PostgreSQL の WHERE CURRENT OF の
+        // 要件）。新規テーブルへの連番 INSERT なのでスキャン順＝挿入順で、2 行目は id=2。
+        CobolSql.declareCursor(sqlca, "wc", "SELECT name FROM wco_test");
         CobolSql.openCursor(sqlca, "wc");
         assertEquals(0, getSqlCode(), "open should succeed");
 
