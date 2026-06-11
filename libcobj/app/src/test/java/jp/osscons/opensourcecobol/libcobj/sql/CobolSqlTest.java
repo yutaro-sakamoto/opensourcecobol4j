@@ -59,11 +59,15 @@ class CobolSqlTest {
         Field cacheField = CobolSql.class.getDeclaredField("stmtCache");
         cacheField.setAccessible(true);
         ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
+
+        // 先読み件数を既定 (1) に戻す（テスト間で N をリークさせない）。
+        BulkFetchConfig.setFetchRecords(1);
     }
 
     @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     @AfterEach
     void tearDown() throws Exception {
+        BulkFetchConfig.setFetchRecords(1);
         // Close ALL connections registered in SqlState, not just the default
         try {
             Field connField = SqlState.class.getDeclaredField("connections");
@@ -881,6 +885,90 @@ class CobolSqlTest {
                 SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
                 "FetchCursorOccurs for closed cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+    }
+
+    // ============================================================
+    // bulk fetch (OCESQL4J_FETCH_RECORDS prefetch) + WHERE CURRENT OF
+    // ============================================================
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testFetchCursor_BulkPrefetch() throws Exception {
+        // 先読み 3 件。7 行を 3+3+1 で読み、単一行 FETCH と同じ順序・結果になること。
+        BulkFetchConfig.setFetchRecords(3);
+        Connection realConn = registerRealConnection();
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS bulk_test");
+            stmt.execute("CREATE TABLE bulk_test (id INTEGER, name VARCHAR(20))");
+            for (int i = 1; i <= 7; i++) {
+                stmt.execute("INSERT INTO bulk_test VALUES (" + i + ", 'Name" + i + "')");
+            }
+        }
+        CobolSql.declareCursor(sqlca, "bc", "SELECT name FROM bulk_test ORDER BY id");
+        assertEquals(0, getSqlCode(), "declare should succeed");
+        CobolSql.openCursor(sqlca, "bc");
+        assertEquals(0, getSqlCode(), "open should succeed");
+
+        for (int i = 1; i <= 7; i++) {
+            byte[] data = new byte[20];
+            CobolSql.fetchCursor(sqlca, "bc", makeAlphaField(20, data));
+            assertEquals(0, getSqlCode(), "fetch row " + i + " should succeed");
+            assertEquals("Name" + i, new String(data).trim(), "row " + i + " value");
+        }
+        CobolSql.fetchCursor(sqlca, "bc", makeAlphaField(20, new byte[20]));
+        assertEquals(SqlCA.ECPG_NOT_FOUND, getSqlCode(), "fetch past end should be NOT_FOUND");
+
+        CobolSql.closeCursor(sqlca, "bc");
+        assertEquals(0, getSqlCode(), "close should succeed");
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE bulk_test");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testWhereCurrentOf_BulkPrefetch() throws Exception {
+        // 先読み 3 件で 2 行 FETCH 後、WHERE CURRENT OF で現在行(2 行目)のみ更新されること。
+        BulkFetchConfig.setFetchRecords(3);
+        Connection realConn = registerRealConnection();
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS wco_test");
+            stmt.execute("CREATE TABLE wco_test (id INTEGER, name VARCHAR(20))");
+            for (int i = 1; i <= 5; i++) {
+                stmt.execute("INSERT INTO wco_test VALUES (" + i + ", 'Name" + i + "')");
+            }
+        }
+        CobolSql.declareCursor(sqlca, "wc", "SELECT name FROM wco_test ORDER BY id");
+        CobolSql.openCursor(sqlca, "wc");
+        assertEquals(0, getSqlCode(), "open should succeed");
+
+        // 2 行フェッチ（論理現在行は 2 行目）。先読みで server カーソルは 3 行目にある。
+        CobolSql.fetchCursor(sqlca, "wc", makeAlphaField(20, new byte[20]));
+        CobolSql.fetchCursor(sqlca, "wc", makeAlphaField(20, new byte[20]));
+        assertEquals(0, getSqlCode(), "two fetches should succeed");
+
+        // WHERE CURRENT OF: 位置補正してから現在行を更新。
+        CobolSql.execWhereCurrentOf(
+                sqlca, "UPDATE wco_test SET name = 'UPDATED' WHERE CURRENT OF", "wc");
+        assertEquals(0, getSqlCode(), "positioned update should succeed: " + getSqlState());
+
+        CobolSql.closeCursor(sqlca, "wc");
+
+        // id=2 のみ 'UPDATED'、他は元のまま。
+        try (Statement stmt = realConn.createStatement();
+                java.sql.ResultSet rs =
+                        stmt.executeQuery("SELECT id, name FROM wco_test ORDER BY id")) {
+            String[] expected = {"Name1", "UPDATED", "Name3", "Name4", "Name5"};
+            int idx = 0;
+            while (rs.next()) {
+                assertEquals(expected[idx], rs.getString(2).trim(), "row id=" + rs.getInt(1));
+                idx++;
+            }
+            assertEquals(5, idx, "should have 5 rows");
+        }
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE wco_test");
+        }
     }
 
     // ============================================================

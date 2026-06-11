@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
@@ -25,6 +27,21 @@ class SqlCursor {
 
     /** DECLARE 時にバインドされたホスト変数パラメータ。 */
     AbstractCobolField[] params;
+
+    /**
+     * 先読み（バルクフェッチ）バッファ。各要素は 1 行ぶんの列値配列で、SQL NULL の列は null。
+     * {@code FETCH FORWARD N} で取得した行をここに溜め、{@link #fetch} 呼び出しごとに 1 行ずつ供給する。
+     */
+    private List<byte[][]> fetchBuffer = new ArrayList<>();
+
+    /** {@link #fetchBuffer} 内で次に供給する行の位置。 */
+    private int bufferPos;
+
+    /**
+     * 直近の先読みが要求件数より少ない行数で終わった（＝結果末尾に達した）かどうか。
+     * WHERE CURRENT OF のカーソル位置補正に使う（Open COBOL ESQL 4J の overFetch 相当）。
+     */
+    boolean overFetch;
 
     /**
      * 新しいカーソル記述子を生成する。
@@ -77,6 +94,25 @@ class SqlCursor {
             }
         }
         isOpened = true;
+        // 新たにオープンしたカーソルは先読みバッファを空から始める。
+        clearBuffer();
+    }
+
+    /** 先読みバッファと overFetch フラグをリセットする。 */
+    void clearBuffer() {
+        fetchBuffer = new ArrayList<>();
+        bufferPos = 0;
+        overFetch = false;
+    }
+
+    /**
+     * まだ COBOL 側へ供給していない（バッファに残っている）先読み行数を返す。
+     * WHERE CURRENT OF のカーソル位置補正に使う。
+     *
+     * @return 未供給の先読み行数
+     */
+    int remainingBuffered() {
+        return fetchBuffer.size() - bufferPos;
     }
 
     /**
@@ -95,40 +131,67 @@ class SqlCursor {
      */
     boolean fetch(Connection conn, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
-        String fetchSql = "FETCH FORWARD 1 FROM " + name;
+        // バッファを使い切っていれば、OCESQL4J_FETCH_RECORDS 件をまとめて先読みする。
+        if (bufferPos >= fetchBuffer.size()) {
+            refill(conn);
+        }
+        if (bufferPos >= fetchBuffer.size()) {
+            // 先読みしても行が無い＝これ以上の行は無い。
+            return false;
+        }
+
+        byte[][] row = fetchBuffer.get(bufferPos);
+        bufferPos++;
+        if (resultParams != null) {
+            boolean sawNullWithoutIndicator = false;
+            for (int i = 0; i < resultParams.length && i < row.length; i++) {
+                byte[] value = row[i];
+                if (value != null) {
+                    CobolDataConverter.stringToCobol(resultParams[i], value);
+                } else {
+                    resultParams[i].getDataStorage().memset((byte) 0, resultParams[i].getSize());
+                    sawNullWithoutIndicator = true;
+                }
+            }
+            if (sawNullWithoutIndicator) {
+                SqlCA.setMissingIndicator(sqlca);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * {@code FETCH FORWARD <OCESQL4J_FETCH_RECORDS> FROM name} を実行し、返った全行を
+     * 先読みバッファへ格納する。各列の値は {@link CobolDataConverter#getValueFromResultSet} で
+     * 取得し（SQL NULL は null）、{@code fetch} 呼び出しごとに 1 行ずつ供給する。結果セットの
+     * 全列を格納し、ホスト変数への振り分けは {@link #fetch} 側で行う。
+     */
+    private void refill(Connection conn) throws SQLException {
+        fetchBuffer = new ArrayList<>();
+        bufferPos = 0;
+        int fetchRecords = BulkFetchConfig.getFetchRecords();
+        String fetchSql = "FETCH FORWARD " + fetchRecords + " FROM " + name;
         try (Statement stmt = conn.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
             if (!hasResult) {
-                return false;
+                overFetch = false;
+                return;
             }
             ResultSet rs = stmt.getResultSet();
-            if (rs == null || !rs.next()) {
-                if (rs != null) {
-                    rs.close();
-                }
-                return false;
-            }
-
-            if (resultParams != null) {
+            if (rs != null) {
                 int columnCount = rs.getMetaData().getColumnCount();
-                boolean sawNullWithoutIndicator = false;
-                for (int i = 0; i < resultParams.length && i < columnCount; i++) {
-                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                    if (value != null) {
-                        CobolDataConverter.stringToCobol(resultParams[i], value);
-                    } else {
-                        resultParams[i]
-                                .getDataStorage()
-                                .memset((byte) 0, resultParams[i].getSize());
-                        sawNullWithoutIndicator = true;
+                while (rs.next()) {
+                    byte[][] row = new byte[columnCount][];
+                    for (int i = 0; i < columnCount; i++) {
+                        row[i] = CobolDataConverter.getValueFromResultSet(rs, i + 1);
                     }
+                    fetchBuffer.add(row);
                 }
-                if (sawNullWithoutIndicator) {
-                    SqlCA.setMissingIndicator(sqlca);
-                }
+                rs.close();
             }
-            rs.close();
-            return true;
+            int size = fetchBuffer.size();
+            // 要求件数より少ない行数しか取れなかった＝結果末尾に達した（サーバカーソルは末尾の先）。
+            overFetch = size > 0 && size < fetchRecords;
         }
     }
 
@@ -143,5 +206,6 @@ class SqlCursor {
             stmt.execute("CLOSE " + name);
         }
         isOpened = false;
+        clearBuffer();
     }
 }

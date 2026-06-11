@@ -103,6 +103,8 @@ final class SqlState {
     static void clearCursors() {
         for (SqlCursor cursor : cursors.values()) {
             cursor.isOpened = false;
+            // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
+            cursor.clearBuffer();
         }
     }
 }

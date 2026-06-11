@@ -3920,19 +3920,38 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_EXEC:
     joutput_prefix();
-    joutput("CobolSql.exec(");
-    joutput_exec_sql_field_name("SQLCA");
-    joutput_sql_string_arg(p->sql_text);
-    joutput(");\n");
+    if (p->cursor_name) {
+      /* UPDATE/DELETE ... WHERE CURRENT OF cursor。バルクフェッチの
+         カーソル位置補正のため専用メソッドへ振り分け、修飾カーソル名を渡す。 */
+      joutput("CobolSql.execWhereCurrentOf(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
+    } else {
+      joutput("CobolSql.exec(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(");\n");
+    }
     break;
 
   case CB_SQL_EXEC_PARAMS:
     joutput_prefix();
-    joutput("CobolSql.execWithParams(");
-    joutput_exec_sql_field_name("SQLCA");
-    joutput_sql_string_arg(p->sql_text);
-    joutput_sql_host_list_newline(p->host_list);
-    joutput(");\n");
+    if (p->cursor_name) {
+      /* WHERE CURRENT OF を伴う位置付き UPDATE/DELETE（ホスト変数あり）。 */
+      joutput("CobolSql.execWithParamsWhereCurrentOf(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+      joutput_sql_host_list_newline(p->host_list);
+      joutput(");\n");
+    } else {
+      joutput("CobolSql.execWithParams(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput_sql_host_list_newline(p->host_list);
+      joutput(");\n");
+    }
     break;
 
   case CB_SQL_SELECT_INTO_ONE:

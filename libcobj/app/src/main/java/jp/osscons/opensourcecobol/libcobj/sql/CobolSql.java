@@ -240,6 +240,80 @@ public final class CobolSql {
     }
 
     // -------------------------------------------------------
+    // WHERE CURRENT OF (位置付き UPDATE/DELETE)
+    // -------------------------------------------------------
+    /**
+     * WHERE CURRENT OF を伴う UPDATE/DELETE（ホスト変数なし）を実行する。
+     *
+     * <p>先読み（バルクフェッチ）でサーバカーソルが論理現在行より進んでいる場合に備え、実行前に
+     * {@code FETCH BACKWARD} でカーソル位置を補正する（Open COBOL ESQL 4J と同じ挙動）。
+     *
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query 末尾が {@code WHERE CURRENT OF} の SQL（カーソル名は含まない）
+     * @param cursorName 位置付け対象の（修飾済み）カーソル名
+     */
+    public static void execWhereCurrentOf(CobolDataStorage sqlca, String query, String cursorName) {
+        String positioned = repositionForCurrentOf(sqlca, query, cursorName);
+        if (positioned != null) {
+            exec(sqlca, positioned);
+        }
+    }
+
+    /**
+     * WHERE CURRENT OF を伴う UPDATE/DELETE（ホスト変数あり）を実行する。
+     * {@link #execWhereCurrentOf} と同様にカーソル位置を補正してから実行する。
+     *
+     * @param sqlca ステータス報告用の SQLCA データストレージ
+     * @param query 末尾が {@code WHERE CURRENT OF} の SQL（'?' プレースホルダを含む。カーソル名は含まない）
+     * @param cursorName 位置付け対象の（修飾済み）カーソル名
+     * @param params COBOL のホスト変数パラメータ
+     */
+    public static void execWithParamsWhereCurrentOf(
+            CobolDataStorage sqlca, String query, String cursorName, AbstractCobolField... params) {
+        String positioned = repositionForCurrentOf(sqlca, query, cursorName);
+        if (positioned != null) {
+            execWithParams(sqlca, positioned, params);
+        }
+    }
+
+    /**
+     * WHERE CURRENT OF の実行前にサーバカーソルを論理現在行へ戻し、カーソル名を補った完全な SQL を返す。
+     *
+     * <p>先読みバッファに未供給行が {@code remaining} 行残っていれば、さらに overFetch（結果末尾に達し
+     * サーバカーソルが末尾の先にある）なら +1 行ぶん {@code FETCH BACKWARD} してから、バッファを破棄する。
+     * 接続なし/カーソル未登録のときは SQLCA にエラーを設定し null を返す。
+     */
+    private static String repositionForCurrentOf(
+            CobolDataStorage sqlca, String query, String cursorName) {
+        SqlConnection sqlConn = SqlState.getDefaultConnection();
+        if (sqlConn == null) {
+            SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
+            return null;
+        }
+        SqlCursor cursor = SqlState.getCursor(cursorName);
+        if (cursor == null) {
+            // 未登録カーソル（Open COBOL ESQL 4J は OCDB_EMPTY を返す）。
+            SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Cursor not found: " + cursorName);
+            return null;
+        }
+        try {
+            int backward = cursor.remainingBuffered() + (cursor.overFetch ? 1 : 0);
+            if (backward > 0) {
+                Connection conn = sqlConn.getConnection();
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("FETCH BACKWARD " + backward + " FROM " + cursorName);
+                }
+            }
+            // 位置補正後は先読みバッファを無効化し、次の FETCH は補正後の位置から取り直す。
+            cursor.clearBuffer();
+        } catch (SQLException e) {
+            SqlCA.setResultFromException(sqlca, e);
+            return null;
+        }
+        return query + " " + cursorName;
+    }
+
+    // -------------------------------------------------------
     // SELECT INTO
     // -------------------------------------------------------
     /**
@@ -691,6 +765,11 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            // OCCURS への複数行 FETCH は単一行 FETCH の先読みバッファを使わず、直接
+            // FETCH FORWARD occursMax を発行する (Open COBOL ESQL 4J の FetchOccurs と同じ)。
+            // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
+            // 食い違うため、ここで破棄しておく。
+            cursor.clearBuffer();
             // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を実行し、PostgreSQL の
             // エラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4Jの挙動に合わせる)。
             Connection conn = sqlConn.getConnection();
