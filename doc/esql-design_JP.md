@@ -107,12 +107,12 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 | クラス | 可視性 | 役割 |
 |---|---|---|
 | `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`connect`, `disconnect`, `exec`, `execWithParams`, `execWhereCurrentOf`, `execWithParamsWhereCurrentOf`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback` を提供。`execWhereCurrentOf` / `execWithParamsWhereCurrentOf` は `WHERE CURRENT OF` を含む文専用で、先読みで進んだカーソル位置を巻き戻してから実行する。 |
-| `SqlState` | package-private | 接続テーブル (`addConnection`/`getConnection`)、PREPARE テーブル、カーソルテーブルを保持する内部状態管理。 |
-| `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、デフォルト DB 名解決などを担う。 |
-| `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。先読み（バルクフェッチ）バッファと `overFetch` フラグも保持する。 |
+| `SqlState` | package-private | 接続テーブル (`addConnection`/`getConnection`)、PREPARE テーブル、カーソルテーブルを保持する内部状態管理。`clearCursors()` は全カーソルをクローズ扱いにし先読みバッファを破棄する（COMMIT / ROLLBACK 時に呼ばれる）。 |
+| `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、値が空のときの環境変数 `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` へのフォールバック、`OCDB_DB_CHAR`（既定 `UTF-8`）による接続エンコーディング設定、各値を最初の空白で切り詰める処理 (`stripTrailingSpaces`)、autocommit + トランザクションごとの明示 `BEGIN` (`beginTransaction`) を担う。 |
+| `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。先読み（バルクフェッチ）バッファと `overFetch` フラグも保持する。カーソルはインライン `SELECT` からでも、PREPARE 済みステートメント名からでも DECLARE できる。 |
 | `BulkFetchConfig` | package-private | 環境変数 `OCESQL4J_FETCH_RECORDS` から先読み件数を読み取り、プロセス内でキャッシュする。 |
-| `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。 |
-| `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。`HVARTYPE_*` enum によって分岐する。 |
+| `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。JDBC の `SQLState` を `sqlStateToCode` で ECPG コードにマッピングする。 |
+| `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。COBOL フィールド型で分岐する: 数値 (display)、パック 10 進 (COMP-3、符号付き/なし)、ネイティブバイナリ (COMP-5)、float/double、英数字 / group、national (`PIC N`)、英数字 / 日本語の `VARYING`（先頭 4 バイトのビッグエンディアン長ヘッダ + データ）。national と日本語の値は SHIFT-JIS で変換する。 |
 
 `SqlConnection`, `SqlCursor`, `SqlState`, `SqlCA`, `CobolDataConverter` はすべて package-private なため、SLF4J のロガー名としては利用できますが、外部から直接 import することは想定していません。
 
@@ -126,13 +126,41 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 ### NULL 列の通知 (ECPG_MISSING_INDICATOR)
 
-ECPG 互換の `ECPG_MISSING_INDICATOR (-22002)` を `SQLCODE` として返す経路があり、ホスト変数側にインジケータが用意されていない状況で NULL を読もうとした場合に SQLCA 経由で通知します。JUnit テスト `CobolSqlTest`, `SqlCATest` に該当ケースが含まれます。
+ECPG 互換として、ホスト変数側に指標変数が用意されていない状況で NULL 列を読み込んだ場合、ランタイムは `SQLCODE = -213` / `SQLSTATE = 22002`（`ECPG_MISSING_INDICATOR`）を返します。`SqlCA.java` では `ECPG_MISSING_INDICATOR = -213` で、`setMissingIndicator()` が状態を `22002` に設定します。COBOL フィールド自体には（ゼロ埋めで）値が書き込まれるため、行は処理済みとして扱われます。JUnit テスト `CobolSqlTest`, `SqlCATest` に該当ケースが含まれます。
 
 ### バルクフェッチ（先読み）と WHERE CURRENT OF の位置補正
 
 `SqlCursor.fetch` は、環境変数 `OCESQL4J_FETCH_RECORDS`（`BulkFetchConfig` がキャッシュ。既定 1）で指定した件数を 1 回の `FETCH FORWARD N FROM <cursor>` でまとめて取得し、`fetchBuffer` に保持します。以降の `fetchCursor` 呼び出しは、バッファを使い切るまで DB に問い合わせず 1 行ずつ供給し、使い切った時点で次の N 件を先読みします。これにより COBOL の N 回 FETCH に対する DB 往復を 1 回に集約します。既定値 1 のときは従来どおり 1 行ずつ取得します。COMMIT / ROLLBACK / CLOSE 時にはバッファをクリアします（`clearBuffer`）。
 
 先読みはサーバカーソルを実際の現在行より先へ進めるため、`WHERE CURRENT OF` を使う位置付き UPDATE/DELETE では論理的な現在行とずれます。これを補正するため `SqlCursor` は先読みで進めすぎた状態を `overFetch` フラグで記録し、`CobolSql.execWhereCurrentOf` / `execWithParamsWhereCurrentOf` は実行直前に `FETCH BACKWARD` でカーソル位置を巻き戻してから SQL を発行し、補正後は先読みバッファを無効化します（Open COBOL ESQL 4J の overFetch 補正と同じ挙動）。`codegen.c` の `joutput_exec_sql` は `WHERE CURRENT OF` を含む文をこれら専用 API へ振り分けます。
+
+### トランザクションモデル
+
+`SqlConnection.connect` は JDBC 接続を `setAutoCommit(true)` にしたうえで明示的に `BEGIN` を発行します。`COMMIT` / `ROLLBACK` のたび、および `DISCONNECT` 時には、`SqlState.clearCursors()`（サーバ側ポータルが消えるため全カーソルをクローズし先読みバッファを破棄する）と `SqlConnection.beginTransaction()` を呼び、次のトランザクションを開始します。これにより commit 間は常にトランザクションが有効な状態が保たれ、埋め込み文がトランザクションブロック内で実行される ECPG のセマンティクスに一致します。
+
+### SAVEPOINT による文単位のエラー隔離
+
+`exec`, `execWithParams`, `openCursor` は各文を SAVEPOINT で包みます。文の前に `SAVEPOINT oc_save` を発行し、成功時は `RELEASE SAVEPOINT oc_save`、失敗時は `ROLLBACK TO oc_save` を実行してから例外を再送します。これにより 1 つの文の失敗で周囲のトランザクション全体が中断するのを防ぎ、プログラムは SQLCA を確認して処理を続行できます。`getParameterMetaData` も、PostgreSQL がパラメータメタデータ解決中にトランザクションを中断した場合（例: テーブルが存在しない）に savepoint へロールバックして再設定します。
+
+### prepared statement のキャッシュ (`stmtCache`)
+
+`CobolSql` は `PreparedStatement` を `(接続のハッシュ, クエリのハッシュ)` をキーとするプロセス全体の `ConcurrentHashMap` (`stmtCache`) に保持します。`getOrCreatePreparedStatement` は、同一の `(接続, クエリ)` の組に対しては毎回 prepare し直さず、キャッシュ済みの `PreparedStatement` を再利用します。
+
+### カーソル名の修飾
+
+カーソル名は `<program-id>_<cursor>` の形でプログラム修飾されます。`codegen.c` はすべてのカーソル API 呼び出しを `"%s_%s"`（`excp_current_program_id`, `cursor_name`）の書式で出力するため、同名のカーソルを宣言する 2 つのプログラムが共有サーバ接続上で衝突しません。ランタイムはこの修飾名で `SqlState` にカーソルを登録・検索します。
+
+`WHERE CURRENT OF` の場合、codegen はカーソル名を SQL 本体に**含めません**。`repositionForCurrentOf` がカーソル位置を巻き戻したあと実行時に補います（`query + " " + cursorName`）。これにより最終的な文が正しい修飾ポータルを対象とします。
+
+### FETCH ... INTO OCCURS は先読みバッファを経由しない
+
+`fetchCursorOccurs` は単一行用の先読みバッファを使いません。まず `clearBuffer()` を呼び（直前の単一行先読みが残したサーバカーソル位置とのずれを避ける）、`FETCH FORWARD <occursMax>` を直接発行して、行を OCCURS の連続領域に書き込み、取得件数を `SQLERRD(3)` に報告します。
+
+### エラーマッピング
+
+JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で ECPG の `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`ECPG_NOT_FOUND`）、`08001`/`08003`/`28000`/`28P01` → `-402`（`ECPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`ECPG_EMPTY`）。認識できない状態はすべて `-9999`（`ECPG_UNKNOWN_ERROR`）になります。
+
+カーソルの異常系は PostgreSQL からではなくランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `ECPG_EMPTY` / `YE002` を返します。登録済みだが未 OPEN のカーソルへの FETCH はそのまま PostgreSQL に送られ、その実際の `SQLSTATE` / メッセージが `setResultFromException` 経由で戻ります。
 
 ## テスト
 

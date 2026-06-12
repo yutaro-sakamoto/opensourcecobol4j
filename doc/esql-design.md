@@ -108,12 +108,12 @@ For `SELECT INTO` / `FETCH`, `esql_build_and_resolve()` checks whether the leaf 
 | Class | Visibility | Role |
 |---|---|---|
 | `CobolSql` | `public` | The single public API called from generated Java. Provides `connect`, `disconnect`, `exec`, `execWithParams`, `execWhereCurrentOf`, `execWithParamsWhereCurrentOf`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback`. `execWhereCurrentOf` / `execWithParamsWhereCurrentOf` are dedicated to statements containing `WHERE CURRENT OF`; they rewind the cursor position advanced by pre-reading before running. |
-| `SqlState` | package-private | Internal state: connection table (`addConnection`/`getConnection`), prepared-statement table, cursor table. |
-| `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; resolves the default DB name. |
-| `SqlCursor` | package-private | Holds cursor state (open/closed), `ResultSet`, `PreparedStatement`. Also holds the pre-read (bulk fetch) buffer and the `overFetch` flag. |
+| `SqlState` | package-private | Internal state: connection table (`addConnection`/`getConnection`), prepared-statement table, cursor table. `clearCursors()` marks every cursor closed and discards its pre-read buffer; it is called on COMMIT / ROLLBACK. |
+| `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; falls back to the `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` environment variables when a value is empty; sets the connection encoding from `OCDB_DB_CHAR` (default `UTF-8`); strips each value at its first embedded space (`stripTrailingSpaces`); runs in autocommit mode with an explicit `BEGIN` per transaction (`beginTransaction`). |
+| `SqlCursor` | package-private | Holds cursor state (open/closed), `ResultSet`, `PreparedStatement`. Also holds the pre-read (bulk fetch) buffer and the `overFetch` flag. A cursor may be DECLAREd from either an inline `SELECT` or a previously PREPAREd statement name. |
 | `BulkFetchConfig` | package-private | Reads the pre-read count from the `OCESQL4J_FETCH_RECORDS` environment variable and caches it for the process. |
-| `SqlCA` | package-private | Writes SQLCA fields (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) back into the corresponding `CobolDataStorage`. |
-| `CobolDataConverter` | package-private | Converts between `AbstractCobolField` and JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx`. Dispatches on `HVARTYPE_*`. |
+| `SqlCA` | package-private | Writes SQLCA fields (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) back into the corresponding `CobolDataStorage`. Maps a JDBC `SQLState` to an ECPG code via `sqlStateToCode`. |
+| `CobolDataConverter` | package-private | Converts between `AbstractCobolField` and JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx`. Dispatches on the COBOL field type: numeric (display), packed decimal (COMP-3, signed/unsigned), native binary (COMP-5), float/double, alphanumeric / group, national (`PIC N`), and alphanumeric / Japanese `VARYING` (4-byte big-endian length header + data). National and Japanese values are converted through SHIFT-JIS. |
 
 All classes except `CobolSql` are package-private. They appear as SLF4J logger names but are not part of the external API.
 
@@ -127,13 +127,41 @@ Host variables arrive from generated Java as `AbstractCobolField[]`. Because the
 
 ### NULL column notification (`ECPG_MISSING_INDICATOR`)
 
-Compatible with ECPG, the runtime can return `SQLCODE = -22002` (`ECPG_MISSING_INDICATOR`) when a NULL column is read into a host variable without an indicator variable. The JUnit suites `CobolSqlTest` and `SqlCATest` cover the relevant cases.
+Compatible with ECPG, the runtime returns `SQLCODE = -213` / `SQLSTATE = 22002` (`ECPG_MISSING_INDICATOR`) when a NULL column is read into a host variable without an indicator variable. In `SqlCA.java`, `ECPG_MISSING_INDICATOR = -213` and `setMissingIndicator()` sets the state to `22002`. The COBOL field itself is still written (zero-filled), so the row counts as processed. The JUnit suites `CobolSqlTest` and `SqlCATest` cover the relevant cases.
 
 ### Bulk fetch (pre-read) and WHERE CURRENT OF position correction
 
 `SqlCursor.fetch` pulls the number of rows given by the `OCESQL4J_FETCH_RECORDS` environment variable (cached by `BulkFetchConfig`, default 1) in a single `FETCH FORWARD N FROM <cursor>` and keeps them in `fetchBuffer`. Subsequent `fetchCursor` calls serve one buffered row at a time without hitting the database until the buffer is exhausted, at which point the next N rows are pre-read. This collapses N COBOL FETCHes into one database round trip. With the default value of 1, rows are fetched one at a time as before. The buffer is cleared on COMMIT / ROLLBACK / CLOSE (`clearBuffer`).
 
 Because pre-reading advances the server-side cursor past the actual current row, positioned UPDATE/DELETE using `WHERE CURRENT OF` would target the wrong row. To correct this, `SqlCursor` records the over-advanced state in the `overFetch` flag, and `CobolSql.execWhereCurrentOf` / `execWithParamsWhereCurrentOf` rewind the cursor with `FETCH BACKWARD` before issuing the SQL, then invalidate the pre-read buffer (same behavior as Open COBOL ESQL 4J's overFetch correction). `joutput_exec_sql` in `codegen.c` dispatches statements containing `WHERE CURRENT OF` to these dedicated APIs.
+
+### Transaction model
+
+`SqlConnection.connect` puts the JDBC connection into `setAutoCommit(true)` and then issues an explicit `BEGIN`. After every `COMMIT`, `ROLLBACK`, and on `DISCONNECT`, the runtime calls `SqlState.clearCursors()` (which closes all cursors and discards their pre-read buffers, since the server-side portals no longer exist) and `SqlConnection.beginTransaction()` to open the next transaction. This keeps a transaction always active between commits, matching ECPG semantics where embedded statements run inside a transaction block.
+
+### Per-statement error isolation with SAVEPOINT
+
+`exec`, `execWithParams`, and `openCursor` wrap each statement in a SAVEPOINT: they issue `SAVEPOINT oc_save` before the statement, `RELEASE SAVEPOINT oc_save` on success, and `ROLLBACK TO oc_save` on failure (then rethrow). This prevents a single failed statement from aborting the whole surrounding transaction, so the program can inspect the SQLCA and continue. `getParameterMetaData` also rolls back to and re-establishes the savepoint when PostgreSQL aborts the transaction while resolving parameter metadata (e.g. a missing table).
+
+### Prepared-statement cache (`stmtCache`)
+
+`CobolSql` keeps a process-wide `ConcurrentHashMap` (`stmtCache`) of `PreparedStatement`s keyed by `(connection hash, query hash)`. `getOrCreatePreparedStatement` reuses a cached `PreparedStatement` for a repeated `(connection, query)` pair instead of re-preparing it on every `execWithParams` / `selectInto`.
+
+### Cursor name qualification
+
+Cursor names are program-qualified as `<program-id>_<cursor>`: `codegen.c` emits every cursor API call with the format `"%s_%s"` (`excp_current_program_id`, `cursor_name`), so two programs declaring a cursor of the same name do not collide on the shared server connection. The runtime stores and looks up cursors under this qualified name in `SqlState`.
+
+For `WHERE CURRENT OF`, codegen does **not** put the cursor name into the SQL text. `repositionForCurrentOf` appends it at runtime (`query + " " + cursorName`) after rewinding the cursor, so the final statement targets the correct, fully qualified portal.
+
+### FETCH ... INTO OCCURS bypasses the pre-read buffer
+
+`fetchCursorOccurs` does not use the single-row pre-read buffer. It calls `clearBuffer()` first (to avoid a mismatch with the server-side cursor position left by any prior single-row pre-read) and then issues `FETCH FORWARD <occursMax>` directly, scattering the rows into the contiguous OCCURS storage and reporting the row count in `SQLERRD(3)`.
+
+### Error mapping
+
+On a JDBC `SQLException`, `SqlCA.setResultFromException` maps the exception's `SQLState` to an ECPG `SQLCODE` via `SqlCA.sqlStateToCode` and stores `e.getMessage()` into `SQLERRMC` (truncated to 70 bytes). Notable mappings: `02000` → `+100` (`ECPG_NOT_FOUND`), `08001`/`08003`/`28000`/`28P01` → `-402` (`ECPG_CONNECT`), `34000` → `-602`, `YE002` → `-212` (`ECPG_EMPTY`); any unrecognized state becomes `-9999` (`ECPG_UNKNOWN_ERROR`).
+
+Cursor anomaly handling is decided in the runtime rather than coming from PostgreSQL: OPEN / FETCH / CLOSE on an unregistered cursor returns `-602` / `34000`; CLOSE on a registered-but-unopened cursor returns success; and `WHERE CURRENT OF` against an unregistered cursor returns `ECPG_EMPTY` / `YE002`. A FETCH on a registered-but-unopened cursor is still sent to PostgreSQL, so its real `SQLSTATE` / message flow back through `setResultFromException`.
 
 ## Tests
 
@@ -167,5 +195,5 @@ Each suite is generated by `make <name>` and runnable locally with `./<name>` (r
 ## Related documents
 
 - [esql-guide.md](./esql-guide.md) -- end-user usage
-- [esql-logging_JP.md](./esql-logging_JP.md) -- SLF4J logging configuration
+- [esql-logging.md](./esql-logging.md) -- SLF4J logging configuration
 - [esql-design_JP.md](./esql-design_JP.md) -- Japanese version of this document

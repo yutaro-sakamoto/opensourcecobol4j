@@ -82,6 +82,10 @@ dbname@host:port
 
 例: `"testdb@localhost:5432"`
 
+ユーザ・パスワード・データベース名のホスト変数が空の場合、対応する値はそれぞれ環境変数
+`OCDB_DB_USER`、`OCDB_DB_PASS`、`OCDB_DB_NAME` にフォールバックします（[環境変数](#環境変数)
+を参照）。特に短縮形 `EXEC SQL CONNECT END-EXEC` はこれらの環境変数のみに依存します。
+
 ### BEGIN / END DECLARE SECTION
 
 `EXEC SQL BEGIN DECLARE SECTION END-EXEC` と `EXEC SQL END DECLARE SECTION END-EXEC` は後方互換のために受理されますが、**無視されます**。WORKING-STORAGE SECTIONおよびLINKAGE SECTIONの全変数は、DECLARE SECTIONの有無にかかわらず、常にSQL文のホスト変数として使用できます。
@@ -169,6 +173,11 @@ embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declare
 | `SQLERRML` | `SQLERRMC` 内のエラーメッセージの長さ |
 | `SQLERRD(3)` | 直前の文で影響を受けた行数 |
 
+> [!NOTE]
+> `CONNECT` 成功時、`SQLERRMC` は**上書きされません**。COBOL の初期値（70 桁の空白）が
+> そのまま残り、`SQLERRML` は 0 に設定されます。これは Open COBOL ESQL 4J の挙動に合わせた
+> ものです。`SQLERRMC` にメッセージが書き込まれるのはエラー時のみです。
+
 ### SELECT INTO
 
 単一行の取得:
@@ -182,7 +191,8 @@ embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declare
        END-EXEC.
 ```
 
-OCCURS を使った配列取得:
+OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO` は最大 `OCCURS` 件の
+行を取得し、実際に格納された行数は `SQLERRD(3)` に報告されます）:
 
 ```cobol
        01  EMP-NAMES.
@@ -243,6 +253,31 @@ OCCURS を使った配列取得:
 > 1 行ずつ取得します。`WHERE CURRENT OF` を使う位置付き UPDATE/DELETE では、先読みで
 > 進んだカーソル位置を自動的に巻き戻してから実行するため、論理的な「現在行」が更新/削除されます。
 
+#### OCCURS 配列への複数行 FETCH
+
+`FETCH ... INTO` の対象が OCCURS ホスト変数の場合、複数行を一括取得します。ランタイムは
+（単一行用の先読みバッファを経由せず）`FETCH FORWARD <occurs-max>` を直接発行し、最大
+`OCCURS` 件の行を格納します。実際に取得した行数は `SQLERRD(3)` に報告されます。
+
+```cobol
+       01  EMP-NAMES.
+           05 EMP-NAME PIC X(20) OCCURS 10 TIMES.
+
+       EXEC SQL OPEN emp_cursor END-EXEC.
+       EXEC SQL
+           FETCH emp_cursor INTO :EMP-NAME
+       END-EXEC.
+       DISPLAY "取得行数: " SQLERRD(3).
+```
+
+#### カーソルのエラー挙動
+
+| 状況 | 結果 |
+|---|---|
+| DECLARE していないカーソルへの OPEN / FETCH / CLOSE | `SQLCODE = -602`、`SQLSTATE = 34000` |
+| DECLARE 済みだが未 OPEN のカーソルの CLOSE | 成功 (`SQLCODE = 0`) |
+| DECLARE 済みだが未 OPEN のカーソルの FETCH | 文はそのまま PostgreSQL に送られ、`"cursor does not exist"` 由来の `SQLSTATE` とメッセージが SQLCA に格納される（独自の固定メッセージではない） |
+
 ### PREPARE / EXECUTE
 
 ```cobol
@@ -291,15 +326,19 @@ OCCURS を使った配列取得:
 | `SQLERRMC` | エラーメッセージテキスト |
 | `SQLERRD(3)` | 影響を受けた行数 |
 
-主なSQLCODEの値:
+主なSQLCODEの値（`SqlCA.java` で定義）:
 
-| SQLCODE | 意味 |
-|---|---|
-| 0 | 成功 |
-| +100 | レコードが見つからない / カーソルの終端 |
-| -1 | 接続失敗 |
-| -20 | 内部エラー |
-| -30 | PostgreSQLエラー（SQLSTATEとSQLERRMCを参照） |
+| SQLCODE | SQLSTATE | 意味 |
+|---|---|---|
+| `+0` | `00000` | 成功 |
+| `+100` | `02000` | 行なし / カーソルの終端 (`ECPG_NOT_FOUND`) |
+| `-213` | `22002` | 指標変数なしでホスト変数に NULL を読み込んだ (`ECPG_MISSING_INDICATOR`) |
+| `-220` | `08003` | 有効な接続がない (`ECPG_NO_CONN`) |
+| `-402` | `08001` 等 | CONNECT 失敗 (`ECPG_CONNECT`) |
+| `-602` | `34000` | カーソル（ポータル）が存在しない (`ECPG_WARNING_UNKNOWN_PORTAL`) |
+| `-9999` | (サーバ依存) | 特定の ECPG コードに対応しない PostgreSQL エラー (`ECPG_UNKNOWN_ERROR`) |
+
+エラー時は `SQLCODE` だけでなく `SQLSTATE` と `SQLERRMC` も必ず確認してください。PostgreSQL の `SQLSTATE` とメッセージ文字列がそのまま SQLCA に格納されるため、最も正確な診断情報になります。
 
 エラーハンドリングの例:
 
@@ -334,8 +373,11 @@ dbname@host:port
 | `OCDB_DB_NAME` | デフォルトのデータベース名 |
 | `OCDB_DB_USER` | デフォルトのデータベースユーザー |
 | `OCDB_DB_PASS` | デフォルトのデータベースパスワード |
-| `OCDB_DB_CHAR` | データベース接続の文字エンコーディング |
+| `OCDB_DB_CHAR` | データベース接続の文字エンコーディング。未設定の場合は `UTF-8` が既定値として使用される。 |
 | `OCESQL4J_FETCH_RECORDS` | カーソルの先読み（バルクフェッチ）件数。1 回の `FETCH FORWARD` でまとめて取得する行数を指定する。既定値は 1（1 行ずつ取得）。0 以下や数値でない値は 1 として扱う。プロセス起動時に一度だけ読み取られる。 |
+
+`OCDB_DB_NAME`、`OCDB_DB_USER`、`OCDB_DB_PASS` は、対応する `CONNECT` のホスト変数が空のときの
+フォールバックとして使用されます。短縮形 `EXEC SQL CONNECT END-EXEC` はこの仕組みで接続パラメータを取得します。
 
 ## コンパイル方法
 
@@ -355,6 +397,13 @@ java program
 - 添字の値に算術式 (`:VAR(I+1)`) を書いたり、添字値そのものが添字を持つホスト変数 (`:VAR(IDX(1))`) を書いたりすることはできません。間接的な添字が必要な場合は、COBOL 側でいったん作業変数に MOVE してから渡してください。
 - SJISモードでのUTF-8変数名はサポートされていません。UTF-8ソースファイルの場合は `--enable-utf8` ビルドオプションを使用してください。
 - 対象データベースはPostgreSQLのみサポートされています。
+- 以下の ECPG / 埋め込み SQL 機能は**サポートされていません**:
+  - `EXECUTE IMMEDIATE`。
+  - `WHENEVER`（宣言的な条件ハンドリング）。代わりに `SQLCODE` / `SQLSTATE` を明示的に確認してください。
+  - 逆方向・スクロール FETCH（`FETCH PRIOR`、`FETCH BACKWARD`、スクロールカーソル等）。プログラムから使えるのは順方向 FETCH のみです。（`FETCH BACKWARD` は `WHERE CURRENT OF` のカーソル位置補正のため内部的にのみ使用されます。）
+  - 複数接続。`AT db` 句は構文上受理されますが**無視**され、すべての文は単一のデフォルト接続に対して実行されます。`DISCONNECT ALL` もデフォルト接続のみに作用します。
+  - 指標変数（`:VAR:IND`）。指標変数なしでホスト変数に NULL がフェッチされた場合は、代わりに `SQLCODE = -213`（`SQLSTATE 22002`）で通知されます。
+- 接続文字列・ユーザ名・パスワードの値に空白を含めることはできません。実行時に最初の空白以降は破棄されます（COBOL の末尾パディングもこの方法で除去されます）。
 
 内部アーキテクチャ (どのように解析・コード生成されているか) については [esql-design_JP.md](./esql-design_JP.md) を参照してください。
 

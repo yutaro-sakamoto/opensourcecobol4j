@@ -82,6 +82,11 @@ dbname@host:port
 
 For example: `"testdb@localhost:5432"`.
 
+If the user, password, or database-name host variable is empty, the corresponding value
+falls back to the `OCDB_DB_USER`, `OCDB_DB_PASS`, and `OCDB_DB_NAME` environment variables
+(see [Environment Variables](#environment-variables)). In particular, the short form
+`EXEC SQL CONNECT END-EXEC` relies entirely on those environment variables.
+
 ### BEGIN / END DECLARE SECTION
 
 `EXEC SQL BEGIN DECLARE SECTION END-EXEC` and `EXEC SQL END DECLARE SECTION END-EXEC` are accepted for backward compatibility but are **ignored**. All variables in WORKING-STORAGE SECTION and LINKAGE SECTION are always available as host variables in SQL statements, regardless of whether they are enclosed in a DECLARE SECTION or not.
@@ -169,6 +174,11 @@ The implicitly defined SQLCA has the following structure:
 | `SQLERRML` | Length of error message in `SQLERRMC` |
 | `SQLERRD(3)` | Number of rows affected by the last statement |
 
+> [!NOTE]
+> On a successful `CONNECT`, `SQLERRMC` is **not** overwritten: the COBOL-initialized
+> value (70 spaces) is left in place and `SQLERRML` is set to 0. This matches Open COBOL
+> ESQL 4J behavior. Only error paths write a message into `SQLERRMC`.
+
 ### SELECT INTO
 
 Single-row select:
@@ -182,7 +192,8 @@ Single-row select:
        END-EXEC.
 ```
 
-Array fetch with OCCURS:
+Array fetch with OCCURS (`SELECT ... INTO` an OCCURS host variable returns up to
+`OCCURS` rows; the number of rows actually stored is reported in `SQLERRD(3)`):
 
 ```cobol
        01  EMP-NAMES.
@@ -245,6 +256,32 @@ Use host variables prefixed with `:` as bind parameters:
 > the pre-read is automatically rewound before the statement runs, so the logical
 > "current row" is updated/deleted.
 
+#### Fetching multiple rows into an OCCURS array
+
+`FETCH ... INTO` an OCCURS host variable retrieves several rows at once. The runtime
+issues a single `FETCH FORWARD <occurs-max>` directly (bypassing the single-row pre-read
+buffer) and stores up to `OCCURS` rows. The number of rows actually fetched is reported in
+`SQLERRD(3)`.
+
+```cobol
+       01  EMP-NAMES.
+           05 EMP-NAME PIC X(20) OCCURS 10 TIMES.
+
+       EXEC SQL OPEN emp_cursor END-EXEC.
+       EXEC SQL
+           FETCH emp_cursor INTO :EMP-NAME
+       END-EXEC.
+       DISPLAY "Rows fetched: " SQLERRD(3).
+```
+
+#### Cursor error behavior
+
+| Situation | Result |
+|---|---|
+| OPEN / FETCH / CLOSE on a cursor that was never DECLAREd | `SQLCODE = -602`, `SQLSTATE = 34000` |
+| CLOSE on a DECLAREd but never-OPENed cursor | Success (`SQLCODE = 0`) |
+| FETCH on a DECLAREd but never-OPENed cursor | The statement is still sent to PostgreSQL; the resulting `"cursor does not exist"` `SQLSTATE` and message are stored in the SQLCA (not a fixed built-in message) |
+
 ### PREPARE / EXECUTE
 
 ```cobol
@@ -293,15 +330,19 @@ After each `EXEC SQL` statement, the SQLCA fields are updated:
 | `SQLERRMC` | Error message text |
 | `SQLERRD(3)` | Number of rows affected |
 
-Common SQLCODE values:
+Common SQLCODE values (defined in `SqlCA.java`):
 
-| SQLCODE | Meaning |
-|---|---|
-| 0 | Success |
-| +100 | Record not found / end of cursor |
-| -1 | Connection failed |
-| -20 | Internal error |
-| -30 | PostgreSQL error (see SQLSTATE and SQLERRMC) |
+| SQLCODE | SQLSTATE | Meaning |
+|---|---|---|
+| `+0` | `00000` | Success |
+| `+100` | `02000` | No more rows / end of cursor (`ECPG_NOT_FOUND`) |
+| `-213` | `22002` | NULL value read into a host variable without an indicator (`ECPG_MISSING_INDICATOR`) |
+| `-220` | `08003` | No active connection (`ECPG_NO_CONN`) |
+| `-402` | `08001` etc. | CONNECT failed (`ECPG_CONNECT`) |
+| `-602` | `34000` | Cursor (portal) does not exist (`ECPG_WARNING_UNKNOWN_PORTAL`) |
+| `-9999` | (server) | PostgreSQL error that maps to no specific ECPG code (`ECPG_UNKNOWN_ERROR`) |
+
+On any error, always inspect `SQLSTATE` and `SQLERRMC` as well as `SQLCODE`: the PostgreSQL `SQLSTATE` and its message text are stored verbatim into the SQLCA, so they carry the most precise diagnostic information.
 
 Example error handling:
 
@@ -336,8 +377,12 @@ Example:
 | `OCDB_DB_NAME` | Default database name |
 | `OCDB_DB_USER` | Default database user |
 | `OCDB_DB_PASS` | Default database password |
-| `OCDB_DB_CHAR` | Character encoding for the database connection |
+| `OCDB_DB_CHAR` | Character encoding for the database connection. When unset, the connection defaults to `UTF-8`. |
 | `OCESQL4J_FETCH_RECORDS` | Cursor pre-read (bulk fetch) count: the number of rows pulled in a single `FETCH FORWARD`. Defaults to 1 (one row at a time). Values of 0 or less, or non-numeric values, are treated as 1. Read once at process startup. |
+
+`OCDB_DB_NAME`, `OCDB_DB_USER`, and `OCDB_DB_PASS` are used as fallbacks when the
+corresponding `CONNECT` host variable is empty, which is how the short form
+`EXEC SQL CONNECT END-EXEC` obtains its connection parameters.
 
 ## Compilation
 
@@ -357,6 +402,13 @@ The `-I` flag specifies the directory containing COPY files.
 - Subscript values cannot be arithmetic expressions (`:VAR(I+1)`) and cannot themselves be subscripted host variables (`:VAR(IDX(1))`). Compute the index into a scratch COBOL variable first.
 - UTF-8 variable names in SJIS mode are not supported; use the `--enable-utf8` build option for UTF-8 source files.
 - Only PostgreSQL is supported as the target database.
+- The following ECPG/embedded-SQL features are **not** supported:
+  - `EXECUTE IMMEDIATE`.
+  - `WHENEVER` (declarative condition handling). Check `SQLCODE` / `SQLSTATE` explicitly instead.
+  - Backward / scrollable FETCH (`FETCH PRIOR`, `FETCH BACKWARD`, scrollable cursors, etc.). Only forward FETCH is available to the program. (`FETCH BACKWARD` is used internally only to correct the cursor position for `WHERE CURRENT OF`.)
+  - Multiple connections. The `AT db` clause is accepted syntactically but **ignored**; all statements run against the single default connection. `DISCONNECT ALL` also affects only the default connection.
+  - Indicator variables (`:VAR:IND`). A NULL fetched into a host variable without an indicator is reported via `SQLCODE = -213` (`SQLSTATE 22002`) instead.
+- Connection-string, user-name, and password values must not contain embedded spaces: at runtime everything from the first space onward is discarded (trailing COBOL padding is stripped this way).
 
 For the internal architecture and how these forms are parsed and translated into Java, see [esql-design.md](./esql-design.md).
 
