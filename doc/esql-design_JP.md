@@ -13,6 +13,9 @@ ESQL サポートは大きく次の 2 層に分かれます。
 
 | ファイル | 役割 |
 |---|---|
+| `cobj/pplex.l` (前処理) | `EXEC SQL INCLUDE <name>` を `COPY` に書き換え、`BEGIN/END DECLARE SECTION` を処理する。`INCLUDE SQLCA` の有無を `cb_sqlca_include_seen` に記録。その他の `EXEC SQL` テキストは本体スキャナへそのまま素通しする。 |
+| `cobj/scanner.l.m4` (本体レキサ, `ESQL_STATE`) | `EXEC SQL` 〜 `END-EXEC` の本体を 1 つの文字列にまとめ、`EXEC_SQL_STATEMENT` トークン (英数字リテラル) として emit する。SQL テキストを単一の文字列として保存するのはここ。 |
+| `cobj/parser.y` (`exec_sql_statement`) | `EXEC_SQL_STATEMENT` を受け取り `cb_parse_exec_sql()` で ESQL 専用スキャナ/パーサを起動する。最初の埋め込み SQL 検出時に `esql_inject_sqlca()` を呼ぶ。 |
 | `cobj/esql-scanner.l` | flex レキサ。EXEC SQL ... END-EXEC で囲まれた SQL テキストをトークン化する。 |
 | `cobj/esql-parser.y` | bison パーサ。トークン列からホスト変数情報を取り出して `cb_exec_sql` ノードを構築する。 |
 | `cobj/esql-common.h` | `esql-parser.y` / `esql-scanner.l` と `esql.c` が共有する型と関数のヘッダ。tree.h を含めない (`YYSTYPE` の衝突を避けるため)。 |
@@ -25,8 +28,21 @@ ESQL サポートは大きく次の 2 層に分かれます。
 ```
 EXEC SQL ... END-EXEC (COBOL ソース)
         │
-        │  preproc (cobj/pplex.l, cobj/ppparse.y) が
-        │  EXEC SQL〜END-EXEC を 1 つの文字列として保存
+        │  preproc (cobj/pplex.l): EXEC SQL INCLUDE <name> を COPY に書き換え、
+        │  BEGIN/END DECLARE SECTION を処理し、INCLUDE SQLCA の有無を
+        │  cb_sqlca_include_seen に記録する。それ以外の EXEC SQL テキストは
+        │  そのまま本体スキャナへ素通しする。
+        ▼
+本体スキャナ (cobj/scanner.l.m4 の ESQL_STATE)
+        │
+        │  EXEC SQL〜END-EXEC の本体を 1 つの文字列に蓄積し、END-EXEC で
+        │  EXEC_SQL_STATEMENT トークン (英数字リテラル) として emit する。
+        ▼
+本体パーサ (cobj/parser.y の exec_sql_statement)
+        │
+        │  cb_parse_exec_sql(リテラル文字列) を呼んで以下の ESQL 専用
+        │  スキャナ/パーサを起動する。最初の EXEC SQL 検出時に
+        │  esql_inject_sqlca() を一度だけ実行する。
         ▼
 esql-scanner.l (flex)
         │

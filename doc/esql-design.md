@@ -13,6 +13,9 @@ ESQL support is split into two layers:
 
 | File | Role |
 |---|---|
+| `cobj/pplex.l` (preprocessor) | Rewrites `EXEC SQL INCLUDE <name>` to `COPY`, handles `BEGIN/END DECLARE SECTION`, and records whether `INCLUDE SQLCA` was seen (`cb_sqlca_include_seen`). Any other `EXEC SQL` text is passed through to the main scanner. |
+| `cobj/scanner.l.m4` (main lexer, `ESQL_STATE`) | Accumulates the `EXEC SQL` … `END-EXEC` body into one string and emits it as a single `EXEC_SQL_STATEMENT` token (an alphanumeric literal). This is where the SQL block is captured as a single string. |
+| `cobj/parser.y` (`exec_sql_statement`) | Receives `EXEC_SQL_STATEMENT` and calls `cb_parse_exec_sql()` to drive the ESQL-specific scanner/parser; runs `esql_inject_sqlca()` on the first embedded SQL statement. |
 | `cobj/esql-scanner.l` | flex lexer. Tokenizes the SQL text between `EXEC SQL` and `END-EXEC`. |
 | `cobj/esql-parser.y` | bison parser. Builds host-variable lists and a `cb_exec_sql` node. |
 | `cobj/esql-common.h` | Shared types and prototypes between `esql-parser.y` / `esql-scanner.l` and `esql.c`. Deliberately does NOT include `tree.h` (its `YYSTYPE` would collide with the ESQL parser's). |
@@ -25,8 +28,22 @@ ESQL support is split into two layers:
 ```
 EXEC SQL ... END-EXEC (COBOL source)
         │
-        │  The COBOL preprocessor (cobj/pplex.l, cobj/ppparse.y)
-        │  captures EXEC SQL ... END-EXEC as a single string.
+        │  preproc (cobj/pplex.l): rewrites EXEC SQL INCLUDE <name> to COPY,
+        │  handles BEGIN/END DECLARE SECTION, and records whether INCLUDE SQLCA
+        │  was seen (cb_sqlca_include_seen). Any other EXEC SQL text is passed
+        │  through unchanged to the main scanner.
+        ▼
+main scanner (cobj/scanner.l.m4, ESQL_STATE)
+        │
+        │  Accumulates the EXEC SQL ... END-EXEC body into one string and, at
+        │  END-EXEC, emits it as a single EXEC_SQL_STATEMENT token (an
+        │  alphanumeric literal). This is where the SQL block becomes one string.
+        ▼
+main parser (cobj/parser.y, exec_sql_statement)
+        │
+        │  Calls cb_parse_exec_sql(<literal string>) to drive the ESQL-specific
+        │  scanner/parser below, and runs esql_inject_sqlca() once on the first
+        │  embedded SQL statement.
         ▼
 esql-scanner.l (flex)
         │
