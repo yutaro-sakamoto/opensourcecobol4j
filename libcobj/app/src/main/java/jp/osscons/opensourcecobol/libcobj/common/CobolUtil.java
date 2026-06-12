@@ -77,6 +77,14 @@ public class CobolUtil {
 
     private static boolean lineTrace = false;
 
+    /**
+     * Statement-level execution-trace writer. Opened in {@link #cob_init(String[], boolean)} when
+     * the environment variable {@code COB_TRACE_FILE} names a writable file; {@code null}
+     * otherwise. When active, {@link #setLocation(String, String, int, String, String, String)}
+     * appends one record per executed statement in the form {@code <source-file>:<line>}.
+     */
+    private static java.io.PrintWriter traceWriter = null;
+
     /** TDOD: 準備中 */
     private static String sourceFile;
 
@@ -333,6 +341,18 @@ public class CobolUtil {
         s = CobolUtil.getEnv("COB_VERBOSE");
         if (s != null && s.length() > 0 && (s.charAt(0) == 'y' || s.charAt(0) == 'Y')) {
             CobolUtil.cob_verbose = true;
+        }
+
+        s = CobolUtil.getEnv("COB_TRACE_FILE");
+        if (s != null && s.length() > 0) {
+            try {
+                CobolUtil.traceWriter =
+                        new java.io.PrintWriter(
+                                new java.io.BufferedWriter(new java.io.FileWriter(s)));
+            } catch (java.io.IOException e) {
+                System.err.println("Warning: cannot open COB_TRACE_FILE '" + s + "', ignored.");
+                CobolUtil.traceWriter = null;
+            }
         }
 
         s = CobolUtil.getEnv("COB_IO_ASSUME_REWRITE");
@@ -592,6 +612,11 @@ public class CobolUtil {
         sourceLine = sline;
         if (cstatement != null) {
             sourceStatement = cstatement;
+        }
+        if (CobolUtil.traceWriter != null) {
+            CobolUtil.traceWriter.println(sfile + ":" + sline);
+            // Flush per record: STOP RUN may exit the JVM without running shutdown hooks.
+            CobolUtil.traceWriter.flush();
         }
         if (CobolUtil.lineTrace) {
             System.err.println(
