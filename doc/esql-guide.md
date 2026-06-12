@@ -236,6 +236,15 @@ Use host variables prefixed with `:` as bind parameters:
        EXEC SQL CLOSE emp_cursor END-EXEC.
 ```
 
+> [!NOTE]
+> A single-row FETCH pre-reads the number of rows given by the `OCESQL4J_FETCH_RECORDS`
+> environment variable (see below) in one `FETCH FORWARD`, then serves the rows one at a
+> time from a buffer on subsequent FETCHes. This reduces the number of round trips to the
+> database. The default is 1, in which case rows are fetched one at a time as before.
+> For positioned UPDATE/DELETE using `WHERE CURRENT OF`, the cursor position advanced by
+> the pre-read is automatically rewound before the statement runs, so the logical
+> "current row" is updated/deleted.
+
 ### PREPARE / EXECUTE
 
 ```cobol
@@ -328,6 +337,7 @@ Example:
 | `OCDB_DB_USER` | Default database user |
 | `OCDB_DB_PASS` | Default database password |
 | `OCDB_DB_CHAR` | Character encoding for the database connection |
+| `OCESQL4J_FETCH_RECORDS` | Cursor pre-read (bulk fetch) count: the number of rows pulled in a single `FETCH FORWARD`. Defaults to 1 (one row at a time). Values of 0 or less, or non-numeric values, are treated as 1. Read once at process startup. |
 
 ## Compilation
 

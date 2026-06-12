@@ -236,6 +236,13 @@ OCCURS を使った配列取得:
        EXEC SQL CLOSE emp_cursor END-EXEC.
 ```
 
+> [!NOTE]
+> 単一行 FETCH は、環境変数 `OCESQL4J_FETCH_RECORDS`（後述）で指定した件数を 1 回の
+> `FETCH FORWARD` でまとめて先読みし、以降の FETCH はバッファから 1 行ずつ供給します。
+> これにより DB との往復回数を削減できます。既定値は 1 で、その場合は従来どおり
+> 1 行ずつ取得します。`WHERE CURRENT OF` を使う位置付き UPDATE/DELETE では、先読みで
+> 進んだカーソル位置を自動的に巻き戻してから実行するため、論理的な「現在行」が更新/削除されます。
+
 ### PREPARE / EXECUTE
 
 ```cobol
@@ -328,6 +335,7 @@ dbname@host:port
 | `OCDB_DB_USER` | デフォルトのデータベースユーザー |
 | `OCDB_DB_PASS` | デフォルトのデータベースパスワード |
 | `OCDB_DB_CHAR` | データベース接続の文字エンコーディング |
+| `OCESQL4J_FETCH_RECORDS` | カーソルの先読み（バルクフェッチ）件数。1 回の `FETCH FORWARD` でまとめて取得する行数を指定する。既定値は 1（1 行ずつ取得）。0 以下や数値でない値は 1 として扱う。プロセス起動時に一度だけ読み取られる。 |
 
 ## コンパイル方法
 

@@ -106,10 +106,11 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 | クラス | 可視性 | 役割 |
 |---|---|---|
-| `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`connect`, `disconnect`, `exec`, `execWithParams`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback` を提供。 |
+| `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`connect`, `disconnect`, `exec`, `execWithParams`, `execWhereCurrentOf`, `execWithParamsWhereCurrentOf`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback` を提供。`execWhereCurrentOf` / `execWithParamsWhereCurrentOf` は `WHERE CURRENT OF` を含む文専用で、先読みで進んだカーソル位置を巻き戻してから実行する。 |
 | `SqlState` | package-private | 接続テーブル (`addConnection`/`getConnection`)、PREPARE テーブル、カーソルテーブルを保持する内部状態管理。 |
 | `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、デフォルト DB 名解決などを担う。 |
-| `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。 |
+| `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。先読み（バルクフェッチ）バッファと `overFetch` フラグも保持する。 |
+| `BulkFetchConfig` | package-private | 環境変数 `OCESQL4J_FETCH_RECORDS` から先読み件数を読み取り、プロセス内でキャッシュする。 |
 | `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。 |
 | `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。`HVARTYPE_*` enum によって分岐する。 |
 
@@ -126,6 +127,12 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 ### NULL 列の通知 (ECPG_MISSING_INDICATOR)
 
 ECPG 互換の `ECPG_MISSING_INDICATOR (-22002)` を `SQLCODE` として返す経路があり、ホスト変数側にインジケータが用意されていない状況で NULL を読もうとした場合に SQLCA 経由で通知します。JUnit テスト `CobolSqlTest`, `SqlCATest` に該当ケースが含まれます。
+
+### バルクフェッチ（先読み）と WHERE CURRENT OF の位置補正
+
+`SqlCursor.fetch` は、環境変数 `OCESQL4J_FETCH_RECORDS`（`BulkFetchConfig` がキャッシュ。既定 1）で指定した件数を 1 回の `FETCH FORWARD N FROM <cursor>` でまとめて取得し、`fetchBuffer` に保持します。以降の `fetchCursor` 呼び出しは、バッファを使い切るまで DB に問い合わせず 1 行ずつ供給し、使い切った時点で次の N 件を先読みします。これにより COBOL の N 回 FETCH に対する DB 往復を 1 回に集約します。既定値 1 のときは従来どおり 1 行ずつ取得します。COMMIT / ROLLBACK / CLOSE 時にはバッファをクリアします（`clearBuffer`）。
+
+先読みはサーバカーソルを実際の現在行より先へ進めるため、`WHERE CURRENT OF` を使う位置付き UPDATE/DELETE では論理的な現在行とずれます。これを補正するため `SqlCursor` は先読みで進めすぎた状態を `overFetch` フラグで記録し、`CobolSql.execWhereCurrentOf` / `execWithParamsWhereCurrentOf` は実行直前に `FETCH BACKWARD` でカーソル位置を巻き戻してから SQL を発行し、補正後は先読みバッファを無効化します（Open COBOL ESQL 4J の overFetch 補正と同じ挙動）。`codegen.c` の `joutput_exec_sql` は `WHERE CURRENT OF` を含む文をこれら専用 API へ振り分けます。
 
 ## テスト
 
