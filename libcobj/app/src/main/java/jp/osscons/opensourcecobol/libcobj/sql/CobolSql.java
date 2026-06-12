@@ -94,6 +94,9 @@ public final class CobolSql {
             }
             conn.close();
             SqlState.removeConnection(conn.getId());
+            // 接続クローズで PreparedStatement も閉じられるため、キャッシュを破棄する。
+            // 残すと再接続時に identity hashCode の再利用でクローズ済み statement を返す恐れがある。
+            stmtCache.clear();
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("DISCONNECT failed: {}", e.getMessage());
@@ -682,9 +685,26 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
-            cursor.open(sqlConn.getConnection(), params);
+            Connection conn = sqlConn.getConnection();
+            try (Statement sp = conn.createStatement()) {
+                sp.execute(SQL_SAVEPOINT);
+            }
+            try {
+                cursor.open(conn, params);
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_RELEASE_SAVEPOINT);
+                }
+            } catch (SQLException e) {
+                try (Statement sp = conn.createStatement()) {
+                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
+                } catch (SQLException ignored) {
+                    // rollback エラーは無視する
+                }
+                throw e;
+            }
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
+            LOG.error("OPEN CURSOR {} failed: {}", cursorName, e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
         }
     }

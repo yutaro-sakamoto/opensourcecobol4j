@@ -209,6 +209,18 @@ class SqlConnectionTest {
         assertEquals(" hello", m.invoke(null, " hello"), "Leading spaces should be preserved");
     }
 
+    @Test
+    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
+    void testStripTrailingSpaces_EmbeddedSpace() throws Exception {
+        Method m = SqlConnection.class.getDeclaredMethod("stripTrailingSpaces", String.class);
+        m.setAccessible(true);
+        // 値の途中の空白 (例: 空白を含むパスワード) は保持し、末尾のパディングのみ除去する
+        assertEquals(
+                "pass word",
+                m.invoke(null, "pass word   "),
+                "Embedded spaces should be preserved; only trailing padding is stripped");
+    }
+
     // ---------- connect() with real PostgreSQL ----------
 
     @Test

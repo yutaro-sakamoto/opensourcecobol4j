@@ -151,9 +151,11 @@ class SqlConnection {
         if (str == null) {
             return null;
         }
-        int end = str.indexOf(' ');
-        if (end <= 0) {
-            return str;
+        // COBOL の固定長フィールド由来の末尾空白のみ除去する。
+        // 値の途中に含まれる空白 (例: 空白を含むパスワード) は保持する。
+        int end = str.length();
+        while (end > 0 && str.charAt(end - 1) == ' ') {
+            end--;
         }
         return str.substring(0, end);
     }
