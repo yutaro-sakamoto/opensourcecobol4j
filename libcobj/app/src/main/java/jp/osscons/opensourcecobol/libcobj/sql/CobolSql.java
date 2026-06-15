@@ -148,7 +148,7 @@ public final class CobolSql {
                     stmt.execute(query);
                     int updateCount = stmt.getUpdateCount();
                     if (updateCount >= 0) {
-                        SqlCA.setErrd(sqlca, 2, updateCount);
+                        SqlCA.setRowCount(sqlca, updateCount);
                     }
                 }
                 SqlCA.setSuccess(sqlca);
@@ -201,7 +201,7 @@ public final class CobolSql {
             pstmt.execute();
             int updateCount = pstmt.getUpdateCount();
             if (updateCount >= 0) {
-                SqlCA.setErrd(sqlca, 2, updateCount);
+                SqlCA.setRowCount(sqlca, updateCount);
             }
 
             SqlCA.setSuccess(sqlca);
@@ -340,7 +340,7 @@ public final class CobolSql {
             rowCount++;
         } while (rs.next());
         rs.close();
-        SqlCA.setErrd(sqlca, 2, rowCount);
+        SqlCA.setRowCount(sqlca, rowCount);
         if (sawNullWithoutIndicator) {
             SqlCA.setMissingIndicator(sqlca);
         } else {
@@ -402,7 +402,7 @@ public final class CobolSql {
                 rowIndex++;
             } while (rs.next());
             rs.close();
-            SqlCA.setErrd(sqlca, 2, rowIndex);
+            SqlCA.setRowCount(sqlca, rowIndex);
             if (sawNullWithoutIndicator) {
                 SqlCA.setMissingIndicator(sqlca);
             } else {
@@ -722,7 +722,7 @@ public final class CobolSql {
             SqlCursor cursor = SqlState.getCursor(cursorName);
             if (cursor == null) {
                 // 未 DECLARE のカーソル: -602/34000 を返す (Open COBOL ESQL 4Jと同様)。
-                SqlCA.setErrd(sqlca, 2, 0);
+                SqlCA.setRowCount(sqlca, 0);
                 SqlCA.setError(
                         sqlca,
                         SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
@@ -767,7 +767,7 @@ public final class CobolSql {
                     }
                     rowCount++;
                 } while (rs.next());
-                SqlCA.setErrd(sqlca, 2, rowCount);
+                SqlCA.setRowCount(sqlca, rowCount);
                 if (sawNullWithoutIndicator) {
                     SqlCA.setMissingIndicator(sqlca);
                 } else {
@@ -776,7 +776,7 @@ public final class CobolSql {
             }
         } catch (SQLException e) {
             // フェッチ失敗時は取得行数 SQLERRD(3) を 0 にしてから PostgreSQL エラーを反映する。
-            SqlCA.setErrd(sqlca, 2, 0);
+            SqlCA.setRowCount(sqlca, 0);
             SqlCA.setResultFromException(sqlca, e);
         }
     }

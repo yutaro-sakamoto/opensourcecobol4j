@@ -197,6 +197,12 @@ final class SqlCA {
     }
 
     /**
+     * 処理行数を保持する SQLERRD の 0 始まりインデックス。COBOL では {@code SQLERRD(3)} に対応し、
+     * 直前の SQL 文が処理した行数 (INSERT/UPDATE/DELETE の影響行数、FETCH した行数など) が入る。
+     */
+    private static final int SQLERRD_INDEX_ROW_COUNT = 2;
+
+    /**
      * 6 個ある SQLERRD 診断値のうちの 1 つを設定する。
      *
      * @param sqlca SQLCA のデータストレージ
@@ -208,6 +214,16 @@ final class SqlCA {
             return;
         }
         sqlca.getSubDataStorage(OFFSET_SQLERRD + index * 4).set(value);
+    }
+
+    /**
+     * 直前の SQL 文が処理した行数を SQLERRD(3) に設定する。
+     *
+     * @param sqlca SQLCA のデータストレージ
+     * @param rowCount 処理した行数
+     */
+    static void setRowCount(CobolDataStorage sqlca, int rowCount) {
+        setErrd(sqlca, SQLERRD_INDEX_ROW_COUNT, rowCount);
     }
 
     /**

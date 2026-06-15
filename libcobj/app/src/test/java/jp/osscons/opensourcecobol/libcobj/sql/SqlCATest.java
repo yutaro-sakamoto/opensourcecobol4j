@@ -217,6 +217,22 @@ class SqlCATest {
                 () -> SqlCA.setErrd(null, 0, 42), "setErrd with null sqlca should not throw");
     }
 
+    // ---------- setRowCount ----------
+
+    @Test
+    void testSetRowCount_WritesSqlerrd3() {
+        SqlCA.setRowCount(sqlca, 42);
+        // SQLERRD(3) = 0 始まりインデックス 2 (オフセット 96 + 2*4 = 104)
+        int val = ByteBuffer.wrap(sqlca.getByteArray(96 + 2 * 4, 4)).getInt();
+        assertEquals(42, val, "setRowCount should write the processed row count to SQLERRD(3)");
+    }
+
+    @Test
+    void testSetRowCount_NullSqlca() {
+        assertDoesNotThrow(
+                () -> SqlCA.setRowCount(null, 1), "setRowCount with null sqlca should not throw");
+    }
+
     // ---------- setSuccess ----------
 
     @Test
