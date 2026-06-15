@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
@@ -34,7 +35,10 @@ public final class CobolSql {
     // aborted 状態のままにする。回復 (ROLLBACK の発行) は COBOL プログラムの責任で、
     // ロールバックするまで以降の文は SQLSTATE 25P02 で拒否される (ECPG / PostgreSQL と同じ)。
 
-    private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
+    // PreparedStatement のキャッシュ。接続ごとに、SQL 文字列をキーとして保持する。
+    // 接続はオブジェクト同一性 (identity) で、クエリは完全一致で照合するため、
+    // ハッシュ値の衝突で別のクエリの PreparedStatement を返す危険がない。
+    private static final ConcurrentHashMap<Connection, Map<String, PreparedStatement>> stmtCache =
             new ConcurrentHashMap<>();
 
     // -------------------------------------------------------
@@ -92,11 +96,12 @@ public final class CobolSql {
             } catch (SQLException ignored) {
                 // 切断時の commit エラーは無視する
             }
+            Connection jdbcConn = conn.getConnection();
             conn.close();
             SqlState.removeConnection(conn.getId());
-            // 接続クローズで PreparedStatement も閉じられるため、キャッシュを破棄する。
-            // 残すと再接続時に identity hashCode の再利用でクローズ済み statement を返す恐れがある。
-            stmtCache.clear();
+            // この接続でキャッシュした PreparedStatement を閉じてキャッシュから除く
+            // (クローズ済み statement の再利用を防ぐ)。
+            closeCachedStatements(jdbcConn);
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("DISCONNECT failed: {}", e.getMessage());
@@ -981,16 +986,30 @@ public final class CobolSql {
 
     private static PreparedStatement getOrCreatePreparedStatement(Connection conn, String query)
             throws SQLException {
-        String cacheKey =
-                Integer.toHexString(conn.hashCode()) + "-" + Integer.toHexString(query.hashCode());
-        return stmtCache.computeIfAbsent(
-                cacheKey,
-                k -> {
-                    try {
-                        return conn.prepareStatement(query);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        Map<String, PreparedStatement> perConnection =
+                stmtCache.computeIfAbsent(conn, c -> new ConcurrentHashMap<>());
+        PreparedStatement cached = perConnection.get(query);
+        if (cached != null) {
+            return cached;
+        }
+        // prepareStatement の SQLException はそのまま呼び出し元へ伝播させる。
+        PreparedStatement pstmt = conn.prepareStatement(query);
+        perConnection.put(query, pstmt);
+        return pstmt;
+    }
+
+    /** 指定した接続でキャッシュした PreparedStatement をすべて閉じ、キャッシュから取り除く。 */
+    private static void closeCachedStatements(Connection conn) {
+        Map<String, PreparedStatement> perConnection = stmtCache.remove(conn);
+        if (perConnection == null) {
+            return;
+        }
+        for (PreparedStatement pstmt : perConnection.values()) {
+            try {
+                pstmt.close();
+            } catch (SQLException ignored) {
+                // 既に閉じられている場合などのエラーは無視する
+            }
+        }
     }
 }
