@@ -391,8 +391,10 @@ class CobolSqlTest {
         CobolSql.rollback(sqlca);
         assertEquals(0, getSqlCode(), "ROLLBACK should recover the aborted transaction");
 
+        // ROLLBACK は (同一トランザクション内で作成した) uniq_test ごと巻き戻すため、
+        // 後始末は IF EXISTS で行う。
         try (Statement stmt = realConn.createStatement()) {
-            stmt.execute("DROP TABLE uniq_test");
+            stmt.execute("DROP TABLE IF EXISTS uniq_test");
         }
     }
 
