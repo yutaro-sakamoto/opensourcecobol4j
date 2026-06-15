@@ -180,7 +180,7 @@ For `WHERE CURRENT OF`, codegen does **not** put the cursor name into the SQL te
 
 On a JDBC `SQLException`, `SqlCA.setResultFromException` maps the exception's `SQLState` to an ECPG `SQLCODE` via `SqlCA.sqlStateToCode` and stores `e.getMessage()` into `SQLERRMC` (truncated to 70 bytes). Notable mappings: `02000` → `+100` (`ECPG_NOT_FOUND`), `08001`/`08003`/`28000`/`28P01` → `-402` (`ECPG_CONNECT`), `34000` → `-602`, `YE002` → `-212` (`ECPG_EMPTY`); any unrecognized state becomes `-9999` (`ECPG_UNKNOWN_ERROR`).
 
-Cursor anomaly handling is decided in the runtime rather than coming from PostgreSQL: OPEN / FETCH / CLOSE on an unregistered cursor returns `-602` / `34000`; a FETCH on a registered-but-unopened cursor (including one whose OPEN failed) also returns `-602` / `34000` without contacting PostgreSQL; CLOSE on a registered-but-unopened cursor returns success; and `WHERE CURRENT OF` against an unregistered cursor returns `ECPG_EMPTY` / `YE002`. Handling these locally keeps a failed OPEN (which aborts the transaction) from turning a following FETCH into a `25P02` ("transaction is aborted") result.
+Cursor anomaly handling is decided in the runtime rather than coming from PostgreSQL: OPEN / FETCH / CLOSE on an unregistered cursor returns `-602` / `34000`; CLOSE on a registered-but-unopened cursor returns success; and `WHERE CURRENT OF` against an unregistered cursor returns `ECPG_EMPTY` / `YE002`. A FETCH on a registered-but-unopened cursor (including one whose OPEN failed) is still sent to PostgreSQL: if the transaction is healthy it comes back as `cursor "..." does not exist`, and if a failed OPEN left the transaction aborted it comes back as `25P02`. Recovering (issuing `ROLLBACK`) is the COBOL program's responsibility.
 
 ## Tests
 
