@@ -154,11 +154,11 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 `SqlConnection.connect` は JDBC 接続を `setAutoCommit(true)` にしたうえで明示的に `BEGIN` を発行します。`COMMIT` / `ROLLBACK` のたび、および `DISCONNECT` 時には、`SqlState.clearCursors()`（サーバ側ポータルが消えるため全カーソルをクローズし先読みバッファを破棄する）と `SqlConnection.beginTransaction()` を呼び、次のトランザクションを開始します。これにより commit 間は常にトランザクションが有効な状態が保たれ、埋め込み文がトランザクションブロック内で実行される ECPG のセマンティクスに一致します。
 
-### 文の失敗時のエラー処理（文単位の SAVEPOINT は使わない）
+### 文の失敗時のエラー処理
 
-ランタイムは各文を SAVEPOINT で包み**ません**。文が失敗した場合は、エラーを SQLCA に記録し、トランザクションは aborted のままにします。回復（`ROLLBACK` の発行）は COBOL プログラムの責任です。これは、savepoint 定数を定義しつつ一切使用していない Open COBOL ESQL 4J の Scala ランタイムと一致し、また ECPG / PostgreSQL のセマンティクス（トランザクションブロック内でエラーが起きると、プログラムがロールバックするまで以降の文が SQLSTATE `25P02` (`in_failed_sql_transaction`) で拒否される）とも一致します。
+ランタイムはトランザクションを開いたまま（前述の「トランザクションモデル」参照）各埋め込み文を実行します。文が失敗すると、エラーを SQLCA（`SQLCODE` / `SQLSTATE` / `SQLERRMC`）に記録し、トランザクションは PostgreSQL の aborted 状態のままにします。ECPG / PostgreSQL と同様に、トランザクションが aborted になると、プログラムが `ROLLBACK`（または `COMMIT`）を発行するまで以降のすべての文が SQLSTATE `25P02`（`in_failed_sql_transaction`）で拒否されます。したがってエラーからの回復は COBOL プログラムの責任です。
 
-パラメータ付き文では、`getParameterMetaData`（JDBC の Describe）を `execute()` と同じ `try` 内で発行します。Describe が失敗した場合（例: テーブルが存在しない）はその例外がそのままハンドラへ伝播するため、SQLCA には `25P02` でマスクされた値ではなく真のエラー（例: `42P01`）が記録されます。
+パラメータ付き文では、JDBC の Describe（`getParameterMetaData`）を `execute()` と同じ `try` ブロック内で実行します。そのため Describe の失敗（例: テーブル不在）はそのままエラーハンドラへ伝播し、SQLCA には真のエラー（例: `42P01`）が記録されます。
 
 ### prepared statement のキャッシュ (`stmtCache`)
 

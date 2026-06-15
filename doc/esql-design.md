@@ -156,11 +156,11 @@ Because pre-reading advances the server-side cursor past the actual current row,
 
 `SqlConnection.connect` puts the JDBC connection into `setAutoCommit(true)` and then issues an explicit `BEGIN`. After every `COMMIT`, `ROLLBACK`, and on `DISCONNECT`, the runtime calls `SqlState.clearCursors()` (which closes all cursors and discards their pre-read buffers, since the server-side portals no longer exist) and `SqlConnection.beginTransaction()` to open the next transaction. This keeps a transaction always active between commits, matching ECPG semantics where embedded statements run inside a transaction block.
 
-### Error handling on statement failure (no per-statement SAVEPOINT)
+### Error handling on statement failure
 
-The runtime does **not** wrap statements in per-statement SAVEPOINTs. When a statement fails, the runtime records the error into the SQLCA and leaves the transaction in its aborted state; recovery (issuing `ROLLBACK`) is the COBOL program's responsibility. This matches both Open COBOL ESQL 4J (whose Scala runtime defines but never uses savepoint constants) and ECPG / PostgreSQL semantics, where after an error inside a transaction block all subsequent statements are rejected with SQLSTATE `25P02` (`in_failed_sql_transaction`) until the program rolls back.
+The runtime keeps a transaction open (see *Transaction model* above) and runs each embedded statement inside it. When a statement fails, the runtime records the error into the SQLCA (`SQLCODE` / `SQLSTATE` / `SQLERRMC`) and leaves the transaction in PostgreSQL's aborted state. As in ECPG / PostgreSQL, once a transaction is aborted every subsequent statement is rejected with SQLSTATE `25P02` (`in_failed_sql_transaction`) until the program issues `ROLLBACK` (or `COMMIT`); recovering from an error is therefore the COBOL program's responsibility.
 
-For parameterized statements, `getParameterMetaData` (the JDBC Describe) is issued inside the same `try` as `execute()`; if Describe fails (e.g. a missing table) its exception propagates directly to the handler, so the SQLCA reports the real error (e.g. `42P01`) rather than a masked `25P02`.
+For parameterized statements, the JDBC Describe (`getParameterMetaData`) runs in the same `try` block as `execute()`, so a Describe failure (for example, a missing table) propagates directly to the error handler and the SQLCA reports the real error (e.g. `42P01`).
 
 ### Prepared-statement cache (`stmtCache`)
 

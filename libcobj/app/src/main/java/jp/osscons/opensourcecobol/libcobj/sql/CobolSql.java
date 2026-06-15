@@ -30,9 +30,9 @@ public final class CobolSql {
         return s.replaceAll("\\s+", " ").trim();
     }
 
-    // 文ごとの SAVEPOINT による隔離は行わない。Open COBOL ESQL 4J および ECPG と同様に、
-    // 文が失敗した場合はトランザクションを aborted のままにし、回復 (ROLLBACK) は
-    // COBOL プログラムの責任とする。
+    // 文が失敗した場合はエラーを SQLCA に記録し、トランザクションは PostgreSQL の
+    // aborted 状態のままにする。回復 (ROLLBACK の発行) は COBOL プログラムの責任で、
+    // ロールバックするまで以降の文は SQLSTATE 25P02 で拒否される (ECPG / PostgreSQL と同じ)。
 
     private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
             new ConcurrentHashMap<>();
