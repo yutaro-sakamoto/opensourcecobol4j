@@ -679,9 +679,18 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
-            // 登録済みだが OPEN に失敗した (未 OPEN の) カーソルでも短絡せず FETCH を実行する。
-            // PostgreSQL が cursor "..." does not exist 等のエラーを返し、その SQLSTATE と
-            // メッセージが下の catch 経由で SQLCA に格納される (Open COBOL ESQL 4Jの挙動に合わせる)。
+            if (!cursor.isOpened) {
+                // 登録済みだが未 OPEN (OPEN 失敗を含む) のカーソルへの FETCH は、PostgreSQL に
+                // 問い合わせず -602/34000 をローカルで返す (CLOSE の未 OPEN 扱いと対称。
+                // Open COBOL ESQL 4J と同じ)。OPEN 失敗で aborted になったトランザクションへ
+                // FETCH を送って 25P02 に化けるのを避ける。
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not open: " + cursorName);
+                return;
+            }
             LOG.trace("FETCH CURSOR {}", cursorName);
             // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
             // ある場合、fetch() が ECPG_MISSING_INDICATOR で上書きすることがある。
@@ -729,13 +738,21 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
+            if (!cursor.isOpened) {
+                // 未 OPEN のカーソルへの FETCH は -602/34000 をローカルで返す (単一行 FETCH と対称)。
+                SqlCA.setErrd(sqlca, 2, 0);
+                SqlCA.setError(
+                        sqlca,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                        "34000",
+                        "Cursor not open: " + cursorName);
+                return;
+            }
             // OCCURS への複数行 FETCH は単一行 FETCH の先読みバッファを使わず、直接
             // FETCH FORWARD occursMax を発行する (Open COBOL ESQL 4J の FetchOccurs と同じ)。
             // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
             // 食い違うため、ここで破棄しておく。
             cursor.clearBuffer();
-            // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を実行し、PostgreSQL の
-            // エラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4Jの挙動に合わせる)。
             Connection conn = sqlConn.getConnection();
             String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursor.name;
             try (Statement stmt = conn.createStatement();

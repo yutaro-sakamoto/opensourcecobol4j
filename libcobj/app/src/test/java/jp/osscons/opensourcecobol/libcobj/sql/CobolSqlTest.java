@@ -386,6 +386,11 @@ class CobolSqlTest {
                 getSqlCode(),
                 "Duplicate key should return ECPG_DUPLICATE_KEY");
 
+        // 文が失敗するとトランザクションは aborted のままになる (文単位の SAVEPOINT 隔離は
+        // 行わない)。回復するには COBOL プログラム同様に ROLLBACK が必要。
+        CobolSql.rollback(sqlca);
+        assertEquals(0, getSqlCode(), "ROLLBACK should recover the aborted transaction");
+
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE uniq_test");
         }

@@ -178,7 +178,7 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で ECPG の `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`ECPG_NOT_FOUND`）、`08001`/`08003`/`28000`/`28P01` → `-402`（`ECPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`ECPG_EMPTY`）。認識できない状態はすべて `-9999`（`ECPG_UNKNOWN_ERROR`）になります。
 
-カーソルの異常系は PostgreSQL からではなくランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `ECPG_EMPTY` / `YE002` を返します。登録済みだが未 OPEN のカーソルへの FETCH はそのまま PostgreSQL に送られ、その実際の `SQLSTATE` / メッセージが `setResultFromException` 経由で戻ります。
+カーソルの異常系は PostgreSQL からではなくランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソル（OPEN に失敗したものを含む）への FETCH も PostgreSQL に問い合わせず `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `ECPG_EMPTY` / `YE002` を返します。これらをローカルで判定することで、OPEN 失敗（トランザクションを abort させる）の直後の FETCH が `25P02`（トランザクションが abort 済み）に化けるのを防ぎます。
 
 ## テスト
 
