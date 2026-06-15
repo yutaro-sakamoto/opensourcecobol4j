@@ -32,7 +32,7 @@ public final class CobolSql {
 
     // 文が失敗した場合はエラーを SQLCA に記録し、トランザクションは PostgreSQL の
     // aborted 状態のままにする。回復 (ROLLBACK の発行) は COBOL プログラムの責任で、
-    // ロールバックするまで以降の文は SQLSTATE 25P02 で拒否される (PostgreSQL と同じ)。
+    // ロールバックするまで以降の文は SQLSTATE 25P02 で拒否される (ECPG / PostgreSQL と同じ)。
 
     private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
             new ConcurrentHashMap<>();
@@ -69,7 +69,7 @@ public final class CobolSql {
             SqlCA.setResultFromException(sqlca, e);
         } catch (Exception e) {
             LOG.error("CONNECT failed: {}", e.getMessage());
-            SqlCA.setError(sqlca, SqlCA.OCPG_CONNECT, "08001", e.getMessage());
+            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", e.getMessage());
         }
     }
 
@@ -82,7 +82,7 @@ public final class CobolSql {
         try {
             SqlConnection conn = SqlState.getDefaultConnection();
             if (conn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             LOG.debug("DISCONNECT (id={})", conn.getId());
@@ -117,13 +117,13 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();
 
             if (query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
 
@@ -174,13 +174,13 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();
 
             if (query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
 
@@ -264,13 +264,13 @@ public final class CobolSql {
             CobolDataStorage sqlca, String query, String cursorName) {
         SqlConnection sqlConn = SqlState.getDefaultConnection();
         if (sqlConn == null) {
-            SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+            SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
             return null;
         }
         SqlCursor cursor = SqlState.getCursor(cursorName);
         if (cursor == null) {
             // 未登録カーソル（Open COBOL ESQL 4J は OCDB_EMPTY を返す）。
-            SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Cursor not found: " + cursorName);
+            SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Cursor not found: " + cursorName);
             return null;
         }
         try {
@@ -309,7 +309,7 @@ public final class CobolSql {
             CobolDataStorage sqlca)
             throws SQLException {
         if (rs == null || !rs.next()) {
-            SqlCA.setCode(sqlca, SqlCA.OCPG_NOT_FOUND);
+            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
             SqlCA.setState(sqlca, "02000");
             SqlCA.clearErrmc(sqlca);
             if (rs != null) {
@@ -352,7 +352,7 @@ public final class CobolSql {
             ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
         if (rs == null || !rs.next()) {
-            SqlCA.setCode(sqlca, SqlCA.OCPG_NOT_FOUND);
+            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
             SqlCA.setState(sqlca, "02000");
             SqlCA.clearErrmc(sqlca);
             if (rs != null) {
@@ -447,13 +447,13 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();
 
             if (query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
 
@@ -499,12 +499,12 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();
             if (query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
 
@@ -541,21 +541,21 @@ public final class CobolSql {
     public static void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
         try {
             if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty cursor name or query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
             LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
-                        sqlca, SqlCA.OCPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
+                        sqlca, SqlCA.ECPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
                 return;
             }
             SqlCursor cursor = new SqlCursor(cursorName, query, 0);
             SqlState.addCursor(cursorName, cursor);
             SqlCA.setSuccess(sqlca);
         } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.OCPG_PGSQL, "     ", e.getMessage());
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
         }
     }
 
@@ -571,13 +571,13 @@ public final class CobolSql {
             CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField... params) {
         try {
             if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty cursor name or query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
-                        sqlca, SqlCA.OCPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
+                        sqlca, SqlCA.ECPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
                 return;
             }
             SqlCursor cursor = new SqlCursor(cursorName, query, params != null ? params.length : 0);
@@ -585,7 +585,7 @@ public final class CobolSql {
             SqlState.addCursor(cursorName, cursor);
             SqlCA.setSuccess(sqlca);
         } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.OCPG_PGSQL, "     ", e.getMessage());
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
         }
     }
 
@@ -599,14 +599,14 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
             if (cursor == null) {
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
                 return;
@@ -633,14 +633,14 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
             if (cursor == null) {
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
                 return;
@@ -665,7 +665,7 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
@@ -674,7 +674,7 @@ public final class CobolSql {
                 // -602/34000 を返す (Open-COBOL-ESQL-4J も未登録カーソルは同様)。
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
                 return;
@@ -685,11 +685,11 @@ public final class CobolSql {
             // SQLCA に格納される。回復するかどうか (ROLLBACK) は COBOL プログラムの責任。
             LOG.trace("FETCH CURSOR {}", cursorName);
             // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
-            // ある場合、fetch() が OCPG_MISSING_INDICATOR で上書きすることがある。
+            // ある場合、fetch() が ECPG_MISSING_INDICATOR で上書きすることがある。
             SqlCA.setSuccess(sqlca);
             boolean hasRow = cursor.fetch(sqlConn.getConnection(), resultParams, sqlca);
             if (!hasRow) {
-                SqlCA.setCode(sqlca, SqlCA.OCPG_NOT_FOUND);
+                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
                 SqlCA.setState(sqlca, "02000");
                 SqlCA.clearErrmc(sqlca);
             }
@@ -716,7 +716,7 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
@@ -725,7 +725,7 @@ public final class CobolSql {
                 SqlCA.setErrd(sqlca, 2, 0);
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
                 return;
@@ -791,7 +791,7 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             SqlCursor cursor = SqlState.getCursor(cursorName);
@@ -799,7 +799,7 @@ public final class CobolSql {
                 // 未 DECLARE のカーソル: -602/34000 を返す (Open COBOL ESQL 4Jと同様)。
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                        SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                         "34000",
                         "Cursor not found: " + cursorName);
                 return;
@@ -831,7 +831,7 @@ public final class CobolSql {
             CobolDataStorage sqlca, String stmtName, AbstractCobolField queryField) {
         try {
             if (stmtName == null || stmtName.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty statement name");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty statement name");
                 return;
             }
             String query;
@@ -844,11 +844,11 @@ public final class CobolSql {
                 // 固定長フィールドだけでなく、適切な `PIC X(n) VARYING` のホスト変数でも動作する。
                 query = CobolDataConverter.cobolToString(queryField).trim();
             } else {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
             if (query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_EMPTY, "YE002", "Empty query");
+                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty query");
                 return;
             }
 
@@ -876,7 +876,7 @@ public final class CobolSql {
             SqlState.addPrepared(stmtName, replaced.toString(), nParams);
             SqlCA.setSuccess(sqlca);
         } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.OCPG_PGSQL, "     ", e.getMessage());
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
         }
     }
 
@@ -894,7 +894,7 @@ public final class CobolSql {
             if (prepared == null) {
                 SqlCA.setError(
                         sqlca,
-                        SqlCA.OCPG_INVALID_STMT,
+                        SqlCA.ECPG_INVALID_STMT,
                         "26000",
                         "Statement not found: " + stmtName);
                 return;
@@ -907,7 +907,7 @@ public final class CobolSql {
                 exec(sqlca, query);
             }
         } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.OCPG_PGSQL, "     ", e.getMessage());
+            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
         }
     }
 
@@ -923,7 +923,7 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();
@@ -947,7 +947,7 @@ public final class CobolSql {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
-                SqlCA.setError(sqlca, SqlCA.OCPG_NO_CONN, "08003", "No connection");
+                SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
             Connection conn = sqlConn.getConnection();

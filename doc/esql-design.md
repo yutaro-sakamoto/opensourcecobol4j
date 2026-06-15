@@ -129,7 +129,7 @@ For `SELECT INTO` / `FETCH`, `esql_build_and_resolve()` checks whether the leaf 
 | `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; falls back to the `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` environment variables when a value is empty; sets the connection encoding from `OCDB_DB_CHAR` (default `UTF-8`); strips each value at its first embedded space (`stripTrailingSpaces`); runs in autocommit mode with an explicit `BEGIN` per transaction (`beginTransaction`). |
 | `SqlCursor` | package-private | Holds cursor state (open/closed), `ResultSet`, `PreparedStatement`. Also holds the pre-read (bulk fetch) buffer and the `overFetch` flag. A cursor may be DECLAREd from either an inline `SELECT` or a previously PREPAREd statement name. |
 | `BulkFetchConfig` | package-private | Reads the pre-read count from the `OCESQL4J_FETCH_RECORDS` environment variable and caches it for the process. |
-| `SqlCA` | package-private | Writes SQLCA fields (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) back into the corresponding `CobolDataStorage`. Maps a JDBC `SQLState` to a `SQLCODE` via `sqlStateToCode`. |
+| `SqlCA` | package-private | Writes SQLCA fields (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) back into the corresponding `CobolDataStorage`. Maps a JDBC `SQLState` to an ECPG code via `sqlStateToCode`. |
 | `CobolDataConverter` | package-private | Converts between `AbstractCobolField` and JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx`. Dispatches on the COBOL field type: numeric (display), packed decimal (COMP-3, signed/unsigned), native binary (COMP-5), float/double, alphanumeric / group, national (`PIC N`), and alphanumeric / Japanese `VARYING` (4-byte big-endian length header + data). National and Japanese values are converted through SHIFT-JIS. |
 
 All classes except `CobolSql` are package-private. They appear as SLF4J logger names but are not part of the external API.
@@ -142,9 +142,9 @@ Host variables arrive from generated Java as `AbstractCobolField[]`. Because the
 
 `parser.y` calls `esql_inject_sqlca()` (in `cobj/esql.c`) to inject `01 SQLCA GLOBAL.` into the WORKING-STORAGE the first time an actual embedded SQL statement is seen, even without an explicit `EXEC SQL INCLUDE SQLCA`. Injection happens only for programs that contain a real `EXEC SQL` statement; a program with only `EXEC SQL INCLUDE SQLCA` or `BEGIN/END DECLARE SECTION` and no executable SQL gets no SQLCA. When an explicit `EXEC SQL INCLUDE SQLCA END-EXEC` is absent (tracked via `cb_sqlca_include_seen`, set during preprocessing in `pplex.l.m4`), `cobj` emits a compile-time warning. `SQLERRD OCCURS 6` becomes one of the fields that codegen wires up via `b_SQLERRD__SQLCA.getSubDataStorage(...)`.
 
-### NULL column notification (`OCPG_MISSING_INDICATOR`)
+### NULL column notification (`ECPG_MISSING_INDICATOR`)
 
-The runtime returns `SQLCODE = -213` / `SQLSTATE = 22002` (`OCPG_MISSING_INDICATOR`) when a NULL column is read into a host variable without an indicator variable. In `SqlCA.java`, `OCPG_MISSING_INDICATOR = -213` and `setMissingIndicator()` sets the state to `22002`. The COBOL field itself is still written (zero-filled), so the row counts as processed. The JUnit suites `CobolSqlTest` and `SqlCATest` cover the relevant cases.
+Compatible with ECPG, the runtime returns `SQLCODE = -213` / `SQLSTATE = 22002` (`ECPG_MISSING_INDICATOR`) when a NULL column is read into a host variable without an indicator variable. In `SqlCA.java`, `ECPG_MISSING_INDICATOR = -213` and `setMissingIndicator()` sets the state to `22002`. The COBOL field itself is still written (zero-filled), so the row counts as processed. The JUnit suites `CobolSqlTest` and `SqlCATest` cover the relevant cases.
 
 ### Bulk fetch (pre-read) and WHERE CURRENT OF position correction
 
@@ -154,11 +154,11 @@ Because pre-reading advances the server-side cursor past the actual current row,
 
 ### Transaction model
 
-`SqlConnection.connect` puts the JDBC connection into `setAutoCommit(true)` and then issues an explicit `BEGIN`. After every `COMMIT`, `ROLLBACK`, and on `DISCONNECT`, the runtime calls `SqlState.clearCursors()` (which closes all cursors and discards their pre-read buffers, since the server-side portals no longer exist) and `SqlConnection.beginTransaction()` to open the next transaction. This keeps a transaction always active between commits, so embedded statements run inside a transaction block.
+`SqlConnection.connect` puts the JDBC connection into `setAutoCommit(true)` and then issues an explicit `BEGIN`. After every `COMMIT`, `ROLLBACK`, and on `DISCONNECT`, the runtime calls `SqlState.clearCursors()` (which closes all cursors and discards their pre-read buffers, since the server-side portals no longer exist) and `SqlConnection.beginTransaction()` to open the next transaction. This keeps a transaction always active between commits, matching ECPG semantics where embedded statements run inside a transaction block.
 
 ### Error handling on statement failure
 
-The runtime keeps a transaction open (see *Transaction model* above) and runs each embedded statement inside it. When a statement fails, the runtime records the error into the SQLCA (`SQLCODE` / `SQLSTATE` / `SQLERRMC`) and leaves the transaction in PostgreSQL's aborted state. As in PostgreSQL, once a transaction is aborted every subsequent statement is rejected with SQLSTATE `25P02` (`in_failed_sql_transaction`) until the program issues `ROLLBACK` (or `COMMIT`); recovering from an error is therefore the COBOL program's responsibility.
+The runtime keeps a transaction open (see *Transaction model* above) and runs each embedded statement inside it. When a statement fails, the runtime records the error into the SQLCA (`SQLCODE` / `SQLSTATE` / `SQLERRMC`) and leaves the transaction in PostgreSQL's aborted state. As in ECPG / PostgreSQL, once a transaction is aborted every subsequent statement is rejected with SQLSTATE `25P02` (`in_failed_sql_transaction`) until the program issues `ROLLBACK` (or `COMMIT`); recovering from an error is therefore the COBOL program's responsibility.
 
 For parameterized statements, the JDBC Describe (`getParameterMetaData`) runs in the same `try` block as `execute()`, so a Describe failure (for example, a missing table) propagates directly to the error handler and the SQLCA reports the real error (e.g. `42P01`).
 
@@ -178,11 +178,9 @@ For `WHERE CURRENT OF`, codegen does **not** put the cursor name into the SQL te
 
 ### Error mapping
 
-On a JDBC `SQLException`, `SqlCA.setResultFromException` maps the exception's `SQLState` to a `SQLCODE` via `SqlCA.sqlStateToCode` and stores `e.getMessage()` into `SQLERRMC` (truncated to 70 bytes). Notable mappings: `02000` → `+100` (`OCPG_NOT_FOUND`), `08001`/`08003` → `-402` (`OCPG_CONNECT`), `34000` → `-602`, `YE002` → `-212` (`OCPG_EMPTY`); any unrecognized state becomes `-9999` (`OCPG_UNKNOWN_ERROR`).
+On a JDBC `SQLException`, `SqlCA.setResultFromException` maps the exception's `SQLState` to an ECPG `SQLCODE` via `SqlCA.sqlStateToCode` and stores `e.getMessage()` into `SQLERRMC` (truncated to 70 bytes). Notable mappings: `02000` → `+100` (`ECPG_NOT_FOUND`), `08001`/`08003` → `-402` (`ECPG_CONNECT`), `34000` → `-602`, `YE002` → `-212` (`ECPG_EMPTY`); any unrecognized state becomes `-9999` (`ECPG_UNKNOWN_ERROR`).
 
-The `OCPG_*` codes and the `SQLSTATE`→`SQLCODE` mapping match Open COBOL ESQL 4J. The only remaining behavioral difference follows from the transaction model rather than the mapping table: a FETCH issued on a cursor whose OPEN failed runs on the still-aborted transaction and reports the `25P02`-derived `-9999`. Open COBOL ESQL 4J's result for that case is not consistent across its own test suite (`-9999` in some scenarios, `-212` in others), so this runtime always reports the internally consistent `-9999`.
-
-Cursor anomaly handling is decided in the runtime rather than coming from PostgreSQL: OPEN / FETCH / CLOSE on an unregistered cursor returns `-602` / `34000`; CLOSE on a registered-but-unopened cursor returns success; and `WHERE CURRENT OF` against an unregistered cursor returns `OCPG_EMPTY` / `YE002`. A FETCH on a registered-but-unopened cursor (including one whose OPEN failed) is still sent to PostgreSQL: if the transaction is healthy it comes back as `cursor "..." does not exist`, and if a failed OPEN left the transaction aborted it comes back as `25P02`. Recovering (issuing `ROLLBACK`) is the COBOL program's responsibility.
+Cursor anomaly handling is decided in the runtime rather than coming from PostgreSQL: OPEN / FETCH / CLOSE on an unregistered cursor returns `-602` / `34000`; CLOSE on a registered-but-unopened cursor returns success; and `WHERE CURRENT OF` against an unregistered cursor returns `ECPG_EMPTY` / `YE002`. A FETCH on a registered-but-unopened cursor (including one whose OPEN failed) is still sent to PostgreSQL: if the transaction is healthy it comes back as `cursor "..." does not exist`, and if a failed OPEN left the transaction aborted it comes back as `25P02`. Recovering (issuing `ROLLBACK`) is the COBOL program's responsibility.
 
 ## Tests
 

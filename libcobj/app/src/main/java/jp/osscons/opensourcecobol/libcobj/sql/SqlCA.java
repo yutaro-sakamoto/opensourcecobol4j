@@ -23,100 +23,100 @@ final class SqlCA {
     private static final int OFFSET_SQLSTATE = 128; // 5 バイト
 
     /** エラーなし。 */
-    static final int OCPG_NO_ERROR = 0;
+    static final int ECPG_NO_ERROR = 0;
 
     /** 行が見つからない (SQLSTATE 02000)。 */
-    static final int OCPG_NOT_FOUND = 100;
+    static final int ECPG_NOT_FOUND = 100;
 
     /** メモリ不足。 */
-    static final int OCPG_OUT_OF_MEMORY = -12;
+    static final int ECPG_OUT_OF_MEMORY = -12;
 
     /** 未対応の機能。 */
-    static final int OCPG_UNSUPPORTED = -200;
+    static final int ECPG_UNSUPPORTED = -200;
 
     /** ホスト変数の引数が多すぎる。 */
-    static final int OCPG_TOO_MANY_ARGUMENTS = -201;
+    static final int ECPG_TOO_MANY_ARGUMENTS = -201;
 
     /** ホスト変数の引数が少なすぎる。 */
-    static final int OCPG_TOO_FEW_ARGUMENTS = -202;
+    static final int ECPG_TOO_FEW_ARGUMENTS = -202;
 
     /** 一致する行が多すぎる。 */
-    static final int OCPG_TOO_MANY_MATCHES = -203;
+    static final int ECPG_TOO_MANY_MATCHES = -203;
 
     /** データ形式エラー。 */
-    static final int OCPG_DATA_FORMAT_ERROR = -204;
+    static final int ECPG_DATA_FORMAT_ERROR = -204;
 
     /** 空のクエリまたは文。 */
-    static final int OCPG_EMPTY = -212;
+    static final int ECPG_EMPTY = -212;
 
     /** 指標変数が指定されていない。 */
-    static final int OCPG_MISSING_INDICATOR = -213;
+    static final int ECPG_MISSING_INDICATOR = -213;
 
     /** 有効な接続がない。 */
-    static final int OCPG_NO_CONN = -220;
+    static final int ECPG_NO_CONN = -220;
 
     /** 未接続。 */
-    static final int OCPG_NOT_CONN = -221;
+    static final int ECPG_NOT_CONN = -221;
 
     /** 不正な準備済みステートメント。 */
-    static final int OCPG_INVALID_STMT = -230;
+    static final int ECPG_INVALID_STMT = -230;
 
     /** Informix 互換の一意キー違反エラー。 */
-    static final int OCPG_INFORMIX_DUPLICATE_KEY = -239;
+    static final int ECPG_INFORMIX_DUPLICATE_KEY = -239;
 
     /** 不明なデスクリプタ。 */
-    static final int OCPG_UNKNOWN_DESCRIPTOR = -240;
+    static final int ECPG_UNKNOWN_DESCRIPTOR = -240;
 
     /** 不正なデスクリプタインデックス。 */
-    static final int OCPG_INVALID_DESCRIPTOR_INDEX = -241;
+    static final int ECPG_INVALID_DESCRIPTOR_INDEX = -241;
 
     /** 不明なデスクリプタ項目。 */
-    static final int OCPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
+    static final int ECPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
 
     /** 変数が数値型でない。 */
-    static final int OCPG_VAR_NOT_NUMERIC = -243;
+    static final int ECPG_VAR_NOT_NUMERIC = -243;
 
     /** 変数が文字型でない。 */
-    static final int OCPG_VAR_NOT_CHAR = -244;
+    static final int ECPG_VAR_NOT_CHAR = -244;
 
     /** Informix 互換の副問い合わせが 2 行以上を返した。 */
-    static final int OCPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
+    static final int ECPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
 
     /** PostgreSQL バックエンドエラー。 */
-    static final int OCPG_PGSQL = -400;
+    static final int ECPG_PGSQL = -400;
 
     /** トランザクションエラー。 */
-    static final int OCPG_TRANS = -401;
+    static final int ECPG_TRANS = -401;
 
     /** 接続エラー。 */
-    static final int OCPG_CONNECT = -402;
+    static final int ECPG_CONNECT = -402;
 
     /** 一意キー違反。 */
-    static final int OCPG_DUPLICATE_KEY = -403;
+    static final int ECPG_DUPLICATE_KEY = -403;
 
     /** 副問い合わせが 2 行以上を返した。 */
-    static final int OCPG_SUBSELECT_NOT_ONE = -404;
+    static final int ECPG_SUBSELECT_NOT_ONE = -404;
 
     /** 不明なカーソル (ポータル)。 */
-    static final int OCPG_WARNING_UNKNOWN_PORTAL = -602;
+    static final int ECPG_WARNING_UNKNOWN_PORTAL = -602;
 
     /** 既にトランザクション中。 */
-    static final int OCPG_WARNING_IN_TRANSACTION = -603;
+    static final int ECPG_WARNING_IN_TRANSACTION = -603;
 
     /** 有効なトランザクションがない。 */
-    static final int OCPG_WARNING_NO_TRANSACTION = -604;
+    static final int ECPG_WARNING_NO_TRANSACTION = -604;
 
     /** カーソル (ポータル) が既に存在する。 */
-    static final int OCPG_WARNING_PORTAL_EXISTS = -605;
+    static final int ECPG_WARNING_PORTAL_EXISTS = -605;
 
     /** ロックエラー。 */
-    static final int OCPG_LOCK_ERROR = -606;
+    static final int ECPG_LOCK_ERROR = -606;
 
     /** JDD (Java Database Driver) エラー。 */
-    static final int OCPG_JDD_ERROR = -607;
+    static final int ECPG_JDD_ERROR = -607;
 
     /** 認識できないエラー。 */
-    static final int OCPG_UNKNOWN_ERROR = -9999;
+    static final int ECPG_UNKNOWN_ERROR = -9999;
 
     /**
      * SQLCA 構造体の SQLCODE フィールドを設定する。
@@ -239,7 +239,7 @@ final class SqlCA {
         if (sqlca == null) {
             return;
         }
-        setCode(sqlca, OCPG_NO_ERROR);
+        setCode(sqlca, ECPG_NO_ERROR);
         setState(sqlca, "00000");
         sqlca.getSubDataStorage(OFFSET_SQLERRML).set((short) 0);
     }
@@ -253,23 +253,23 @@ final class SqlCA {
         if (sqlca == null) {
             return;
         }
-        setCode(sqlca, OCPG_NO_ERROR);
+        setCode(sqlca, ECPG_NO_ERROR);
         setState(sqlca, "00000");
         clearErrmc(sqlca);
     }
 
     /**
-     * SQLCA を OCPG_MISSING_INDICATOR に設定する (sqlcode=-213, sqlstate="22002")。
+     * SQLCA を ECPG_MISSING_INDICATOR に設定する (sqlcode=-213, sqlstate="22002")。
      *
      * <p>「指標変数なしの NULL 値」を通知する。これは、フェッチした列が SQL NULL であり、
-     * かつホスト変数に対応する指標変数がない場合の標準的な動作である。COBOL フィールド
+     * かつホスト変数に対応する指標変数がない場合の ECPG 標準の動作である。COBOL フィールド
      * 自体には依然として値が書き込まれる (通常はゼロ埋め) ため行は処理済みとみなされる。
      * アプリケーション側のコードは FETCH/SELECT の後に SQLCODE/SQLSTATE を確認することが想定されている。
      *
      * @param sqlca SQLCA のデータストレージ
      */
     static void setMissingIndicator(CobolDataStorage sqlca) {
-        setError(sqlca, OCPG_MISSING_INDICATOR, "22002", "Null value without indicator");
+        setError(sqlca, ECPG_MISSING_INDICATOR, "22002", "Null value without indicator");
     }
 
     /**
@@ -290,7 +290,7 @@ final class SqlCA {
     }
 
     /**
-     * SQLException から SQLCA を設定し、SQLSTATE をエラーコードにマッピングする。
+     * SQLException から SQLCA を設定し、SQLSTATE を ECPG エラーコードにマッピングする。
      *
      * @param sqlca SQLCA のデータストレージ
      * @param e SQL 例外
@@ -312,45 +312,45 @@ final class SqlCA {
     }
 
     /**
-     * 5 文字の SQLSTATE 文字列を対応するエラーコードにマッピングする。
+     * 5 文字の SQLSTATE 文字列を対応する ECPG エラーコードにマッピングする。
      *
      * @param sqlState SQLSTATE 文字列
-     * @return エラーコード定数
+     * @return ECPG エラーコード定数
      */
     static int sqlStateToCode(String sqlState) {
         if (sqlState == null) {
-            return OCPG_UNKNOWN_ERROR;
+            return ECPG_UNKNOWN_ERROR;
         }
         switch (sqlState) {
             case "00000":
-                return OCPG_NO_ERROR;
+                return ECPG_NO_ERROR;
             case "02000":
-                return OCPG_NOT_FOUND;
+                return ECPG_NOT_FOUND;
             case "YE002":
-                return OCPG_EMPTY;
+                return ECPG_EMPTY;
             case "08001":
             case "08003":
-                return OCPG_CONNECT;
+                return ECPG_CONNECT;
             case "08007":
-                return OCPG_TRANS;
+                return ECPG_TRANS;
             case "21000":
-                return OCPG_SUBSELECT_NOT_ONE;
+                return ECPG_SUBSELECT_NOT_ONE;
             case "23505":
-                return OCPG_DUPLICATE_KEY;
+                return ECPG_DUPLICATE_KEY;
             case "25001":
-                return OCPG_WARNING_IN_TRANSACTION;
+                return ECPG_WARNING_IN_TRANSACTION;
             case "25P01":
-                return OCPG_WARNING_NO_TRANSACTION;
+                return ECPG_WARNING_NO_TRANSACTION;
             case "34000":
-                return OCPG_WARNING_UNKNOWN_PORTAL;
+                return ECPG_WARNING_UNKNOWN_PORTAL;
             case "42804":
-                return OCPG_DATA_FORMAT_ERROR;
+                return ECPG_DATA_FORMAT_ERROR;
             case "42P03":
-                return OCPG_WARNING_PORTAL_EXISTS;
+                return ECPG_WARNING_PORTAL_EXISTS;
             case "55P03":
-                return OCPG_PGSQL;
+                return ECPG_PGSQL;
             default:
-                return OCPG_UNKNOWN_ERROR;
+                return ECPG_UNKNOWN_ERROR;
         }
     }
 }

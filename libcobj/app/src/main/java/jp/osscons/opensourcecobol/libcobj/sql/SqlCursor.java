@@ -119,9 +119,9 @@ class SqlCursor {
      * このカーソルから次の行をフェッチし、結果を COBOL のホスト変数へ書き込む。
      *
      * <p>指標変数がサポートされていない状況でいずれかの列が SQL NULL として返された場合、
-     * {@code sqlca} を OCPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002") に設定する。
+     * {@code sqlca} を ECPG_MISSING_INDICATOR (sqlcode=-213, sqlstate="22002") に設定する。
      * 行データは（NULL の列はゼロ埋めで）書き込まれ、「行はフェッチされたがフラグが立てられた」
-     * という挙動である。
+     * という ECPG の挙動に一致する。
      *
      * @param conn JDBC コネクション
      * @param resultParams 列の値を受け取る出力用ホスト変数

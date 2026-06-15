@@ -175,7 +175,7 @@ class SqlCATest {
         // SQLERRMC のバイト列は保持しつつ、SQLCODE=0 / SQLSTATE=00000 / SQLERRML=0 にする。
         SqlCA.setErrmc(sqlca, "stale");
         SqlCA.setSuccessKeepErrmc(sqlca);
-        assertEquals(SqlCA.OCPG_NO_ERROR, SqlCA.getCode(sqlca), "SQLCODE should be 0");
+        assertEquals(SqlCA.ECPG_NO_ERROR, SqlCA.getCode(sqlca), "SQLCODE should be 0");
         byte[] stateBytes = sqlca.getByteArray(128, 5);
         assertEquals("00000", new String(stateBytes), "SQLSTATE should be 00000");
         short len = ByteBuffer.wrap(sqlca.getByteArray(16, 2)).getShort();
@@ -262,39 +262,39 @@ class SqlCATest {
     @Test
     void testSqlStateToCode_NoError() {
         assertEquals(
-                SqlCA.OCPG_NO_ERROR,
+                SqlCA.ECPG_NO_ERROR,
                 SqlCA.sqlStateToCode("00000"),
-                "00000 should map to OCPG_NO_ERROR");
+                "00000 should map to ECPG_NO_ERROR");
     }
 
     @Test
     void testSqlStateToCode_NotFound() {
         assertEquals(
-                SqlCA.OCPG_NOT_FOUND,
+                SqlCA.ECPG_NOT_FOUND,
                 SqlCA.sqlStateToCode("02000"),
-                "02000 should map to OCPG_NOT_FOUND");
+                "02000 should map to ECPG_NOT_FOUND");
     }
 
     @Test
     void testSqlStateToCode_Empty() {
         assertEquals(
-                SqlCA.OCPG_EMPTY, SqlCA.sqlStateToCode("YE002"), "YE002 should map to OCPG_EMPTY");
+                SqlCA.ECPG_EMPTY, SqlCA.sqlStateToCode("YE002"), "YE002 should map to ECPG_EMPTY");
     }
 
     @Test
     void testSqlStateToCode_Connect_08001() {
         assertEquals(
-                SqlCA.OCPG_CONNECT,
+                SqlCA.ECPG_CONNECT,
                 SqlCA.sqlStateToCode("08001"),
-                "08001 should map to OCPG_CONNECT");
+                "08001 should map to ECPG_CONNECT");
     }
 
     @Test
     void testSqlStateToCode_Connect_08003() {
         assertEquals(
-                SqlCA.OCPG_CONNECT,
+                SqlCA.ECPG_CONNECT,
                 SqlCA.sqlStateToCode("08003"),
-                "08003 should map to OCPG_CONNECT");
+                "08003 should map to ECPG_CONNECT");
     }
 
     @Test
@@ -302,7 +302,7 @@ class SqlCATest {
         // 認証失敗 (28P01/28000) は Open COBOL ESQL 4J と同じく明示マッピングを持たず、
         // 不明エラー (-9999) に落ちる。
         assertEquals(
-                SqlCA.OCPG_UNKNOWN_ERROR,
+                SqlCA.ECPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode("28P01"),
                 "28P01 has no explicit mapping (matches Open COBOL ESQL 4J)");
     }
@@ -310,7 +310,7 @@ class SqlCATest {
     @Test
     void testSqlStateToCode_AuthFailure_28000_Unknown() {
         assertEquals(
-                SqlCA.OCPG_UNKNOWN_ERROR,
+                SqlCA.ECPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode("28000"),
                 "28000 has no explicit mapping (matches Open COBOL ESQL 4J)");
     }
@@ -318,85 +318,85 @@ class SqlCATest {
     @Test
     void testSqlStateToCode_Trans() {
         assertEquals(
-                SqlCA.OCPG_TRANS, SqlCA.sqlStateToCode("08007"), "08007 should map to OCPG_TRANS");
+                SqlCA.ECPG_TRANS, SqlCA.sqlStateToCode("08007"), "08007 should map to ECPG_TRANS");
     }
 
     @Test
     void testSqlStateToCode_SubselectNotOne() {
         assertEquals(
-                SqlCA.OCPG_SUBSELECT_NOT_ONE,
+                SqlCA.ECPG_SUBSELECT_NOT_ONE,
                 SqlCA.sqlStateToCode("21000"),
-                "21000 should map to OCPG_SUBSELECT_NOT_ONE");
+                "21000 should map to ECPG_SUBSELECT_NOT_ONE");
     }
 
     @Test
     void testSqlStateToCode_DuplicateKey() {
         assertEquals(
-                SqlCA.OCPG_DUPLICATE_KEY,
+                SqlCA.ECPG_DUPLICATE_KEY,
                 SqlCA.sqlStateToCode("23505"),
-                "23505 should map to OCPG_DUPLICATE_KEY");
+                "23505 should map to ECPG_DUPLICATE_KEY");
     }
 
     @Test
     void testSqlStateToCode_InTransaction() {
         assertEquals(
-                SqlCA.OCPG_WARNING_IN_TRANSACTION,
+                SqlCA.ECPG_WARNING_IN_TRANSACTION,
                 SqlCA.sqlStateToCode("25001"),
-                "25001 should map to OCPG_WARNING_IN_TRANSACTION");
+                "25001 should map to ECPG_WARNING_IN_TRANSACTION");
     }
 
     @Test
     void testSqlStateToCode_NoTransaction() {
         assertEquals(
-                SqlCA.OCPG_WARNING_NO_TRANSACTION,
+                SqlCA.ECPG_WARNING_NO_TRANSACTION,
                 SqlCA.sqlStateToCode("25P01"),
-                "25P01 should map to OCPG_WARNING_NO_TRANSACTION");
+                "25P01 should map to ECPG_WARNING_NO_TRANSACTION");
     }
 
     @Test
     void testSqlStateToCode_UnknownPortal() {
         assertEquals(
-                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
                 SqlCA.sqlStateToCode("34000"),
-                "34000 should map to OCPG_WARNING_UNKNOWN_PORTAL");
+                "34000 should map to ECPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
     void testSqlStateToCode_DataFormatError() {
         assertEquals(
-                SqlCA.OCPG_DATA_FORMAT_ERROR,
+                SqlCA.ECPG_DATA_FORMAT_ERROR,
                 SqlCA.sqlStateToCode("42804"),
-                "42804 should map to OCPG_DATA_FORMAT_ERROR");
+                "42804 should map to ECPG_DATA_FORMAT_ERROR");
     }
 
     @Test
     void testSqlStateToCode_PortalExists() {
         assertEquals(
-                SqlCA.OCPG_WARNING_PORTAL_EXISTS,
+                SqlCA.ECPG_WARNING_PORTAL_EXISTS,
                 SqlCA.sqlStateToCode("42P03"),
-                "42P03 should map to OCPG_WARNING_PORTAL_EXISTS");
+                "42P03 should map to ECPG_WARNING_PORTAL_EXISTS");
     }
 
     @Test
     void testSqlStateToCode_Pgsql() {
         assertEquals(
-                SqlCA.OCPG_PGSQL, SqlCA.sqlStateToCode("55P03"), "55P03 should map to OCPG_PGSQL");
+                SqlCA.ECPG_PGSQL, SqlCA.sqlStateToCode("55P03"), "55P03 should map to ECPG_PGSQL");
     }
 
     @Test
     void testSqlStateToCode_Unknown() {
         assertEquals(
-                SqlCA.OCPG_UNKNOWN_ERROR,
+                SqlCA.ECPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode("XXXXX"),
-                "Unknown state should map to OCPG_UNKNOWN_ERROR");
+                "Unknown state should map to ECPG_UNKNOWN_ERROR");
     }
 
     @Test
     void testSqlStateToCode_Null() {
         assertEquals(
-                SqlCA.OCPG_UNKNOWN_ERROR,
+                SqlCA.ECPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode(null),
-                "Null state should map to OCPG_UNKNOWN_ERROR");
+                "Null state should map to ECPG_UNKNOWN_ERROR");
     }
 
     // ---------- setResultFromException ----------
@@ -407,9 +407,9 @@ class SqlCATest {
         SQLException e = new SQLException("connection refused", "08001");
         SqlCA.setResultFromException(sqlca, e);
         assertEquals(
-                SqlCA.OCPG_CONNECT,
+                SqlCA.ECPG_CONNECT,
                 SqlCA.getCode(sqlca),
-                "SQLCODE should be OCPG_CONNECT for 08001");
+                "SQLCODE should be ECPG_CONNECT for 08001");
         byte[] state = sqlca.getByteArray(128, 5);
         assertEquals("08001", new String(state), "SQLSTATE should be 08001");
     }

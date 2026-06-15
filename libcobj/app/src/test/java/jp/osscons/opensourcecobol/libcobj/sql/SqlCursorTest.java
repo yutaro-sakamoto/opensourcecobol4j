@@ -202,18 +202,18 @@ class SqlCursorTest {
         byte[] data = new byte[20];
         java.util.Arrays.fill(data, (byte) 'X');
         AbstractCobolField field = makeAlphaField(20, data);
-        // Allocate a SQLCA (133 bytes) so we can observe OCPG_MISSING_INDICATOR.
+        // Allocate a SQLCA (133 bytes) so we can observe ECPG_MISSING_INDICATOR.
         CobolDataStorage sqlca = new CobolDataStorage(133);
         boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field}, sqlca);
         assertTrue(hasRow, "Fetch should return a row even with NULL value");
         // NULL value should zero out the storage
         assertEquals(
                 0, field.getDataStorage().getByte(0), "NULL value should zero out the storage");
-        // NULL without indicator => sqlcode=-213, sqlstate="22002"
+        // ECPG semantics: NULL without indicator => sqlcode=-213, sqlstate="22002"
         assertEquals(
-                SqlCA.OCPG_MISSING_INDICATOR,
+                SqlCA.ECPG_MISSING_INDICATOR,
                 SqlCA.getCode(sqlca),
-                "NULL without indicator should set SQLCODE to OCPG_MISSING_INDICATOR");
+                "NULL without indicator should set SQLCODE to ECPG_MISSING_INDICATOR");
         byte[] state = sqlca.getByteArray(128, 5);
         assertEquals(
                 "22002", new String(state), "NULL without indicator should set SQLSTATE to 22002");
