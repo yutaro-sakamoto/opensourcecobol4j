@@ -331,12 +331,12 @@ OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO`
 | SQLCODE | SQLSTATE | 意味 |
 |---|---|---|
 | `+0` | `00000` | 成功 |
-| `+100` | `02000` | 行なし / カーソルの終端 (`ECPG_NOT_FOUND`) |
-| `-213` | `22002` | 指標変数なしでホスト変数に NULL を読み込んだ (`ECPG_MISSING_INDICATOR`) |
-| `-220` | `08003` | 有効な接続がない (`ECPG_NO_CONN`) |
-| `-402` | `08001` 等 | CONNECT 失敗 (`ECPG_CONNECT`) |
-| `-602` | `34000` | カーソル（ポータル）が存在しない (`ECPG_WARNING_UNKNOWN_PORTAL`) |
-| `-9999` | (サーバ依存) | 特定の ECPG コードに対応しない PostgreSQL エラー (`ECPG_UNKNOWN_ERROR`) |
+| `+100` | `02000` | 行なし / カーソルの終端 (`OCPG_NOT_FOUND`) |
+| `-213` | `22002` | 指標変数なしでホスト変数に NULL を読み込んだ (`OCPG_MISSING_INDICATOR`) |
+| `-220` | `08003` | 有効な接続がない (`OCPG_NO_CONN`) |
+| `-402` | `08001` 等 | CONNECT 失敗 (`OCPG_CONNECT`) |
+| `-602` | `34000` | カーソル（ポータル）が存在しない (`OCPG_WARNING_UNKNOWN_PORTAL`) |
+| `-9999` | (サーバ依存) | 特定のコードに対応しない PostgreSQL エラー (`OCPG_UNKNOWN_ERROR`) |
 
 エラー時は `SQLCODE` だけでなく `SQLSTATE` と `SQLERRMC` も必ず確認してください。PostgreSQL の `SQLSTATE` とメッセージ文字列がそのまま SQLCA に格納されるため、最も正確な診断情報になります。
 
@@ -397,7 +397,7 @@ java program
 - 添字の値に算術式 (`:VAR(I+1)`) を書いたり、添字値そのものが添字を持つホスト変数 (`:VAR(IDX(1))`) を書いたりすることはできません。間接的な添字が必要な場合は、COBOL 側でいったん作業変数に MOVE してから渡してください。
 - SJISモードでのUTF-8変数名はサポートされていません。UTF-8ソースファイルの場合は `--enable-utf8` ビルドオプションを使用してください。
 - 対象データベースはPostgreSQLのみサポートされています。
-- 以下の ECPG / 埋め込み SQL 機能は**サポートされていません**:
+- 以下の埋め込み SQL 機能は**サポートされていません**:
   - `EXECUTE IMMEDIATE`。
   - `WHENEVER`（宣言的な条件ハンドリング）。代わりに `SQLCODE` / `SQLSTATE` を明示的に確認してください。
   - 逆方向・スクロール FETCH（`FETCH PRIOR`、`FETCH BACKWARD`、スクロールカーソル等）。プログラムから使えるのは順方向 FETCH のみです。（`FETCH BACKWARD` は `WHERE CURRENT OF` のカーソル位置補正のため内部的にのみ使用されます。）

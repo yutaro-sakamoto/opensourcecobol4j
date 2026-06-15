@@ -335,12 +335,12 @@ Common SQLCODE values (defined in `SqlCA.java`):
 | SQLCODE | SQLSTATE | Meaning |
 |---|---|---|
 | `+0` | `00000` | Success |
-| `+100` | `02000` | No more rows / end of cursor (`ECPG_NOT_FOUND`) |
-| `-213` | `22002` | NULL value read into a host variable without an indicator (`ECPG_MISSING_INDICATOR`) |
-| `-220` | `08003` | No active connection (`ECPG_NO_CONN`) |
-| `-402` | `08001` etc. | CONNECT failed (`ECPG_CONNECT`) |
-| `-602` | `34000` | Cursor (portal) does not exist (`ECPG_WARNING_UNKNOWN_PORTAL`) |
-| `-9999` | (server) | PostgreSQL error that maps to no specific ECPG code (`ECPG_UNKNOWN_ERROR`) |
+| `+100` | `02000` | No more rows / end of cursor (`OCPG_NOT_FOUND`) |
+| `-213` | `22002` | NULL value read into a host variable without an indicator (`OCPG_MISSING_INDICATOR`) |
+| `-220` | `08003` | No active connection (`OCPG_NO_CONN`) |
+| `-402` | `08001` etc. | CONNECT failed (`OCPG_CONNECT`) |
+| `-602` | `34000` | Cursor (portal) does not exist (`OCPG_WARNING_UNKNOWN_PORTAL`) |
+| `-9999` | (server) | PostgreSQL error that maps to no specific code (`OCPG_UNKNOWN_ERROR`) |
 
 On any error, always inspect `SQLSTATE` and `SQLERRMC` as well as `SQLCODE`: the PostgreSQL `SQLSTATE` and its message text are stored verbatim into the SQLCA, so they carry the most precise diagnostic information.
 
@@ -402,7 +402,7 @@ The `-I` flag specifies the directory containing COPY files.
 - Subscript values cannot be arithmetic expressions (`:VAR(I+1)`) and cannot themselves be subscripted host variables (`:VAR(IDX(1))`). Compute the index into a scratch COBOL variable first.
 - UTF-8 variable names in SJIS mode are not supported; use the `--enable-utf8` build option for UTF-8 source files.
 - Only PostgreSQL is supported as the target database.
-- The following ECPG/embedded-SQL features are **not** supported:
+- The following embedded-SQL features are **not** supported:
   - `EXECUTE IMMEDIATE`.
   - `WHENEVER` (declarative condition handling). Check `SQLCODE` / `SQLSTATE` explicitly instead.
   - Backward / scrollable FETCH (`FETCH PRIOR`, `FETCH BACKWARD`, scrollable cursors, etc.). Only forward FETCH is available to the program. (`FETCH BACKWARD` is used internally only to correct the cursor position for `WHERE CURRENT OF`.)

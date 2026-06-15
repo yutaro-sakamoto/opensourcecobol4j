@@ -127,7 +127,7 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 | `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、値が空のときの環境変数 `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` へのフォールバック、`OCDB_DB_CHAR`（既定 `UTF-8`）による接続エンコーディング設定、各値を最初の空白で切り詰める処理 (`stripTrailingSpaces`)、autocommit + トランザクションごとの明示 `BEGIN` (`beginTransaction`) を担う。 |
 | `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。先読み（バルクフェッチ）バッファと `overFetch` フラグも保持する。カーソルはインライン `SELECT` からでも、PREPARE 済みステートメント名からでも DECLARE できる。 |
 | `BulkFetchConfig` | package-private | 環境変数 `OCESQL4J_FETCH_RECORDS` から先読み件数を読み取り、プロセス内でキャッシュする。 |
-| `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。JDBC の `SQLState` を `sqlStateToCode` で ECPG コードにマッピングする。 |
+| `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。JDBC の `SQLState` を `sqlStateToCode` でエラーコードにマッピングする。 |
 | `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。COBOL フィールド型で分岐する: 数値 (display)、パック 10 進 (COMP-3、符号付き/なし)、ネイティブバイナリ (COMP-5)、float/double、英数字 / group、national (`PIC N`)、英数字 / 日本語の `VARYING`（先頭 4 バイトのビッグエンディアン長ヘッダ + データ）。national と日本語の値は SHIFT-JIS で変換する。 |
 
 `SqlConnection`, `SqlCursor`, `SqlState`, `SqlCA`, `CobolDataConverter` はすべて package-private なため、SLF4J のロガー名としては利用できますが、外部から直接 import することは想定していません。
@@ -140,9 +140,9 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 `parser.y` は、プログラム内で最初の実際の埋め込み SQL 文を検出した時点で `esql_inject_sqlca()`（`cobj/esql.c`）を呼び出し、明示的な `EXEC SQL INCLUDE SQLCA` がなくても `01 SQLCA GLOBAL.` を WORKING-STORAGE に自動挿入します。挿入は実際の `EXEC SQL` 文を含むプログラムに対してのみ行われ、`EXEC SQL INCLUDE SQLCA` や `BEGIN/END DECLARE SECTION` だけで実行可能な SQL を持たないプログラムには SQLCA を挿入しません。明示的な `EXEC SQL INCLUDE SQLCA END-EXEC` が記述されていない場合（前処理段（`pplex.l.m4`）で `cb_sqlca_include_seen` に記録される）、`cobj` はコンパイル時に警告を出力します。`SQLERRD` などは `OCCURS 6` を含む構造なので、`b_SQLERRD__SQLCA.getSubDataStorage(...)` を生成時に組み立てる対象になります。
 
-### NULL 列の通知 (ECPG_MISSING_INDICATOR)
+### NULL 列の通知 (OCPG_MISSING_INDICATOR)
 
-ECPG 互換として、ホスト変数側に指標変数が用意されていない状況で NULL 列を読み込んだ場合、ランタイムは `SQLCODE = -213` / `SQLSTATE = 22002`（`ECPG_MISSING_INDICATOR`）を返します。`SqlCA.java` では `ECPG_MISSING_INDICATOR = -213` で、`setMissingIndicator()` が状態を `22002` に設定します。COBOL フィールド自体には（ゼロ埋めで）値が書き込まれるため、行は処理済みとして扱われます。JUnit テスト `CobolSqlTest`, `SqlCATest` に該当ケースが含まれます。
+ホスト変数側に指標変数が用意されていない状況で NULL 列を読み込んだ場合、ランタイムは `SQLCODE = -213` / `SQLSTATE = 22002`（`OCPG_MISSING_INDICATOR`）を返します。`SqlCA.java` では `OCPG_MISSING_INDICATOR = -213` で、`setMissingIndicator()` が状態を `22002` に設定します。COBOL フィールド自体には（ゼロ埋めで）値が書き込まれるため、行は処理済みとして扱われます。JUnit テスト `CobolSqlTest`, `SqlCATest` に該当ケースが含まれます。
 
 ### バルクフェッチ（先読み）と WHERE CURRENT OF の位置補正
 
@@ -152,11 +152,11 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 ### トランザクションモデル
 
-`SqlConnection.connect` は JDBC 接続を `setAutoCommit(true)` にしたうえで明示的に `BEGIN` を発行します。`COMMIT` / `ROLLBACK` のたび、および `DISCONNECT` 時には、`SqlState.clearCursors()`（サーバ側ポータルが消えるため全カーソルをクローズし先読みバッファを破棄する）と `SqlConnection.beginTransaction()` を呼び、次のトランザクションを開始します。これにより commit 間は常にトランザクションが有効な状態が保たれ、埋め込み文がトランザクションブロック内で実行される ECPG のセマンティクスに一致します。
+`SqlConnection.connect` は JDBC 接続を `setAutoCommit(true)` にしたうえで明示的に `BEGIN` を発行します。`COMMIT` / `ROLLBACK` のたび、および `DISCONNECT` 時には、`SqlState.clearCursors()`（サーバ側ポータルが消えるため全カーソルをクローズし先読みバッファを破棄する）と `SqlConnection.beginTransaction()` を呼び、次のトランザクションを開始します。これにより commit 間は常にトランザクションが有効な状態が保たれ、埋め込み文がトランザクションブロック内で実行されます。
 
 ### 文の失敗時のエラー処理
 
-ランタイムはトランザクションを開いたまま（前述の「トランザクションモデル」参照）各埋め込み文を実行します。文が失敗すると、エラーを SQLCA（`SQLCODE` / `SQLSTATE` / `SQLERRMC`）に記録し、トランザクションは PostgreSQL の aborted 状態のままにします。ECPG / PostgreSQL と同様に、トランザクションが aborted になると、プログラムが `ROLLBACK`（または `COMMIT`）を発行するまで以降のすべての文が SQLSTATE `25P02`（`in_failed_sql_transaction`）で拒否されます。したがってエラーからの回復は COBOL プログラムの責任です。
+ランタイムはトランザクションを開いたまま（前述の「トランザクションモデル」参照）各埋め込み文を実行します。文が失敗すると、エラーを SQLCA（`SQLCODE` / `SQLSTATE` / `SQLERRMC`）に記録し、トランザクションは PostgreSQL の aborted 状態のままにします。PostgreSQL と同様に、トランザクションが aborted になると、プログラムが `ROLLBACK`（または `COMMIT`）を発行するまで以降のすべての文が SQLSTATE `25P02`（`in_failed_sql_transaction`）で拒否されます。したがってエラーからの回復は COBOL プログラムの責任です。
 
 パラメータ付き文では、JDBC の Describe（`getParameterMetaData`）を `execute()` と同じ `try` ブロック内で実行します。そのため Describe の失敗（例: テーブル不在）はそのままエラーハンドラへ伝播し、SQLCA には真のエラー（例: `42P01`）が記録されます。
 
@@ -176,9 +176,11 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 ### エラーマッピング
 
-JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で ECPG の `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`ECPG_NOT_FOUND`）、`08001`/`08003`/`28000`/`28P01` → `-402`（`ECPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`ECPG_EMPTY`）。認識できない状態はすべて `-9999`（`ECPG_UNKNOWN_ERROR`）になります。
+JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`OCPG_NOT_FOUND`）、`08001`/`08003`/`28000`/`28P01` → `-402`（`OCPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`OCPG_EMPTY`）。認識できない状態はすべて `-9999`（`OCPG_UNKNOWN_ERROR`）になります。
 
-カーソルの異常系は一部ランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `ECPG_EMPTY` / `YE002` を返します。登録済みだが未 OPEN のカーソル（OPEN に失敗したものを含む）への FETCH はそのまま PostgreSQL へ送られ、トランザクションが正常なら `cursor "..." does not exist`、OPEN 失敗でトランザクションが abort のままなら `25P02` が返ります。回復する（`ROLLBACK` を発行する）かどうかは COBOL プログラムの責任です。
+`OCPG_*` コード群と `SQLSTATE`→`SQLCODE` マッピングは Open COBOL ESQL 4J に従います。マッピング上の違いは、認証失敗の `28000` / `28P01` をここでは `-402`（`OCPG_CONNECT`）に対応付ける点だけで、Open COBOL ESQL 4J ではこれらを対応付けず `-9999` のままにします。トランザクションモデルに由来する挙動差として、OPEN に失敗したカーソルへの FETCH は abort されたままのトランザクション上で実行され `25P02` 由来の `-9999` を返しますが、Open COBOL ESQL 4J はこのケースで `-212`（`OCPG_EMPTY`）を返します。
+
+カーソルの異常系は一部ランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `OCPG_EMPTY` / `YE002` を返します。登録済みだが未 OPEN のカーソル（OPEN に失敗したものを含む）への FETCH はそのまま PostgreSQL へ送られ、トランザクションが正常なら `cursor "..." does not exist`、OPEN 失敗でトランザクションが abort のままなら `25P02` が返ります。回復する（`ROLLBACK` を発行する）かどうかは COBOL プログラムの責任です。
 
 ## テスト
 

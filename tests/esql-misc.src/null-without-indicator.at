@@ -24,7 +24,7 @@ AT_DATA([prog.cbl], [
        PERFORM SETUP-DB.
 
       * Fetch a row whose NAME column is NULL.
-      * 4J should signal ECPG_MISSING_INDICATOR (sqlcode=-213,
+      * 4J should signal OCPG_MISSING_INDICATOR (sqlcode=-213,
       * sqlstate=22002) because the host variable :NAME has no indicator.
        EXEC SQL
          DECLARE C1 CURSOR FOR SELECT N, NAME

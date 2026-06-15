@@ -183,9 +183,9 @@ class CobolSqlTest {
     void testDisconnect_NoConnection() {
         CobolSql.disconnect(sqlca);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Disconnect without connection should return ECPG_NO_CONN");
+                "Disconnect without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -207,9 +207,9 @@ class CobolSqlTest {
     void testExec_NoConnection() {
         CobolSql.exec(sqlca, "SELECT 1");
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Exec without connection should return ECPG_NO_CONN");
+                "Exec without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -217,7 +217,7 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.exec(sqlca, null);
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Exec with null query should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Exec with null query should return OCPG_EMPTY");
     }
 
     @Test
@@ -225,7 +225,7 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.exec(sqlca, "");
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Exec with empty query should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Exec with empty query should return OCPG_EMPTY");
     }
 
     @Test
@@ -311,9 +311,9 @@ class CobolSqlTest {
         CobolSql.execWithParams(
                 sqlca, "INSERT INTO t VALUES(?)", makeNumericField(4, "0042".getBytes()));
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "ExecWithParams without connection should return ECPG_NO_CONN");
+                "ExecWithParams without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -321,9 +321,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.execWithParams(sqlca, null, makeNumericField(4, "0042".getBytes()));
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "ExecWithParams with null query should return ECPG_EMPTY");
+                "ExecWithParams with null query should return OCPG_EMPTY");
     }
 
     @Test
@@ -382,9 +382,9 @@ class CobolSqlTest {
         CobolSql.execWithParams(
                 sqlca, "INSERT INTO uniq_test VALUES (?)", makeNumericField(4, "0001".getBytes()));
         assertEquals(
-                SqlCA.ECPG_DUPLICATE_KEY,
+                SqlCA.OCPG_DUPLICATE_KEY,
                 getSqlCode(),
-                "Duplicate key should return ECPG_DUPLICATE_KEY");
+                "Duplicate key should return OCPG_DUPLICATE_KEY");
 
         // 文が失敗するとトランザクションは aborted のままになる (文単位の SAVEPOINT 隔離は
         // 行わない)。回復するには COBOL プログラム同様に ROLLBACK が必要。
@@ -406,9 +406,9 @@ class CobolSqlTest {
     void testSelectInto_NoConnection() {
         CobolSql.selectInto(sqlca, "SELECT 1", null, null);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "SelectInto without connection should return ECPG_NO_CONN");
+                "SelectInto without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -416,9 +416,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.selectInto(sqlca, null, null, null);
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "SelectInto with null query should return ECPG_EMPTY");
+                "SelectInto with null query should return OCPG_EMPTY");
     }
 
     @Test
@@ -437,9 +437,9 @@ class CobolSqlTest {
                 null,
                 new AbstractCobolField[] {resultField});
         assertEquals(
-                SqlCA.ECPG_NOT_FOUND,
+                SqlCA.OCPG_NOT_FOUND,
                 getSqlCode(),
-                "SelectInto with no results should return ECPG_NOT_FOUND");
+                "SelectInto with no results should return OCPG_NOT_FOUND");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
@@ -548,12 +548,12 @@ class CobolSqlTest {
         AbstractCobolField resultField = makeAlphaField(10, data);
         CobolSql.selectInto(
                 sqlca, "SELECT name FROM sel_test", null, new AbstractCobolField[] {resultField});
-        // ECPG semantics: NULL without indicator => sqlcode=-213 (ECPG_MISSING_INDICATOR).
+        // NULL without indicator => sqlcode=-213 (OCPG_MISSING_INDICATOR).
         // The row is still considered fetched and the target field is zero-filled.
         assertEquals(
-                SqlCA.ECPG_MISSING_INDICATOR,
+                SqlCA.OCPG_MISSING_INDICATOR,
                 getSqlCode(),
-                "SelectInto with NULL value should signal ECPG_MISSING_INDICATOR");
+                "SelectInto with NULL value should signal OCPG_MISSING_INDICATOR");
         assertEquals(
                 0, resultField.getDataStorage().getByte(0), "NULL value should zero out storage");
 
@@ -578,30 +578,30 @@ class CobolSqlTest {
     void testDeclareCursor_NullName() {
         CobolSql.declareCursor(sqlca, null, "SELECT 1");
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with null name should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Declare with null name should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursor_NullQuery() {
         CobolSql.declareCursor(sqlca, "c1", null);
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with null query should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Declare with null query should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursor_EmptyName() {
         CobolSql.declareCursor(sqlca, "", "SELECT 1");
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Declare with empty name should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Declare with empty name should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursor_EmptyQuery() {
         CobolSql.declareCursor(sqlca, "c1", "");
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "Declare with empty query should return ECPG_EMPTY");
+                "Declare with empty query should return OCPG_EMPTY");
     }
 
     @Test
@@ -611,9 +611,9 @@ class CobolSqlTest {
         SqlState.addCursor("c1", cursor);
         CobolSql.declareCursor(sqlca, "c1", "SELECT 2");
         assertEquals(
-                SqlCA.ECPG_WARNING_PORTAL_EXISTS,
+                SqlCA.OCPG_WARNING_PORTAL_EXISTS,
                 getSqlCode(),
-                "Declaring already-opened cursor should return ECPG_WARNING_PORTAL_EXISTS");
+                "Declaring already-opened cursor should return OCPG_WARNING_PORTAL_EXISTS");
     }
 
     @Test
@@ -631,9 +631,9 @@ class CobolSqlTest {
     void testOpenCursor_NoConnection() {
         CobolSql.openCursor(sqlca, "c1");
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Open cursor without connection should return ECPG_NO_CONN");
+                "Open cursor without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -641,9 +641,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.openCursor(sqlca, "nonexistent");
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
-                "Open nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "Open nonexistent cursor should return OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -685,7 +685,7 @@ class CobolSqlTest {
         // Fetch past end
         CobolSql.fetchCursor(sqlca, "myc");
         assertEquals(
-                SqlCA.ECPG_NOT_FOUND, getSqlCode(), "Fetch past end should return ECPG_NOT_FOUND");
+                SqlCA.OCPG_NOT_FOUND, getSqlCode(), "Fetch past end should return OCPG_NOT_FOUND");
 
         // Close
         CobolSql.closeCursor(sqlca, "myc");
@@ -701,9 +701,9 @@ class CobolSqlTest {
     void testFetchCursor_NoConnection() {
         CobolSql.fetchCursor(sqlca, "c1");
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Fetch without connection should return ECPG_NO_CONN");
+                "Fetch without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -711,9 +711,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.fetchCursor(sqlca, "nonexistent");
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
-                "Fetch nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "Fetch nonexistent cursor should return OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -724,18 +724,18 @@ class CobolSqlTest {
         SqlState.addCursor("c1", cursor);
         CobolSql.fetchCursor(sqlca, "c1");
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
-                "Fetch closed cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "Fetch closed cursor should return OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
     void testCloseCursor_NoConnection() {
         CobolSql.closeCursor(sqlca, "c1");
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Close cursor without connection should return ECPG_NO_CONN");
+                "Close cursor without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -743,9 +743,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.closeCursor(sqlca, "nonexistent");
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
-                "Close nonexistent cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "Close nonexistent cursor should return OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -757,7 +757,7 @@ class CobolSqlTest {
         CobolSql.closeCursor(sqlca, "c1");
         // 登録済みだが未 OPEN のカーソルの CLOSE は成功扱い (Open-COBOL-ESQL-4J に合わせる)。
         assertEquals(
-                SqlCA.ECPG_NO_ERROR,
+                SqlCA.OCPG_NO_ERROR,
                 getSqlCode(),
                 "Close of a registered but not-opened cursor should succeed");
     }
@@ -781,36 +781,36 @@ class CobolSqlTest {
     void testDeclareCursorWithParams_NullName() {
         CobolSql.declareCursorWithParams(sqlca, null, "SELECT 1");
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "DeclareCursorWithParams with null name should return ECPG_EMPTY");
+                "DeclareCursorWithParams with null name should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursorWithParams_EmptyQuery() {
         CobolSql.declareCursorWithParams(sqlca, "c1", "");
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "DeclareCursorWithParams with empty query should return ECPG_EMPTY");
+                "DeclareCursorWithParams with empty query should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursorWithParams_EmptyName() {
         CobolSql.declareCursorWithParams(sqlca, "", "SELECT 1");
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "DeclareCursorWithParams with empty name should return ECPG_EMPTY");
+                "DeclareCursorWithParams with empty name should return OCPG_EMPTY");
     }
 
     @Test
     void testDeclareCursorWithParams_NullQuery() {
         CobolSql.declareCursorWithParams(sqlca, "c1", null);
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "DeclareCursorWithParams with null query should return ECPG_EMPTY");
+                "DeclareCursorWithParams with null query should return OCPG_EMPTY");
     }
 
     @Test
@@ -820,9 +820,9 @@ class CobolSqlTest {
         SqlState.addCursor("c1", cursor);
         CobolSql.declareCursorWithParams(sqlca, "c1", "SELECT 2");
         assertEquals(
-                SqlCA.ECPG_WARNING_PORTAL_EXISTS,
+                SqlCA.OCPG_WARNING_PORTAL_EXISTS,
                 getSqlCode(),
-                "Declaring already-opened cursor should return ECPG_WARNING_PORTAL_EXISTS");
+                "Declaring already-opened cursor should return OCPG_WARNING_PORTAL_EXISTS");
     }
 
     @Test
@@ -841,9 +841,9 @@ class CobolSqlTest {
     void testOpenCursorWithParams_NoConnection() {
         CobolSql.openCursorWithParams(sqlca, "c1", makeNumericField(4, "0001".getBytes()));
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "OpenCursorWithParams without connection should return ECPG_NO_CONN");
+                "OpenCursorWithParams without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -851,10 +851,10 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.openCursorWithParams(sqlca, "nonexistent", makeNumericField(4, "0001".getBytes()));
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
                 "OpenCursorWithParams for nonexistent cursor should return"
-                        + " ECPG_WARNING_UNKNOWN_PORTAL");
+                        + " OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     // ============================================================
@@ -865,9 +865,9 @@ class CobolSqlTest {
     void testFetchCursorOccurs_NoConnection() {
         CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "FetchCursorOccurs without connection should return ECPG_NO_CONN");
+                "FetchCursorOccurs without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -875,10 +875,10 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
                 "FetchCursorOccurs for nonexistent cursor should return"
-                        + " ECPG_WARNING_UNKNOWN_PORTAL");
+                        + " OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     @Test
@@ -889,9 +889,9 @@ class CobolSqlTest {
         SqlState.addCursor("c1", cursor);
         CobolSql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
-                SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
+                SqlCA.OCPG_WARNING_UNKNOWN_PORTAL,
                 getSqlCode(),
-                "FetchCursorOccurs for closed cursor should return ECPG_WARNING_UNKNOWN_PORTAL");
+                "FetchCursorOccurs for closed cursor should return OCPG_WARNING_UNKNOWN_PORTAL");
     }
 
     // ============================================================
@@ -923,7 +923,7 @@ class CobolSqlTest {
             assertEquals("Name" + i, new String(data).trim(), "row " + i + " value");
         }
         CobolSql.fetchCursor(sqlca, "bc", makeAlphaField(20, new byte[20]));
-        assertEquals(SqlCA.ECPG_NOT_FOUND, getSqlCode(), "fetch past end should be NOT_FOUND");
+        assertEquals(SqlCA.OCPG_NOT_FOUND, getSqlCode(), "fetch past end should be NOT_FOUND");
 
         CobolSql.closeCursor(sqlca, "bc");
         assertEquals(0, getSqlCode(), "close should succeed");
@@ -988,9 +988,9 @@ class CobolSqlTest {
     void testSelectIntoOccurs_NoConnection() {
         CobolSql.selectIntoOccurs(sqlca, "SELECT 1", null, null, 10, 5);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "SelectIntoOccurs without connection should return ECPG_NO_CONN");
+                "SelectIntoOccurs without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -998,9 +998,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.selectIntoOccurs(sqlca, null, null, null, 10, 5);
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "SelectIntoOccurs with null query should return ECPG_EMPTY");
+                "SelectIntoOccurs with null query should return OCPG_EMPTY");
     }
 
     // ============================================================
@@ -1011,9 +1011,9 @@ class CobolSqlTest {
     void testCommit_NoConnection() {
         CobolSql.commit(sqlca);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Commit without connection should return ECPG_NO_CONN");
+                "Commit without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -1031,9 +1031,9 @@ class CobolSqlTest {
     void testRollback_NoConnection() {
         CobolSql.rollback(sqlca);
         assertEquals(
-                SqlCA.ECPG_NO_CONN,
+                SqlCA.OCPG_NO_CONN,
                 getSqlCode(),
-                "Rollback without connection should return ECPG_NO_CONN");
+                "Rollback without connection should return OCPG_NO_CONN");
     }
 
     @Test
@@ -1085,23 +1085,23 @@ class CobolSqlTest {
     void testPrepare_NullName() {
         CobolSql.prepare(sqlca, null, null);
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Prepare with null name should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Prepare with null name should return OCPG_EMPTY");
     }
 
     @Test
     void testPrepare_EmptyName() {
         CobolSql.prepare(sqlca, "", null);
         assertEquals(
-                SqlCA.ECPG_EMPTY, getSqlCode(), "Prepare with empty name should return ECPG_EMPTY");
+                SqlCA.OCPG_EMPTY, getSqlCode(), "Prepare with empty name should return OCPG_EMPTY");
     }
 
     @Test
     void testPrepare_NullQueryField() {
         CobolSql.prepare(sqlca, "stmt1", null);
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "Prepare with null query field should return ECPG_EMPTY");
+                "Prepare with null query field should return OCPG_EMPTY");
     }
 
     @Test
@@ -1134,9 +1134,9 @@ class CobolSqlTest {
     void testExecutePrepared_NotFound() {
         CobolSql.executePrepared(sqlca, "nonexistent");
         assertEquals(
-                SqlCA.ECPG_INVALID_STMT,
+                SqlCA.OCPG_INVALID_STMT,
                 getSqlCode(),
-                "Execute nonexistent prepared should return ECPG_INVALID_STMT");
+                "Execute nonexistent prepared should return OCPG_INVALID_STMT");
     }
 
     @Test
@@ -1247,9 +1247,9 @@ class CobolSqlTest {
         CobolSql.selectIntoOccurs(
                 sqlca, "SELECT val FROM occ_test", null, new AbstractCobolField[] {field}, 10, 3);
         assertEquals(
-                SqlCA.ECPG_NOT_FOUND,
+                SqlCA.OCPG_NOT_FOUND,
                 getSqlCode(),
-                "SelectIntoOccurs with no results should return ECPG_NOT_FOUND");
+                "SelectIntoOccurs with no results should return OCPG_NOT_FOUND");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE occ_test");
@@ -1420,9 +1420,9 @@ class CobolSqlTest {
                 CobolFieldFactory.makeCobolField(0, new CobolDataStorage(1), attr);
         CobolSql.prepare(sqlca, "stmt1", field);
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "Prepare with empty query field should return ECPG_EMPTY");
+                "Prepare with empty query field should return OCPG_EMPTY");
     }
 
     @Test
@@ -1450,7 +1450,7 @@ class CobolSqlTest {
         CobolSql.execWithParams(sqlca, "COMMIT");
         // Accept both success (0) and "no transaction" warning (-604)
         assertTrue(
-                getSqlCode() == 0 || getSqlCode() == SqlCA.ECPG_WARNING_NO_TRANSACTION,
+                getSqlCode() == 0 || getSqlCode() == SqlCA.OCPG_WARNING_NO_TRANSACTION,
                 "Unexpected code: " + getSqlCode());
     }
 
@@ -1460,7 +1460,7 @@ class CobolSqlTest {
         CobolSql.execWithParams(sqlca, "ROLLBACK");
         // Accept both success (0) and "no transaction" warning (-604)
         assertTrue(
-                getSqlCode() == 0 || getSqlCode() == SqlCA.ECPG_WARNING_NO_TRANSACTION,
+                getSqlCode() == 0 || getSqlCode() == SqlCA.OCPG_WARNING_NO_TRANSACTION,
                 "Unexpected code: " + getSqlCode());
     }
 
@@ -1469,9 +1469,9 @@ class CobolSqlTest {
         registerRealConnection();
         CobolSql.execWithParams(sqlca, "", makeNumericField(4, "0042".getBytes()));
         assertEquals(
-                SqlCA.ECPG_EMPTY,
+                SqlCA.OCPG_EMPTY,
                 getSqlCode(),
-                "ExecWithParams with empty query should return ECPG_EMPTY");
+                "ExecWithParams with empty query should return OCPG_EMPTY");
     }
 
     // ============================================================
