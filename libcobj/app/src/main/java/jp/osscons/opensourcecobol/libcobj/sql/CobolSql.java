@@ -30,9 +30,9 @@ public final class CobolSql {
         return s.replaceAll("\\s+", " ").trim();
     }
 
-    private static final String SQL_SAVEPOINT = "SAVEPOINT oc_save";
-    private static final String SQL_RELEASE_SAVEPOINT = "RELEASE SAVEPOINT oc_save";
-    private static final String SQL_ROLLBACK_SAVEPOINT = "ROLLBACK TO oc_save";
+    // 文ごとの SAVEPOINT による隔離は行わない。Open COBOL ESQL 4J および ECPG と同様に、
+    // 文が失敗した場合はトランザクションを aborted のままにし、回復 (ROLLBACK) は
+    // COBOL プログラムの責任とする。
 
     private static final ConcurrentHashMap<String, PreparedStatement> stmtCache =
             new ConcurrentHashMap<>();
@@ -144,25 +144,12 @@ public final class CobolSql {
                     sqlConn.beginTransaction();
                 }
             } else {
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_SAVEPOINT);
-                }
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute(query);
                     int updateCount = stmt.getUpdateCount();
                     if (updateCount >= 0) {
                         SqlCA.setErrd(sqlca, 2, updateCount);
                     }
-                    try (Statement sp = conn.createStatement()) {
-                        sp.execute(SQL_RELEASE_SAVEPOINT);
-                    }
-                } catch (SQLException e) {
-                    try (Statement sp = conn.createStatement()) {
-                        sp.execute(SQL_ROLLBACK_SAVEPOINT);
-                    } catch (SQLException ignored) {
-                        // rollback エラーは無視する
-                    }
-                    throw e;
                 }
                 SqlCA.setSuccess(sqlca);
             }
@@ -202,32 +189,19 @@ public final class CobolSql {
                     params != null ? params.length : 0,
                     collapseWhitespace(query));
 
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_SAVEPOINT);
+            PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
+            // getParameterMetaData (Describe) が失敗した場合 (例: テーブル不在) は、その例外を
+            // そのまま下の catch で SQLCA に記録する。これにより真のエラー (例: 42P01) が報告される。
+            ParameterMetaData metaData = pstmt.getParameterMetaData();
+            if (params != null) {
+                for (int i = 0; i < params.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
+                }
             }
-            try {
-                PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
-                if (params != null) {
-                    for (int i = 0; i < params.length; i++) {
-                        CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
-                    }
-                }
-                pstmt.execute();
-                int updateCount = pstmt.getUpdateCount();
-                if (updateCount >= 0) {
-                    SqlCA.setErrd(sqlca, 2, updateCount);
-                }
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_RELEASE_SAVEPOINT);
-                }
-            } catch (SQLException e) {
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
-                } catch (SQLException ignored) {
-                    // rollback エラーは無視する
-                }
-                throw e;
+            pstmt.execute();
+            int updateCount = pstmt.getUpdateCount();
+            if (updateCount >= 0) {
+                SqlCA.setErrd(sqlca, 2, updateCount);
             }
 
             SqlCA.setSuccess(sqlca);
@@ -487,7 +461,7 @@ public final class CobolSql {
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
+                ParameterMetaData metaData = pstmt.getParameterMetaData();
                 for (int i = 0; i < inputParams.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
@@ -536,7 +510,7 @@ public final class CobolSql {
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
-                ParameterMetaData metaData = getParameterMetaData(pstmt, conn);
+                ParameterMetaData metaData = pstmt.getParameterMetaData();
                 for (int i = 0; i < inputParams.length; i++) {
                     CobolDataConverter.setParam(pstmt, i + 1, metaData, inputParams[i]);
                 }
@@ -639,21 +613,7 @@ public final class CobolSql {
             }
             LOG.debug("OPEN CURSOR {}", cursorName);
             Connection conn = sqlConn.getConnection();
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_SAVEPOINT);
-            }
-            try {
-                cursor.open(conn, null);
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_RELEASE_SAVEPOINT);
-                }
-            } catch (SQLException e) {
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
-                } catch (SQLException ignored) {
-                }
-                throw e;
-            }
+            cursor.open(conn, null);
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("OPEN CURSOR {} failed: {}", cursorName, e.getMessage());
@@ -685,23 +645,7 @@ public final class CobolSql {
                         "Cursor not found: " + cursorName);
                 return;
             }
-            Connection conn = sqlConn.getConnection();
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_SAVEPOINT);
-            }
-            try {
-                cursor.open(conn, params);
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_RELEASE_SAVEPOINT);
-                }
-            } catch (SQLException e) {
-                try (Statement sp = conn.createStatement()) {
-                    sp.execute(SQL_ROLLBACK_SAVEPOINT);
-                } catch (SQLException ignored) {
-                    // rollback エラーは無視する
-                }
-                throw e;
-            }
+            cursor.open(sqlConn.getConnection(), params);
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("OPEN CURSOR {} failed: {}", cursorName, e.getMessage());
@@ -1047,26 +991,5 @@ public final class CobolSql {
                         throw new RuntimeException(e);
                     }
                 });
-    }
-
-    private static ParameterMetaData getParameterMetaData(
-            PreparedStatement pstmt, Connection conn) {
-        try {
-            return pstmt.getParameterMetaData();
-        } catch (SQLException e) {
-            // getParameterMetaData は PostgreSQL の transaction を中断させることがある
-            // （例: テーブルが存在しない場合）。savepoint を使って復旧する。
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_ROLLBACK_SAVEPOINT);
-            } catch (SQLException ignored) {
-                // 無視する
-            }
-            try (Statement sp = conn.createStatement()) {
-                sp.execute(SQL_SAVEPOINT);
-            } catch (SQLException ignored) {
-                // 無視する
-            }
-            return null;
-        }
     }
 }

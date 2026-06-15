@@ -154,9 +154,11 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 `SqlConnection.connect` は JDBC 接続を `setAutoCommit(true)` にしたうえで明示的に `BEGIN` を発行します。`COMMIT` / `ROLLBACK` のたび、および `DISCONNECT` 時には、`SqlState.clearCursors()`（サーバ側ポータルが消えるため全カーソルをクローズし先読みバッファを破棄する）と `SqlConnection.beginTransaction()` を呼び、次のトランザクションを開始します。これにより commit 間は常にトランザクションが有効な状態が保たれ、埋め込み文がトランザクションブロック内で実行される ECPG のセマンティクスに一致します。
 
-### SAVEPOINT による文単位のエラー隔離
+### 文の失敗時のエラー処理（文単位の SAVEPOINT は使わない）
 
-`exec`, `execWithParams`, `openCursor` は各文を SAVEPOINT で包みます。文の前に `SAVEPOINT oc_save` を発行し、成功時は `RELEASE SAVEPOINT oc_save`、失敗時は `ROLLBACK TO oc_save` を実行してから例外を再送します。これにより 1 つの文の失敗で周囲のトランザクション全体が中断するのを防ぎ、プログラムは SQLCA を確認して処理を続行できます。`getParameterMetaData` も、PostgreSQL がパラメータメタデータ解決中にトランザクションを中断した場合（例: テーブルが存在しない）に savepoint へロールバックして再設定します。
+ランタイムは各文を SAVEPOINT で包み**ません**。文が失敗した場合は、エラーを SQLCA に記録し、トランザクションは aborted のままにします。回復（`ROLLBACK` の発行）は COBOL プログラムの責任です。これは、savepoint 定数を定義しつつ一切使用していない Open COBOL ESQL 4J の Scala ランタイムと一致し、また ECPG / PostgreSQL のセマンティクス（トランザクションブロック内でエラーが起きると、プログラムがロールバックするまで以降の文が SQLSTATE `25P02` (`in_failed_sql_transaction`) で拒否される）とも一致します。
+
+パラメータ付き文では、`getParameterMetaData`（JDBC の Describe）を `execute()` と同じ `try` 内で発行します。Describe が失敗した場合（例: テーブルが存在しない）はその例外がそのままハンドラへ伝播するため、SQLCA には `25P02` でマスクされた値ではなく真のエラー（例: `42P01`）が記録されます。
 
 ### prepared statement のキャッシュ (`stmtCache`)
 
@@ -190,7 +192,7 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 | `tests/esql-cobol-data.src/` | COBOL データ型 × SQL 型のラウンドトリップ (数値・パック 10 進・英数字・日本語・VARYING・添字付き) |
 | `tests/esql-sql-data.src/` | SQL 側の型バリエーション |
 | `tests/esql-sqlca.src/` | SQLCA フィールドのアサーション |
-| `tests/esql-misc.src/` | カーソル / PREPARE / EXECUTE / SAVEPOINT 等 |
+| `tests/esql-misc.src/` | カーソル / PREPARE / EXECUTE 等 |
 | `tests/esql-utf8.src/` | UTF-8 ビルド時の対応 |
 
 各スイートは `make <name>` で生成され、`./<name>` でローカル実行できます (PostgreSQL コンテナが必要)。CI からは `.github/workflows/test-esql.yml` 経由で実行されます。
