@@ -330,8 +330,6 @@ final class SqlCA {
                 return OCPG_EMPTY;
             case "08001":
             case "08003":
-            case "28P01":
-            case "28000":
                 return OCPG_CONNECT;
             case "08007":
                 return OCPG_TRANS;

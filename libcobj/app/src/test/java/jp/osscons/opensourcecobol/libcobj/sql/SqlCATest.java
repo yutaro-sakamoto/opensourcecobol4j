@@ -298,19 +298,21 @@ class SqlCATest {
     }
 
     @Test
-    void testSqlStateToCode_Connect_28P01() {
+    void testSqlStateToCode_AuthFailure_28P01_Unknown() {
+        // 認証失敗 (28P01/28000) は Open COBOL ESQL 4J と同じく明示マッピングを持たず、
+        // 不明エラー (-9999) に落ちる。
         assertEquals(
-                SqlCA.OCPG_CONNECT,
+                SqlCA.OCPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode("28P01"),
-                "28P01 should map to OCPG_CONNECT");
+                "28P01 has no explicit mapping (matches Open COBOL ESQL 4J)");
     }
 
     @Test
-    void testSqlStateToCode_Connect_28000() {
+    void testSqlStateToCode_AuthFailure_28000_Unknown() {
         assertEquals(
-                SqlCA.OCPG_CONNECT,
+                SqlCA.OCPG_UNKNOWN_ERROR,
                 SqlCA.sqlStateToCode("28000"),
-                "28000 should map to OCPG_CONNECT");
+                "28000 has no explicit mapping (matches Open COBOL ESQL 4J)");
     }
 
     @Test

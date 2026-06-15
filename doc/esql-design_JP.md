@@ -176,9 +176,9 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 
 ### エラーマッピング
 
-JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`OCPG_NOT_FOUND`）、`08001`/`08003`/`28000`/`28P01` → `-402`（`OCPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`OCPG_EMPTY`）。認識できない状態はすべて `-9999`（`OCPG_UNKNOWN_ERROR`）になります。
+JDBC の `SQLException` 発生時、`SqlCA.setResultFromException` は例外の `SQLState` を `SqlCA.sqlStateToCode` で `SQLCODE` にマッピングし、`e.getMessage()` を `SQLERRMC`（70 バイトに切り詰め）に格納します。主なマッピング: `02000` → `+100`（`OCPG_NOT_FOUND`）、`08001`/`08003` → `-402`（`OCPG_CONNECT`）、`34000` → `-602`、`YE002` → `-212`（`OCPG_EMPTY`）。認識できない状態はすべて `-9999`（`OCPG_UNKNOWN_ERROR`）になります。
 
-`OCPG_*` コード群と `SQLSTATE`→`SQLCODE` マッピングは Open COBOL ESQL 4J に従います。マッピング上の違いは、認証失敗の `28000` / `28P01` をここでは `-402`（`OCPG_CONNECT`）に対応付ける点だけで、Open COBOL ESQL 4J ではこれらを対応付けず `-9999` のままにします。トランザクションモデルに由来する挙動差として、OPEN に失敗したカーソルへの FETCH は abort されたままのトランザクション上で実行され `25P02` 由来の `-9999` を返しますが、Open COBOL ESQL 4J はこのケースで `-212`（`OCPG_EMPTY`）を返します。
+`OCPG_*` コード群と `SQLSTATE`→`SQLCODE` マッピングは Open COBOL ESQL 4J と一致します。残る挙動差はマッピング表ではなくトランザクションモデルに由来するもので、OPEN に失敗したカーソルへの FETCH は abort されたままのトランザクション上で実行され `25P02` 由来の `-9999` を返します。Open COBOL ESQL 4J のこのケースの結果は同梱テスト間でも一貫しておらず（あるシナリオでは `-9999`、別では `-212`）、本ランタイムは内部的に一貫した `-9999` を常に返します。
 
 カーソルの異常系は一部ランタイム側で判定されます: 未登録カーソルへの OPEN / FETCH / CLOSE は `-602` / `34000` を返し、登録済みだが未 OPEN のカーソルの CLOSE は成功を返し、未登録カーソルへの `WHERE CURRENT OF` は `OCPG_EMPTY` / `YE002` を返します。登録済みだが未 OPEN のカーソル（OPEN に失敗したものを含む）への FETCH はそのまま PostgreSQL へ送られ、トランザクションが正常なら `cursor "..." does not exist`、OPEN 失敗でトランザクションが abort のままなら `25P02` が返ります。回復する（`ROLLBACK` を発行する）かどうかは COBOL プログラムの責任です。
 
