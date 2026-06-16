@@ -3732,6 +3732,18 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
   joutput("}");
 }
 
+/* Helper: AbstractCobolField[] 配列リテラルを ",\n" と現在のインデントを
+ * 前置してから出力する。SQL 文字列に続く入力ホスト変数配列・結果ホスト変数
+ * 配列をそれぞれ独立した行に折り返し、selectInto 系の生成 Java の可読性を
+ * 上げるために用いる。list が空でも joutput_sql_field_array が空配列リテラル
+ * (new AbstractCobolField[0]) を出力するため、本関数は常にカンマと改行を出力する
+ * (引数自体を省略しうる joutput_sql_host_list_newline とは挙動が異なる)。 */
+static void joutput_sql_field_array_newline(struct cb_sql_host_var *list) {
+  joutput(",\n");
+  joutput_prefix();
+  joutput_sql_field_array(list);
+}
+
 /* SQL 文字列の先頭の「空白だけの行」と末尾の空白を取り除いた有効範囲を
  * 返す。戻り値が start、*end_out が end (exclusive) ポインタ。
  * - 先頭: 改行を含む whitespace の連続のうち、最後の改行までを進める。
@@ -3959,10 +3971,8 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput("CobolSql.selectInto(");
     joutput_exec_sql_field_name("SQLCA");
     joutput_sql_string_arg(p->sql_text);
-    joutput(", ");
-    joutput_sql_field_array(p->host_list);
-    joutput(", ");
-    joutput_sql_field_array(p->res_host_list);
+    joutput_sql_field_array_newline(p->host_list);
+    joutput_sql_field_array_newline(p->res_host_list);
     joutput(");\n");
     break;
 
@@ -3971,11 +3981,11 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput("CobolSql.selectIntoOccurs(");
     joutput_exec_sql_field_name("SQLCA");
     joutput_sql_string_arg(p->sql_text);
-    joutput(", ");
-    joutput_sql_field_array(p->host_list);
-    joutput(", ");
-    joutput_sql_field_array(p->res_host_list);
-    joutput(", %d, %d);\n", p->occurs_size, p->occurs_max);
+    joutput_sql_field_array_newline(p->host_list);
+    joutput_sql_field_array_newline(p->res_host_list);
+    joutput(",\n");
+    joutput_prefix();
+    joutput("%d, %d);\n", p->occurs_size, p->occurs_max);
     break;
 
   case CB_SQL_DECLARE_CURSOR:
