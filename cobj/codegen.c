@@ -3735,9 +3735,10 @@ static void joutput_sql_field_array(struct cb_sql_host_var *list) {
 /* Helper: AbstractCobolField[] 配列リテラルを ",\n" と現在のインデントを
  * 前置してから出力する。SQL 文字列に続く入力ホスト変数配列・結果ホスト変数
  * 配列をそれぞれ独立した行に折り返し、selectInto 系の生成 Java の可読性を
- * 上げるために用いる。list が空でも joutput_sql_field_array が空配列リテラル
- * (new AbstractCobolField[0]) を出力するため、本関数は常にカンマと改行を出力する
- * (引数自体を省略しうる joutput_sql_host_list_newline とは挙動が異なる)。 */
+ * 上げるために用いる。list が空でも joutput_sql_field_array が
+ * 空配列リテラル (new AbstractCobolField[0]) を出力するため、本関数は
+ * 常にカンマと改行を出力する。これは引数自体を省略しうる
+ * joutput_sql_host_list_newline とは挙動が異なる。 */
 static void joutput_sql_field_array_newline(struct cb_sql_host_var *list) {
   joutput(",\n");
   joutput_prefix();
