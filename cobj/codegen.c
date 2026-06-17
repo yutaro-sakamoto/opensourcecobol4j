@@ -3981,12 +3981,11 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     joutput("CobolSql.selectIntoOccurs(");
     joutput_exec_sql_field_name("SQLCA");
+    joutput(", %d, %d", p->occurs_size, p->occurs_max);
     joutput_sql_string_arg(p->sql_text);
     joutput_sql_field_array_newline(p->host_list);
     joutput_sql_field_array_newline(p->res_host_list);
-    joutput(",\n");
-    joutput_prefix();
-    joutput("%d, %d);\n", p->occurs_size, p->occurs_max);
+    joutput(");\n");
     break;
 
   case CB_SQL_DECLARE_CURSOR:

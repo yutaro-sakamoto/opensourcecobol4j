@@ -986,7 +986,7 @@ class CobolSqlTest {
 
     @Test
     void testSelectIntoOccurs_NoConnection() {
-        CobolSql.selectIntoOccurs(sqlca, "SELECT 1", null, null, 10, 5);
+        CobolSql.selectIntoOccurs(sqlca, 10, 5, "SELECT 1", null, null);
         assertEquals(
                 SqlCA.ECPG_NO_CONN,
                 getSqlCode(),
@@ -996,7 +996,7 @@ class CobolSqlTest {
     @Test
     void testSelectIntoOccurs_NullQuery() throws Exception {
         registerRealConnection();
-        CobolSql.selectIntoOccurs(sqlca, null, null, null, 10, 5);
+        CobolSql.selectIntoOccurs(sqlca, 10, 5, null, null, null);
         assertEquals(
                 SqlCA.ECPG_EMPTY,
                 getSqlCode(),
@@ -1222,11 +1222,11 @@ class CobolSqlTest {
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.selectIntoOccurs(
                 sqlca,
+                10,
+                3,
                 "SELECT val FROM occ_test ORDER BY val",
                 null,
-                new AbstractCobolField[] {field},
-                10,
-                3);
+                new AbstractCobolField[] {field});
         assertEquals(0, getSqlCode(), "SelectIntoOccurs should succeed");
 
         try (Statement stmt = realConn.createStatement()) {
@@ -1245,7 +1245,7 @@ class CobolSqlTest {
         byte[] data = new byte[30];
         AbstractCobolField field = makeAlphaField(10, data);
         CobolSql.selectIntoOccurs(
-                sqlca, "SELECT val FROM occ_test", null, new AbstractCobolField[] {field}, 10, 3);
+                sqlca, 10, 3, "SELECT val FROM occ_test", null, new AbstractCobolField[] {field});
         assertEquals(
                 SqlCA.ECPG_NOT_FOUND,
                 getSqlCode(),
@@ -1271,11 +1271,11 @@ class CobolSqlTest {
         AbstractCobolField input = makeNumericField(4, "0001".getBytes());
         CobolSql.selectIntoOccurs(
                 sqlca,
+                10,
+                2,
                 "SELECT val FROM occ_test WHERE id = ?",
                 new AbstractCobolField[] {input},
-                new AbstractCobolField[] {field},
-                10,
-                2);
+                new AbstractCobolField[] {field});
         assertEquals(0, getSqlCode(), "SelectIntoOccurs with input params should succeed");
 
         try (Statement stmt = realConn.createStatement()) {

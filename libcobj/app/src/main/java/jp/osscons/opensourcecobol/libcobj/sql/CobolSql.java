@@ -488,19 +488,19 @@ public final class CobolSql {
      * OCCURS 配列に対する SELECT INTO 文を実行し、複数行を書き込む。
      *
      * @param sqlca SQLCA データストレージ
+     * @param occursSize OCCURS 要素 1 つあたりのバイト数（ストライド）
+     * @param occursMax OCCURS 要素の最大数
      * @param query SELECT クエリ文字列
      * @param inputParams 入力のホスト変数パラメータ
      * @param resultParams 出力ホスト変数（1 つの OCCURS 要素のフィールド群）
-     * @param occursSize OCCURS 要素 1 つあたりのバイト数（ストライド）
-     * @param occursMax OCCURS 要素の最大数
      */
     public static void selectIntoOccurs(
             CobolDataStorage sqlca,
+            int occursSize,
+            int occursMax,
             String query,
             AbstractCobolField[] inputParams,
-            AbstractCobolField[] resultParams,
-            int occursSize,
-            int occursMax) {
+            AbstractCobolField[] resultParams) {
         try {
             SqlConnection sqlConn = SqlState.getDefaultConnection();
             if (sqlConn == null) {
