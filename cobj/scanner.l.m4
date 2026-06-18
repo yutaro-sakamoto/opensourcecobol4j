@@ -131,18 +131,30 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 
 <ESQL_STATE>{
   "END-EXEC" {
-	/* End of EXEC SQL block.
-	 * SQL 本体の空白整形 (先頭・末尾・共通インデント) は codegen.c
-	 * (joutput_sql_string) が行う。ここでは esql_buff を加工せず
-	 * そのまま EXEC_SQL_STATEMENT トークンに渡す。 */
-	BEGIN INITIAL;
-	esql_in_quote = 0;
-	esql_buff[esql_buff_len] = '\0';
-	yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
-	/* location は END-EXEC 行ではなく EXEC SQL 開始行を指すようにする */
-	yylval->source_file = (unsigned char *)cb_source_file;
-	yylval->source_line = esql_start_line;
-	return EXEC_SQL_STATEMENT;
+	if (esql_in_quote) {
+		/* 引用符リテラル内の END-EXEC はブロック終端ではなく SQL 本体の一部。
+		 * 終端扱いせず、そのまま esql_buff に取り込む。 */
+		size_t len = strlen(yytext);
+		while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+			esql_buff_capacity *= 2;
+			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+		}
+		memcpy(esql_buff + esql_buff_len, yytext, len);
+		esql_buff_len += len;
+	} else {
+		/* End of EXEC SQL block.
+		 * SQL 本体の空白整形 (先頭・末尾・共通インデント) は codegen.c
+		 * (joutput_sql_string) が行う。ここでは esql_buff を加工せず
+		 * そのまま EXEC_SQL_STATEMENT トークンに渡す。 */
+		BEGIN INITIAL;
+		esql_in_quote = 0;
+		esql_buff[esql_buff_len] = '\0';
+		yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
+		/* location は END-EXEC 行ではなく EXEC SQL 開始行を指すようにする */
+		yylval->source_file = (unsigned char *)cb_source_file;
+		yylval->source_line = esql_start_line;
+		return EXEC_SQL_STATEMENT;
+	}
   }
   \n {
 	cb_source_line++;
