@@ -138,32 +138,21 @@ public final class CobolSql {
                 return;
             }
 
-            String trimmed = collapseWhitespace(query);
-            LOG.debug("EXEC SQL: {}", trimmed);
-            boolean isTxnControl =
-                    "COMMIT".equalsIgnoreCase(trimmed)
-                            || "ROLLBACK".equalsIgnoreCase(trimmed)
-                            || "BEGIN".equalsIgnoreCase(trimmed);
-
-            if (isTxnControl) {
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute(query);
-                }
-                SqlCA.setSuccess(sqlca);
-                if ("COMMIT".equalsIgnoreCase(trimmed) || "ROLLBACK".equalsIgnoreCase(trimmed)) {
-                    SqlState.clearCursors();
-                    sqlConn.beginTransaction();
-                }
-            } else {
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute(query);
-                    int updateCount = stmt.getUpdateCount();
-                    if (updateCount >= 0) {
-                        SqlCA.setRowCount(sqlca, updateCount);
-                    }
-                }
-                SqlCA.setSuccess(sqlca);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("EXEC SQL: {}", collapseWhitespace(query));
             }
+            // トランザクション境界 (COMMIT / ROLLBACK) はコンパイラが CB_SQL_COMMIT /
+            // CB_SQL_ROLLBACK に分類し commit() / rollback() が処理する (カーソル破棄と
+            // BEGIN もそちらで行う)。exec() に到達するのは INSERT / UPDATE / DELETE /
+            // DDL など通常の文だけなので、SQL テキストを再判定して境界を検出しない。
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(query);
+                int updateCount = stmt.getUpdateCount();
+                if (updateCount >= 0) {
+                    SqlCA.setRowCount(sqlca, updateCount);
+                }
+            }
+            SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("EXEC SQL failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
@@ -219,11 +208,9 @@ public final class CobolSql {
             }
 
             SqlCA.setSuccess(sqlca);
-
-            if ("COMMIT".equalsIgnoreCase(query) || "ROLLBACK".equalsIgnoreCase(query)) {
-                SqlState.clearCursors();
-                sqlConn.beginTransaction();
-            }
+            // COMMIT / ROLLBACK は CB_SQL_COMMIT / CB_SQL_ROLLBACK として commit() /
+            // rollback() に分類されるため、パラメータ付き実行の経路には到達しない。
+            // ここで SQL テキストを判定してトランザクション境界を扱うことはしない。
         } catch (SQLException e) {
             LOG.error("EXEC SQL failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);
