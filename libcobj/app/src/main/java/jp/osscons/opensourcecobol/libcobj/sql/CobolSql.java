@@ -816,19 +816,44 @@ public final class CobolSql {
                 return;
             }
 
-            // ホスト変数のプレースホルダを数えて置き換える
+            // ホスト変数のプレースホルダ(:name)を数えて ? に置き換える。
+            // 文字列リテラル / 引用識別子の内側と、PostgreSQL の型キャスト演算子 (::)
+            // は対象外とする(これらの中の ':' をプレースホルダと誤認しない)。
             int nParams = 0;
+            int len = query.length();
             StringBuilder replaced = new StringBuilder();
-            for (int i = 0; i < query.length(); i++) {
+            char quote = 0; // 文字列リテラル/引用識別子の内側にいるときの引用符 (' または ")
+            for (int i = 0; i < len; i++) {
                 char c = query.charAt(i);
-                if (c == ':' && i + 1 < query.length() && Character.isLetter(query.charAt(i + 1))) {
+                if (quote != 0) {
+                    // リテラル/引用識別子の内側はそのまま通す。'' / "" は埋め込みエスケープ。
+                    replaced.append(c);
+                    if (c == quote) {
+                        if (i + 1 < len && query.charAt(i + 1) == quote) {
+                            replaced.append(quote);
+                            i++;
+                        } else {
+                            quote = 0;
+                        }
+                    }
+                } else if (c == '\'' || c == '"') {
+                    quote = c;
+                    replaced.append(c);
+                } else if (c == ':' && i + 1 < len && query.charAt(i + 1) == ':') {
+                    // '::' は型キャスト演算子。ホスト変数ではないのでそのまま通す。
+                    replaced.append("::");
+                    i++;
+                } else if (c == ':' && i + 1 < len && Character.isLetter(query.charAt(i + 1))) {
                     nParams++;
                     replaced.append('?');
                     i++;
-                    while (i < query.length()
+                    // 名前の終端。':' も終端に含め、:name の直後の '::' キャストを
+                    // 名前に取り込まないようにする(COBOL のホスト変数名に ':' は現れない)。
+                    while (i < len
                             && query.charAt(i) != ' '
                             && query.charAt(i) != ','
-                            && query.charAt(i) != ')') {
+                            && query.charAt(i) != ')'
+                            && query.charAt(i) != ':') {
                         i++;
                     }
                     i--;
