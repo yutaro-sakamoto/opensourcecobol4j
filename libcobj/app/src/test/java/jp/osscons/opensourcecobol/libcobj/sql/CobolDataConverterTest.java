@@ -607,7 +607,6 @@ class CobolDataConverterTest {
         }
 
         // INTEGER 列に対し整数として解釈できない文字列 "12.34" をバインドする。
-        // 従来は Integer.parseInt("12.34") の NumberFormatException がそのまま伝播していた。
         byte[] data = "12.34".getBytes();
         AbstractCobolField field =
                 makeField(5, data, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);

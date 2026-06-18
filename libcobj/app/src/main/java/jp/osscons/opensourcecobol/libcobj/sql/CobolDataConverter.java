@@ -993,12 +993,9 @@ final class CobolDataConverter {
             return;
         }
 
-        // 数値/日付/真偽値への変換は Integer.parseInt / new BigDecimal / Date.valueOf 等を用いるが、
-        // これらは非チェック例外 (NumberFormatException / IllegalArgumentException) を投げる。
-        // 呼び出し側は SQLException しか catch しないため、変換失敗をそのまま伝播させると
-        // SQLCA に記録されず COBOL プログラムが異常終了してしまう。ここで捕捉し、
-        // ECPG のデータ書式エラー (sqlcode=-204, sqlstate="42804") に対応する SQLException に
-        // 変換して投げ直すことで、既存のエラー処理経由で SQLCA に記録させる。
+        // 数値/日付への変換 (parseInt / BigDecimal / Date.valueOf 等) は失敗時に非チェック例外を
+        // 投げる。呼び出し側は SQLException しか捕捉しないため、ここで SQLState "42804"
+        // (ECPG_DATA_FORMAT_ERROR) の SQLException に変換し、SQLCA 経由でエラー報告させる。
         try {
             switch (paramType) {
                 case Types.CHAR:
