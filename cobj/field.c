@@ -1027,12 +1027,6 @@ void cb_validate_field(struct cb_field *f) {
     cb_validate_field(arr_field);
   }
 
-  /* ESQL VARYING ホスト変数の検出は esql.c の resolve_host_var_type で
-     ESQL 解決時にのみ行う。明示的な VARYING 句は parser.y で flag_varying
-     が立ち、上の展開ブロックで処理される。フィールド名の形を見て
-     flag_varying を立てる自動判定は、通常の長さ前置きレコードを VARYING と
-     誤認するため行わない。 */
-
   /* setup parameters */
   if (f->storage == CB_STORAGE_LOCAL || f->storage == CB_STORAGE_LINKAGE ||
       f->flag_item_based) {
