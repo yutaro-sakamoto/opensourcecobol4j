@@ -371,13 +371,10 @@ public final class CobolSql {
             return;
         }
 
-        // 注: OCCURS 配列への SELECT INTO は CB_SQL_SELECT_INTO_OCCURS に昇格され
-        // selectIntoOccurs / fetchOccursRows が処理する。集団項目の結果ホスト変数も
-        // コンパイル時に esql.c の expand_group_host_vars が子フィールドへ展開するため、
-        // ここに到達する resultParams は常に展開済みの個別フィールドである。各列を
-        // 対応するフィールドの COBOL 表現へ stringToCobol で変換して書き込む。
-
-        // 単一行: 列を個々の結果フィールドに書き込む
+        // 各列を、対応する結果ホスト変数の COBOL 表現へ変換して書き込む。
+        // OCCURS 配列への SELECT INTO は selectIntoOccurs が処理するため、ここは単一行。
+        // 集団項目はコンパイル時に個別フィールドへ展開済みで、ここには展開後の
+        // 個別フィールドだけが渡される。
         int columnCount = rs.getMetaData().getColumnCount();
         boolean sawNullWithoutIndicator = false;
         for (int i = 0; i < resultParams.length && i < columnCount; i++) {
