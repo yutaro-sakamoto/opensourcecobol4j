@@ -195,10 +195,13 @@ public final class CobolSql {
                 return;
             }
 
-            LOG.debug(
-                    "EXEC SQL (params={}): {}",
-                    params != null ? params.length : 0,
-                    collapseWhitespace(query));
+            // collapseWhitespace は正規表現を伴うため、DEBUG 無効時に評価しないよう包む。
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(
+                        "EXEC SQL (params={}): {}",
+                        params != null ? params.length : 0,
+                        collapseWhitespace(query));
+            }
 
             PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
             // getParameterMetaData (Describe) が失敗した場合 (例: テーブル不在) は、その例外を
@@ -432,7 +435,9 @@ public final class CobolSql {
                 return;
             }
 
-            LOG.debug("SELECT INTO: {}", collapseWhitespace(query));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("SELECT INTO: {}", collapseWhitespace(query));
+            }
 
             if (inputParams != null && inputParams.length > 0) {
                 PreparedStatement pstmt = getOrCreatePreparedStatement(conn, query);
@@ -519,7 +524,9 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
-            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
+            }
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
@@ -549,7 +556,9 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
-            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
+            }
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
