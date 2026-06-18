@@ -141,10 +141,6 @@ public final class CobolSql {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("EXEC SQL: {}", collapseWhitespace(query));
             }
-            // トランザクション境界 (COMMIT / ROLLBACK) はコンパイラが CB_SQL_COMMIT /
-            // CB_SQL_ROLLBACK に分類し commit() / rollback() が処理する (カーソル破棄と
-            // BEGIN もそちらで行う)。exec() に到達するのは INSERT / UPDATE / DELETE /
-            // DDL など通常の文だけなので、SQL テキストを再判定して境界を検出しない。
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(query);
                 int updateCount = stmt.getUpdateCount();
@@ -208,9 +204,6 @@ public final class CobolSql {
             }
 
             SqlCA.setSuccess(sqlca);
-            // COMMIT / ROLLBACK は CB_SQL_COMMIT / CB_SQL_ROLLBACK として commit() /
-            // rollback() に分類されるため、パラメータ付き実行の経路には到達しない。
-            // ここで SQL テキストを判定してトランザクション境界を扱うことはしない。
         } catch (SQLException e) {
             LOG.error("EXEC SQL failed: {} - {}", collapseWhitespace(query), e.getMessage());
             SqlCA.setResultFromException(sqlca, e);

@@ -291,17 +291,6 @@ class CobolSqlTest {
         assertNotEquals(0, getSqlCode(), "Insert into nonexistent table should fail");
     }
 
-    @Test
-    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void testExec_CommitClearsCursors() throws Exception {
-        registerRealConnection();
-        SqlState.addCursor("c1", new SqlCursor("c1", "SELECT 1", 0));
-        SqlState.getCursor("c1").isOpened = true;
-        CobolSql.exec(sqlca, "COMMIT");
-        assertEquals(0, getSqlCode(), "COMMIT should succeed");
-        assertFalse(SqlState.getCursor("c1").isOpened, "Cursor should be closed after COMMIT");
-    }
-
     // ============================================================
     // execWithParams() with real DB
     // ============================================================
