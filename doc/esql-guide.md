@@ -470,7 +470,7 @@ All of the limitations listed below are also present in Open COBOL ESQL 4J, the 
   - Backward / scrollable FETCH (`FETCH PRIOR`, `FETCH BACKWARD`, scrollable cursors, etc.). Only forward FETCH is available to the program. (`FETCH BACKWARD` is used internally only to correct the cursor position for `WHERE CURRENT OF`.)
   - Multiple connections. The `AT db` clause is accepted syntactically but **ignored**; all statements run against the single default connection. `DISCONNECT ALL` also affects only the default connection.
   - Indicator variables (`:VAR:IND`). A NULL fetched into a host variable without an indicator is reported via `SQLCODE = -213` (`SQLSTATE 22002`) instead.
-- Connection-string, user-name, and password values must not contain embedded spaces: at runtime everything from the first space onward is discarded (trailing COBOL padding is stripped this way).
+- User-name, password, and connection-string values have their trailing spaces (the COBOL fixed-length padding) stripped at runtime. Embedded spaces are preserved, but a value cannot carry significant trailing spaces.
 
 For the internal architecture and how these forms are parsed and translated into Java, see [esql-design.md](./esql-design.md).
 
