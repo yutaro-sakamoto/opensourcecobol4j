@@ -204,12 +204,12 @@ final class CobolDataConverter {
      */
     private static String readNumericDisplay(
             int length, int scale, CobolDataStorage storage, DisplaySign sign) {
-        // 先頭の分離符号は `length` 桁の手前に追加で 1 バイトを占有する。
-        int byteLen = (sign == DisplaySign.LEADING_SEPARATE) ? length + 1 : length;
+        // length は分離符号バイトも含むフィールド全体のサイズである
+        // (writeNumericDisplay と対称: 先頭/末尾の分離符号は length の内側に置かれる)。
         // ここでは (getByteArrayRef ではなく) コピーが必要である。結合符号 (combined sign) のケースでは
         // overpunch を取り除くために `data` 内の桁バイトを上書きするが、これが COBOL ストレージを
         // 変更してはならないためである。
-        byte[] data = storage.getByteArray(0, byteLen);
+        byte[] data = storage.getByteArray(0, length);
         boolean negative = false;
         int digitStart = 0;
         int digitCount = length;
@@ -232,6 +232,7 @@ final class CobolDataConverter {
             case LEADING_SEPARATE:
                 negative = data[0] == (byte) '-';
                 digitStart = 1; // 先頭バイトが分離符号である
+                digitCount = length - 1; // 符号バイトの分だけ桁数を減らす
                 break;
             case TRAILING_SEPARATE:
                 negative = data[length - 1] == (byte) '-';
