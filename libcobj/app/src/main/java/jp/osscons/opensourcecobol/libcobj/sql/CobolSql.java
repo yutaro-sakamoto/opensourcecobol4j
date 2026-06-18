@@ -25,6 +25,13 @@ public final class CobolSql {
 
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
 
+    /**
+     * 指標変数なしで NULL 列を受け取ったときに、ホスト変数へ書き込む空の結果。型対応の
+     * 変換 (stringToCobol/stringToCobolRaw) に空バイト列を渡すと、数値は 0、英数字は空白、
+     * national は全角空白という型ごとに正しい表現になる。
+     */
+    private static final byte[] EMPTY_RESULT = new byte[0];
+
     /** ログ出力用に、空白文字（改行、タブ、連続するスペース）を単一のスペースにまとめる。 */
     private static String collapseWhitespace(String s) {
         return s.replaceAll("\\s+", " ").trim();
@@ -337,7 +344,10 @@ public final class CobolSql {
                     CobolDataConverter.stringToCobolRaw(
                             resultParams[i], fieldStorage, fieldSize, value);
                 } else {
-                    fieldStorage.memset((byte) 0, fieldSize);
+                    // 指標変数なしの NULL は型に応じた空値で埋める。raw な memset 0 は
+                    // packed の符号ニブルやゾーン10進が不正表現になるため避ける。
+                    CobolDataConverter.stringToCobolRaw(
+                            resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
                     sawNullWithoutIndicator = true;
                 }
             }
@@ -382,7 +392,9 @@ public final class CobolSql {
             if (value != null) {
                 CobolDataConverter.stringToCobol(resultParams[i], value);
             } else {
-                resultParams[i].getDataStorage().memset((byte) 0, resultParams[i].getSize());
+                // 指標変数なしの NULL は型に応じた空値で埋める (memset 0 は packed/
+                // ゾーン10進で不正表現になる)。
+                CobolDataConverter.stringToCobol(resultParams[i], EMPTY_RESULT);
                 sawNullWithoutIndicator = true;
             }
         }
@@ -725,7 +737,10 @@ public final class CobolSql {
                             CobolDataConverter.stringToCobolRaw(
                                     resultParams[i], fieldStorage, fieldSize, value);
                         } else {
-                            fieldStorage.memset((byte) 0, fieldSize);
+                            // 指標変数なしの NULL は型に応じた空値で埋める (memset 0 は
+                            // packed/ゾーン10進で不正表現になる)。
+                            CobolDataConverter.stringToCobolRaw(
+                                    resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
                             sawNullWithoutIndicator = true;
                         }
                     }

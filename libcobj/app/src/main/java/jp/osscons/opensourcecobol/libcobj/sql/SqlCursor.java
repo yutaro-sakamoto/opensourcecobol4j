@@ -149,7 +149,10 @@ class SqlCursor {
                 if (value != null) {
                     CobolDataConverter.stringToCobol(resultParams[i], value);
                 } else {
-                    resultParams[i].getDataStorage().memset((byte) 0, resultParams[i].getSize());
+                    // 指標変数なしの NULL は型に応じた空値で埋める。空バイト列を型対応の
+                    // 変換に渡すと、数値=0/英数字=空白/national=全角空白になる。raw な
+                    // memset 0 は packed の符号ニブルやゾーン10進で不正表現になるため避ける。
+                    CobolDataConverter.stringToCobol(resultParams[i], new byte[0]);
                     sawNullWithoutIndicator = true;
                 }
             }
