@@ -188,7 +188,8 @@ class CobolDataConverterTest {
         byte[] data = "+1234".getBytes();
         AbstractCobolField field =
                 makeField(
-                        4,
+                        // SIGN LEADING SEPARATE のフィールドサイズは符号バイト込み (digits+1)
+                        5,
                         data,
                         CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
                         4,
@@ -207,7 +208,8 @@ class CobolDataConverterTest {
         byte[] data = "-1234".getBytes();
         AbstractCobolField field =
                 makeField(
-                        4,
+                        // SIGN LEADING SEPARATE のフィールドサイズは符号バイト込み (digits+1)
+                        5,
                         data,
                         CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
                         4,
@@ -300,7 +302,8 @@ class CobolDataConverterTest {
         byte[] data = "-000123".getBytes();
         AbstractCobolField field =
                 makeField(
-                        6,
+                        // SIGN LEADING SEPARATE のフィールドサイズは符号バイト込み (digits+1)
+                        7,
                         data,
                         CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
                         6,
@@ -2126,7 +2129,8 @@ class CobolDataConverterTest {
         byte[] data = "+0042".getBytes();
         AbstractCobolField field =
                 makeField(
-                        4,
+                        // SIGN LEADING SEPARATE のフィールドサイズは符号バイト込み (digits+1)
+                        5,
                         data,
                         CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
                         4,
