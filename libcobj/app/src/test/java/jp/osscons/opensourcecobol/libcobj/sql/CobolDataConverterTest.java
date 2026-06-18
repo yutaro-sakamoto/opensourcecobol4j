@@ -591,6 +591,47 @@ class CobolDataConverterTest {
         }
     }
 
+    /**
+     * ホスト変数の値が対象 SQL 型へ変換できない場合、setParam は Integer.parseInt 等が投げる
+     * 非チェック例外 (NumberFormatException 等) をそのまま伝播させず、SQLState "42804"
+     * (ECPG_DATA_FORMAT_ERROR, sqlcode=-204 に対応) の SQLException に変換して投げ直す。
+     * これにより呼び出し側の catch (SQLException) 経由で SQLCA に記録され、プログラムが
+     * 異常終了しない。
+     */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testSetParam_ConversionError_ThrowsSqlException() throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS param_test");
+            stmt.execute("CREATE TABLE param_test (id INTEGER)");
+        }
+
+        // INTEGER 列に対し整数として解釈できない文字列 "12.34" をバインドする。
+        // 従来は Integer.parseInt("12.34") の NumberFormatException がそのまま伝播していた。
+        byte[] data = "12.34".getBytes();
+        AbstractCobolField field =
+                makeField(5, data, CobolFieldAttribute.COB_TYPE_ALPHANUMERIC, 0, 0, 0);
+
+        try (PreparedStatement ps =
+                conn.prepareStatement("INSERT INTO param_test (id) VALUES (?)")) {
+            SQLException ex =
+                    assertThrows(
+                            SQLException.class,
+                            () ->
+                                    CobolDataConverter.setParam(
+                                            ps, 1, ps.getParameterMetaData(), field),
+                            "変換失敗時は SQLException が投げられるべき");
+            assertEquals(
+                    "42804", ex.getSQLState(), "SQLState は ECPG_DATA_FORMAT_ERROR に対応する 42804");
+            assertTrue(
+                    ex.getCause() instanceof NumberFormatException, "元の非チェック例外が cause として保持されるべき");
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE param_test");
+        }
+    }
+
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testSetParam_VarcharType() throws Exception {

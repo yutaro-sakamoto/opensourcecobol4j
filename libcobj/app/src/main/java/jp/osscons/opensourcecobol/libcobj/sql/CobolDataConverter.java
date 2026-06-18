@@ -993,58 +993,78 @@ final class CobolDataConverter {
             return;
         }
 
-        switch (paramType) {
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.NCHAR:
-            case Types.NVARCHAR:
-            case Types.LONGVARCHAR:
-            case Types.LONGNVARCHAR:
-            case Types.CLOB:
-            case Types.BLOB:
-            case Types.ARRAY:
-            case Types.OTHER:
-            case Types.LONGVARBINARY:
-            case Types.JAVA_OBJECT:
-                stmt.setString(index, str);
-                break;
-            case Types.INTEGER:
-            case Types.SMALLINT:
-            case Types.TINYINT:
-                stmt.setInt(index, Integer.parseInt(str));
-                break;
-            case Types.BIGINT:
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-                // NUMERIC/DECIMAL は BigDecimal で正確にバインドする。
-                // setDouble だと 16 桁超の精度や正確な小数で丸め誤差が生じる。
-                stmt.setBigDecimal(index, new BigDecimal(str));
-                break;
-            case Types.FLOAT:
-                stmt.setFloat(index, Float.parseFloat(str));
-                break;
-            case Types.DOUBLE:
-            case Types.REAL:
-                stmt.setDouble(index, Double.parseDouble(str));
-                break;
-            case Types.DATE:
-                stmt.setDate(index, java.sql.Date.valueOf(str));
-                break;
-            case Types.TIME:
-            case Types.TIME_WITH_TIMEZONE:
-                stmt.setTime(index, java.sql.Time.valueOf(str));
-                break;
-            case Types.TIMESTAMP:
-            case Types.TIMESTAMP_WITH_TIMEZONE:
-                stmt.setTimestamp(index, java.sql.Timestamp.valueOf(str));
-                break;
-            case Types.BOOLEAN:
-            case Types.BIT:
-                stmt.setBoolean(index, Boolean.valueOf(str));
-                break;
-            default:
-                stmt.setString(index, str);
-                break;
+        // 数値/日付/真偽値への変換は Integer.parseInt / new BigDecimal / Date.valueOf 等を用いるが、
+        // これらは非チェック例外 (NumberFormatException / IllegalArgumentException) を投げる。
+        // 呼び出し側は SQLException しか catch しないため、変換失敗をそのまま伝播させると
+        // SQLCA に記録されず COBOL プログラムが異常終了してしまう。ここで捕捉し、
+        // ECPG のデータ書式エラー (sqlcode=-204, sqlstate="42804") に対応する SQLException に
+        // 変換して投げ直すことで、既存のエラー処理経由で SQLCA に記録させる。
+        try {
+            switch (paramType) {
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGVARCHAR:
+                case Types.LONGNVARCHAR:
+                case Types.CLOB:
+                case Types.BLOB:
+                case Types.ARRAY:
+                case Types.OTHER:
+                case Types.LONGVARBINARY:
+                case Types.JAVA_OBJECT:
+                    stmt.setString(index, str);
+                    break;
+                case Types.INTEGER:
+                case Types.SMALLINT:
+                case Types.TINYINT:
+                    stmt.setInt(index, Integer.parseInt(str));
+                    break;
+                case Types.BIGINT:
+                case Types.DECIMAL:
+                case Types.NUMERIC:
+                    // NUMERIC/DECIMAL は BigDecimal で正確にバインドする。
+                    // setDouble だと 16 桁超の精度や正確な小数で丸め誤差が生じる。
+                    stmt.setBigDecimal(index, new BigDecimal(str));
+                    break;
+                case Types.FLOAT:
+                    stmt.setFloat(index, Float.parseFloat(str));
+                    break;
+                case Types.DOUBLE:
+                case Types.REAL:
+                    stmt.setDouble(index, Double.parseDouble(str));
+                    break;
+                case Types.DATE:
+                    stmt.setDate(index, java.sql.Date.valueOf(str));
+                    break;
+                case Types.TIME:
+                case Types.TIME_WITH_TIMEZONE:
+                    stmt.setTime(index, java.sql.Time.valueOf(str));
+                    break;
+                case Types.TIMESTAMP:
+                case Types.TIMESTAMP_WITH_TIMEZONE:
+                    stmt.setTimestamp(index, java.sql.Timestamp.valueOf(str));
+                    break;
+                case Types.BOOLEAN:
+                case Types.BIT:
+                    stmt.setBoolean(index, Boolean.valueOf(str));
+                    break;
+                default:
+                    stmt.setString(index, str);
+                    break;
+            }
+        } catch (IllegalArgumentException e) {
+            // NumberFormatException は IllegalArgumentException のサブクラス。
+            // Date/Time/Timestamp.valueOf の解析失敗も IllegalArgumentException を投げる。
+            throw new SQLException(
+                    "Data format error converting host variable value \""
+                            + str
+                            + "\" for SQL type "
+                            + paramType
+                            + ": "
+                            + e.getMessage(),
+                    "42804",
+                    e);
         }
     }
 
