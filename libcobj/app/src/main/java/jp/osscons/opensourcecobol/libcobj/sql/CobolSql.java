@@ -302,90 +302,97 @@ public final class CobolSql {
             int occursMax,
             CobolDataStorage sqlca)
             throws SQLException {
-        if (rs == null || !rs.next()) {
-            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
-            SqlCA.setState(sqlca, "02000");
-            SqlCA.clearErrmc(sqlca);
+        // rs はキャッシュされた PreparedStatement のものであることがあり、文自体は閉じないため、
+        // 変換中の例外も含めどの経路でも ResultSet を確実に閉じる (サーバ側カーソルのリーク防止)。
+        try {
+            if (rs == null || !rs.next()) {
+                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
+                SqlCA.setState(sqlca, "02000");
+                SqlCA.clearErrmc(sqlca);
+                return;
+            }
+            int rowCount = 0;
+            boolean sawNullWithoutIndicator = false;
+            do {
+                if (rowCount >= occursMax) {
+                    break;
+                }
+                int storageOffset = rowCount * occursSize;
+                for (int i = 0; i < resultParams.length; i++) {
+                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                    CobolDataStorage fieldStorage =
+                            resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
+                    int fieldSize = resultParams[i].getSize();
+                    if (value != null) {
+                        CobolDataConverter.stringToCobolRaw(
+                                resultParams[i], fieldStorage, fieldSize, value);
+                    } else {
+                        // 指標変数なしの NULL は型に応じた空値で埋める。raw な memset 0 は
+                        // packed の符号ニブルやゾーン10進が不正表現になるため避ける。
+                        CobolDataConverter.stringToCobolRaw(
+                                resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
+                        sawNullWithoutIndicator = true;
+                    }
+                }
+                rowCount++;
+            } while (rs.next());
+            SqlCA.setRowCount(sqlca, rowCount);
+            if (sawNullWithoutIndicator) {
+                SqlCA.setMissingIndicator(sqlca);
+            } else {
+                SqlCA.setSuccess(sqlca);
+            }
+        } finally {
             if (rs != null) {
                 rs.close();
             }
-            return;
-        }
-        int rowCount = 0;
-        boolean sawNullWithoutIndicator = false;
-        do {
-            if (rowCount >= occursMax) {
-                break;
-            }
-            int storageOffset = rowCount * occursSize;
-            for (int i = 0; i < resultParams.length; i++) {
-                byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                CobolDataStorage fieldStorage =
-                        resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
-                int fieldSize = resultParams[i].getSize();
-                if (value != null) {
-                    CobolDataConverter.stringToCobolRaw(
-                            resultParams[i], fieldStorage, fieldSize, value);
-                } else {
-                    // 指標変数なしの NULL は型に応じた空値で埋める。raw な memset 0 は
-                    // packed の符号ニブルやゾーン10進が不正表現になるため避ける。
-                    CobolDataConverter.stringToCobolRaw(
-                            resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
-                    sawNullWithoutIndicator = true;
-                }
-            }
-            rowCount++;
-        } while (rs.next());
-        rs.close();
-        SqlCA.setRowCount(sqlca, rowCount);
-        if (sawNullWithoutIndicator) {
-            SqlCA.setMissingIndicator(sqlca);
-        } else {
-            SqlCA.setSuccess(sqlca);
         }
     }
 
     private static void processSelectIntoResults(
             ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
-        if (rs == null || !rs.next()) {
-            SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
-            SqlCA.setState(sqlca, "02000");
-            SqlCA.clearErrmc(sqlca);
+        // rs はキャッシュされた PreparedStatement のものであることがあり、文自体は閉じないため、
+        // 変換中の例外も含めどの経路でも ResultSet を確実に閉じる (サーバ側カーソルのリーク防止)。
+        try {
+            if (rs == null || !rs.next()) {
+                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
+                SqlCA.setState(sqlca, "02000");
+                SqlCA.clearErrmc(sqlca);
+                return;
+            }
+
+            if (resultParams == null || resultParams.length == 0) {
+                SqlCA.setSuccess(sqlca);
+                return;
+            }
+
+            // 各列を、対応する結果ホスト変数の COBOL 表現へ変換して書き込む。
+            // OCCURS 配列への SELECT INTO は selectIntoOccurs が処理するため、ここは単一行。
+            // 集団項目はコンパイル時に個別フィールドへ展開済みで、ここには展開後の
+            // 個別フィールドだけが渡される。
+            int columnCount = rs.getMetaData().getColumnCount();
+            boolean sawNullWithoutIndicator = false;
+            for (int i = 0; i < resultParams.length && i < columnCount; i++) {
+                byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                if (value != null) {
+                    CobolDataConverter.stringToCobol(resultParams[i], value);
+                } else {
+                    // 指標変数なしの NULL は型に応じた空値で埋める (memset 0 は packed/
+                    // ゾーン10進で不正表現になる)。
+                    CobolDataConverter.stringToCobol(resultParams[i], EMPTY_RESULT);
+                    sawNullWithoutIndicator = true;
+                }
+            }
+            if (sawNullWithoutIndicator) {
+                SqlCA.setMissingIndicator(sqlca);
+            } else {
+                SqlCA.setSuccess(sqlca);
+            }
+        } finally {
             if (rs != null) {
                 rs.close();
             }
-            return;
-        }
-
-        if (resultParams == null || resultParams.length == 0) {
-            rs.close();
-            SqlCA.setSuccess(sqlca);
-            return;
-        }
-
-        // 各列を、対応する結果ホスト変数の COBOL 表現へ変換して書き込む。
-        // OCCURS 配列への SELECT INTO は selectIntoOccurs が処理するため、ここは単一行。
-        // 集団項目はコンパイル時に個別フィールドへ展開済みで、ここには展開後の
-        // 個別フィールドだけが渡される。
-        int columnCount = rs.getMetaData().getColumnCount();
-        boolean sawNullWithoutIndicator = false;
-        for (int i = 0; i < resultParams.length && i < columnCount; i++) {
-            byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-            if (value != null) {
-                CobolDataConverter.stringToCobol(resultParams[i], value);
-            } else {
-                // 指標変数なしの NULL は型に応じた空値で埋める (memset 0 は packed/
-                // ゾーン10進で不正表現になる)。
-                CobolDataConverter.stringToCobol(resultParams[i], EMPTY_RESULT);
-                sawNullWithoutIndicator = true;
-            }
-        }
-        rs.close();
-        if (sawNullWithoutIndicator) {
-            SqlCA.setMissingIndicator(sqlca);
-        } else {
-            SqlCA.setSuccess(sqlca);
         }
     }
 
