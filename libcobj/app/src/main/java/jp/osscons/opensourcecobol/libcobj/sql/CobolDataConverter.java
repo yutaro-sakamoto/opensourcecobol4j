@@ -1080,101 +1080,98 @@ final class CobolDataConverter {
      * @param rs 現在の行に位置付けられた JDBC result set
      * @param columnIndex 1 始まりのカラムインデックス
      * @return カラムの値をバイト配列として返す。値が SQL NULL の場合は null
+     * @throws SQLException 列値の取得・変換に失敗した場合 (実エラーを NULL に潰さず呼び出し元へ伝播する)
      */
-    static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) {
-        try {
-            int colType = rs.getMetaData().getColumnType(columnIndex);
-            String strValue;
-            switch (colType) {
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.NCHAR:
-                case Types.NVARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.LONGNVARCHAR:
-                    {
-                        String s = rs.getString(columnIndex);
-                        if (s == null) {
-                            return null;
-                        }
-                        return s.getBytes(SHIFT_JIS);
+    static byte[] getValueFromResultSet(ResultSet rs, int columnIndex) throws SQLException {
+        int colType = rs.getMetaData().getColumnType(columnIndex);
+        String strValue;
+        switch (colType) {
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.NCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.LONGNVARCHAR:
+                {
+                    String s = rs.getString(columnIndex);
+                    if (s == null) {
+                        return null;
                     }
-                case Types.DECIMAL:
-                case Types.NUMERIC:
-                    {
-                        BigDecimal bd = rs.getBigDecimal(columnIndex);
-                        if (bd == null) {
-                            return null;
-                        }
-                        return bd.toString().getBytes();
+                    return s.getBytes(SHIFT_JIS);
+                }
+            case Types.DECIMAL:
+            case Types.NUMERIC:
+                {
+                    BigDecimal bd = rs.getBigDecimal(columnIndex);
+                    if (bd == null) {
+                        return null;
                     }
-                case Types.TIMESTAMP:
-                    {
-                        java.sql.Timestamp ts = rs.getTimestamp(columnIndex);
-                        if (ts == null) {
-                            return null;
-                        }
-                        return DATE_FORMAT.get().format(ts).getBytes();
+                    return bd.toString().getBytes();
+                }
+            case Types.TIMESTAMP:
+                {
+                    java.sql.Timestamp ts = rs.getTimestamp(columnIndex);
+                    if (ts == null) {
+                        return null;
                     }
-                case Types.DATE:
-                    {
-                        java.sql.Date d = rs.getDate(columnIndex);
-                        if (d == null) {
-                            return null;
-                        }
-                        return DATE_FORMAT.get().format(d).getBytes();
+                    return DATE_FORMAT.get().format(ts).getBytes();
+                }
+            case Types.DATE:
+                {
+                    java.sql.Date d = rs.getDate(columnIndex);
+                    if (d == null) {
+                        return null;
                     }
-                case Types.TIME:
-                    {
-                        java.sql.Time t = rs.getTime(columnIndex);
-                        if (t == null) {
-                            return null;
-                        }
-                        return t.toString().getBytes();
+                    return DATE_FORMAT.get().format(d).getBytes();
+                }
+            case Types.TIME:
+                {
+                    java.sql.Time t = rs.getTime(columnIndex);
+                    if (t == null) {
+                        return null;
                     }
-                case Types.TINYINT:
-                    strValue = Byte.toString(rs.getByte(columnIndex));
-                    break;
-                case Types.SMALLINT:
-                    strValue = Short.toString(rs.getShort(columnIndex));
-                    break;
-                case Types.INTEGER:
-                    strValue = Integer.toString(rs.getInt(columnIndex));
-                    break;
-                case Types.BIGINT:
-                    strValue = Long.toString(rs.getLong(columnIndex));
-                    break;
-                case Types.BOOLEAN:
-                    strValue = Boolean.toString(rs.getBoolean(columnIndex));
-                    break;
-                case Types.FLOAT:
-                case Types.DOUBLE:
-                case Types.REAL:
-                    strValue = Double.toString(rs.getDouble(columnIndex));
-                    break;
-                case Types.ROWID:
-                    {
-                        java.sql.RowId rowId = rs.getRowId(columnIndex);
-                        if (rowId == null) {
-                            return null;
-                        }
-                        return rowId.toString().getBytes();
+                    return t.toString().getBytes();
+                }
+            case Types.TINYINT:
+                strValue = Byte.toString(rs.getByte(columnIndex));
+                break;
+            case Types.SMALLINT:
+                strValue = Short.toString(rs.getShort(columnIndex));
+                break;
+            case Types.INTEGER:
+                strValue = Integer.toString(rs.getInt(columnIndex));
+                break;
+            case Types.BIGINT:
+                strValue = Long.toString(rs.getLong(columnIndex));
+                break;
+            case Types.BOOLEAN:
+                strValue = Boolean.toString(rs.getBoolean(columnIndex));
+                break;
+            case Types.FLOAT:
+            case Types.DOUBLE:
+            case Types.REAL:
+                strValue = Double.toString(rs.getDouble(columnIndex));
+                break;
+            case Types.ROWID:
+                {
+                    java.sql.RowId rowId = rs.getRowId(columnIndex);
+                    if (rowId == null) {
+                        return null;
                     }
-                default:
-                    {
-                        String s = rs.getString(columnIndex);
-                        if (s == null) {
-                            return null;
-                        }
-                        return s.getBytes(SHIFT_JIS);
+                    return rowId.toString().getBytes();
+                }
+            default:
+                {
+                    String s = rs.getString(columnIndex);
+                    if (s == null) {
+                        return null;
                     }
-            }
-            if (rs.wasNull()) {
-                return null;
-            }
-            return strValue.getBytes();
-        } catch (Exception e) {
+                    return s.getBytes(SHIFT_JIS);
+                }
+        }
+        if (rs.wasNull()) {
             return null;
         }
+        return strValue.getBytes();
     }
 }

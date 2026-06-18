@@ -744,6 +744,31 @@ class CobolDataConverterTest {
         }
     }
 
+    /** 列値取得の失敗は SQL NULL (null 返却) と区別し、SQLException として呼び出し元へ伝播すること。 */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testGetValueFromResultSet_ErrorPropagatesAsSqlException() throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS rs_test");
+            stmt.execute("CREATE TABLE rs_test (val VARCHAR(20))");
+            stmt.execute("INSERT INTO rs_test (val) VALUES ('Hello')");
+        }
+
+        try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("SELECT val FROM rs_test")) {
+            assertTrue(rs.next(), "Should have a row");
+            // 存在しない列インデックスへのアクセスは実エラー。null ではなく例外になる。
+            assertThrows(
+                    SQLException.class,
+                    () -> CobolDataConverter.getValueFromResultSet(rs, 999),
+                    "取得失敗は SQLException として伝播するべき");
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP TABLE rs_test");
+        }
+    }
+
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testGetValueFromResultSet_IntegerColumn() throws Exception {
