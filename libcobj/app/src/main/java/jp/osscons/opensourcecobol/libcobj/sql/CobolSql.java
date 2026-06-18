@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
-import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -372,49 +371,11 @@ public final class CobolSql {
             return;
         }
 
-        // GROUP OCCURS パターン（単一の GROUP 結果フィールドで複数行）かどうかを確認する
-        if (resultParams.length == 1
-                && resultParams[0].getAttribute().getType() == CobolFieldAttribute.COB_TYPE_GROUP) {
-            AbstractCobolField groupField = resultParams[0];
-            int elementSize = groupField.getSize();
-            CobolDataStorage baseStorage = groupField.getDataStorage();
-            int columnCount = rs.getMetaData().getColumnCount();
-            int rowIndex = 0;
-            boolean sawNullWithoutIndicator = false;
-
-            do {
-                // 各列を要素内の正しい位置に書き込む
-                int colOffset = 0;
-                for (int col = 1; col <= columnCount; col++) {
-                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, col);
-                    int colSize = rs.getMetaData().getColumnDisplaySize(col);
-                    CobolDataStorage elementStorage =
-                            baseStorage.getSubDataStorage(rowIndex * elementSize + colOffset);
-                    if (value != null) {
-                        // 列サイズに合わせてパディングまたは切り詰めを行う
-                        if (value.length >= colSize) {
-                            elementStorage.memcpy(value, colSize);
-                        } else {
-                            elementStorage.memset((byte) ' ', colSize);
-                            elementStorage.memcpy(value, value.length);
-                        }
-                    } else {
-                        elementStorage.memset((byte) 0, colSize);
-                        sawNullWithoutIndicator = true;
-                    }
-                    colOffset += colSize;
-                }
-                rowIndex++;
-            } while (rs.next());
-            rs.close();
-            SqlCA.setRowCount(sqlca, rowIndex);
-            if (sawNullWithoutIndicator) {
-                SqlCA.setMissingIndicator(sqlca);
-            } else {
-                SqlCA.setSuccess(sqlca);
-            }
-            return;
-        }
+        // 注: OCCURS 配列への SELECT INTO は CB_SQL_SELECT_INTO_OCCURS に昇格され
+        // selectIntoOccurs / fetchOccursRows が処理する。集団項目の結果ホスト変数も
+        // コンパイル時に esql.c の expand_group_host_vars が子フィールドへ展開するため、
+        // ここに到達する resultParams は常に展開済みの個別フィールドである。各列を
+        // 対応するフィールドの COBOL 表現へ stringToCobol で変換して書き込む。
 
         // 単一行: 列を個々の結果フィールドに書き込む
         int columnCount = rs.getMetaData().getColumnCount();
