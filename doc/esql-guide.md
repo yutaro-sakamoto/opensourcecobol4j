@@ -327,23 +327,6 @@ The following COBOL items can be used as host variables. The runtime interprets 
 | Group item | Treated as alphanumeric |
 | VARYING item | Variable-length alphanumeric / Japanese string |
 
-> [!IMPORTANT]
-> This does **not** mean a PIC clause is fixed-mapped to a particular SQL type. The SQL
-> type a value is treated as is determined by the **column definition of the target table
-> (the SQL-side type)**.
->
-> The runtime behaves as follows:
-> - **COBOL → SQL (bind)**: it converts the host variable's bytes to a string representation
->   according to the PIC clause / USAGE, then binds it to match the **column's SQL type**
->   obtained from the JDBC parameter metadata (e.g. as an integer for an integer column, or an
->   appropriate numeric type for a numeric column).
-> - **SQL → COBOL (fetch)**: it reads the value according to the column's SQL type and writes
->   it back into COBOL storage according to the receiving host variable's PIC clause / USAGE.
->
-> So the same `PIC X(20)` host variable can be used against either a character column or a
-> numeric column (as long as the value is compatible). PostgreSQL does not auto-detect the
-> COBOL type; all of the above conversion is performed explicitly by the runtime.
-
 ## SQLCA Error Handling
 
 After each `EXEC SQL` statement, the SQLCA fields are updated:
@@ -366,8 +349,6 @@ Common SQLCODE values (defined in `SqlCA.java`):
 | `-402` | `08001` etc. | CONNECT failed (`ECPG_CONNECT`) |
 | `-602` | `34000` | Cursor (portal) does not exist (`ECPG_WARNING_UNKNOWN_PORTAL`) |
 | `-9999` | (server) | PostgreSQL error that maps to no specific ECPG code (`ECPG_UNKNOWN_ERROR`) |
-
-On any error, always inspect `SQLSTATE` and `SQLERRMC` as well as `SQLCODE`: the PostgreSQL `SQLSTATE` and its message text are stored verbatim into the SQLCA, so they carry the most precise diagnostic information.
 
 Example error handling:
 
@@ -419,10 +400,6 @@ cobj program.cbl
 java program
 ```
 
-`EXEC SQL INCLUDE SQLCA END-EXEC` is handled internally by the compiler, so no COPY file
-or `-I` option is required for the SQLCA. Only when you also use your own COPY books do you
-need to specify their directory with `-I` (e.g. `cobj -I /path/to/copy program.cbl`).
-
 ## Runtime Logging
 
 The ESQL runtime emits logs through [SLF4J](https://www.slf4j.org/). When you execute an
@@ -431,16 +408,16 @@ for inspecting the SQL being run and the connection state, and for troubleshooti
 
 ### Logs per statement
 
-| ESQL statement | DEBUG | TRACE | ERROR (on failure) |
+| ESQL statement | ERROR (on failure) | DEBUG | TRACE |
 |---|---|---|---|
-| `CONNECT` | connection success (connection id), JDBC URL and user name | host-variable values of the connection parameters (user name, DB name) | connection failure |
-| `DISCONNECT` | disconnect start (connection id) | - | disconnect failure |
-| `INSERT` / `UPDATE` / `DELETE` / DDL and other `EXEC SQL` | the SQL statement being executed (trimmed) | - | SQL execution failure |
-| Parameterized `EXEC SQL` (e.g. `EXECUTE ... USING`) | the SQL statement and parameter count | - | SQL execution failure |
-| `SELECT ... INTO` | the SQL statement being executed | - | SELECT INTO failure |
-| `DECLARE ... CURSOR` | cursor name and SQL statement | - | - |
-| `OPEN` cursor | cursor name | - | cursor open failure |
-| `FETCH` | - | cursor name | - |
+| `CONNECT` | connection failure | connection success (connection id), JDBC URL and user name | host-variable values of the connection parameters (user name, DB name) |
+| `DISCONNECT` | disconnect failure | disconnect start (connection id) | - |
+| `INSERT` / `UPDATE` / `DELETE` / DDL and other `EXEC SQL` | SQL execution failure | the SQL statement being executed (trimmed) | - |
+| Parameterized `EXEC SQL` (e.g. `EXECUTE ... USING`) | SQL execution failure | the SQL statement and parameter count | - |
+| `SELECT ... INTO` | SELECT INTO failure | the SQL statement being executed | - |
+| `DECLARE ... CURSOR` | - | cursor name and SQL statement | - |
+| `OPEN` cursor | cursor open failure | cursor name | - |
+| `FETCH` | - | - | cursor name |
 
 Key points:
 
@@ -457,48 +434,37 @@ Key points:
 
 ### Configuring logging
 
-`libcobj.jar` bundles slf4j-simple. By default only INFO level and above is written to
-standard error, so the DEBUG/TRACE logs above are not shown. To enable DEBUG logs, set a
-system property.
+`libcobj.jar` bundles slf4j-simple, and logs are written to standard error. The level to
+output is set with the `org.slf4j.simpleLogger.defaultLogLevel` system property. The ESQL
+runtime emits three kinds of logs — ERROR / DEBUG / TRACE — so there are three patterns to
+choose from depending on the value you set.
+
+ERROR only (output just the errors on failure; this is also the default behavior):
 
 ```bash
-# Enable all DEBUG logs
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=error YourProgram
+```
+
+ERROR and DEBUG (also output the SQL being executed, connect/disconnect, and cursor operations):
+
+```bash
 java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug YourProgram
 ```
 
-Logger names are the fully qualified names of the implementation classes. Most logs for
-`EXEC SQL` statements come from the
-`jp.osscons.opensourcecobol.libcobj.sql.CobolSql` logger, so you can also enable just that
-logger.
+ERROR, DEBUG, and TRACE (output everything, including the `CONNECT` host-variable values and `FETCH`):
 
 ```bash
-java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug YourProgram
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 ```
 
-If you prefer a backend such as Logback over slf4j-simple, exclude `slf4j-simple` from the
-classpath, add `logback-classic`, and configure it with `logback.xml`.
-
-```xml
-<configuration>
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
-
-  <logger name="jp.osscons.opensourcecobol.libcobj.sql" level="DEBUG"/>
-
-  <root level="INFO">
-    <appender-ref ref="STDOUT"/>
-  </root>
-</configuration>
-```
+> [!NOTE]
+> By default (no property set), the threshold is INFO, so among the logs the ESQL runtime
+> emits only ERROR is shown (DEBUG / TRACE are not).
 
 ## Limitations
 
 - COBOL-classic `OF` qualification (`:VAR OF GRP`) is not supported. Use dotted qualification (`:GRP.VAR`) instead.
 - Subscript values cannot be arithmetic expressions (`:VAR(I+1)`) and cannot themselves be subscripted host variables (`:VAR(IDX(1))`). Compute the index into a scratch COBOL variable first.
-- UTF-8 variable names in SJIS mode are not supported; use the `--enable-utf8` build option for UTF-8 source files.
 - Only PostgreSQL is supported as the target database.
 - The following ECPG/embedded-SQL features are **not** supported:
   - `EXECUTE IMMEDIATE`.

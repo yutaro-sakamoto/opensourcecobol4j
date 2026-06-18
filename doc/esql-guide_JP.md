@@ -323,21 +323,6 @@ OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO`
 | 集団項目 | 英数字として扱われる |
 | VARYING 項目 | 可変長の英数字／日本語文字列 |
 
-> [!IMPORTANT]
-> これは「PIC 句が特定の SQL 型に固定的に対応づけられる」という意味ではありません。
-> 値がどの SQL 型として扱われるかは、**対象テーブルのカラム定義（SQL 側の型）** で決まります。
->
-> ランタイムの動作は次のとおりです。
-> - **COBOL → SQL（バインド）**: ホスト変数のバイト列を PIC 句・USAGE に従って文字列表現に変換し、
->   JDBC のパラメータメタデータから取得した**カラムの SQL 型**に合わせてバインドします
->   （例: 整数カラムなら整数、数値カラムなら適切な数値型として渡す）。
-> - **SQL → COBOL（取得）**: カラムの SQL 型に応じて値を取り出し、それを受け取るホスト変数の
->   PIC 句・USAGE に従って COBOL ストレージへ書き戻します。
->
-> したがって、同じ `PIC X(20)` のホスト変数でも、文字列カラムにも数値カラムにも（値が
-> 互換であれば）使用できます。PostgreSQL が COBOL の型を自動認識するわけではなく、上記の
-> 変換はすべてランタイムが明示的に行っています。
-
 ## SQLCAによるエラーハンドリング
 
 各 `EXEC SQL` 文の実行後、SQLCAフィールドが更新されます:
@@ -360,8 +345,6 @@ OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO`
 | `-402` | `08001` 等 | CONNECT 失敗 (`ECPG_CONNECT`) |
 | `-602` | `34000` | カーソル（ポータル）が存在しない (`ECPG_WARNING_UNKNOWN_PORTAL`) |
 | `-9999` | (サーバ依存) | 特定の ECPG コードに対応しない PostgreSQL エラー (`ECPG_UNKNOWN_ERROR`) |
-
-エラー時は `SQLCODE` だけでなく `SQLSTATE` と `SQLERRMC` も必ず確認してください。PostgreSQL の `SQLSTATE` とメッセージ文字列がそのまま SQLCA に格納されるため、最も正確な診断情報になります。
 
 エラーハンドリングの例:
 
@@ -412,10 +395,6 @@ cobj program.cbl
 java program
 ```
 
-`EXEC SQL INCLUDE SQLCA END-EXEC` はコンパイラが内部的に処理するため、SQLCA 用の COPY
-ファイルや `-I` オプションは不要です。独自の COPY ブックを併用する場合のみ、`-I` でその
-コピーディレクトリを指定してください（例: `cobj -I /path/to/copy program.cbl`）。
-
 ## ランタイムログ
 
 ESQL ランタイムは [SLF4J](https://www.slf4j.org/) を使ってログを出力します。`EXEC SQL` 文を実行すると、
@@ -423,16 +402,16 @@ ESQL ランタイムは [SLF4J](https://www.slf4j.org/) を使ってログを出
 
 ### 構文ごとのログ出力
 
-| ESQL 構文 | DEBUG | TRACE | ERROR（失敗時） |
+| ESQL 構文 | ERROR（失敗時） | DEBUG | TRACE |
 |---|---|---|---|
-| `CONNECT` | 接続成功（接続ID）、JDBC URL とユーザー名 | 接続パラメータのホスト変数値（ユーザー名・DB名） | 接続失敗 |
-| `DISCONNECT` | 切断開始（接続ID） | - | 切断失敗 |
-| `INSERT` / `UPDATE` / `DELETE` / DDL 等の `EXEC SQL` | 実行する SQL 文（トリム済み） | - | SQL 実行失敗 |
-| パラメータ付きの `EXEC SQL`（`EXECUTE ... USING` など） | SQL 文とパラメータ数 | - | SQL 実行失敗 |
-| `SELECT ... INTO` | 実行する SQL 文 | - | SELECT INTO 実行失敗 |
-| `DECLARE ... CURSOR` | カーソル名と SQL 文 | - | - |
-| `OPEN` カーソル | カーソル名 | - | カーソルオープン失敗 |
-| `FETCH` | - | カーソル名 | - |
+| `CONNECT` | 接続失敗 | 接続成功（接続ID）、JDBC URL とユーザー名 | 接続パラメータのホスト変数値（ユーザー名・DB名） |
+| `DISCONNECT` | 切断失敗 | 切断開始（接続ID） | - |
+| `INSERT` / `UPDATE` / `DELETE` / DDL 等の `EXEC SQL` | SQL 実行失敗 | 実行する SQL 文（トリム済み） | - |
+| パラメータ付きの `EXEC SQL`（`EXECUTE ... USING` など） | SQL 実行失敗 | SQL 文とパラメータ数 | - |
+| `SELECT ... INTO` | SELECT INTO 実行失敗 | 実行する SQL 文 | - |
+| `DECLARE ... CURSOR` | - | カーソル名と SQL 文 | - |
+| `OPEN` カーソル | カーソルオープン失敗 | カーソル名 | - |
+| `FETCH` | - | - | カーソル名 |
 
 ポイント:
 
@@ -449,47 +428,36 @@ ESQL ランタイムは [SLF4J](https://www.slf4j.org/) を使ってログを出
 
 ### ログ出力の設定
 
-`libcobj.jar` には slf4j-simple が同梱されています。既定では INFO レベル以上が標準エラー出力に
-出力され、上記の DEBUG/TRACE ログは出力されません。DEBUG ログを有効にするには、システム
-プロパティを指定します。
+`libcobj.jar` には slf4j-simple が同梱されており、ログは標準エラー出力に出力されます。出力する
+レベルはシステムプロパティ `org.slf4j.simpleLogger.defaultLogLevel` で指定します。ESQL ランタイムが
+出力するログは ERROR / DEBUG / TRACE の 3 種類で、設定値に応じて次の 3 パターンを使い分けます。
+
+ERROR のみ（失敗時のエラーだけを出力。既定でもこの状態です）:
 
 ```bash
-# すべての DEBUG ログを有効化
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=error YourProgram
+```
+
+ERROR と DEBUG（実行する SQL 文・接続/切断・カーソル操作まで出力）:
+
+```bash
 java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug YourProgram
 ```
 
-ロガー名は実装クラスの完全修飾名です。`EXEC SQL` 文に対応するログの大半は
-`jp.osscons.opensourcecobol.libcobj.sql.CobolSql` ロガーから出力されるため、特定のロガーだけを
-有効化することもできます。
+ERROR と DEBUG と TRACE（`CONNECT` のホスト変数値や `FETCH` など、すべてを出力）:
 
 ```bash
-java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug YourProgram
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 ```
 
-slf4j-simple の代わりに Logback などのバックエンドを使いたい場合は、`slf4j-simple` をクラスパスから
-除外し、`logback-classic` を追加して `logback.xml` で設定します。
-
-```xml
-<configuration>
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
-  </appender>
-
-  <logger name="jp.osscons.opensourcecobol.libcobj.sql" level="DEBUG"/>
-
-  <root level="INFO">
-    <appender-ref ref="STDOUT"/>
-  </root>
-</configuration>
-```
+> [!NOTE]
+> 既定（プロパティ未指定）では INFO レベルがしきい値となり、ESQL ランタイムが出すログのうち
+> ERROR だけが出力されます（DEBUG / TRACE は出力されません）。
 
 ## 制限事項
 
 - COBOL 標準の `OF` 修飾 (`:VAR OF GRP`) はサポートされません。dotted 修飾 (`:GRP.VAR`) を使用してください。
 - 添字の値に算術式 (`:VAR(I+1)`) を書いたり、添字値そのものが添字を持つホスト変数 (`:VAR(IDX(1))`) を書いたりすることはできません。間接的な添字が必要な場合は、COBOL 側でいったん作業変数に MOVE してから渡してください。
-- SJISモードでのUTF-8変数名はサポートされていません。UTF-8ソースファイルの場合は `--enable-utf8` ビルドオプションを使用してください。
 - 対象データベースはPostgreSQLのみサポートされています。
 - 以下の ECPG / 埋め込み SQL 機能は**サポートされていません**:
   - `EXECUTE IMMEDIATE`。
