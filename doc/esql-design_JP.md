@@ -1,3 +1,5 @@
+# Embedded SQL (ESQL) 設計
+
 ## 概要
 
 このドキュメントは Embedded SQL (EXEC SQL ... END-EXEC) のサポートが opensource COBOL 4J の内部でどのように構成されているかを示します。ユーザ向けの使い方は [esql-guide_JP.md](./esql-guide_JP.md) を参照してください。
@@ -13,22 +15,21 @@ ESQL サポートは大きく次の 2 層に分かれます。
 
 | ファイル | 役割 |
 |---|---|
-| `cobj/pplex.l` (前処理) | `EXEC SQL INCLUDE <name>` を `COPY` に書き換え、`BEGIN/END DECLARE SECTION` を処理する。`INCLUDE SQLCA` の有無を `cb_sqlca_include_seen` に記録。その他の `EXEC SQL` テキストは本体スキャナへそのまま素通しする。 |
+| `cobj/pplex.l.m4` (前処理、`pplex.l` を生成) | `EXEC SQL INCLUDE <name>` を `COPY` に書き換え、`BEGIN/END DECLARE SECTION` を処理する。`INCLUDE SQLCA` の有無を `cb_sqlca_include_seen` に記録。その他の `EXEC SQL` テキストは本体スキャナへそのまま素通しする。 |
 | `cobj/scanner.l.m4` (本体レキサ, `ESQL_STATE`) | `EXEC SQL` 〜 `END-EXEC` の本体を 1 つの文字列にまとめ、`EXEC_SQL_STATEMENT` トークン (英数字リテラル) として emit する。SQL テキストを単一の文字列として保存するのはここ。 |
 | `cobj/parser.y` (`exec_sql_statement`) | `EXEC_SQL_STATEMENT` を受け取り `cb_parse_exec_sql()` で ESQL 専用スキャナ/パーサを起動する。最初の埋め込み SQL 検出時に `esql_inject_sqlca()` を呼ぶ。 |
 | `cobj/esql-scanner.l` | flex レキサ。EXEC SQL ... END-EXEC で囲まれた SQL テキストをトークン化する。 |
 | `cobj/esql-parser.y` | bison パーサ。トークン列からホスト変数情報を取り出して `cb_exec_sql` ノードを構築する。 |
 | `cobj/esql-common.h` | `esql-parser.y` / `esql-scanner.l` と `esql.c` が共有する型と関数のヘッダ。tree.h を含めない (`YYSTYPE` の衝突を避けるため)。 |
-| `cobj/esql.c` | `esql_build_and_resolve()` を提供。ホスト変数の型解決、GROUP の子展開、SELECT INTO/FETCH OCCURS への昇格、`cb_tree` 構築のラッパ関数群を持つ。 |
+| `cobj/esql.c` | `esql_build_and_resolve()`（ホスト変数の型解決、GROUP の子展開、SELECT INTO/FETCH OCCURS への昇格、`cb_tree` 構築のラッパ関数群）と `esql_inject_sqlca()`（最初の埋め込み SQL 文を検出した時点で `01 SQLCA GLOBAL.` を暗黙挿入）を提供する。 |
 | `cobj/codegen.c` (`joutput_exec_sql` 周辺) | `cb_exec_sql` ノードを Java の `CobolSql.exec(...)` 等の呼び出しに展開する。 |
-| `cobj/esql.c` (`esql_inject_sqlca`) | `01 SQLCA GLOBAL.` を暗黙挿入する。`parser.y` がプログラム内で最初の埋め込み SQL 文を検出した時点で呼び出す。 |
 
 ### 解析パイプライン
 
 ```
 EXEC SQL ... END-EXEC (COBOL ソース)
         │
-        │  preproc (cobj/pplex.l): EXEC SQL INCLUDE <name> を COPY に書き換え、
+        │  preproc (cobj/pplex.l.m4): EXEC SQL INCLUDE <name> を COPY に書き換え、
         │  BEGIN/END DECLARE SECTION を処理し、INCLUDE SQLCA の有無を
         │  cb_sqlca_include_seen に記録する。それ以外の EXEC SQL テキストは
         │  そのまま本体スキャナへ素通しする。
@@ -88,7 +89,7 @@ ESQL のホスト変数は専用のノード型を増やさず、COBOL 通常の
 | `:GRP.SUB(IDX)` | 上記 + `subs: [IDX]` |
 | `:GRP.SUB(GRP2.IDX)` | 上記 + `subs: [cb_reference{ word: IDX, chain: GRP2 }]` |
 
-これにより `codegen.c` の `joutput_param` / `joutput_data` (具体的には `cobj/codegen.c:972` の OCCURS 解決ループ) が **ESQL 専用パスを増やさずに**正しい `b_X.getSubDataStorage(...)` を含む `AbstractCobolField` を生成します。
+これにより `codegen.c` の `joutput_param` / `joutput_data` (`joutput_data` 内の OCCURS 解決ループ) が **ESQL 専用パスを増やさずに**正しい `b_X.getSubDataStorage(...)` を含む `AbstractCobolField` を生成します。
 
 ### スキャナの状態遷移
 
@@ -124,11 +125,11 @@ SELECT INTO / FETCH では、`esql_build_and_resolve()` が leaf に `flag_occur
 |---|---|---|
 | `CobolSql` | `public` | 生成 Java から呼ばれる唯一の公開 API。`connect`, `disconnect`, `exec`, `execWithParams`, `execWhereCurrentOf`, `execWithParamsWhereCurrentOf`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback` を提供。`execWhereCurrentOf` / `execWithParamsWhereCurrentOf` は `WHERE CURRENT OF` を含む文専用で、先読みで進んだカーソル位置を巻き戻してから実行する。 |
 | `SqlState` | package-private | 接続テーブル (`addConnection`/`getConnection`)、PREPARE テーブル、カーソルテーブルを保持する内部状態管理。`clearCursors()` は全カーソルをクローズ扱いにし先読みバッファを破棄する（COMMIT / ROLLBACK 時に呼ばれる）。 |
-| `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、値が空のときの環境変数 `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` へのフォールバック、`OCDB_DB_CHAR`（既定 `UTF-8`）による接続エンコーディング設定、各値を最初の空白で切り詰める処理 (`stripTrailingSpaces`)、autocommit + トランザクションごとの明示 `BEGIN` (`beginTransaction`) を担う。 |
+| `SqlConnection` | package-private | JDBC `Connection` のラッパ。接続文字列 `dbname@host:port` のパース、値が空のときの環境変数 `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` へのフォールバック、`OCDB_DB_CHAR`（既定 `UTF-8`）による接続エンコーディング設定、各値の末尾空白（COBOL の固定長フィールド由来のパディング）を除去する処理 (`stripTrailingSpaces`、値の途中の空白は保持する)、autocommit + トランザクションごとの明示 `BEGIN` (`beginTransaction`) を担う。 |
 | `SqlCursor` | package-private | カーソルの状態 (open/closed)、`ResultSet`、`PreparedStatement` の組を保持する。先読み（バルクフェッチ）バッファと `overFetch` フラグも保持する。カーソルはインライン `SELECT` からでも、PREPARE 済みステートメント名からでも DECLARE できる。 |
 | `BulkFetchConfig` | package-private | 環境変数 `OCESQL4J_FETCH_RECORDS` から先読み件数を読み取り、プロセス内でキャッシュする。 |
 | `SqlCA` | package-private | SQLCA フィールド (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) を `CobolDataStorage` に書き戻す。JDBC の `SQLState` を `sqlStateToCode` で ECPG コードにマッピングする。 |
-| `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。COBOL フィールド型で分岐する: 数値 (display)、パック 10 進 (COMP-3、符号付き/なし)、ネイティブバイナリ (COMP-5)、float/double、英数字 / group、national (`PIC N`)、英数字 / 日本語の `VARYING`（先頭 4 バイトのビッグエンディアン長ヘッダ + データ）。national と日本語の値は SHIFT-JIS で変換する。 |
+| `CobolDataConverter` | package-private | `AbstractCobolField` ⇔ JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx` の変換を担当。COBOL フィールド型で分岐する: 数値 (display)、パック 10 進 (COMP-3、符号付き/なし)、ネイティブバイナリ (COMP-5)、float/double、英数字 / group、national (`PIC N`)、英数字 / 日本語の `VARYING`（先頭 4 バイトのビッグエンディアン長ヘッダ + データ）。national と日本語の値は SHIFT-JIS で変換する。なお、ネイティブバイナリ (COMP-5) と float/double は送信方向 (COBOL→SQL、`cobolToString`) のみ実装されており、取得方向 (SQL→COBOL、`stringToCobol`) では専用の書き戻しを持たず英数字としてバイト列をコピーするフォールバックになる（正しいバイナリ値の書き戻しは未対応）。 |
 
 `SqlConnection`, `SqlCursor`, `SqlState`, `SqlCA`, `CobolDataConverter` はすべて package-private なため、SLF4J のロガー名としては利用できますが、外部から直接 import することは想定していません。
 
@@ -162,7 +163,7 @@ ECPG 互換として、ホスト変数側に指標変数が用意されていな
 
 ### prepared statement のキャッシュ (`stmtCache`)
 
-`CobolSql` は `PreparedStatement` を `(接続のハッシュ, クエリのハッシュ)` をキーとするプロセス全体の `ConcurrentHashMap` (`stmtCache`) に保持します。`getOrCreatePreparedStatement` は、同一の `(接続, クエリ)` の組に対しては毎回 prepare し直さず、キャッシュ済みの `PreparedStatement` を再利用します。
+`CobolSql` は `PreparedStatement` を、接続 (`Connection`) をキー、その配下に SQL 文字列をキーとする入れ子の `ConcurrentHashMap` (`stmtCache`) に保持します。接続はオブジェクト同一性、クエリは文字列の完全一致で照合するため、ハッシュ衝突で別クエリの文を取り違える心配はありません。`getOrCreatePreparedStatement` は、同一の `(接続, クエリ)` の組に対しては毎回 prepare し直さず、キャッシュ済みの `PreparedStatement` を再利用します。
 
 ### カーソル名の修飾
 
@@ -199,7 +200,7 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 
 ### libcobj 単体テスト (`libcobj/app/src/test/.../sql/`)
 
-`CobolSqlTest`, `SqlStateTest`, `SqlCursorTest`, `SqlConnectionTest`, `CobolDataConverterTest`, `CobolSqlLoggingTest`, `SqlCATest` が JDBC モック (testcontainers の PostgreSQL イメージ) に対する単体検証を行います。
+`CobolSqlTest`, `SqlStateTest`, `SqlCursorTest`, `SqlConnectionTest`, `CobolDataConverterTest`, `CobolDataConverterPureTest`, `CobolSqlLoggingTest`, `SqlCATest` が単体検証を行います。DB を要するものは testcontainers の PostgreSQL イメージを使い、`CobolDataConverterPureTest` のように DB を介さずデータ変換のみを検証するものもあります。
 
 ## 設計上の意思決定
 

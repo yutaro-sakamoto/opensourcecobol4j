@@ -1,3 +1,5 @@
+# Embedded SQL (ESQL) Design
+
 ## Overview
 
 This document describes how Embedded SQL (`EXEC SQL ... END-EXEC`) support is wired into opensource COBOL 4J. For end-user usage, see [esql-guide.md](./esql-guide.md).
@@ -13,22 +15,21 @@ ESQL support is split into two layers:
 
 | File | Role |
 |---|---|
-| `cobj/pplex.l` (preprocessor) | Rewrites `EXEC SQL INCLUDE <name>` to `COPY`, handles `BEGIN/END DECLARE SECTION`, and records whether `INCLUDE SQLCA` was seen (`cb_sqlca_include_seen`). Any other `EXEC SQL` text is passed through to the main scanner. |
+| `cobj/pplex.l.m4` (preprocessor, generates `pplex.l`) | Rewrites `EXEC SQL INCLUDE <name>` to `COPY`, handles `BEGIN/END DECLARE SECTION`, and records whether `INCLUDE SQLCA` was seen (`cb_sqlca_include_seen`). Any other `EXEC SQL` text is passed through to the main scanner. |
 | `cobj/scanner.l.m4` (main lexer, `ESQL_STATE`) | Accumulates the `EXEC SQL` … `END-EXEC` body into one string and emits it as a single `EXEC_SQL_STATEMENT` token (an alphanumeric literal). This is where the SQL block is captured as a single string. |
 | `cobj/parser.y` (`exec_sql_statement`) | Receives `EXEC_SQL_STATEMENT` and calls `cb_parse_exec_sql()` to drive the ESQL-specific scanner/parser; runs `esql_inject_sqlca()` on the first embedded SQL statement. |
 | `cobj/esql-scanner.l` | flex lexer. Tokenizes the SQL text between `EXEC SQL` and `END-EXEC`. |
 | `cobj/esql-parser.y` | bison parser. Builds host-variable lists and a `cb_exec_sql` node. |
 | `cobj/esql-common.h` | Shared types and prototypes between `esql-parser.y` / `esql-scanner.l` and `esql.c`. Deliberately does NOT include `tree.h` (its `YYSTYPE` would collide with the ESQL parser's). |
-| `cobj/esql.c` | `esql_build_and_resolve()` lives here, along with host-var type resolution, GROUP expansion for SELECT INTO / FETCH OCCURS, and thin wrappers that build `cb_tree`s without exposing `tree.h` to the ESQL parser. |
+| `cobj/esql.c` | Provides `esql_build_and_resolve()` (host-var type resolution, GROUP expansion for SELECT INTO / FETCH OCCURS, and thin wrappers that build `cb_tree`s without exposing `tree.h` to the ESQL parser) and `esql_inject_sqlca()` (auto-injects `01 SQLCA GLOBAL.` on the first embedded SQL statement). |
 | `cobj/codegen.c` (around `joutput_exec_sql`) | Expands a `cb_exec_sql` node into Java calls like `CobolSql.exec(...)`. |
-| `cobj/esql.c` (`esql_inject_sqlca`) | Auto-injects `01 SQLCA GLOBAL.`, invoked from `parser.y` on the first embedded SQL statement in a program. |
 
 ### Parsing pipeline
 
 ```
 EXEC SQL ... END-EXEC (COBOL source)
         │
-        │  preproc (cobj/pplex.l): rewrites EXEC SQL INCLUDE <name> to COPY,
+        │  preproc (cobj/pplex.l.m4): rewrites EXEC SQL INCLUDE <name> to COPY,
         │  handles BEGIN/END DECLARE SECTION, and records whether INCLUDE SQLCA
         │  was seen (cb_sqlca_include_seen). Any other EXEC SQL text is passed
         │  through unchanged to the main scanner.
@@ -90,7 +91,7 @@ ESQL host variables introduce no new AST node type. They ride on the standard CO
 | `:GRP.SUB(IDX)` | above + `subs: [IDX]` |
 | `:GRP.SUB(GRP2.IDX)` | above + `subs: [cb_reference{ word: IDX, chain: GRP2 }]` |
 
-As a result, the existing `joutput_param` / `joutput_data` in `codegen.c` (specifically the OCCURS resolution loop at `cobj/codegen.c:972`) produce correct `AbstractCobolField` arguments — including `b_X.getSubDataStorage(...)` — **without any ESQL-specific code path**.
+As a result, the existing `joutput_param` / `joutput_data` in `codegen.c` (specifically the OCCURS resolution loop inside `joutput_data`) produce correct `AbstractCobolField` arguments — including `b_X.getSubDataStorage(...)` — **without any ESQL-specific code path**.
 
 ### Scanner states
 
@@ -126,11 +127,11 @@ For `SELECT INTO` / `FETCH`, `esql_build_and_resolve()` checks whether the leaf 
 |---|---|---|
 | `CobolSql` | `public` | The single public API called from generated Java. Provides `connect`, `disconnect`, `exec`, `execWithParams`, `execWhereCurrentOf`, `execWithParamsWhereCurrentOf`, `selectInto`, `selectIntoOccurs`, `declareCursor`, `declareCursorWithParams`, `openCursor`, `openCursorWithParams`, `fetchCursor`, `fetchCursorOccurs`, `closeCursor`, `prepare`, `executePrepared`, `commit`, `rollback`. `execWhereCurrentOf` / `execWithParamsWhereCurrentOf` are dedicated to statements containing `WHERE CURRENT OF`; they rewind the cursor position advanced by pre-reading before running. |
 | `SqlState` | package-private | Internal state: connection table (`addConnection`/`getConnection`), prepared-statement table, cursor table. `clearCursors()` marks every cursor closed and discards its pre-read buffer; it is called on COMMIT / ROLLBACK. |
-| `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; falls back to the `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` environment variables when a value is empty; sets the connection encoding from `OCDB_DB_CHAR` (default `UTF-8`); strips each value at its first embedded space (`stripTrailingSpaces`); runs in autocommit mode with an explicit `BEGIN` per transaction (`beginTransaction`). |
+| `SqlConnection` | package-private | Wraps a JDBC `Connection`; parses connection strings of the form `dbname@host:port`; falls back to the `OCDB_DB_NAME` / `OCDB_DB_USER` / `OCDB_DB_PASS` environment variables when a value is empty; sets the connection encoding from `OCDB_DB_CHAR` (default `UTF-8`); strips each value's trailing spaces — the COBOL fixed-length padding — while preserving embedded spaces (`stripTrailingSpaces`); runs in autocommit mode with an explicit `BEGIN` per transaction (`beginTransaction`). |
 | `SqlCursor` | package-private | Holds cursor state (open/closed), `ResultSet`, `PreparedStatement`. Also holds the pre-read (bulk fetch) buffer and the `overFetch` flag. A cursor may be DECLAREd from either an inline `SELECT` or a previously PREPAREd statement name. |
 | `BulkFetchConfig` | package-private | Reads the pre-read count from the `OCESQL4J_FETCH_RECORDS` environment variable and caches it for the process. |
 | `SqlCA` | package-private | Writes SQLCA fields (`SQLCODE`, `SQLSTATE`, `SQLERRMC`, `SQLERRD`, ...) back into the corresponding `CobolDataStorage`. Maps a JDBC `SQLState` to an ECPG code via `sqlStateToCode`. |
-| `CobolDataConverter` | package-private | Converts between `AbstractCobolField` and JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx`. Dispatches on the COBOL field type: numeric (display), packed decimal (COMP-3, signed/unsigned), native binary (COMP-5), float/double, alphanumeric / group, national (`PIC N`), and alphanumeric / Japanese `VARYING` (4-byte big-endian length header + data). National and Japanese values are converted through SHIFT-JIS. |
+| `CobolDataConverter` | package-private | Converts between `AbstractCobolField` and JDBC `PreparedStatement.setXxx` / `ResultSet.getXxx`. Dispatches on the COBOL field type: numeric (display), packed decimal (COMP-3, signed/unsigned), native binary (COMP-5), float/double, alphanumeric / group, national (`PIC N`), and alphanumeric / Japanese `VARYING` (4-byte big-endian length header + data). National and Japanese values are converted through SHIFT-JIS. Note that native binary (COMP-5) and float/double are implemented only for the send direction (COBOL→SQL, `cobolToString`); the receive direction (SQL→COBOL, `stringToCobol`) has no dedicated write-back and falls back to copying the bytes as alphanumeric (correct binary write-back is not supported). |
 
 All classes except `CobolSql` are package-private. They appear as SLF4J logger names but are not part of the external API.
 
@@ -164,7 +165,7 @@ For parameterized statements, the JDBC Describe (`getParameterMetaData`) runs in
 
 ### Prepared-statement cache (`stmtCache`)
 
-`CobolSql` keeps a process-wide `ConcurrentHashMap` (`stmtCache`) of `PreparedStatement`s keyed by `(connection hash, query hash)`. `getOrCreatePreparedStatement` reuses a cached `PreparedStatement` for a repeated `(connection, query)` pair instead of re-preparing it on every `execWithParams` / `selectInto`.
+`CobolSql` keeps `PreparedStatement`s in a nested `ConcurrentHashMap` (`stmtCache`) keyed by `Connection` and, within that, by the SQL string. Connections are matched by object identity and queries by exact string equality, so there is no risk of a hash collision returning the wrong statement. `getOrCreatePreparedStatement` reuses a cached `PreparedStatement` for a repeated `(connection, query)` pair instead of re-preparing it on every `execWithParams` / `selectInto`.
 
 ### Cursor name qualification
 
@@ -201,7 +202,7 @@ Each suite is generated by `make <name>` and runnable locally with `./<name>` (r
 
 ### libcobj unit tests (`libcobj/app/src/test/.../sql/`)
 
-`CobolSqlTest`, `SqlStateTest`, `SqlCursorTest`, `SqlConnectionTest`, `CobolDataConverterTest`, `CobolSqlLoggingTest`, `SqlCATest` validate the runtime against a JDBC mock (testcontainers PostgreSQL).
+`CobolSqlTest`, `SqlStateTest`, `SqlCursorTest`, `SqlConnectionTest`, `CobolDataConverterTest`, `CobolDataConverterPureTest`, `CobolSqlLoggingTest`, `SqlCATest` provide unit coverage. Those needing a database use the testcontainers PostgreSQL image, while others — such as `CobolDataConverterPureTest` — verify data conversion without a database.
 
 ## Design decisions
 
