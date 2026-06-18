@@ -1430,6 +1430,64 @@ class CobolSqlTest {
         assertTrue(prepared[0].contains(")"), "Parenthesis should be preserved");
     }
 
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_CastOperatorPreserved() {
+        byte[] data = "SELECT col::text FROM t WHERE id = :id::integer".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmtCast", field);
+        assertEquals(0, getSqlCode(), "Prepare with :: cast should succeed");
+        String[] prepared = SqlState.getPrepared("stmtCast");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(prepared[0].contains("col::text"), ":: cast operator should be preserved");
+        assertTrue(prepared[0].contains("?::integer"), ":id should become ? and ::integer kept");
+        assertEquals("1", prepared[1], "Only :id is a parameter");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_StringLiteralColonPreserved() {
+        byte[] data = "INSERT INTO t (a, b) VALUES (:v, 'x:y')".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmtLit", field);
+        assertEquals(0, getSqlCode(), "Prepare with string literal should succeed");
+        String[] prepared = SqlState.getPrepared("stmtLit");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(
+                prepared[0].contains("'x:y'"), "Colon inside a string literal should be preserved");
+        assertEquals("1", prepared[1], "Only :v is a parameter, not :y in the literal");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_DoubleQuotedIdentifierColon() {
+        byte[] data = "SELECT \"co:l\" FROM t WHERE id = :id".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmtDq", field);
+        assertEquals(0, getSqlCode(), "Prepare with quoted identifier should succeed");
+        String[] prepared = SqlState.getPrepared("stmtDq");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(
+                prepared[0].contains("\"co:l\""),
+                "Colon inside a quoted identifier should be preserved");
+        assertEquals("1", prepared[1], "Only :id is a parameter");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_EscapedQuoteInLiteral() {
+        byte[] data = "INSERT INTO t VALUES ('it''s :x')".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmtEsc", field);
+        assertEquals(0, getSqlCode(), "Prepare with escaped quote should succeed");
+        String[] prepared = SqlState.getPrepared("stmtEsc");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertTrue(
+                prepared[0].contains("'it''s :x'"),
+                "Escaped quote and colon inside the literal should be preserved");
+        assertEquals("0", prepared[1], "No parameters; :x is inside a string literal");
+    }
+
     // ============================================================
     // ExecWithParams commit/rollback paths
     // ============================================================
