@@ -1004,10 +1004,10 @@ final class CobolDataConverter {
                 break;
             case Types.BIGINT:
             case Types.DECIMAL:
-                stmt.setBigDecimal(index, new BigDecimal(str));
-                break;
             case Types.NUMERIC:
-                stmt.setDouble(index, Double.parseDouble(str));
+                // NUMERIC/DECIMAL は BigDecimal で正確にバインドする。
+                // setDouble だと 16 桁超の精度や正確な小数で丸め誤差が生じる。
+                stmt.setBigDecimal(index, new BigDecimal(str));
                 break;
             case Types.FLOAT:
                 stmt.setFloat(index, Float.parseFloat(str));
