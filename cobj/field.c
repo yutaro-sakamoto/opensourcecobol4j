@@ -1027,12 +1027,11 @@ void cb_validate_field(struct cb_field *f) {
     cb_validate_field(arr_field);
   }
 
-  /* NOTE: ESQL VARYING ホスト変数の検出は、誤検出を避けるため通常の COBOL
-     プログラムには影響しない ESQL 解決時 (esql.c の resolve_host_var_type) に
-     限定して行う。明示的な VARYING 句は parser.y で flag_varying が立ち、上の
-     展開ブロックで処理される。ここでフィールド名の形 (<group>-LEN 等) を
-     スニッフィングして flag_varying を立てる自動判定は、長さ前置きレコードのような
-     通常の集団項目を誤って VARYING と誤認するため行わない。 */
+  /* ESQL VARYING ホスト変数の検出は esql.c の resolve_host_var_type で
+     ESQL 解決時にのみ行う。明示的な VARYING 句は parser.y で flag_varying
+     が立ち、上の展開ブロックで処理される。フィールド名の形を見て
+     flag_varying を立てる自動判定は、通常の長さ前置きレコードを VARYING と
+     誤認するため行わない。 */
 
   /* setup parameters */
   if (f->storage == CB_STORAGE_LOCAL || f->storage == CB_STORAGE_LINKAGE ||
