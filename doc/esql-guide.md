@@ -56,9 +56,14 @@ Below is a minimal COBOL program that connects to PostgreSQL, inserts a row, rea
 Compile and run:
 
 ```bash
-cobj -I /usr/lib/opensourcecobol4j/copy quick-start.cbl
+cobj quick-start.cbl
 java QUICK-START
 ```
+
+> [!NOTE]
+> `EXEC SQL INCLUDE SQLCA END-EXEC` is handled internally by the compiler, so you do
+> not need a COPY file for the SQLCA, nor an `-I` option to point at a copy directory.
+> (Only when you also use your own COPY books do you need `-I` to specify their directory.)
 
 ## Supported SQL Statements
 
@@ -305,19 +310,39 @@ buffer) and stores up to `OCCURS` rows. The number of rows actually fetched is r
        EXEC SQL ROLLBACK END-EXEC.
 ```
 
-## Host Variable Type Mappings
+## COBOL Items Usable as Host Variables
 
-The following table shows how COBOL PIC clauses map to SQL types:
+The following COBOL items can be used as host variables. The runtime interprets the item's bytes according to its PIC clause / USAGE when exchanging data with SQL.
 
-| COBOL PIC Clause | SQL Type | Notes |
-|---|---|---|
-| `PIC X(n)` | CHAR / VARCHAR | Alphanumeric string |
-| `PIC 9(n)` | NUMERIC | Unsigned integer |
-| `PIC S9(n)` | NUMERIC | Signed integer |
-| `PIC 9(n)V9(m)` | DECIMAL | Fixed-point decimal |
-| `PIC 9(n) USAGE COMP-3` | NUMERIC | Packed decimal |
-| `PIC 9(n) USAGE COMP-5` | INTEGER / BIGINT | Native binary integer |
-| `PIC N(n)` | NATIONAL CHARACTER | National (wide) character |
+| COBOL item | Description |
+|---|---|
+| `PIC X(n)` | Alphanumeric string |
+| `PIC A(n)` | Alphabetic |
+| `PIC 9(n)` / `PIC S9(n)` | DISPLAY (zoned decimal); supports signed/unsigned and sign position (LEADING/TRAILING, SEPARATE/combined) |
+| `PIC 9(n)V9(m)` | Fixed-point decimal |
+| `USAGE COMP-3` (packed decimal) | Packed decimal |
+| `USAGE COMP-5` (native binary) | Binary integer |
+| `USAGE COMP-2` (double-precision float) | Floating-point number |
+| `PIC N(n)` | National (wide) character (Japanese, Shift-JIS) |
+| Group item | Treated as alphanumeric |
+| VARYING item | Variable-length alphanumeric / Japanese string |
+
+> [!IMPORTANT]
+> This does **not** mean a PIC clause is fixed-mapped to a particular SQL type. The SQL
+> type a value is treated as is determined by the **column definition of the target table
+> (the SQL-side type)**.
+>
+> The runtime behaves as follows:
+> - **COBOL → SQL (bind)**: it converts the host variable's bytes to a string representation
+>   according to the PIC clause / USAGE, then binds it to match the **column's SQL type**
+>   obtained from the JDBC parameter metadata (e.g. as an integer for an integer column, or an
+>   appropriate numeric type for a numeric column).
+> - **SQL → COBOL (fetch)**: it reads the value according to the column's SQL type and writes
+>   it back into COBOL storage according to the receiving host variable's PIC clause / USAGE.
+>
+> So the same `PIC X(20)` host variable can be used against either a character column or a
+> numeric column (as long as the value is compatible). PostgreSQL does not auto-detect the
+> COBOL type; all of the above conversion is performed explicitly by the runtime.
 
 ## SQLCA Error Handling
 
@@ -388,13 +413,86 @@ corresponding `CONNECT` host variable is empty, which is how the short form
 
 ```bash
 # Compile a COBOL program with EXEC SQL
-cobj -I /usr/lib/opensourcecobol4j/copy program.cbl
+cobj program.cbl
 
 # Run the compiled program
 java program
 ```
 
-The `-I` flag specifies the directory containing COPY files.
+`EXEC SQL INCLUDE SQLCA END-EXEC` is handled internally by the compiler, so no COPY file
+or `-I` option is required for the SQLCA. Only when you also use your own COPY books do you
+need to specify their directory with `-I` (e.g. `cobj -I /path/to/copy program.cbl`).
+
+## Runtime Logging
+
+The ESQL runtime emits logs through [SLF4J](https://www.slf4j.org/). When you execute an
+`EXEC SQL` statement, the following logs are produced depending on its kind. They are useful
+for inspecting the SQL being run and the connection state, and for troubleshooting.
+
+### Logs per statement
+
+| ESQL statement | DEBUG | TRACE | ERROR (on failure) |
+|---|---|---|---|
+| `CONNECT` | connection success (connection id), JDBC URL and user name | host-variable values of the connection parameters (user name, DB name) | connection failure |
+| `DISCONNECT` | disconnect start (connection id) | - | disconnect failure |
+| `INSERT` / `UPDATE` / `DELETE` / DDL and other `EXEC SQL` | the SQL statement being executed (trimmed) | - | SQL execution failure |
+| Parameterized `EXEC SQL` (e.g. `EXECUTE ... USING`) | the SQL statement and parameter count | - | SQL execution failure |
+| `SELECT ... INTO` | the SQL statement being executed | - | SELECT INTO failure |
+| `DECLARE ... CURSOR` | cursor name and SQL statement | - | - |
+| `OPEN` cursor | cursor name | - | cursor open failure |
+| `FETCH` | - | cursor name | - |
+
+Key points:
+
+- **ERROR** … when a SQL statement fails, the offending SQL statement and the error message are logged.
+- **DEBUG** … normal progress is logged: the SQL executed, connection establishment/teardown, and cursor operations.
+- **TRACE** … high-frequency or detailed information such as the `CONNECT` host-variable values and `FETCH` (kept separate from DEBUG).
+- Positioned `UPDATE` / `DELETE` with `WHERE CURRENT OF` have no dedicated logs; they correct the
+  cursor position internally and then run as a normal `EXEC SQL`, so the `EXEC SQL` logs above are emitted.
+
+> [!NOTE]
+> Logs may include host-variable values (such as the `CONNECT` user name and DB name) and SQL
+> statements containing parameters. When enabling TRACE/DEBUG in production, be aware that
+> sensitive information may end up in the logs.
+
+### Configuring logging
+
+`libcobj.jar` bundles slf4j-simple. By default only INFO level and above is written to
+standard error, so the DEBUG/TRACE logs above are not shown. To enable DEBUG logs, set a
+system property.
+
+```bash
+# Enable all DEBUG logs
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug YourProgram
+```
+
+Logger names are the fully qualified names of the implementation classes. Most logs for
+`EXEC SQL` statements come from the
+`jp.osscons.opensourcecobol.libcobj.sql.CobolSql` logger, so you can also enable just that
+logger.
+
+```bash
+java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug YourProgram
+```
+
+If you prefer a backend such as Logback over slf4j-simple, exclude `slf4j-simple` from the
+classpath, add `logback-classic`, and configure it with `logback.xml`.
+
+```xml
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="jp.osscons.opensourcecobol.libcobj.sql" level="DEBUG"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>
+```
 
 ## Limitations
 

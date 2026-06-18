@@ -211,6 +211,5 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 
 ## 関連ドキュメント
 
-- [esql-guide_JP.md](./esql-guide_JP.md) -- ユーザ向け使い方
-- [esql-logging_JP.md](./esql-logging_JP.md) -- SLF4J ログ出力
+- [esql-guide_JP.md](./esql-guide_JP.md) -- ユーザ向け使い方（SLF4J ランタイムログの設定方法を含む）
 - [esql-design.md](./esql-design.md) -- 本ドキュメントの英語版

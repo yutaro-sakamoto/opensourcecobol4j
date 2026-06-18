@@ -56,9 +56,14 @@ opensource COBOL 4Jは、COBOLプログラムからPostgreSQLデータベース�
 コンパイルと実行:
 
 ```bash
-cobj -I /usr/lib/opensourcecobol4j/copy quick-start.cbl
+cobj quick-start.cbl
 java QUICK-START
 ```
+
+> [!NOTE]
+> `EXEC SQL INCLUDE SQLCA END-EXEC` はコンパイラが内部的に処理するため、SQLCA 用に
+> COPY ファイルを用意したり `-I` でコピーディレクトリを指定したりする必要はありません。
+> （独自の COPY ブックを併用する場合のみ、通常どおり `-I` でそのディレクトリを指定してください。）
 
 ## サポートされるSQL文
 
@@ -301,19 +306,37 @@ OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO`
        EXEC SQL ROLLBACK END-EXEC.
 ```
 
-## ホスト変数の型マッピング
+## ホスト変数として使用できるCOBOL項目
 
-以下の表は、COBOLのPIC句がSQLの型にどのようにマッピングされるかを示しています:
+以下のCOBOL項目をホスト変数として使用できます。ランタイムは項目の PIC 句・USAGE に従ってバイト列を解釈し、SQL とやり取りします。
 
-| COBOL PIC句 | SQL型 | 備考 |
-|---|---|---|
-| `PIC X(n)` | CHAR / VARCHAR | 英数字文字列 |
-| `PIC 9(n)` | NUMERIC | 符号なし整数 |
-| `PIC S9(n)` | NUMERIC | 符号付き整数 |
-| `PIC 9(n)V9(m)` | DECIMAL | 固定小数点数 |
-| `PIC 9(n) USAGE COMP-3` | NUMERIC | パック10進数 |
-| `PIC 9(n) USAGE COMP-5` | INTEGER / BIGINT | ネイティブバイナリ整数 |
-| `PIC N(n)` | NATIONAL CHARACTER | 日本語文字 |
+| COBOL 項目 | 説明 |
+|---|---|
+| `PIC X(n)` | 英数字文字列 |
+| `PIC A(n)` | 英字 |
+| `PIC 9(n)` / `PIC S9(n)` | DISPLAY（ゾーン10進）数値。符号の有無・位置（LEADING/TRAILING、SEPARATE/結合）に対応 |
+| `PIC 9(n)V9(m)` | 固定小数点数 |
+| `USAGE COMP-3`（パック10進） | パック10進数 |
+| `USAGE COMP-5`（ネイティブバイナリ） | バイナリ整数 |
+| `USAGE COMP-2`（倍精度浮動小数点） | 浮動小数点数 |
+| `PIC N(n)` | 各国文字（日本語、Shift-JIS） |
+| 集団項目 | 英数字として扱われる |
+| VARYING 項目 | 可変長の英数字／日本語文字列 |
+
+> [!IMPORTANT]
+> これは「PIC 句が特定の SQL 型に固定的に対応づけられる」という意味ではありません。
+> 値がどの SQL 型として扱われるかは、**対象テーブルのカラム定義（SQL 側の型）** で決まります。
+>
+> ランタイムの動作は次のとおりです。
+> - **COBOL → SQL（バインド）**: ホスト変数のバイト列を PIC 句・USAGE に従って文字列表現に変換し、
+>   JDBC のパラメータメタデータから取得した**カラムの SQL 型**に合わせてバインドします
+>   （例: 整数カラムなら整数、数値カラムなら適切な数値型として渡す）。
+> - **SQL → COBOL（取得）**: カラムの SQL 型に応じて値を取り出し、それを受け取るホスト変数の
+>   PIC 句・USAGE に従って COBOL ストレージへ書き戻します。
+>
+> したがって、同じ `PIC X(20)` のホスト変数でも、文字列カラムにも数値カラムにも（値が
+> 互換であれば）使用できます。PostgreSQL が COBOL の型を自動認識するわけではなく、上記の
+> 変換はすべてランタイムが明示的に行っています。
 
 ## SQLCAによるエラーハンドリング
 
@@ -383,13 +406,84 @@ dbname@host:port
 
 ```bash
 # EXEC SQLを含むCOBOLプログラムをコンパイル
-cobj -I /usr/lib/opensourcecobol4j/copy program.cbl
+cobj program.cbl
 
 # コンパイルしたプログラムを実行
 java program
 ```
 
-`-I` フラグは、COPYファイルが格納されているディレクトリを指定します。
+`EXEC SQL INCLUDE SQLCA END-EXEC` はコンパイラが内部的に処理するため、SQLCA 用の COPY
+ファイルや `-I` オプションは不要です。独自の COPY ブックを併用する場合のみ、`-I` でその
+コピーディレクトリを指定してください（例: `cobj -I /path/to/copy program.cbl`）。
+
+## ランタイムログ
+
+ESQL ランタイムは [SLF4J](https://www.slf4j.org/) を使ってログを出力します。`EXEC SQL` 文を実行すると、
+その種類に応じて以下のログが出力されます。実行中の SQL や接続状況の確認、トラブルシュートに利用できます。
+
+### 構文ごとのログ出力
+
+| ESQL 構文 | DEBUG | TRACE | ERROR（失敗時） |
+|---|---|---|---|
+| `CONNECT` | 接続成功（接続ID）、JDBC URL とユーザー名 | 接続パラメータのホスト変数値（ユーザー名・DB名） | 接続失敗 |
+| `DISCONNECT` | 切断開始（接続ID） | - | 切断失敗 |
+| `INSERT` / `UPDATE` / `DELETE` / DDL 等の `EXEC SQL` | 実行する SQL 文（トリム済み） | - | SQL 実行失敗 |
+| パラメータ付きの `EXEC SQL`（`EXECUTE ... USING` など） | SQL 文とパラメータ数 | - | SQL 実行失敗 |
+| `SELECT ... INTO` | 実行する SQL 文 | - | SELECT INTO 実行失敗 |
+| `DECLARE ... CURSOR` | カーソル名と SQL 文 | - | - |
+| `OPEN` カーソル | カーソル名 | - | カーソルオープン失敗 |
+| `FETCH` | - | カーソル名 | - |
+
+ポイント:
+
+- **ERROR** … SQL 実行に失敗したとき、対象の SQL 文とエラーメッセージを記録します。
+- **DEBUG** … 実行した SQL 文、接続の成立・切断、カーソル操作など、通常の動作経過を記録します。
+- **TRACE** … `CONNECT` のホスト変数値や `FETCH` のように高頻度・詳細な情報を記録します（DEBUG とは分離）。
+- `WHERE CURRENT OF` を伴う位置付き `UPDATE` / `DELETE` は専用ログを持ちませんが、内部でカーソル
+  位置を補正したのち通常の `EXEC SQL` として実行されるため、上表の `EXEC SQL` のログが出力されます。
+
+> [!NOTE]
+> ログにはホスト変数の値（`CONNECT` のユーザー名・DB名など）やパラメータを含む SQL 文が
+> 出力される場合があります。本番環境で TRACE/DEBUG を有効にする際は、機微な情報がログに
+> 残る可能性に注意してください。
+
+### ログ出力の設定
+
+`libcobj.jar` には slf4j-simple が同梱されています。既定では INFO レベル以上が標準エラー出力に
+出力され、上記の DEBUG/TRACE ログは出力されません。DEBUG ログを有効にするには、システム
+プロパティを指定します。
+
+```bash
+# すべての DEBUG ログを有効化
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug YourProgram
+```
+
+ロガー名は実装クラスの完全修飾名です。`EXEC SQL` 文に対応するログの大半は
+`jp.osscons.opensourcecobol.libcobj.sql.CobolSql` ロガーから出力されるため、特定のロガーだけを
+有効化することもできます。
+
+```bash
+java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug YourProgram
+```
+
+slf4j-simple の代わりに Logback などのバックエンドを使いたい場合は、`slf4j-simple` をクラスパスから
+除外し、`logback-classic` を追加して `logback.xml` で設定します。
+
+```xml
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="jp.osscons.opensourcecobol.libcobj.sql" level="DEBUG"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+  </root>
+</configuration>
+```
 
 ## 制限事項
 

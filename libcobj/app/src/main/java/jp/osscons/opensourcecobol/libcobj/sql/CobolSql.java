@@ -579,6 +579,7 @@ public final class CobolSql {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
                 return;
             }
+            LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
             SqlCursor existing = SqlState.getCursor(cursorName);
             if (existing != null && existing.isOpened) {
                 SqlCA.setError(
