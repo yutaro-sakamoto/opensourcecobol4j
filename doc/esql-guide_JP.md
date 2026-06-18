@@ -10,8 +10,6 @@ opensource COBOL 4Jは、COBOLプログラムからPostgreSQLデータベース�
 
 - **opensource COBOL 4J** がインストール済みであること（[README_JP.md](../README_JP.md) を参照）
 - **PostgreSQL** サーバー（バージョン9.6以降）
-- **Java**（JDK 11以降）
-- PostgreSQL JDBCドライバーは `libcobj.jar` にバンドルされています
 
 ## クイックスタート
 
@@ -317,9 +315,7 @@ OCCURS を使った配列取得（OCCURS ホスト変数への `SELECT ... INTO`
 | `PIC 9(n)` / `PIC S9(n)` | DISPLAY（ゾーン10進）数値。符号の有無・位置（LEADING/TRAILING、SEPARATE/結合）に対応 |
 | `PIC 9(n)V9(m)` | 固定小数点数 |
 | `USAGE COMP-3`（パック10進） | パック10進数 |
-| `USAGE COMP-5`（ネイティブバイナリ） | バイナリ整数 |
-| `USAGE COMP-2`（倍精度浮動小数点） | 浮動小数点数 |
-| `PIC N(n)` | 各国文字（日本語、Shift-JIS） |
+| `PIC N(n)` | 日本語、Shift-JIS |
 | 集団項目 | 英数字として扱われる |
 | VARYING 項目 | 可変長の英数字／日本語文字列 |
 
@@ -455,6 +451,8 @@ java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 > ERROR だけが出力されます（DEBUG / TRACE は出力されません）。
 
 ## 制限事項
+
+以下に挙げる制限事項は、いずれも移植元である Open COBOL ESQL 4J でも同様に制限されている事項です。本機能は Open COBOL ESQL 4J の挙動に合わせて移植しているため、これらの点についても元の実装と同じ制限を引き継いでいます。
 
 - COBOL 標準の `OF` 修飾 (`:VAR OF GRP`) はサポートされません。dotted 修飾 (`:GRP.VAR`) を使用してください。
 - 添字の値に算術式 (`:VAR(I+1)`) を書いたり、添字値そのものが添字を持つホスト変数 (`:VAR(IDX(1))`) を書いたりすることはできません。間接的な添字が必要な場合は、COBOL 側でいったん作業変数に MOVE してから渡してください。

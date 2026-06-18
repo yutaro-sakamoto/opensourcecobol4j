@@ -10,8 +10,6 @@ When a COBOL source file containing `EXEC SQL ... END-EXEC` statements is compil
 
 - **opensource COBOL 4J** installed (see [README.md](../README.md))
 - **PostgreSQL** server (version 9.6 or later)
-- **Java** (JDK 11 or later)
-- The PostgreSQL JDBC driver is bundled in `libcobj.jar`
 
 ## Quick Start
 
@@ -321,9 +319,7 @@ The following COBOL items can be used as host variables. The runtime interprets 
 | `PIC 9(n)` / `PIC S9(n)` | DISPLAY (zoned decimal); supports signed/unsigned and sign position (LEADING/TRAILING, SEPARATE/combined) |
 | `PIC 9(n)V9(m)` | Fixed-point decimal |
 | `USAGE COMP-3` (packed decimal) | Packed decimal |
-| `USAGE COMP-5` (native binary) | Binary integer |
-| `USAGE COMP-2` (double-precision float) | Floating-point number |
-| `PIC N(n)` | National (wide) character (Japanese, Shift-JIS) |
+| `PIC N(n)` | Japanese, Shift-JIS |
 | Group item | Treated as alphanumeric |
 | VARYING item | Variable-length alphanumeric / Japanese string |
 
@@ -462,6 +458,8 @@ java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 > emits only ERROR is shown (DEBUG / TRACE are not).
 
 ## Limitations
+
+All of the limitations listed below are also present in Open COBOL ESQL 4J, the project this feature was ported from. Because this feature is ported to match the behavior of Open COBOL ESQL 4J, it inherits the same restrictions as the original implementation on these points.
 
 - COBOL-classic `OF` qualification (`:VAR OF GRP`) is not supported. Use dotted qualification (`:GRP.VAR`) instead.
 - Subscript values cannot be arithmetic expressions (`:VAR(I+1)`) and cannot themselves be subscripted host variables (`:VAR(IDX(1))`). Compute the index into a scratch COBOL variable first.
