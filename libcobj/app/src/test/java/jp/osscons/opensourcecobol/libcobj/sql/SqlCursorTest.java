@@ -206,9 +206,12 @@ class SqlCursorTest {
         CobolDataStorage sqlca = new CobolDataStorage(133);
         boolean hasRow = cursor.fetch(conn, new AbstractCobolField[] {field}, sqlca);
         assertTrue(hasRow, "Fetch should return a row even with NULL value");
-        // NULL value should zero out the storage
+        // NULL without indicator fills the host variable with its type-appropriate empty
+        // value (alphanumeric => spaces), not raw 0x00.
         assertEquals(
-                0, field.getDataStorage().getByte(0), "NULL value should zero out the storage");
+                (byte) ' ',
+                field.getDataStorage().getByte(0),
+                "NULL fills an alphanumeric host variable with spaces (type-aware empty)");
         // ECPG semantics: NULL without indicator => sqlcode=-213, sqlstate="22002"
         assertEquals(
                 SqlCA.ECPG_MISSING_INDICATOR,

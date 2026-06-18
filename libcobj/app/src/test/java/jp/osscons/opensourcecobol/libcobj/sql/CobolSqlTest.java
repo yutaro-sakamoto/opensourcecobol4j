@@ -549,13 +549,16 @@ class CobolSqlTest {
         CobolSql.selectInto(
                 sqlca, "SELECT name FROM sel_test", null, new AbstractCobolField[] {resultField});
         // ECPG semantics: NULL without indicator => sqlcode=-213 (ECPG_MISSING_INDICATOR).
-        // The row is still considered fetched and the target field is zero-filled.
+        // The row is still considered fetched and the target field is filled with its
+        // type-appropriate empty value (alphanumeric => spaces, numeric => zeros), not raw 0x00.
         assertEquals(
                 SqlCA.ECPG_MISSING_INDICATOR,
                 getSqlCode(),
                 "SelectInto with NULL value should signal ECPG_MISSING_INDICATOR");
         assertEquals(
-                0, resultField.getDataStorage().getByte(0), "NULL value should zero out storage");
+                (byte) ' ',
+                resultField.getDataStorage().getByte(0),
+                "NULL fills an alphanumeric host variable with spaces (type-aware empty)");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE sel_test");
