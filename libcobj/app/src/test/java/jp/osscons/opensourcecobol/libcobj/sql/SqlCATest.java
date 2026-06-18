@@ -130,6 +130,38 @@ class SqlCATest {
         assertEquals(70, len, "ERRMC length should be truncated to 70");
     }
 
+    /** SQLERRMC は (COBOL フィールドの読み出しと同じ) SHIFT-JIS でエンコードされること。 */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testSetErrmc_JapaneseEncodedAsShiftJis() {
+        java.nio.charset.Charset sjis = java.nio.charset.Charset.forName("SHIFT-JIS");
+        String message = "エラー発生";
+        SqlCA.setErrmc(sqlca, message);
+        byte[] expected = message.getBytes(sjis);
+        short len = ByteBuffer.wrap(sqlca.getByteArray(16, 2)).getShort();
+        assertEquals(expected.length, len, "SQLERRML は SHIFT-JIS のバイト長と一致するべき");
+        byte[] stored = sqlca.getByteArray(18, expected.length);
+        assertArrayEquals(expected, stored, "SQLERRMC は SHIFT-JIS でエンコードされるべき");
+    }
+
+    /** 70 バイト超の切り詰めで多バイト文字を途中分割しないこと。 */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testSetErrmc_MultibyteTruncationDoesNotSplit() {
+        java.nio.charset.Charset sjis = java.nio.charset.Charset.forName("SHIFT-JIS");
+        // "A"(1 バイト) + "あ"(2 バイト)×40 = 81 バイト。70 バイトで素朴に切ると
+        // 35 個目の "あ" が 1 バイトだけ残り分割される。
+        String message = "A" + "あ".repeat(40);
+        SqlCA.setErrmc(sqlca, message);
+        short len = ByteBuffer.wrap(sqlca.getByteArray(16, 2)).getShort();
+        assertTrue(len <= 70, "SQLERRML は 70 バイト以下");
+        byte[] stored = sqlca.getByteArray(18, len);
+        String decoded = new String(stored, sjis);
+        // 分割されていなければ元メッセージの完全な先頭部分として復号できる。
+        assertEquals("A" + "あ".repeat(34), decoded, "文字境界で切り詰め (A + あ×34 = 69 バイト)");
+        assertEquals(69, len, "35 個目の あ は入りきらず 69 バイトで停止する");
+    }
+
     @Test
     void testSetErrmc_NullMessage_CallsClearErrmc() {
         SqlCA.setErrmc(sqlca, "test");
