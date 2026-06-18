@@ -1122,6 +1122,35 @@ class CobolSqlTest {
         assertEquals("2", prepared[1], "Prepared param count should be 2");
     }
 
+    /** :name の直後が演算子 (区切り空白なし) でも、演算子以降のトークンを名前に飲み込まないこと。 */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_HostVarFollowedByOperator_NotSwallowed() {
+        byte[] data = "SELECT :a+:b FROM t".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmt_op", field);
+        assertEquals(0, getSqlCode(), "Prepare should succeed");
+        String[] prepared = SqlState.getPrepared("stmt_op");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertEquals("SELECT ?+? FROM t", prepared[0], "演算子は名前に飲み込まれず保持される");
+        assertEquals("2", prepared[1], "Prepared param count should be 2");
+    }
+
+    /** :name の直後が改行＋空白なしの語でも、続く語 (例 "AND") を名前に飲み込まないこと。 */
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testPrepare_HostVarFollowedByNewline_NotSwallowed() {
+        byte[] data = "DELETE FROM t WHERE id=:v1\nAND k=:v2".getBytes();
+        AbstractCobolField field = makeAlphaField(data.length, data);
+        CobolSql.prepare(sqlca, "stmt_nl", field);
+        assertEquals(0, getSqlCode(), "Prepare should succeed");
+        String[] prepared = SqlState.getPrepared("stmt_nl");
+        assertNotNull(prepared, "Prepared statement should be registered");
+        assertEquals(
+                "DELETE FROM t WHERE id=?\nAND k=?", prepared[0], "改行直後の 'AND' は名前に飲み込まれず保持される");
+        assertEquals("2", prepared[1], "Prepared param count should be 2");
+    }
+
     @Test
     void testExecutePrepared_NotFound() {
         CobolSql.executePrepared(sqlca, "nonexistent");

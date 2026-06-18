@@ -851,13 +851,9 @@ public final class CobolSql {
                     nParams++;
                     replaced.append('?');
                     i++;
-                    // 名前の終端。':' も終端に含め、:name の直後の '::' キャストを
-                    // 名前に取り込まないようにする(COBOL のホスト変数名に ':' は現れない)。
-                    while (i < len
-                            && query.charAt(i) != ' '
-                            && query.charAt(i) != ','
-                            && query.charAt(i) != ')'
-                            && query.charAt(i) != ':') {
+                    // 名前を構成する文字の間だけ進める。空白・改行・演算子などはすべて終端。
+                    // ':' も名前文字ではないため、:name 直後の '::' キャストは外側ループで処理される。
+                    while (i < len && isHostVarNameChar(query.charAt(i))) {
                         i++;
                     }
                     i--;
@@ -871,6 +867,11 @@ public final class CobolSql {
         } catch (Exception e) {
             SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
         }
+    }
+
+    /** :name ホスト変数名を構成しうる文字 (COBOL データ名: 英数字・ハイフン、加えてアンダースコア) か。 */
+    private static boolean isHostVarNameChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '-' || c == '_';
     }
 
     /**
