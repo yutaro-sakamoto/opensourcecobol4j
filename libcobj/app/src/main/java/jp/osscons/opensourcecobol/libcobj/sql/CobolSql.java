@@ -296,15 +296,16 @@ public final class CobolSql {
      * @param resultParams 選択された列の値を受け取る出力ホスト変数
      */
     private static void fetchOccursRows(
-            ResultSet rs,
+            ResultSet resultSet,
             AbstractCobolField[] resultParams,
             int occursSize,
             int occursMax,
             CobolDataStorage sqlca)
             throws SQLException {
-        // rs はキャッシュされた PreparedStatement のものであることがあり、文自体は閉じないため、
-        // 変換中の例外も含めどの経路でも ResultSet を確実に閉じる (サーバ側カーソルのリーク防止)。
-        try {
+        // 渡される ResultSet はキャッシュされた PreparedStatement のものであることがあり、
+        // 文自体は閉じない。try-with-resources で、変換中の例外も含めどの経路でも
+        // ResultSet を閉じる (サーバ側カーソルのリーク防止)。
+        try (ResultSet rs = resultSet) {
             if (rs == null || !rs.next()) {
                 SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
                 SqlCA.setState(sqlca, "02000");
@@ -342,19 +343,16 @@ public final class CobolSql {
             } else {
                 SqlCA.setSuccess(sqlca);
             }
-        } finally {
-            if (rs != null) {
-                rs.close();
-            }
         }
     }
 
     private static void processSelectIntoResults(
-            ResultSet rs, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
+            ResultSet resultSet, AbstractCobolField[] resultParams, CobolDataStorage sqlca)
             throws SQLException {
-        // rs はキャッシュされた PreparedStatement のものであることがあり、文自体は閉じないため、
-        // 変換中の例外も含めどの経路でも ResultSet を確実に閉じる (サーバ側カーソルのリーク防止)。
-        try {
+        // 渡される ResultSet はキャッシュされた PreparedStatement のものであることがあり、
+        // 文自体は閉じない。try-with-resources で、変換中の例外も含めどの経路でも
+        // ResultSet を閉じる (サーバ側カーソルのリーク防止)。
+        try (ResultSet rs = resultSet) {
             if (rs == null || !rs.next()) {
                 SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
                 SqlCA.setState(sqlca, "02000");
@@ -388,10 +386,6 @@ public final class CobolSql {
                 SqlCA.setMissingIndicator(sqlca);
             } else {
                 SqlCA.setSuccess(sqlca);
-            }
-        } finally {
-            if (rs != null) {
-                rs.close();
             }
         }
     }
