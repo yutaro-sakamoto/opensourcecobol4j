@@ -1027,41 +1027,12 @@ void cb_validate_field(struct cb_field *f) {
     cb_validate_field(arr_field);
   }
 
-  /* Auto-detect VARYING pattern from pplex expansion (recursive) */
-  {
-    struct cb_field *child;
-    for (child = f->children; child; child = child->sister) {
-      if (!child->flag_varying && child->children && !child->pic) {
-        struct cb_field *c1 = child->children;
-        struct cb_field *c2 = c1->sister;
-        if (c2 && !c2->sister &&
-            (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
-            c2->usage == CB_USAGE_DISPLAY && c2->pic) {
-          size_t nlen = strlen(child->name);
-          if (strlen(c1->name) == nlen + 4 &&
-              strncasecmp(c1->name, child->name, nlen) == 0 &&
-              strcasecmp(c1->name + nlen, "-LEN") == 0) {
-            child->flag_varying = 1;
-          }
-        }
-      }
-    }
-    /* Also check the field itself (for 01-level VARYING) */
-    if (!f->flag_varying && f->children && !f->pic) {
-      struct cb_field *c1 = f->children;
-      struct cb_field *c2 = c1->sister;
-      if (c2 && !c2->sister &&
-          (c1->usage == CB_USAGE_BINARY || c1->usage == CB_USAGE_COMP_5) &&
-          c2->usage == CB_USAGE_DISPLAY && c2->pic) {
-        size_t nlen = strlen(f->name);
-        if (strlen(c1->name) == nlen + 4 &&
-            strncasecmp(c1->name, f->name, nlen) == 0 &&
-            strcasecmp(c1->name + nlen, "-LEN") == 0) {
-          f->flag_varying = 1;
-        }
-      }
-    }
-  }
+  /* NOTE: ESQL VARYING ホスト変数の検出は、誤検出を避けるため通常の COBOL
+     プログラムには影響しない ESQL 解決時 (esql.c の resolve_host_var_type) に
+     限定して行う。明示的な VARYING 句は parser.y で flag_varying が立ち、上の
+     展開ブロックで処理される。ここでフィールド名の形 (<group>-LEN 等) を
+     スニッフィングして flag_varying を立てる自動判定は、長さ前置きレコードのような
+     通常の集団項目を誤って VARYING と誤認するため行わない。 */
 
   /* setup parameters */
   if (f->storage == CB_STORAGE_LOCAL || f->storage == CB_STORAGE_LINKAGE ||
