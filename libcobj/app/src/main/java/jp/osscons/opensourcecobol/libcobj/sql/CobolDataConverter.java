@@ -1053,6 +1053,10 @@ final class CobolDataConverter {
     // -------------------------------------------------------
     private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    // SimpleDateFormat はスレッドセーフでないため ThreadLocal でスレッドごとに 1 個を再利用する。
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT =
+            ThreadLocal.withInitial(() -> new SimpleDateFormat(DATE_FORMAT_PATTERN));
+
     /**
      * ResultSet からカラムの値を SHIFT-JIS でエンコードしたバイト列として取り出す。
      *
@@ -1093,7 +1097,7 @@ final class CobolDataConverter {
                         if (ts == null) {
                             return null;
                         }
-                        return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(ts).getBytes();
+                        return DATE_FORMAT.get().format(ts).getBytes();
                     }
                 case Types.DATE:
                     {
@@ -1101,7 +1105,7 @@ final class CobolDataConverter {
                         if (d == null) {
                             return null;
                         }
-                        return new SimpleDateFormat(DATE_FORMAT_PATTERN).format(d).getBytes();
+                        return DATE_FORMAT.get().format(d).getBytes();
                     }
                 case Types.TIME:
                     {
