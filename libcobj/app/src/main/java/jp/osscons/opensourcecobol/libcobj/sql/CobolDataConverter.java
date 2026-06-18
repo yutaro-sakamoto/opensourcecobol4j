@@ -404,7 +404,34 @@ final class CobolDataConverter {
                 value = 0;
                 break;
         }
-        return Long.toString(value);
+        return applyBinaryScale(value, scale);
+    }
+
+    /**
+     * ネイティブバイナリ (COMP-5) の整数値に scale を適用して 10 進文字列にする。scale &lt; 0 の
+     * フィールド (例: PIC 9(4)V99) は格納された整数の途中に小数点を挿入する。符号付き・符号なしの
+     * 両方で同じ処理を使う。
+     */
+    private static String applyBinaryScale(long value, int scale) {
+        String str = Long.toString(value);
+        if (scale >= 0) {
+            return str;
+        }
+        boolean neg = value < 0;
+        String abs = neg ? str.substring(1) : str;
+        String result;
+        if (abs.length() <= -scale) {
+            StringBuilder sb = new StringBuilder("0.");
+            for (int i = 0; i < -scale - abs.length(); i++) {
+                sb.append('0');
+            }
+            sb.append(abs);
+            result = sb.toString();
+        } else {
+            int pointPos = abs.length() + scale;
+            result = abs.substring(0, pointPos) + "." + abs.substring(pointPos);
+        }
+        return neg ? "-" + result : result;
     }
 
     private static String readSignedBinaryNative(int length, int scale, CobolDataStorage storage) {
@@ -427,24 +454,7 @@ final class CobolDataConverter {
                 value = 0;
                 break;
         }
-        String str = Long.toString(value);
-        if (scale < 0) {
-            boolean neg = value < 0;
-            String abs = neg ? str.substring(1) : str;
-            if (abs.length() <= -scale) {
-                StringBuilder sb = new StringBuilder("0.");
-                for (int i = 0; i < -scale - abs.length(); i++) {
-                    sb.append('0');
-                }
-                sb.append(abs);
-                return neg ? "-" + sb.toString() : sb.toString();
-            } else {
-                int pointPos = abs.length() + scale;
-                String result = abs.substring(0, pointPos) + "." + abs.substring(pointPos);
-                return neg ? "-" + result : result;
-            }
-        }
-        return str;
+        return applyBinaryScale(value, scale);
     }
 
     /**
