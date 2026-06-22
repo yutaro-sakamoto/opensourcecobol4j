@@ -1161,11 +1161,20 @@ static void joutput_attr(cb_tree x) {
       switch (type) {
       case COB_TYPE_GROUP:
       case COB_TYPE_ALPHANUMERIC:
+        flags = 0;
         if (f->flag_justified) {
-          id = lookup_attr(type, 0, 0, COB_FLAG_JUSTIFIED, NULL, 0);
-        } else {
-          id = lookup_attr(type, 0, 0, 0, NULL, 0);
+          flags |= COB_FLAG_JUSTIFIED;
         }
+        if (f->flag_varying) {
+          flags |= COB_FLAG_VARYING;
+          /* Check if the ARR child is NATIONAL */
+          struct cb_field *arr_child = f->children ? f->children->sister : NULL;
+          if (arr_child && arr_child->pic &&
+              arr_child->pic->category == CB_CATEGORY_NATIONAL) {
+            flags |= COB_FLAG_NATIONAL_VARYING;
+          }
+        }
+        id = lookup_attr(type, 0, 0, flags, NULL, 0);
         break;
       default:
         if (f->pic->have_sign) {
@@ -3637,6 +3646,441 @@ static void joutput_switch(struct cb_switch *sw,
   joutput_line("}");
 }
 
+static void joutput_exec_sql_field_name(const char *cobol_name) {
+  char java_name[COB_SMALL_BUFF];
+  strcpy_identifier_cobol_to_java(java_name, cobol_name);
+  joutput("%s%s", CB_PREFIX_BASE, java_name);
+}
+
+/* Helper: output f_FIELD reference for a host variable.
+ * Uses joutput_param which automatically registers the field
+ * in field_cache, ensuring the f_ declaration is generated. */
+static void joutput_sql_field_ref(struct cb_sql_host_var *hv) {
+  if (hv->ref) {
+    cb_tree resolved = cb_ref(hv->ref);
+    if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+      struct cb_field *f = CB_FIELD(resolved);
+      /* Ensure count > 0 so joutput_param registers the field */
+      if (f->count == 0) {
+        f->count = 1;
+      }
+      joutput_param(hv->ref, 0);
+      return;
+    }
+  }
+  /* Fallback */
+  char java_name[COB_SMALL_BUFF];
+  strcpy_identifier_cobol_to_java(java_name, hv->name);
+  joutput("%s%s", CB_PREFIX_FIELD, java_name);
+}
+
+/* 生成 Java 内でホスト変数を列挙するとき、何個ごとに改行して折り返すか。
+ * 1 行が長くなりすぎて可読性が落ちるのを防ぐため、この個数ごとに
+ * ",\n" + インデントを挟む。 */
+#define SQL_HOST_VAR_WRAP 5
+
+/* Helper: ホスト変数列を改行して出力する。
+ * list が空でなければ ",\n" と現在のインデントを出力したうえで、
+ * f_FIELD 参照を ", " 区切りで列挙する。生成 Java の可読性のため、
+ * SQL 文字列やカーソル名のあとに続くホスト変数を次行に折り返す。
+ * さらに SQL_HOST_VAR_WRAP 個ごとに改行して 1 行が長くなりすぎないようにする。
+ */
+static void joutput_sql_host_list_newline(struct cb_sql_host_var *list) {
+  struct cb_sql_host_var *hv;
+  int idx = 0;
+  if (!list) {
+    return;
+  }
+  joutput(",\n");
+  joutput_prefix();
+  for (hv = list; hv; hv = hv->next) {
+    if (idx > 0) {
+      if (idx % SQL_HOST_VAR_WRAP == 0) {
+        joutput(",\n");
+        joutput_prefix();
+      } else {
+        joutput(", ");
+      }
+    }
+    joutput_sql_field_ref(hv);
+    idx++;
+  }
+}
+
+/* Helper: output an AbstractCobolField[] array literal.
+ * SQL_HOST_VAR_WRAP 個ごとに改行して 1 行が長くなりすぎないようにする。 */
+static void joutput_sql_field_array(struct cb_sql_host_var *list) {
+  struct cb_sql_host_var *hv;
+  int idx = 0;
+  if (!list) {
+    joutput("new AbstractCobolField[0]");
+    return;
+  }
+  joutput("new AbstractCobolField[]{");
+  for (hv = list; hv; hv = hv->next) {
+    if (idx > 0) {
+      if (idx % SQL_HOST_VAR_WRAP == 0) {
+        joutput(",\n");
+        joutput_prefix();
+      } else {
+        joutput(", ");
+      }
+    }
+    joutput_sql_field_ref(hv);
+    idx++;
+  }
+  joutput("}");
+}
+
+/* Helper: AbstractCobolField[] 配列リテラルを ",\n" と現在のインデントを
+ * 前置してから出力する。SQL 文字列に続く入力ホスト変数配列・結果ホスト変数
+ * 配列をそれぞれ独立した行に折り返し、selectInto 系の生成 Java の可読性を
+ * 上げるために用いる。list が空でも joutput_sql_field_array が
+ * 空配列リテラル (new AbstractCobolField[0]) を出力するため、本関数は
+ * 常にカンマと改行を出力する。これは引数自体を省略しうる
+ * joutput_sql_host_list_newline とは挙動が異なる。 */
+static void joutput_sql_field_array_newline(struct cb_sql_host_var *list) {
+  joutput(",\n");
+  joutput_prefix();
+  joutput_sql_field_array(list);
+}
+
+/* SQL 文字列の先頭の「空白だけの行」と末尾の空白を取り除いた有効範囲を
+ * 返す。戻り値が start、*end_out が end (exclusive) ポインタ。
+ * - 先頭: 改行を含む whitespace の連続のうち、最後の改行までを進める。
+ *   改行を含まない先頭空白 (= 1 行目に意味のあるインデントがある場合) は
+ *   そのまま残し、共通インデント計算側に委ねる。
+ * - 末尾: 文末側のスペース・タブ・改行 (空白だけの行を含む) を落とす。
+ * これにより EXEC SQL / END-EXEC 周囲の余分な改行・インデント・末尾空白を
+ * codegen 側で一括して吸収する。 */
+static const char *sql_strip_outer_blanks(const char *sql,
+                                          const char **end_out) {
+  size_t i = 0;
+  size_t after_last_newline = 0;
+  int saw_newline = 0;
+  while (sql[i] == ' ' || sql[i] == '\t' || sql[i] == '\n' || sql[i] == '\r') {
+    if (sql[i] == '\n') {
+      saw_newline = 1;
+      after_last_newline = i + 1;
+    }
+    i++;
+  }
+  const char *start = saw_newline ? sql + after_last_newline : sql;
+  const char *end = sql + strlen(sql);
+  while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' ||
+                         end[-1] == '\r')) {
+    end--;
+  }
+  *end_out = end;
+  return start;
+}
+
+/* SQL 文字列を Java 文字列リテラルとして出力する。整形は本関数で完結する
+ * (lex/yacc 段階での空白除去には依存しない)。
+ *   (a) 先頭の空白行・末尾の空白を落として有効範囲 [sql, end) を得る。
+ *   (b) 各行 (シングルクォート文字列リテラル内に始まる行を除く) の共通
+ *       先頭空白を計算し、全行から差し引く。リテラル内に始まる行は SQL の
+ *       値の一部なので削らない。シングルクォートのトグルで in_quote 状態を
+ *       追跡する。SQL の '' エスケープは 2 連続トグルで in_quote=1 に戻る。 */
+static void joutput_sql_string(const char *sql) {
+  const char *end;
+  sql = sql_strip_outer_blanks(sql, &end);
+
+  /* (b) Pass 1: 共通インデント (= 各行の最小先頭空白) を求める。
+   * 文字列リテラル内に始まる行・全空白行は候補から除外。 */
+  int min_indent = -1;
+  int in_quote = 0;
+  int line_start_in_quote = 0;
+  int line_ws = 0;
+  int line_has_content = 0;
+  for (const char *p = sql;; p++) {
+    if (p == end || *p == '\n') {
+      if (!line_start_in_quote && line_has_content) {
+        if (min_indent < 0 || line_ws < min_indent) {
+          min_indent = line_ws;
+        }
+      }
+      if (p == end) {
+        break;
+      }
+      /* 次行の開始状態は、今の \n 時点の in_quote */
+      line_start_in_quote = in_quote;
+      line_ws = 0;
+      line_has_content = 0;
+      continue;
+    }
+    if (!line_has_content) {
+      if (*p == ' ' || *p == '\t') {
+        line_ws++;
+      } else {
+        line_has_content = 1;
+      }
+    }
+    if (*p == '\'') {
+      in_quote = !in_quote;
+    }
+  }
+  if (min_indent < 0) {
+    min_indent = 0;
+  }
+
+  /* (b) Pass 2: 出力。改行直後で in_quote=0
+   * なら共通インデント分の先頭空白をスキップ。 */
+  in_quote = 0;
+  int line_in_quote = 0;
+  int to_skip = min_indent;
+  joutput("\"");
+  for (const char *p = sql; p < end; p++) {
+    if (to_skip > 0 && !line_in_quote && (*p == ' ' || *p == '\t')) {
+      to_skip--;
+      continue;
+    }
+    switch (*p) {
+    case '\n':
+      joutput("\\n\"");
+      joutput("\n");
+      joutput_prefix();
+      joutput("+ \"");
+      line_in_quote = in_quote;
+      to_skip = min_indent;
+      break;
+    case '\t':
+      joutput("\\t");
+      break;
+    case '\r':
+      joutput("\\r");
+      break;
+    case '"':
+      joutput("\\\"");
+      break;
+    case '\\':
+      joutput("\\\\");
+      break;
+    case '\'':
+      in_quote = !in_quote;
+      joutput("%c", *p);
+      break;
+    default:
+      joutput("%c", *p);
+      break;
+    }
+  }
+  joutput("\"");
+}
+
+/* SQL 文字列リテラルを引数として出力する。
+ * 先頭の空白行・末尾の空白を取り除いた有効範囲 [body, end) を取得したうえで、
+ * 残った本文が複数行か単一行かを判定する。単一行 SQL は呼び出し元と同じ
+ * インデント位置の独立行で出力する。複数行 SQL は ",\n<+2 段インデント>"
+ * を挟み、joutput_sql_string が共通インデントを差し引きながら出力する。 */
+static void joutput_sql_string_arg(const char *sql) {
+  const char *end;
+  const char *body = sql_strip_outer_blanks(sql, &end);
+  if (memchr(body, '\n', (size_t)(end - body))) {
+    joutput(",\n");
+    joutput_indent_level += 2;
+    joutput_prefix();
+    joutput_indent_level -= 2;
+    joutput_sql_string(body);
+  } else {
+    /* 単一行: 先頭スペース/タブも落としてフラットに出力する。 */
+    while (body < end && (*body == ' ' || *body == '\t')) {
+      body++;
+    }
+    joutput(",\n");
+    joutput_prefix();
+    joutput_sql_string(body);
+  }
+}
+
+static void joutput_exec_sql(struct cb_exec_sql *p) {
+  struct cb_sql_host_var *hv;
+
+  switch (p->command) {
+  case CB_SQL_CONNECT:
+  case CB_SQL_CONNECT_INFORMAL:
+  case CB_SQL_CONNECT_SHORT:
+    joutput_prefix();
+    joutput("CobolSql.connect(");
+    joutput_exec_sql_field_name("SQLCA");
+    for (hv = p->host_list; hv; hv = hv->next) {
+      joutput(", ");
+      joutput_sql_field_ref(hv);
+    }
+    joutput(");\n");
+    break;
+
+  case CB_SQL_DISCONNECT:
+    joutput_prefix();
+    joutput("CobolSql.disconnect(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_COMMIT:
+    joutput_prefix();
+    joutput("CobolSql.commit(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_ROLLBACK:
+    joutput_prefix();
+    joutput("CobolSql.rollback(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(");\n");
+    break;
+
+  case CB_SQL_EXEC:
+    joutput_prefix();
+    if (p->cursor_name) {
+      /* UPDATE/DELETE ... WHERE CURRENT OF cursor。バルクフェッチの
+         カーソル位置補正のため専用メソッドへ振り分け、修飾カーソル名を渡す。 */
+      joutput("CobolSql.execWhereCurrentOf(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
+    } else {
+      joutput("CobolSql.exec(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(");\n");
+    }
+    break;
+
+  case CB_SQL_EXEC_PARAMS:
+    joutput_prefix();
+    if (p->cursor_name) {
+      /* WHERE CURRENT OF を伴う位置付き UPDATE/DELETE（ホスト変数あり）。 */
+      joutput("CobolSql.execWithParamsWhereCurrentOf(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+      joutput_sql_host_list_newline(p->host_list);
+      joutput(");\n");
+    } else {
+      joutput("CobolSql.execWithParams(");
+      joutput_exec_sql_field_name("SQLCA");
+      joutput_sql_string_arg(p->sql_text);
+      joutput_sql_host_list_newline(p->host_list);
+      joutput(");\n");
+    }
+    break;
+
+  case CB_SQL_SELECT_INTO_ONE:
+    joutput_prefix();
+    joutput("CobolSql.selectInto(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput_sql_string_arg(p->sql_text);
+    joutput_sql_field_array_newline(p->host_list);
+    joutput_sql_field_array_newline(p->res_host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_SELECT_INTO_OCCURS:
+    joutput_prefix();
+    joutput("CobolSql.selectIntoOccurs(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", %d, %d", p->occurs_size, p->occurs_max);
+    joutput_sql_string_arg(p->sql_text);
+    joutput_sql_field_array_newline(p->host_list);
+    joutput_sql_field_array_newline(p->res_host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_DECLARE_CURSOR:
+    joutput_prefix();
+    joutput("CobolSql.declareCursor(");
+    joutput_exec_sql_field_name("SQLCA");
+    if (p->prepare_name && p->prepare_name[0]) {
+      joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
+              p->cursor_name, p->prepare_name);
+    } else {
+      joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+      joutput_sql_string_arg(p->sql_text);
+      joutput(");\n");
+    }
+    break;
+
+  case CB_SQL_DECLARE_CURSOR_PARAMS:
+    joutput_prefix();
+    joutput("CobolSql.declareCursorWithParams(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+    joutput_sql_string_arg(p->sql_text);
+    joutput_sql_host_list_newline(p->host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_OPEN_CURSOR:
+    joutput_prefix();
+    joutput("CobolSql.openCursor(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
+    break;
+
+  case CB_SQL_OPEN_CURSOR_PARAMS:
+    joutput_prefix();
+    joutput("CobolSql.openCursorWithParams(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+    joutput_sql_host_list_newline(p->host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_CLOSE_CURSOR:
+    joutput_prefix();
+    joutput("CobolSql.closeCursor(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
+    break;
+
+  case CB_SQL_FETCH_ONE:
+    joutput_prefix();
+    joutput("CobolSql.fetchCursor(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
+    joutput_sql_host_list_newline(p->res_host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_FETCH_OCCURS:
+    joutput_prefix();
+    joutput("CobolSql.fetchCursorOccurs(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s_%s\", %d, %d", excp_current_program_id, p->cursor_name,
+            p->occurs_size, p->occurs_max);
+    joutput_sql_host_list_newline(p->res_host_list);
+    joutput(");\n");
+    break;
+
+  case CB_SQL_PREPARE:
+    joutput_prefix();
+    joutput("CobolSql.prepare(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\", ", p->prepare_name);
+    if (p->host_list) {
+      joutput_sql_field_ref(p->host_list);
+    } else {
+      joutput("null");
+    }
+    joutput(");\n");
+    break;
+
+  case CB_SQL_EXECUTE_PREPARED:
+    joutput_prefix();
+    joutput("CobolSql.executePrepared(");
+    joutput_exec_sql_field_name("SQLCA");
+    joutput(", \"%s\"", p->prepare_name);
+    joutput_sql_host_list_newline(p->host_list);
+    joutput(");\n");
+    break;
+
+  default:
+    cb_error("Unknown EXEC SQL command type: %d", p->command);
+    break;
+  }
+}
 static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
   struct cb_statement *p;
   struct cb_label *lp;
@@ -3951,6 +4395,9 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     break;
   case CB_TAG_CALL:
     joutput_call(CB_CALL(x));
+    break;
+  case CB_TAG_EXEC_SQL:
+    joutput_exec_sql(CB_EXEC_SQL(x));
     break;
   case CB_TAG_GOTO:
     joutput_goto(CB_GOTO(x));
@@ -5319,6 +5766,8 @@ static void joutput_flags(int flags) {
   HANDLE_FLAG(COB_FLAG_BINARY_SWAP)
   HANDLE_FLAG(COB_FLAG_REAL_BINARY)
   HANDLE_FLAG(COB_FLAG_IS_POINTER)
+  HANDLE_FLAG(COB_FLAG_VARYING)
+  HANDLE_FLAG(COB_FLAG_NATIONAL_VARYING)
 
   if (indent_increased) {
     joutput_indent_level -= 2;
@@ -6410,6 +6859,7 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("import jp.osscons.opensourcecobol.libcobj.call.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.file.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.ui.*;");
+  joutput_line("import jp.osscons.opensourcecobol.libcobj.sql.*;");
   joutput_line("import java.util.Optional;");
   joutput("\n");
 

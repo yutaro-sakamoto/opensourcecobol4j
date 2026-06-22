@@ -317,7 +317,7 @@ public class CobolNumericPackedField extends AbstractCobolField {
         CobolDataStorage data = this.getDataStorage();
 
         if (val == Integer.MIN_VALUE) {
-            // Integer.MIN_VALUE == -2147483647
+            // Integer.MIN_VALUE == -2147483648
             int[] bytes = {2, 1, 4, 7, 4, 8, 3, 6, 4, 8};
             int digits = this.getAttribute().getDigits();
             for (int i = 0; i < digits; ++i) {
@@ -420,18 +420,30 @@ public class CobolNumericPackedField extends AbstractCobolField {
 
     @Override
     public CobolNumericField getNumericField() {
-        int size = this.getAttribute().getDigits();
+        int digits = this.getAttribute().getDigits();
         int scale = this.getAttribute().getScale();
+        // For PP (scale < 0), only extract the physically stored digits.
+        // Keep the original scale so moveDisplayToPacked aligns correctly.
+        int realDigits = scale < 0 ? digits + scale : digits;
         CobolFieldAttribute attr =
                 new CobolFieldAttribute(
                         CobolFieldAttribute.COB_TYPE_NUMERIC_DISPLAY,
-                        size,
+                        realDigits,
                         scale,
                         CobolFieldAttribute.COB_FLAG_HAVE_SIGN,
                         null);
-        CobolDataStorage data = new CobolDataStorage(this.getAttribute().getDigits());
-        CobolNumericField field = new CobolNumericField(size, data, attr);
-        field.moveFrom(this);
+        CobolDataStorage data = new CobolDataStorage(realDigits);
+        data.fillBytes((byte) 0x30, realDigits);
+        // Direct BCD unpack using getByte (avoid moveFrom for PP correctness)
+        int offset = 1 - (digits % 2);
+        for (int i = 0; i < realDigits; i++) {
+            int nibbleIdx = offset + i;
+            byte b = this.getDataStorage().getByte(nibbleIdx / 2);
+            int nibble = (nibbleIdx % 2 == 0) ? ((b >> 4) & 0x0F) : (b & 0x0F);
+            data.setByte(i, (byte) (nibble + 0x30));
+        }
+        CobolNumericField field = new CobolNumericField(realDigits, data, attr);
+        field.putSign(this.getSign());
         return field;
     }
 

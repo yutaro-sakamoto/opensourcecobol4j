@@ -19,7 +19,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-%expect 146
+%expect 148
 
 %defines
 %verbose
@@ -110,6 +110,7 @@ static size_t			samearea = 1;
 static size_t			organized_seen = 0;
 static size_t			inspect_keyword = 0;
 static int			next_label_id = 0;
+static int			esql_sqlca_injected = 0;
 static int			eval_level = 0;
 static int			eval_inc = 0;
 static int			eval_inc2 = 0;
@@ -757,6 +758,8 @@ setup_use_file (struct cb_file *fileptr)
 %token YYYYMMDD
 %token ZERO
 
+%token EXEC_SQL_STATEMENT	"EXEC SQL statement"
+
 %left '+' '-'
 %left '*' '/'
 %left UNARY_SIGN
@@ -953,6 +956,8 @@ identification_division:
   {
 	current_section = NULL;
 	current_paragraph = NULL;
+	/* SQLCA 注入フラグはプログラム単位でリセットする。 */
+	esql_sqlca_injected = 0;
 	if (CB_LITERAL_P ($3)) {
 		stack_progid[depth] = (char *)(CB_LITERAL ($3)->data);
 	} else {
@@ -2611,6 +2616,22 @@ record_description_list_2:
 | record_description_list_2
   not_const_word data_description
 | record_description_list_2 '.'
+| record_description_list_2 exec_sql_data_statement
+| exec_sql_data_statement
+;
+
+exec_sql_data_statement:
+  EXEC_SQL_STATEMENT
+  {
+	/* DATA DIVISION に渡ってきた EXEC SQL。INCLUDE SQLCA や DECLARE SECTION は
+	   前処理 (pplex) 側で消費されるため通常ここには来ないが、その他の EXEC SQL
+	   が来た場合に備えて受け取り (実行コードは生成しない)。 */
+	(void) CB_LITERAL ($1)->data;
+  }
+| EXEC_SQL_STATEMENT '.'
+  {
+	(void) CB_LITERAL ($1)->data;
+  }
 ;
 
 data_description:
@@ -2791,6 +2812,7 @@ data_description_clause:
 | value_clause
 | renames_clause
 | any_length_clause
+| varying_clause
 | error
 ;
 
@@ -3217,6 +3239,15 @@ any_length_clause:
   }
 ;
 
+/* VARYING clause */
+
+varying_clause:
+  VARYING
+  {
+	current_field->flag_varying = 1;
+  }
+;
+
 /*******************
  * LOCAL-STORAGE SECTION
  *******************/
@@ -3498,6 +3529,10 @@ screen_section:
 procedure_division:
 | PROCEDURE DIVISION procedure_using_chaining procedure_returning '.'
   {
+	/* SQLCA は実際の埋め込み SQL を最初に検出した時点で注入する
+	   (esql_inject_sqlca。下記 exec_sql_statement を参照)。
+	   ここでは注入しない: INCLUDE SQLCA や DECLARE SECTION だけで
+	   実 SQL の無いプログラムには SQLCA を入れないため。 */
 	current_section = NULL;
 	current_paragraph = NULL;
 	cb_define_system_name ("CONSOLE");
@@ -3933,6 +3968,7 @@ statement:
 | unstring_statement
 | use_statement
 | write_statement
+| exec_sql_statement
 | NEXT_SENTENCE
   {
 	if (cb_verify (cb_next_sentence_phrase, "NEXT SENTENCE")) {
@@ -7287,6 +7323,41 @@ _to:		| TO ;
 /* _upon:		| UPON ; */
 _when:		| WHEN ;
 _with:		| WITH ;
+
+/*
+ * EXEC SQL statement
+ */
+
+exec_sql_statement:
+  EXEC_SQL_STATEMENT
+  {
+	cb_tree sql_node;
+	/* 実際の埋め込み SQL (PROCEDURE DIVISION の EXEC SQL) を初めて検出した
+	   時点で SQLCA を一度だけ暗黙に注入する。EXEC SQL INCLUDE SQLCA END-EXEC が
+	   書かれていない場合はコンパイル時に警告する (INCLUDE SQLCA の有無は
+	   前処理段で cb_sqlca_include_seen に記録される)。 */
+	if (!esql_sqlca_injected) {
+		esql_sqlca_injected = 1;
+		esql_inject_sqlca ();
+		if (!cb_sqlca_include_seen) {
+			cb_warning_x ($1,
+				_("embedded SQL is used without 'EXEC SQL INCLUDE SQLCA END-EXEC'; SQLCA is declared implicitly"));
+		}
+	}
+	BEGIN_STATEMENT ("EXEC SQL", 0);
+	/* BEGIN_STATEMENT は cb_source_line (= END-EXEC 行) を入れる。
+	   $1 のリテラルには scanner が EXEC SQL 開始行を入れているので、
+	   そちらで上書きして「コメントは EXEC SQL の行を指す」ようにする。 */
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
+	sql_node = cb_parse_exec_sql ((char *)CB_LITERAL ($1)->data);
+	if (sql_node != cb_error_node) {
+		current_statement->body =
+			cb_list_add (current_statement->body, sql_node);
+	}
+  }
+;
 
 
 %%

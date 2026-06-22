@@ -227,6 +227,76 @@ indexed_lock2_DEPENDENCIES = \
 	file-lock2.src/old-file.at \
 	file-lock2.src/lock-mode-automatic.at
 
+# ESQL tests (require PostgreSQL, run separately in CI)
+esql_basic_DEPENDENCIES = \
+	esql-basic.at \
+	esql-basic.src/connect-disconnect.at \
+	esql-basic.src/declare.at \
+	esql-basic.src/open-close.at \
+	esql-basic.src/insert.at \
+	esql-basic.src/fetch.at \
+	esql-basic.src/delete.at \
+	esql-basic.src/update.at \
+	esql-basic.src/commit-rollback.at \
+	esql-basic.src/select.at \
+	esql-basic.src/prepare-execute.at \
+	esql-basic.src/other-sql.at \
+	esql-basic.src/declare-bind-var.at \
+	esql-basic.src/sample.at
+
+esql_sqlca_DEPENDENCIES = \
+	esql-sqlca.at \
+	esql-sqlca.src/connect-disconnect.at \
+	esql-sqlca.src/insert-select-update-delete.at \
+	esql-sqlca.src/open-fetch-close.at \
+	esql-sqlca.src/prepare-execute.at \
+	esql-sqlca.src/fetch-loop.at \
+	esql-sqlca.src/errml-errmc.at
+
+esql_cobol_data_DEPENDENCIES = \
+	esql-cobol-data.at \
+	esql-cobol-data.src/numeric_signed_v.at \
+	esql-cobol-data.src/numeric_v.at \
+	esql-cobol-data.src/comp3.at \
+	esql-cobol-data.src/comp3_signed.at \
+	esql-cobol-data.src/alphanumeric.at \
+	esql-cobol-data.src/japanese.at \
+	esql-cobol-data.src/varying.at
+
+esql_misc_DEPENDENCIES = \
+	esql-misc.at \
+	esql-misc.src/long-sql.at \
+	esql-misc.src/include.at \
+	esql-misc.src/fetch-sqlca.at \
+	esql-misc.src/compile.at \
+	esql-misc.src/sql-convert.at \
+	esql-misc.src/implicit-declare.at \
+	esql-misc.src/sql-format.at \
+	esql-misc.src/null-without-indicator.at
+
+esql_sql_data_DEPENDENCIES = \
+	esql-sql-data.at \
+	esql-sql-data.src/sql_type.at
+
+esql_utf8_DEPENDENCIES = \
+	esql-utf8.at \
+	esql-utf8.src/cursor.at \
+	esql-utf8.src/host-variable.at \
+	esql-utf8.src/include.at \
+	esql-utf8.src/japanese.at \
+	esql-utf8.src/long-sql.at \
+	esql-utf8.src/prepare.at \
+	esql-utf8.src/sample.at \
+	esql-utf8.src/sql-convert.at \
+	esql-utf8.src/varying.at
+
+$(srcdir)/esql-basic: $(esql_basic_DEPENDENCIES)
+$(srcdir)/esql-sqlca: $(esql_sqlca_DEPENDENCIES)
+$(srcdir)/esql-cobol-data: $(esql_cobol_data_DEPENDENCIES)
+$(srcdir)/esql-misc: $(esql_misc_DEPENDENCIES)
+$(srcdir)/esql-sql-data: $(esql_sql_data_DEPENDENCIES)
+$(srcdir)/esql-utf8: $(esql_utf8_DEPENDENCIES)
+
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
 	misc.src/index-comp.at \
@@ -280,11 +350,20 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(jp_compat_DEPENDENCIES) \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
-	$(misc_DEPENDENCIES)
+	$(misc_DEPENDENCIES) \
+	$(esql_basic_DEPENDENCIES) \
+	$(esql_sqlca_DEPENDENCIES) \
+	$(esql_cobol_data_DEPENDENCIES) \
+	$(esql_misc_DEPENDENCIES) \
+	$(esql_sql_data_DEPENDENCIES) \
+	$(esql_utf8_DEPENDENCIES) \
+	embed_db_info.sh
 
 DISTCLEANFILES = atconfig
 
-all: $(TESTS)
+ESQL_TESTS = esql-basic esql-sqlca esql-cobol-data esql-misc esql-sql-data esql-utf8
+
+all: $(TESTS) $(ESQL_TESTS)
 
 clean-local:
 	rm -rf *.dir *.log

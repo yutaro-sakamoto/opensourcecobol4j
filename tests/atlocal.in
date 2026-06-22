@@ -52,7 +52,7 @@ COMPILE_LIMIT_TEST="${COBJ} ${FLAGS_LIMIT_TEST}"
 COMPILE_ONLY="${COBJ} -fsyntax-only ${FLAGS}"
 COMPILE_ONLY_JP_COMPAT="${COBJ} -fsyntax-only ${FLAGS_JP_COMPAT}"
 COMPILE_ONLY_LIMIT_TEST="${COBJ} -fsyntax-only ${FLAGS_LIMIT_TEST}"
-COMPILE_MODULE="${COBJ} ${FLAGS}"
+COMPILE_MODULE="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"
 COMPILE_MODULE_JP_COMPAT="${COBJ} ${FLAGS_JP_COMPAT}"
 COMPILE_MODULE_LIMIT_TEST="${COBJ} ${FLAGS_LIMIT_TEST}"
 
@@ -69,3 +69,14 @@ export COB_HAS_ISAM
 export COB_SPLITKEY_FLAGS
 
 SKIP_TEST="exit 77"
+
+# ESQL test variables
+EMBED_DB_INFO="sh ${abs_srcdir}/embed_db_info.sh"
+COMPILE_MODULE_ESQL="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"
+
+# Run module with SLF4J DEBUG logging to stderr
+RUN_MODULE_LOG="java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug -Dorg.slf4j.simpleLogger.showDateTime=false -Dorg.slf4j.simpleLogger.showThreadName=false -Dorg.slf4j.simpleLogger.showLogName=false -Dorg.slf4j.simpleLogger.levelInBrackets=false"
+export RUN_MODULE_LOG
+
+# Ensure local build's libcobj.jar is on CLASSPATH
+export CLASSPATH="${abs_top_builddir}/libcobj/app/build/libs/libcobj.jar:${CLASSPATH}"

@@ -2581,6 +2581,61 @@ cb_tree cb_build_switch(cb_tree test, cb_tree case_list) {
 }
 
 /*
+ * EXEC SQL
+ */
+
+cb_tree cb_build_exec_sql(enum cb_sql_command command, char *sql_text,
+                          char *cursor_name, char *prepare_name, char *db_name,
+                          struct cb_sql_host_var *host_list, int host_count,
+                          struct cb_sql_host_var *res_host_list,
+                          int res_host_count, int conn_use_other_db) {
+  struct cb_exec_sql *p;
+
+  p = make_tree(CB_TAG_EXEC_SQL, CB_CATEGORY_UNKNOWN,
+                sizeof(struct cb_exec_sql));
+  p->command = command;
+  p->sql_text = sql_text;
+  p->cursor_name = cursor_name;
+  p->prepare_name = prepare_name;
+  p->db_name = db_name;
+  p->host_list = host_list;
+  p->host_count = host_count;
+  p->res_host_list = res_host_list;
+  p->res_host_count = res_host_count;
+  p->conn_use_other_db = conn_use_other_db;
+  p->occurs_size = 0;
+  p->occurs_max = 0;
+  p->sql_list = NULL;
+  return CB_TREE(p);
+}
+
+struct cb_sql_host_var *cb_build_sql_host_var(char *name, cb_tree ref) {
+  struct cb_sql_host_var *p;
+
+  p = cobc_malloc(sizeof(struct cb_sql_host_var));
+  p->name = name;
+  p->ref = ref;
+  p->hvar_type = 0;
+  p->length = 0;
+  p->scale = 0;
+  p->next = NULL;
+  return p;
+}
+
+struct cb_sql_host_var *cb_sql_host_var_list_add(struct cb_sql_host_var *list,
+                                                 struct cb_sql_host_var *item) {
+  if (!list) {
+    return item;
+  }
+  struct cb_sql_host_var *p = list;
+  while (p->next) {
+    p = p->next;
+  }
+  p->next = item;
+  return list;
+}
+
+/*
  * FUNCTION
  */
 

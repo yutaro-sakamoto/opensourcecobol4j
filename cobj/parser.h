@@ -500,7 +500,8 @@ extern int yydebug;
     YYYYDDD = 701,                 /* YYYYDDD  */
     YYYYMMDD = 702,                /* YYYYMMDD  */
     ZERO = 703,                    /* ZERO  */
-    UNARY_SIGN = 704               /* UNARY_SIGN  */
+    EXEC_SQL_STATEMENT = 704,      /* "EXEC SQL statement"  */
+    UNARY_SIGN = 705               /* UNARY_SIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif

@@ -64,6 +64,18 @@ static int			inside_bracket = 0;
 static int			inside_repository = 0;
 struct cb_unget_buffer		*unget_buffer = NULL;
 
+/* ESQL state variables */
+#define ESQL_BUFF_SIZE 8192
+static char			*esql_buff = NULL;
+static size_t			esql_buff_len;
+static size_t			esql_buff_capacity;
+static int			esql_in_quote = 0;
+/* "EXEC SQL" を検出した時点での cb_source_line。
+ * END-EXEC で EXEC_SQL_STATEMENT トークンを emit する際の location に使う。
+ * これがないと、END-EXEC 行 (= ブロック末尾) が報告されてしまい、生成 Java の
+ * コメントが COBOL 上の EXEC SQL 行ではなく数行後の END-EXEC を指す。 */
+static int			esql_start_line = 0;
+
 static int read_literal (int mark, enum cb_category);
 static int scan_x (char *text);
 static int scan_h (char *text);
@@ -74,7 +86,7 @@ static void count_lines (char *text);
 %}
 
 %s DECIMAL_IS_PERIOD DECIMAL_IS_COMMA
-%x PICTURE_STATE FUNCTION_STATE
+%x PICTURE_STATE FUNCTION_STATE ESQL_STATE
 
 
 JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
@@ -105,6 +117,65 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	}
 %}
 
+<ESQL_STATE>{
+  "END-EXEC" {
+	if (esql_in_quote) {
+		/* 引用符リテラル内の END-EXEC はブロック終端ではなく SQL 本体の一部。
+		 * 終端扱いせず、そのまま esql_buff に取り込む。 */
+		size_t len = strlen(yytext);
+		while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+			esql_buff_capacity *= 2;
+			esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+		}
+		memcpy(esql_buff + esql_buff_len, yytext, len);
+		esql_buff_len += len;
+	} else {
+		/* End of EXEC SQL block.
+		 * SQL 本体の空白整形 (先頭・末尾・共通インデント) は codegen.c
+		 * (joutput_sql_string) が行う。ここでは esql_buff を加工せず
+		 * そのまま EXEC_SQL_STATEMENT トークンに渡す。 */
+		BEGIN INITIAL;
+		esql_in_quote = 0;
+		esql_buff[esql_buff_len] = '\0';
+		yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
+		/* location は END-EXEC 行ではなく EXEC SQL 開始行を指すようにする */
+		yylval->source_file = (unsigned char *)cb_source_file;
+		yylval->source_line = esql_start_line;
+		return EXEC_SQL_STATEMENT;
+	}
+  }
+  \n {
+	cb_source_line++;
+	if (esql_buff_len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	esql_buff[esql_buff_len++] = '\n';
+  }
+  [ \t]+ {
+	size_t len = strlen(yytext);
+	while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	memcpy(esql_buff + esql_buff_len, yytext, len);
+	esql_buff_len += len;
+  }
+  . {
+	if (esql_buff_len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	if (yytext[0] == '\'') {
+		if (esql_in_quote && esql_buff_len > 0 && esql_buff[esql_buff_len - 1] == '\'') {
+			/* Escaped quote ('') inside literal: stay in quote */
+		} else {
+			esql_in_quote = !esql_in_quote;
+		}
+	}
+	esql_buff[esql_buff_len++] = yytext[0];
+  }
+}
 
 <*>\n {
 	cb_source_line++;
@@ -289,6 +360,22 @@ H\"[^\"\n]*\" {
 	/* H numeric literal */
 	cb_force_pid_literal = 0;
 	return scan_h (yytext + 2);
+}
+
+"EXEC"[ \t\n]+"SQL" {
+	/* Enter EXEC SQL state and collect SQL text.
+	 * EXEC SQL の開始行を保存しておき、END-EXEC で emit する
+	 * EXEC_SQL_STATEMENT トークンの location として使う。 */
+	esql_start_line = cb_source_line;
+	count_lines (yytext);
+	if (!esql_buff) {
+		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
+		esql_buff_capacity = ESQL_BUFF_SIZE;
+	}
+	esql_buff_len = 0;
+	esql_buff[0] = '\0';
+	esql_in_quote = 0;
+	BEGIN ESQL_STATE;
 }
 
 "END"[ \t\n]+"PROGRAM" {
@@ -801,6 +888,12 @@ read_literal (int mark, enum cb_category category)
 	}
 
 	while ((c = input ()) != EOF) {
+#if EOF != 0
+		if (unlikely (c == 0)){ 
+			cb_error(_("The literal is not properly closed by %c."), mark);
+			break;
+		}
+#endif
 		plexbuff[i++] = c;
 		if (c == mark && (c = input ()) != mark) {
 			i--;

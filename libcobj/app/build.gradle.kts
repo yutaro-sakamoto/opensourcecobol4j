@@ -8,6 +8,7 @@ plugins {
     id("maven-publish")
     pmd
     id("com.github.spotbugs") version "6.4.5"
+    jacoco
 }
 
 repositories {
@@ -36,11 +37,22 @@ dependencies {
     implementation("commons-cli:commons-cli:1.10.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.testcontainers:testcontainers:1.21.0")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.0")
+    testImplementation("org.testcontainers:postgresql:1.21.0")
     implementation("org.json:json:20250517")
     spotbugs("com.github.spotbugs:spotbugs:4.8.6")
 
     implementation("org.slf4j:slf4j-api:2.0.17")
-    implementation("org.slf4j:slf4j-simple:2.0.17")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+    testImplementation("com.github.valfirst:slf4j-test:3.0.1")
+    implementation("org.postgresql:postgresql:42.7.5")
+}
+
+configurations {
+    testRuntimeOnly {
+        exclude(group = "org.slf4j", module = "slf4j-simple")
+    }
 }
 
 java {
@@ -53,6 +65,7 @@ pmd {
     ruleSets = listOf()
     ruleSetFiles = files("${rootDir}/config/pmdRuleSet.xml")
 }
+
 
 spotbugs {
     excludeFilter.set(project.file("${rootDir}/config/spotbugsFilter.xml"))
@@ -95,6 +108,7 @@ tasks.withType<Jar>().configureEach {
 
 tasks.withType<ShadowJar> {
     archiveClassifier.set("")
+    mergeServiceFiles()
 }
 
 tasks.test {
@@ -107,5 +121,33 @@ tasks.test {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    violationRules {
+        rule {
+            element = "PACKAGE"
+            includes = listOf("jp.osscons.opensourcecobol.libcobj.sql")
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }
 

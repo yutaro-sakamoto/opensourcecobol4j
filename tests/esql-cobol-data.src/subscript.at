@@ -1,0 +1,172 @@
+AT_SETUP([subscripted / qualified host variable])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+      ******************************************************************
+       PROGRAM-ID.                 prog.
+      ******************************************************************
+       DATA                        DIVISION.
+      ******************************************************************
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+
+      *    Two groups containing identically named VAL force the parser
+      *    to use group-qualification (:GRPB.VAL) for disambiguation
+      *    against GRPA.VAL.
+       01  GRPA.
+         03 ROW OCCURS 5.
+           05 VAL PIC 9(4).
+
+       01  GRPB.
+         03 ROW2 OCCURS 5.
+           05 VAL PIC 9(4).
+
+      *    Subscript value held inside another qualified group, used to
+      *    exercise :VAR(GRP.IDX) form (qualified-name subscript).
+       01  GRP2.
+         03 TMP-IDX PIC S9(02) VALUE 0.
+
+       01  IDX                     PIC  S9(02).
+
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+
+      ******************************************************************
+       PROCEDURE                   DIVISION.
+      ******************************************************************
+       MAIN-RTN.
+
+       PERFORM SETUP-DB.
+
+      *    --- (1) Qualified subscripted host var (literal subscript) ---
+      *    :GRPA.VAL(IDX) のように subscript が単純な COBOL 変数の場合。
+      *    GRPA.VAL は GRPB.VAL と曖昧なので GRPA. 修飾が必要。
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+               EXEC SQL
+                   SELECT FIELD INTO :GRPA.VAL(IDX)
+                     FROM TESTTABLE WHERE N = :IDX
+               END-EXEC
+           END-PERFORM.
+
+      *    --- (2) Qualified host var with qualified-name subscript ---
+      *    SELECT INTO :GRPB.VAL(GRP2.TMP-IDX) combines:
+      *      - qualified host-var name  (GRPB.VAL ↔ GRPA.VAL の曖昧解消)
+      *      - qualified subscript      (GRP2.TMP-IDX を添字値として渡す)
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+               MOVE IDX TO TMP-IDX OF GRP2
+               EXEC SQL
+                   SELECT FIELD INTO :GRPB.VAL(GRP2.TMP-IDX)
+                     FROM TESTTABLE WHERE N = :IDX
+               END-EXEC
+           END-PERFORM.
+
+           DISPLAY "----".
+
+      *    Expect 1000..5000 from GRPA (plain :VAL(IDX) form)
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+               DISPLAY VAL OF ROW(IDX)
+           END-PERFORM.
+
+           DISPLAY "----".
+
+      *    Expect 1000..5000 from GRPB via qualified host var
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+               DISPLAY VAL OF ROW2(IDX)
+           END-PERFORM.
+
+       PERFORM CLEANUP-DB.
+
+      *    END
+           STOP RUN.
+
+      ******************************************************************
+       SETUP-DB.
+      ******************************************************************
+
+      *    SERVER
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>"
+             TO DBNAME.
+           MOVE  "<|DB_USER|>"
+             TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"
+             TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+           EXEC SQL
+               DROP TABLE IF EXISTS TESTTABLE
+           END-EXEC.
+
+           EXEC SQL
+                CREATE TABLE TESTTABLE
+                (
+                    N         NUMERIC(2,0) NOT NULL,
+                    FIELD     NUMERIC(4,0) NOT NULL
+                )
+           END-EXEC.
+
+      *    Seed source data:
+      *      GRPA.VAL (= ROW.VAL): plain :VAL(IDX) で INSERT
+      *      GRPB.VAL (= ROW2.VAL): :GRPB.VAL(GRP2.TMP-IDX) で INSERT
+           MOVE 1000 TO VAL OF ROW(1).
+           MOVE 2000 TO VAL OF ROW(2).
+           MOVE 3000 TO VAL OF ROW(3).
+           MOVE 4000 TO VAL OF ROW(4).
+           MOVE 5000 TO VAL OF ROW(5).
+
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+              MOVE IDX TO TMP-IDX OF GRP2
+              MOVE VAL OF ROW(IDX) TO VAL OF ROW2(IDX)
+              EXEC SQL
+                 INSERT INTO TESTTABLE
+                   VALUES (:IDX, :GRPB.VAL(GRP2.TMP-IDX))
+              END-EXEC
+           END-PERFORM.
+
+      *    Wipe both COBOL groups so the SELECT INTOs above are the
+      *    only thing that can refill them.
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+              MOVE ZERO TO VAL OF ROW(IDX)
+              MOVE ZERO TO VAL OF ROW2(IDX)
+           END-PERFORM.
+
+      *    COMMIT
+           EXEC SQL
+               COMMIT WORK
+           END-EXEC.
+
+      ******************************************************************
+       CLEANUP-DB.
+      ******************************************************************
+           EXEC SQL
+               DROP TABLE IF EXISTS TESTTABLE
+           END-EXEC.
+
+           EXEC SQL
+               DISCONNECT ALL
+           END-EXEC.
+
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+AT_CHECK([${RUN_MODULE} prog], [0],
+[----
+1000
+2000
+3000
+4000
+5000
+----
+1000
+2000
+3000
+4000
+5000
+],
+[ignore])
+
+AT_CLEANUP

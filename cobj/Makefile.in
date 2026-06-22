@@ -132,7 +132,9 @@ am_cobj_OBJECTS = cobj-cobj.$(OBJEXT) cobj-config.$(OBJEXT) \
 	cobj-error.$(OBJEXT) cobj-parser.$(OBJEXT) \
 	cobj-scanner.$(OBJEXT) cobj-field.$(OBJEXT) \
 	cobj-typeck.$(OBJEXT) cobj-codegen.$(OBJEXT) \
-	cobj-ppparse.$(OBJEXT) cobj-pplex.$(OBJEXT)
+	cobj-esql.$(OBJEXT) cobj-esql-parser.$(OBJEXT) \
+	cobj-esql-scanner.$(OBJEXT) cobj-ppparse.$(OBJEXT) \
+	cobj-pplex.$(OBJEXT)
 cobj_OBJECTS = $(am_cobj_OBJECTS)
 cobj_DEPENDENCIES = $(top_builddir)/lib/libsupport.a
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -159,11 +161,12 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/cobj-cobj.Po \
 	./$(DEPDIR)/cobj-codegen.Po ./$(DEPDIR)/cobj-config.Po \
-	./$(DEPDIR)/cobj-error.Po ./$(DEPDIR)/cobj-field.Po \
-	./$(DEPDIR)/cobj-parser.Po ./$(DEPDIR)/cobj-pplex.Po \
-	./$(DEPDIR)/cobj-ppparse.Po ./$(DEPDIR)/cobj-reserved.Po \
-	./$(DEPDIR)/cobj-scanner.Po ./$(DEPDIR)/cobj-tree.Po \
-	./$(DEPDIR)/cobj-typeck.Po
+	./$(DEPDIR)/cobj-error.Po ./$(DEPDIR)/cobj-esql-parser.Po \
+	./$(DEPDIR)/cobj-esql-scanner.Po ./$(DEPDIR)/cobj-esql.Po \
+	./$(DEPDIR)/cobj-field.Po ./$(DEPDIR)/cobj-parser.Po \
+	./$(DEPDIR)/cobj-pplex.Po ./$(DEPDIR)/cobj-ppparse.Po \
+	./$(DEPDIR)/cobj-reserved.Po ./$(DEPDIR)/cobj-scanner.Po \
+	./$(DEPDIR)/cobj-tree.Po ./$(DEPDIR)/cobj-typeck.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -372,14 +375,19 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 cobj_SOURCES = cobj.c cobj.h config.c tree.c tree.h reserved.c error.c \
-	parser.c parser.h scanner.c field.c typeck.c codegen.c \
+	parser.c parser.h scanner.c field.c typeck.c codegen.c esql.c \
+	esql-parser.c esql-parser.h esql-scanner.c \
 	ppparse.c ppparse.h pplex.c \
 	config.def flag.def warning.def exception.def system.def
 
 cobj_CFLAGS = -I$(top_srcdir)
 cobj_LDADD = $(COBJ_LIBS) $(top_builddir)/lib/libsupport.a
-BUILT_SOURCES = parser.c parser.h scanner.c ppparse.c ppparse.h pplex.c
-EXTRA_DIST = ppparse.y pplex.l parser.y scanner.l pplex.l.m4 scanner.l.m4
+BUILT_SOURCES = parser.c parser.h scanner.c ppparse.c ppparse.h pplex.c \
+	esql-parser.c esql-parser.h esql-scanner.c
+
+EXTRA_DIST = ppparse.y pplex.l parser.y scanner.l pplex.l.m4 scanner.l.m4 \
+	esql-parser.y esql-scanner.l
+
 CLEANFILES = parser.output
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -479,6 +487,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-codegen.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-config.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-error.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-esql-parser.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-esql-scanner.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-esql.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-field.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cobj-pplex.Po@am__quote@ # am--include-marker
@@ -655,6 +666,48 @@ cobj-codegen.obj: codegen.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-codegen.obj `if test -f 'codegen.c'; then $(CYGPATH_W) 'codegen.c'; else $(CYGPATH_W) '$(srcdir)/codegen.c'; fi`
 
+cobj-esql.o: esql.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql.o -MD -MP -MF $(DEPDIR)/cobj-esql.Tpo -c -o cobj-esql.o `test -f 'esql.c' || echo '$(srcdir)/'`esql.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql.Tpo $(DEPDIR)/cobj-esql.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql.c' object='cobj-esql.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql.o `test -f 'esql.c' || echo '$(srcdir)/'`esql.c
+
+cobj-esql.obj: esql.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql.obj -MD -MP -MF $(DEPDIR)/cobj-esql.Tpo -c -o cobj-esql.obj `if test -f 'esql.c'; then $(CYGPATH_W) 'esql.c'; else $(CYGPATH_W) '$(srcdir)/esql.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql.Tpo $(DEPDIR)/cobj-esql.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql.c' object='cobj-esql.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql.obj `if test -f 'esql.c'; then $(CYGPATH_W) 'esql.c'; else $(CYGPATH_W) '$(srcdir)/esql.c'; fi`
+
+cobj-esql-parser.o: esql-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql-parser.o -MD -MP -MF $(DEPDIR)/cobj-esql-parser.Tpo -c -o cobj-esql-parser.o `test -f 'esql-parser.c' || echo '$(srcdir)/'`esql-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql-parser.Tpo $(DEPDIR)/cobj-esql-parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql-parser.c' object='cobj-esql-parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql-parser.o `test -f 'esql-parser.c' || echo '$(srcdir)/'`esql-parser.c
+
+cobj-esql-parser.obj: esql-parser.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql-parser.obj -MD -MP -MF $(DEPDIR)/cobj-esql-parser.Tpo -c -o cobj-esql-parser.obj `if test -f 'esql-parser.c'; then $(CYGPATH_W) 'esql-parser.c'; else $(CYGPATH_W) '$(srcdir)/esql-parser.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql-parser.Tpo $(DEPDIR)/cobj-esql-parser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql-parser.c' object='cobj-esql-parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql-parser.obj `if test -f 'esql-parser.c'; then $(CYGPATH_W) 'esql-parser.c'; else $(CYGPATH_W) '$(srcdir)/esql-parser.c'; fi`
+
+cobj-esql-scanner.o: esql-scanner.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql-scanner.o -MD -MP -MF $(DEPDIR)/cobj-esql-scanner.Tpo -c -o cobj-esql-scanner.o `test -f 'esql-scanner.c' || echo '$(srcdir)/'`esql-scanner.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql-scanner.Tpo $(DEPDIR)/cobj-esql-scanner.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql-scanner.c' object='cobj-esql-scanner.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql-scanner.o `test -f 'esql-scanner.c' || echo '$(srcdir)/'`esql-scanner.c
+
+cobj-esql-scanner.obj: esql-scanner.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-esql-scanner.obj -MD -MP -MF $(DEPDIR)/cobj-esql-scanner.Tpo -c -o cobj-esql-scanner.obj `if test -f 'esql-scanner.c'; then $(CYGPATH_W) 'esql-scanner.c'; else $(CYGPATH_W) '$(srcdir)/esql-scanner.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-esql-scanner.Tpo $(DEPDIR)/cobj-esql-scanner.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='esql-scanner.c' object='cobj-esql-scanner.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -c -o cobj-esql-scanner.obj `if test -f 'esql-scanner.c'; then $(CYGPATH_W) 'esql-scanner.c'; else $(CYGPATH_W) '$(srcdir)/esql-scanner.c'; fi`
+
 cobj-ppparse.o: ppparse.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(cobj_CFLAGS) $(CFLAGS) -MT cobj-ppparse.o -MD -MP -MF $(DEPDIR)/cobj-ppparse.Tpo -c -o cobj-ppparse.o `test -f 'ppparse.c' || echo '$(srcdir)/'`ppparse.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/cobj-ppparse.Tpo $(DEPDIR)/cobj-ppparse.Po
@@ -824,6 +877,9 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/cobj-codegen.Po
 	-rm -f ./$(DEPDIR)/cobj-config.Po
 	-rm -f ./$(DEPDIR)/cobj-error.Po
+	-rm -f ./$(DEPDIR)/cobj-esql-parser.Po
+	-rm -f ./$(DEPDIR)/cobj-esql-scanner.Po
+	-rm -f ./$(DEPDIR)/cobj-esql.Po
 	-rm -f ./$(DEPDIR)/cobj-field.Po
 	-rm -f ./$(DEPDIR)/cobj-parser.Po
 	-rm -f ./$(DEPDIR)/cobj-pplex.Po
@@ -881,6 +937,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/cobj-codegen.Po
 	-rm -f ./$(DEPDIR)/cobj-config.Po
 	-rm -f ./$(DEPDIR)/cobj-error.Po
+	-rm -f ./$(DEPDIR)/cobj-esql-parser.Po
+	-rm -f ./$(DEPDIR)/cobj-esql-scanner.Po
+	-rm -f ./$(DEPDIR)/cobj-esql.Po
 	-rm -f ./$(DEPDIR)/cobj-field.Po
 	-rm -f ./$(DEPDIR)/cobj-parser.Po
 	-rm -f ./$(DEPDIR)/cobj-pplex.Po
@@ -931,6 +990,12 @@ uninstall-am: uninstall-binPROGRAMS
 
 %.c: %.y
 	bison -o $@ $<
+
+esql-parser.c esql-parser.h: esql-parser.y
+	bison -d -o esql-parser.c esql-parser.y
+
+esql-scanner.c: esql-scanner.l
+	flex --nounistd -o esql-scanner.c esql-scanner.l
 
 %.l: %.l.m4
 	m4 $(COB_M4_FLAGS) $< >$@

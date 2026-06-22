@@ -1,0 +1,139 @@
+AT_SETUP([null without indicator sets SQLCODE=-213 / SQLSTATE=22002])
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+      ******************************************************************
+       PROGRAM-ID.                 prog.
+      ******************************************************************
+       DATA                        DIVISION.
+      ******************************************************************
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+
+       01 N                       PIC  9(3) VALUE ZERO.
+       01 NAME                    PIC  X(20) VALUE SPACES.
+
+       01 DBNAME                  PIC  X(30) VALUE SPACE.
+       01 USERNAME                PIC  X(30) VALUE SPACE.
+       01 PASSWD                  PIC  X(10) VALUE SPACE.
+
+      ******************************************************************
+       PROCEDURE                   DIVISION.
+      ******************************************************************
+       MAIN-RTN.
+
+       PERFORM SETUP-DB.
+
+      * Fetch a row whose NAME column is NULL.
+      * 4J should signal ECPG_MISSING_INDICATOR (sqlcode=-213,
+      * sqlstate=22002) because the host variable :NAME has no indicator.
+       EXEC SQL
+         DECLARE C1 CURSOR FOR SELECT N, NAME
+         FROM null_test_table ORDER BY N
+       END-EXEC.
+
+       EXEC SQL
+         OPEN C1
+       END-EXEC.
+
+      * Row 1: NAME is NULL -> expect SQLCODE=-213, SQLSTATE=22002.
+       EXEC SQL
+         FETCH C1 INTO :N, :NAME
+       END-EXEC.
+       DISPLAY "ROW1 SQLCODE  =" SQLCODE.
+       DISPLAY "ROW1 SQLSTATE =" SQLSTATE.
+
+      * Row 2: NAME is non-NULL -> expect SQLCODE=0, SQLSTATE=00000.
+       EXEC SQL
+         FETCH C1 INTO :N, :NAME
+       END-EXEC.
+       DISPLAY "ROW2 SQLCODE  =" SQLCODE.
+       DISPLAY "ROW2 SQLSTATE =" SQLSTATE.
+
+       EXEC SQL
+         CLOSE C1
+       END-EXEC.
+
+      * SELECT INTO with NULL column: same signal.
+       MOVE ZERO TO N.
+       MOVE SPACES TO NAME.
+       EXEC SQL
+         SELECT N, NAME INTO :N, :NAME FROM null_test_table WHERE N = 1
+       END-EXEC.
+       DISPLAY "SEL  SQLCODE  =" SQLCODE.
+       DISPLAY "SEL  SQLSTATE =" SQLSTATE.
+
+       PERFORM CLEANUP-DB.
+
+      *    END
+           STOP RUN.
+
+      ******************************************************************
+       SETUP-DB.
+      ******************************************************************
+
+      *    SERVER
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>"
+             TO DBNAME.
+           MOVE  "<|DB_USER|>"
+             TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"
+             TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+           EXEC SQL
+               DROP TABLE IF EXISTS null_test_table
+           END-EXEC.
+
+           EXEC SQL
+                CREATE TABLE null_test_table
+                (
+                    N integer,
+                    NAME CHAR(20)
+                )
+           END-EXEC.
+
+           EXEC SQL
+               INSERT INTO null_test_table (N, NAME) VALUES (1, NULL)
+           END-EXEC.
+
+           EXEC SQL
+               INSERT INTO null_test_table (N, NAME) VALUES (2, 'hello')
+           END-EXEC.
+
+           EXEC SQL
+               COMMIT WORK
+           END-EXEC.
+
+      ******************************************************************
+       CLEANUP-DB.
+      ******************************************************************
+
+           EXEC SQL
+               DROP TABLE IF EXISTS null_test_table
+           END-EXEC.
+
+           EXEC SQL
+               COMMIT WORK
+           END-EXEC.
+
+           EXEC SQL
+               DISCONNECT ALL
+           END-EXEC.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+AT_CHECK([${RUN_MODULE} prog], [0],
+[ROW1 SQLCODE  =-000000213
+ROW1 SQLSTATE =22002
+ROW2 SQLCODE  =+000000000
+ROW2 SQLSTATE =00000
+SEL  SQLCODE  =-000000213
+SEL  SQLSTATE =22002
+],
+[ignore])
+
+AT_CLEANUP

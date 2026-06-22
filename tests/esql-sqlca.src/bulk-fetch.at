@@ -1,0 +1,210 @@
+AT_SETUP([bulk fetch returns identical rows regardless of OCESQL4J_FETCH_RECORDS])
+
+dnl 単一行 FETCH の先読み（バルクフェッチ）。環境変数 OCESQL4J_FETCH_RECORDS で
+dnl 1 回の FETCH FORWARD で先読みする件数を指定する。既定(1)でも N>1 でも、FETCH
+dnl ループが返す行の順序・内容は完全に同じになることを検証する（Open COBOL ESQL 4J 準拠）。
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+       01  IDX                     PIC  9(4).
+       01  EMP-ID                  PIC  9(4).
+       01  EMP-NAME                PIC  X(10).
+
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>" TO DBNAME.
+           MOVE  "<|DB_USER|>"                         TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"                     TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+           EXEC SQL DROP TABLE IF EXISTS BULK_EMP END-EXEC.
+           EXEC SQL
+               CREATE TABLE BULK_EMP ( ID NUMERIC(4) NOT NULL,
+                   NAME CHAR(10) )
+           END-EXEC.
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 7
+               EXEC SQL
+                   INSERT INTO BULK_EMP VALUES (:IDX, 'Name' || :IDX)
+               END-EXEC
+           END-PERFORM.
+           EXEC SQL COMMIT END-EXEC.
+
+           EXEC SQL
+               DECLARE C1 CURSOR FOR
+                   SELECT ID, NAME FROM BULK_EMP ORDER BY ID
+           END-EXEC.
+           EXEC SQL OPEN C1 END-EXEC.
+
+           PERFORM UNTIL SQLCODE NOT = ZERO
+               EXEC SQL
+                   FETCH C1 INTO :EMP-ID, :EMP-NAME
+               END-EXEC
+               IF SQLCODE = ZERO
+                   DISPLAY EMP-ID ", " EMP-NAME "|"
+               END-IF
+           END-PERFORM.
+
+           EXEC SQL CLOSE C1 END-EXEC.
+           EXEC SQL DISCONNECT ALL END-EXEC.
+           STOP RUN.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+
+dnl 既定（先読み 1 件）
+AT_CHECK([${RUN_MODULE} prog], [0],
+[0001, Name1     |
+0002, Name2     |
+0003, Name3     |
+0004, Name4     |
+0005, Name5     |
+0006, Name6     |
+0007, Name7     |
+],
+[ignore])
+
+dnl 先読み 3 件（DB 往復はまとまるが、出力は既定と同一）
+AT_CHECK([OCESQL4J_FETCH_RECORDS=3 ${RUN_MODULE} prog], [0],
+[0001, Name1     |
+0002, Name2     |
+0003, Name3     |
+0004, Name4     |
+0005, Name5     |
+0006, Name6     |
+0007, Name7     |
+],
+[ignore])
+
+AT_CLEANUP
+
+
+AT_SETUP([WHERE CURRENT OF with bulk prefetch repositions the cursor])
+
+dnl 先読み(N>1)するとサーバカーソルが論理現在行より進むため、WHERE CURRENT OF の
+dnl 前に FETCH BACKWARD で位置を補正する。2 行 FETCH 後の現在行(2 行目)だけが更新され、
+dnl 先読み件数に依らず同じ結果になることを検証する。更新対象カーソルは ORDER BY を
+dnl 持たない単純スキャン（PostgreSQL の WHERE CURRENT OF の要件）。
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+       01  IDX                     PIC  9(4).
+       01  EMP-ID                  PIC  9(4).
+       01  EMP-NAME                PIC  X(10).
+
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>" TO DBNAME.
+           MOVE  "<|DB_USER|>"                         TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"                     TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+           EXEC SQL DROP TABLE IF EXISTS WCO_EMP END-EXEC.
+           EXEC SQL
+               CREATE TABLE WCO_EMP ( ID NUMERIC(4) NOT NULL,
+                   NAME CHAR(10) )
+           END-EXEC.
+           PERFORM VARYING IDX FROM 1 BY 1 UNTIL IDX > 5
+               EXEC SQL
+                   INSERT INTO WCO_EMP VALUES (:IDX, 'Name' || :IDX)
+               END-EXEC
+           END-PERFORM.
+           EXEC SQL COMMIT END-EXEC.
+
+           EXEC SQL
+               DECLARE C1 CURSOR FOR
+                   SELECT ID, NAME FROM WCO_EMP
+           END-EXEC.
+           EXEC SQL OPEN C1 END-EXEC.
+
+           EXEC SQL FETCH C1 INTO :EMP-ID, :EMP-NAME END-EXEC.
+           EXEC SQL FETCH C1 INTO :EMP-ID, :EMP-NAME END-EXEC.
+           DISPLAY "current: " EMP-ID ", " EMP-NAME "|".
+
+           EXEC SQL
+               UPDATE WCO_EMP SET NAME = 'UPDATED'
+                   WHERE CURRENT OF C1
+           END-EXEC.
+           DISPLAY "update SQLCODE: " SQLCODE.
+
+           EXEC SQL CLOSE C1 END-EXEC.
+           EXEC SQL COMMIT END-EXEC.
+
+           EXEC SQL
+               DECLARE C2 CURSOR FOR
+                   SELECT ID, NAME FROM WCO_EMP ORDER BY ID
+           END-EXEC.
+           EXEC SQL OPEN C2 END-EXEC.
+           PERFORM UNTIL SQLCODE NOT = ZERO
+               EXEC SQL
+                   FETCH C2 INTO :EMP-ID, :EMP-NAME
+               END-EXEC
+               IF SQLCODE = ZERO
+                   DISPLAY EMP-ID ", " EMP-NAME "|"
+               END-IF
+           END-PERFORM.
+           EXEC SQL CLOSE C2 END-EXEC.
+           EXEC SQL DISCONNECT ALL END-EXEC.
+           STOP RUN.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+
+dnl 既定（先読み 1 件）でも同一結果（後方互換）
+AT_CHECK([${RUN_MODULE} prog], [0],
+[current: 0002, Name2     |
+update SQLCODE: +000000000
+0001, Name1     |
+0002, UPDATED   |
+0003, Name3     |
+0004, Name4     |
+0005, Name5     |
+],
+[ignore])
+
+dnl 先読み 3 件でも位置補正により同一結果
+AT_CHECK([OCESQL4J_FETCH_RECORDS=3 ${RUN_MODULE} prog], [0],
+[current: 0002, Name2     |
+update SQLCODE: +000000000
+0001, Name1     |
+0002, UPDATED   |
+0003, Name3     |
+0004, Name4     |
+0005, Name5     |
+],
+[ignore])
+
+dnl 先読み 10 件でも位置補正により同一結果
+AT_CHECK([OCESQL4J_FETCH_RECORDS=10 ${RUN_MODULE} prog], [0],
+[current: 0002, Name2     |
+update SQLCODE: +000000000
+0001, Name1     |
+0002, UPDATED   |
+0003, Name3     |
+0004, Name4     |
+0005, Name5     |
+],
+[ignore])
+
+AT_CLEANUP

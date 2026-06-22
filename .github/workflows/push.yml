@@ -94,6 +94,33 @@ jobs:
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
 
+  run-test-esql:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-esql.yml
+    with:
+      os: ${{ matrix.os }}
+
+  run-test-esql-utf8:
+    needs: build-utf8
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-esql-utf8.yml
+    with:
+      os: ${{ matrix.os }}
+
+  run-test-esql-examples:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-esql-examples.yml
+    with:
+      os: ${{ matrix.os }}
+
   run-test-cobj-api:
     needs: build
     strategy:
@@ -190,6 +217,13 @@ jobs:
     uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
+
+  # TODO: Re-enable when Windows PostgreSQL setup is resolved.
+  # The pre-installed PostgreSQL on Windows runners requires initdb
+  # in RUNNER_TEMP, but cobj.exe segfaults with the new esql-scanner.
+  # windows-test-esql:
+  #   needs: [windows-build, windows-generate-test-scripts]
+  #   uses: ./.github/workflows/windows-test-esql.yml
 
   static-analysis:
     needs: check-workflows

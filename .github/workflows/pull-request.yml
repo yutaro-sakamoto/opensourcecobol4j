@@ -4,11 +4,11 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths-ignore:
-      - '*.md'
-      - 'ChangeLog'
-      - 'NEWS'
-      - 'README'
-      - 'COPYING'
+      - "*.md"
+      - "ChangeLog"
+      - "NEWS"
+      - "README"
+      - "COPYING"
   workflow_dispatch:
 
 concurrency:
@@ -90,6 +90,33 @@ jobs:
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
 
+  run-test-esql:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+    uses: ./.github/workflows/test-esql.yml
+    with:
+      os: ${{ matrix.os }}
+
+  run-test-esql-utf8:
+    needs: build-utf8
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+    uses: ./.github/workflows/test-esql-utf8.yml
+    with:
+      os: ${{ matrix.os }}
+
+  run-test-esql-examples:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:24.04"]
+    uses: ./.github/workflows/test-esql-examples.yml
+    with:
+      os: ${{ matrix.os }}
+
   run-test-cobj-api:
     needs: build
     strategy:
@@ -145,7 +172,6 @@ jobs:
     needs: check-workflows
     uses: ./.github/workflows/javadoc.yml
 
-
   check-missing-javadoc:
     needs: check-workflows
     uses: ./.github/workflows/check-missing-javadoc.yml
@@ -159,8 +185,8 @@ jobs:
   windows-test:
     needs: windows-build
     strategy:
-       matrix:
-         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
+      matrix:
+        test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
     uses: ./.github/workflows/windows-test.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -186,6 +212,11 @@ jobs:
     uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
+
+  # TODO: Re-enable when Windows PostgreSQL setup is resolved.
+  # windows-test-esql:
+  #   needs: [windows-build, windows-generate-test-scripts]
+  #   uses: ./.github/workflows/windows-test-esql.yml
 
   static-analysis:
     needs: check-workflows

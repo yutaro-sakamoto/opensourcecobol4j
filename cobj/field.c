@@ -476,6 +476,10 @@ static int validate_field_1(struct cb_field *f) {
     }
 
     for (f = f->children; f; f = f->sister) {
+      /* Expand VARYING before validating the child */
+      if (f->flag_varying && f->pic && !f->children) {
+        cb_validate_field(f); /* triggers VARYING expansion */
+      }
       if (validate_field_1(f) != 0) {
         return -1;
       }
@@ -980,6 +984,47 @@ void cb_validate_field(struct cb_field *f) {
   if (f->flag_item_78) {
     f->flag_is_verified = 1;
     return;
+  }
+
+  /* VARYING: expand into GROUP with -LEN and -ARR children */
+  if (f->flag_varying && f->pic && !f->children) {
+    char len_name[COB_SMALL_BUFF];
+    char arr_name[COB_SMALL_BUFF];
+    struct cb_field *len_field;
+    struct cb_field *arr_field;
+
+    snprintf(len_name, sizeof(len_name), "%s-LEN", f->name);
+    snprintf(arr_name, sizeof(arr_name), "%s-ARR", f->name);
+
+    /* Create -LEN child: PIC S9(8) COMP-5 */
+    len_field = CB_FIELD(cb_build_field(cb_build_reference(len_name)));
+    len_field->level = f->level + 1;
+    len_field->parent = f;
+    len_field->storage = f->storage;
+    len_field->usage = CB_USAGE_COMP_5;
+    len_field->pic = CB_PICTURE(cb_build_picture("S9(8)"));
+    len_field->occurs_max = 1;
+
+    /* Create -ARR child: inherit parent's PIC */
+    arr_field = CB_FIELD(cb_build_field(cb_build_reference(arr_name)));
+    arr_field->level = f->level + 1;
+    arr_field->parent = f;
+    arr_field->storage = f->storage;
+    arr_field->usage = CB_USAGE_DISPLAY;
+    arr_field->pic = f->pic;
+    arr_field->occurs_max = 1;
+
+    /* Link children */
+    f->children = len_field;
+    len_field->sister = arr_field;
+
+    /* Parent becomes GROUP (no PIC) */
+    f->pic = NULL;
+    f->usage = CB_USAGE_DISPLAY;
+
+    /* Validate children */
+    cb_validate_field(len_field);
+    cb_validate_field(arr_field);
   }
 
   /* setup parameters */

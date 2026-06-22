@@ -6,6 +6,7 @@ cobj.h \
 codegen.c \
 config.c \
 error.c \
+esql.c \
 field.c \
 ppparse.c \
 ppparse.h \

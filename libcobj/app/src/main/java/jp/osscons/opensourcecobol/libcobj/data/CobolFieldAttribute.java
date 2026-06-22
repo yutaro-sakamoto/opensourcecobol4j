@@ -100,6 +100,12 @@ public class CobolFieldAttribute {
     /** TODO: 準備中 */
     public static final int COB_FLAG_IS_POINTER = 0x80;
 
+    /** VARYING field (variable-length string with length header). */
+    public static final int COB_FLAG_VARYING = 0x100;
+
+    /** NATIONAL VARYING field (PIC N VARYING). */
+    public static final int COB_FLAG_NATIONAL_VARYING = 0x200;
+
     /** 変数種別 */
     private int type;
 
@@ -449,5 +455,14 @@ public class CobolFieldAttribute {
      */
     public boolean isFlagIsPointer() {
         return (flags & COB_FLAG_IS_POINTER) != 0;
+    }
+
+    /**
+     * Check if the VARYING flag is set.
+     *
+     * @return true if the field is a VARYING variable-length string
+     */
+    public boolean isFlagVarying() {
+        return (flags & COB_FLAG_VARYING) != 0;
     }
 }

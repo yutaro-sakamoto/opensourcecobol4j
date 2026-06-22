@@ -110,6 +110,11 @@ static void ppecho_dataname (char *datanamebuf);
 static void switch_to_buffer (const int lineno, const char *filename,
 			      YY_BUFFER_STATE buffer);
 
+static char *esql_include_fname = NULL;
+static int esql_passthru_in_quote = 0;
+static int esql_passthru_active = 0;
+
+
 %}
 
 ZENSPC		[\x81][\x40]
@@ -121,7 +126,7 @@ WORD		([_0-9A-Z-]|{JPNWORD})+
 NUMRIC_LITERAL	[+-]?[0-9,.]*[0-9]
 ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
-%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE
+%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE
 
 %%
 
@@ -136,7 +141,9 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	identification_division_line_number = cb_source_line;
 	ppecho ("IDENTIFICATION DIVISION.");
 }
-"ID"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."			{ ppecho ("ID DIVISION."); }
+"ID"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."			{
+	ppecho ("ID DIVISION.");
+}
 "FUNCTION"({ZENSPC}|[ ])+"DIVISION"({ZENSPC}|[ ])*"."		{ ppecho ("FUNCTION DIVISION."); }
 "PROGRAM-ID"					{ ppecho (yytext); return PROGRAM_ID; }
 "FUNCTION-ID"					{ ppecho (yytext); return FUNCTION_ID; }
@@ -170,6 +177,38 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 <PROCESS_STATE>{
   \n			{ BEGIN INITIAL; unput ('\n'); }
   .*			{ cb_warning (_("PROCESS statement is ignored")); }
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"BEGIN"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* No-op: accepted for backward compatibility.
+	 * 後続のソース改行は generic [,;]?\n ルールが echo してくれるため、
+	 * ここで '\n' を emit すると 1 行分のずれが生じる (= 後続の
+	 * cb_source_line が +1 され、生成 Java のコメント行番号がずれる)。 */
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"END"({ZENSPC}|[ ])+"DECLARE"({ZENSPC}|[ ])+"SECTION"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* No-op: accepted for backward compatibility.
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。 */
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE"({ZENSPC}|[ ])+"SQLCA"({ZENSPC}|[ ])+"END-EXEC"({ZENSPC}|[ ])*"."? {
+	/* No-op: SQLCA はコンパイラが暗黙に注入する。
+	 * '\n' は emit しない (上の BEGIN DECLARE SECTION 規則と同じ理由)。
+	 * INCLUDE SQLCA が明示されたことを記録する (未記述時の警告判定に使う)。 */
+	cb_sqlca_include_seen = 1;
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL"({ZENSPC}|[ ])+"INCLUDE" {
+	/* EXEC SQL INCLUDE <name> END-EXEC -> COPY "<name>". */
+	BEGIN ESQL_INCLUDE_STATE;
+}
+
+"EXEC"({ZENSPC}|[ ])+"SQL" {
+	/* Pass through EXEC SQL blocks to the main scanner */
+	ppecho ("EXEC SQL");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 1;
+	BEGIN ESQL_PASSTHRU_STATE;
 }
 
 "COPY"			{ BEGIN COPY_STATE; return COPY; }
@@ -220,6 +259,56 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
   {NUMRIC_LITERAL} |
   {ALNUM_LITERAL} |
   .			{ pplval.s = strdup (yytext); return TOKEN; }
+}
+
+<ESQL_INCLUDE_STATE>{
+  [ \t\n]+ { if (yytext[0] == '\n') cb_source_line++; }
+  "END-EXEC"({ZENSPC}|[ ])*"."? {
+	BEGIN INITIAL;
+	if (esql_include_fname) {
+		fputc ('\n', ppout);
+		ppcopy (esql_include_fname, NULL, NULL, NULL);
+		free (esql_include_fname);
+		esql_include_fname = NULL;
+	}
+  }
+  {WORD} {
+	/* Save the filename; ppcopy is deferred until END-EXEC */
+	if (!esql_include_fname) {
+		esql_include_fname = strdup(yytext);
+	}
+  }
+}
+
+<ESQL_PASSTHRU_STATE>{
+  "END-EXEC"({ZENSPC}|[ ])*"." {
+	ppecho (" END-EXEC.");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 0;
+	BEGIN INITIAL;
+  }
+  "END-EXEC" {
+	ppecho (" END-EXEC");
+	esql_passthru_in_quote = 0;
+	esql_passthru_active = 0;
+	BEGIN INITIAL;
+  }
+  \n {
+	if (!esql_passthru_in_quote) {
+		ppecho ("\n");
+	}
+	cb_source_line++;
+  }
+  "''" {
+	/* Escaped single quote inside SQL literal: stay in quote */
+	ppecho ("''");
+  }
+  . {
+	if (yytext[0] == '\'') {
+		esql_passthru_in_quote = !esql_passthru_in_quote;
+	}
+	ppecho (yytext);
+  }
 }
 
 <DATANAME_JOIN_STATE>{
@@ -1207,8 +1296,10 @@ start:
 		}
 	} else {
 		/* normal line */
-		quotation_mark = 0;
-		consecutive_quotation = 0;
+		if (!esql_passthru_active) {
+			quotation_mark = 0;
+			consecutive_quotation = 0;
+		}
 	}
 
 	/* check if string literal is to be continued */

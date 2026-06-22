@@ -1,0 +1,105 @@
+AT_SETUP([implicit declare section])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+      ******************************************************************
+       PROGRAM-ID.                 prog.
+      ******************************************************************
+       DATA                        DIVISION.
+      ******************************************************************
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+       01  EMP-NO                  PIC S9(04) VALUE ZERO.
+       01  EMP-NAME                PIC  X(20).
+       01  EMP-SALARY              PIC S9(04) VALUE ZERO.
+      ******************************************************************
+       PROCEDURE                   DIVISION.
+      ******************************************************************
+       MAIN-RTN.
+
+       PERFORM SETUP-DB.
+
+           EXEC SQL
+              INSERT INTO EMP VALUES
+                     (:EMP-NO,:EMP-NAME,:EMP-SALARY)
+           END-EXEC.
+
+           IF SQLCODE NOT = ZERO
+               DISPLAY "insert failed"
+               STOP RUN
+           END-IF.
+
+           MOVE ZERO TO EMP-NO.
+           MOVE SPACES TO EMP-NAME.
+
+           EXEC SQL
+               SELECT * INTO :EMP-NO, :EMP-NAME, :EMP-SALARY
+               FROM EMP WHERE EMP_NO = 1
+           END-EXEC.
+
+           IF SQLCODE = ZERO
+               DISPLAY EMP-NO ", " EMP-NAME ", " EMP-SALARY
+           ELSE
+               DISPLAY "select failed"
+           END-IF.
+
+       PERFORM CLEANUP-DB.
+
+           STOP RUN.
+
+      ******************************************************************
+       SETUP-DB.
+      ******************************************************************
+
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>"
+             TO DBNAME.
+           MOVE  "<|DB_USER|>"
+             TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"
+             TO PASSWD.
+
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+
+           EXEC SQL
+               DROP TABLE IF EXISTS EMP
+           END-EXEC.
+
+           EXEC SQL
+                CREATE TABLE EMP
+                (
+                    EMP_NO     NUMERIC(4,0) NOT NULL,
+                    EMP_NAME   CHAR(20),
+                    EMP_SALARY NUMERIC(4,0)
+                )
+           END-EXEC.
+
+           MOVE 1 TO EMP-NO.
+           MOVE "Alice" TO EMP-NAME.
+           MOVE 100 TO EMP-SALARY.
+
+      ******************************************************************
+       CLEANUP-DB.
+      ******************************************************************
+           EXEC SQL
+               DROP TABLE IF EXISTS EMP
+           END-EXEC.
+
+           EXEC SQL
+               DISCONNECT ALL
+           END-EXEC.
+
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+AT_CHECK([${RUN_MODULE} prog], [0],
+[+0001, Alice               , +0100
+],
+[ignore])
+
+AT_CLEANUP

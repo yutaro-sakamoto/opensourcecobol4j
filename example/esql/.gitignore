@@ -1,0 +1,7 @@
+# Makefile が生成する成果物 (clean ターゲットと対応)
+# - *_run.cbl : DB 接続情報を埋め込んだ実行用 COBOL
+# - *.java    : cobj が生成する Java
+# - *.class   : javac が生成するクラス (内部クラス $N を含む)
+*_run.cbl
+*.java
+*.class

@@ -1,0 +1,15 @@
+AT_INIT(ESQL UTF-8 test)
+
+m4_include([cursor.at])
+dnl host-variable: requires COBOL scanner to accept Japanese variable names
+dnl in WORKING-STORAGE (e.g. 'データベース名'). Not an ESQL issue.
+dnl m4_include([host-variable.at])
+dnl include: requires COBOL scanner to accept UTF-8 filenames in
+dnl EXEC SQL INCLUDE. Flex scanner jams on multibyte filenames.
+dnl m4_include([include.at])
+m4_include([japanese.at])
+m4_include([long-sql.at])
+m4_include([prepare.at])
+m4_include([sample.at])
+m4_include([sql-convert.at])
+m4_include([varying.at])
