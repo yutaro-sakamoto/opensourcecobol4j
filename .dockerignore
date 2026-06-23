@@ -1,0 +1,11 @@
+.git
+.github
+libcobj/app/build
+libcobj/.gradle
+
+# Directories not needed to build/install the compiler
+# (none are listed in the top-level Makefile.am SUBDIRS).
+doc
+example
+examples
+presentation

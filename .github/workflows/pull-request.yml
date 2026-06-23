@@ -225,3 +225,7 @@ jobs:
   check-dev-container:
     needs: check-workflows
     uses: ./.github/workflows/check-dev-container.yml
+
+  docker-image:
+    needs: check-workflows
+    uses: ./.github/workflows/docker-image.yml
