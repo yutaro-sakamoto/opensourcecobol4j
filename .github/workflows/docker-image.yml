@@ -1,8 +1,6 @@
 name: build docker image
 
 on:
-  # TODO: temporary push trigger for development; remove before merge.
-  push:
   workflow_call:
     inputs:
       push-to-dockerhub:
