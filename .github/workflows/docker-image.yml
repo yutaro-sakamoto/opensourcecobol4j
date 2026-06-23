@@ -1,6 +1,8 @@
 name: build docker image
 
 on:
+  # TODO: temporary push trigger for development; remove before merge.
+  push:
   workflow_call:
     inputs:
       push-to-dockerhub:
@@ -8,6 +10,11 @@ on:
         required: false
         type: boolean
         default: false
+      release-tag:
+        description: "Release git tag (e.g. v1.1.20). When set, it determines the image version and is validated against configure.ac."
+        required: false
+        type: string
+        default: ""
     secrets:
       DOCKERHUB_USERNAME:
         required: false
@@ -41,12 +48,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Resolve the image tag from the COBOL version
+      - name: Resolve the image tag
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
         run: |
-          version="$(sed -nE 's/^AC_INIT\(\[[^]]*\],\[([^]]*)\].*/\1/p' configure.ac)"
-          if [ -z "$version" ]; then
+          cfg_version="$(sed -nE 's/^AC_INIT\(\[[^]]*\],\[([^]]*)\].*/\1/p' configure.ac)"
+          if [ -z "$cfg_version" ]; then
             echo "Failed to extract the version from configure.ac" >&2
             exit 1
+          fi
+          if [ -n "$RELEASE_TAG" ]; then
+            # The release git tag is authoritative for the image version; fail
+            # loudly if configure.ac was not bumped to match it.
+            version="${RELEASE_TAG#v}"
+            if [ "$version" != "$cfg_version" ]; then
+              echo "Release tag $RELEASE_TAG does not match configure.ac version $cfg_version" >&2
+              exit 1
+            fi
+          else
+            version="$cfg_version"
           fi
           echo "IMAGE_TAG=${version}${{ matrix.tag-suffix }}" >> "$GITHUB_ENV"
 

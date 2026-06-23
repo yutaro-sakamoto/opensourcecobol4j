@@ -15,11 +15,14 @@ jobs:
     with:
       upload-artifacts: true
 
+  # Push the Docker image only after the GitHub release has been created, so an
+  # image is never published for a release that failed to materialize.
   docker-image:
-    needs: check-workflows
+    needs: create-release
     uses: ./.github/workflows/docker-image.yml
     with:
       push-to-dockerhub: true
+      release-tag: ${{ github.ref_name }}
     secrets: inherit
 
   create-release:
