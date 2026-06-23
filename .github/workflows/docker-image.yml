@@ -1,0 +1,94 @@
+name: build docker image
+
+on:
+  workflow_call:
+    inputs:
+      push-to-dockerhub:
+        description: "Push the built images to Docker Hub"
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: opensourcecobol/opensourcecobol4j
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: default
+            configure-args: ""
+            tag-suffix: ""
+            push-latest: true
+          - variant: utf8
+            configure-args: "--enable-utf8"
+            tag-suffix: "-utf8"
+            push-latest: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Resolve the image tag from the COBOL version
+        run: |
+          version="$(sed -nE 's/^AC_INIT\(\[[^]]*\],\[([^]]*)\].*/\1/p' configure.ac)"
+          if [ -z "$version" ]; then
+            echo "Failed to extract the version from configure.ac" >&2
+            exit 1
+          fi
+          echo "IMAGE_TAG=${version}${{ matrix.tag-suffix }}" >> "$GITHUB_ENV"
+
+      - name: Build a docker image
+        run: |
+          docker build -f docker/Dockerfile \
+            -t "$IMAGE_NAME:$IMAGE_TAG" \
+            --build-arg configure_args="${{ matrix.configure-args }}" \
+            .
+
+      - name: Show the docker image size
+        run: |
+          docker images "$IMAGE_NAME:$IMAGE_TAG" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+
+      - name: Check the version of the installed compiler
+        run: |
+          docker run --rm "$IMAGE_NAME:$IMAGE_TAG" cobj --version
+
+      - name: Check unicode/utf-8 support
+        if: matrix.variant == 'utf8'
+        run: |
+          docker run --rm "$IMAGE_NAME:$IMAGE_TAG" sh -c "cobj --version | grep 'unicode/utf-8 support'"
+
+      - name: Run the Hello World sample inside the container
+        run: |
+          output="$(docker run --rm "$IMAGE_NAME:$IMAGE_TAG" \
+            bash -lc 'cd /root/cobol_sample && cobj HELLO.cbl && java HELLO')"
+          echo "$output"
+          echo "$output" | grep -q "HELLO WORLD!"
+
+      - name: Login to Docker Hub
+        if: inputs.push-to-dockerhub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push the image to Docker Hub
+        if: inputs.push-to-dockerhub
+        run: |
+          docker push "$IMAGE_NAME:$IMAGE_TAG"
+          if [ "${{ matrix.push-latest }}" = "true" ]; then
+            docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
+            docker push "$IMAGE_NAME:latest"
+          fi
