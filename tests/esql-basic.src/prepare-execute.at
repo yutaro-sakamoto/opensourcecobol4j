@@ -198,7 +198,7 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 0006 <log> success fetch_record +0004, 岩手　四郎          , -0250
 0007 <log> success fetch_record +0005, 宮城　五郎          , -0200
 ],
-[ignore])
+[])
 AT_CLEANUP
 
 AT_SETUP([prepare with fixed-length PIC X(n) host variable (no VARYING)])
@@ -259,5 +259,5 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 [PREPARE SQLCODE=+000000000
 EXECUTE SQLCODE=+000000000
 ],
-[ignore])
+[])
 AT_CLEANUP

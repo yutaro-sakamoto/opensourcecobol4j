@@ -193,7 +193,7 @@ ABCDEFGHI @&t@
 ABCDEFGHIJ
 +00000010
 ],
-[ignore])
+[])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
@@ -381,7 +381,7 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 0123456789
 +00000010
 ],
-[ignore])
+[])
 
 AT_CLEANUP
 
@@ -581,7 +581,7 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 一二三四五六七八九十
 +00000010
 ],
-[ignore])
+[])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
@@ -769,6 +769,6 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 一二三四五六七八九十
 +00000010
 ],
-[ignore])
+[])
 
 AT_CLEANUP

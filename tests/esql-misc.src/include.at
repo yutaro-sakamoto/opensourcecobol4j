@@ -208,7 +208,7 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 +0009, 群馬　九郎          , -0200
 +0010, 埼玉　十郎          , +0350
 ],
-[ignore])
+[])
 
 AT_CLEANUP
 
