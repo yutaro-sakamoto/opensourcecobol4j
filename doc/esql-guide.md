@@ -430,12 +430,15 @@ Key points:
 
 ### Configuring logging
 
-`libcobj.jar` bundles slf4j-simple, and logs are written to standard error. The level to
-output is set with the `org.slf4j.simpleLogger.defaultLogLevel` system property. The ESQL
-runtime emits three kinds of logs — ERROR / DEBUG / TRACE — so there are three patterns to
-choose from depending on the value you set.
+`libcobj.jar` bundles slf4j-simple, and logs are written to standard error. By default
+logging is turned **off**: `libcobj.jar` ships a `simplelogger.properties` that sets
+`org.slf4j.simpleLogger.defaultLogLevel=off`, so a program run with a plain `java` command
+and no options produces no ESQL logs. To see logs, raise the threshold with the
+`org.slf4j.simpleLogger.defaultLogLevel` system property (a `-D` property always overrides
+the bundled default). The ESQL runtime emits three kinds of logs — ERROR / DEBUG / TRACE —
+so there are three patterns to choose from depending on the value you set.
 
-ERROR only (output just the errors on failure; this is also the default behavior):
+ERROR only (output just the errors on failure):
 
 ```bash
 java -Dorg.slf4j.simpleLogger.defaultLogLevel=error YourProgram
@@ -454,8 +457,10 @@ java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 ```
 
 > [!NOTE]
-> By default (no property set), the threshold is INFO, so among the logs the ESQL runtime
-> emits only ERROR is shown (DEBUG / TRACE are not).
+> By default, logging is off and the ESQL runtime emits no logs (not even ERROR). A `-D`
+> system property always overrides the bundled default; it can also be set per logger
+> (e.g. `-Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug`)
+> to enable a single logger only.
 
 ## Limitations
 

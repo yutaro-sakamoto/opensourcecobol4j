@@ -424,11 +424,15 @@ ESQL ランタイムは [SLF4J](https://www.slf4j.org/) を使ってログを出
 
 ### ログ出力の設定
 
-`libcobj.jar` には slf4j-simple が同梱されており、ログは標準エラー出力に出力されます。出力する
-レベルはシステムプロパティ `org.slf4j.simpleLogger.defaultLogLevel` で指定します。ESQL ランタイムが
-出力するログは ERROR / DEBUG / TRACE の 3 種類で、設定値に応じて次の 3 パターンを使い分けます。
+`libcobj.jar` には slf4j-simple が同梱されており、ログは標準エラー出力に出力されます。既定では
+ログ出力は **off** です。`libcobj.jar` には `org.slf4j.simpleLogger.defaultLogLevel=off` を設定した
+`simplelogger.properties` が同梱されているため、オプションを何も付けずに `java` コマンドで実行した
+場合は ESQL 関連のログは一切出力されません。ログを出力したい場合は、システムプロパティ
+`org.slf4j.simpleLogger.defaultLogLevel` でしきい値を上げます（`-D` で指定したプロパティは同梱の
+既定値より常に優先されます）。ESQL ランタイムが出力するログは ERROR / DEBUG / TRACE の 3 種類で、
+設定値に応じて次の 3 パターンを使い分けます。
 
-ERROR のみ（失敗時のエラーだけを出力。既定でもこの状態です）:
+ERROR のみ（失敗時のエラーだけを出力）:
 
 ```bash
 java -Dorg.slf4j.simpleLogger.defaultLogLevel=error YourProgram
@@ -447,8 +451,9 @@ java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 ```
 
 > [!NOTE]
-> 既定（プロパティ未指定）では INFO レベルがしきい値となり、ESQL ランタイムが出すログのうち
-> ERROR だけが出力されます（DEBUG / TRACE は出力されません）。
+> 既定ではログ出力は off で、ESQL ランタイムはログを一切出力しません（ERROR も出ません）。
+> `-D` システムプロパティは同梱の既定値より常に優先され、ロガー単位での指定も可能です
+> （例: `-Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug`）。
 
 ## 制限事項
 
