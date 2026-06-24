@@ -474,3 +474,5 @@ java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
 - **sample.cbl** -- 基本的なCONNECT、INSERT、SELECT、DISCONNECT
 - **cursor.cbl** -- カーソルを使った行の反復処理
 - **prepare.cbl** -- EXECUTE USINGによるプリペアドステートメント
+- **INSERTTBL.cbl** -- EMP テーブルを作成し、リテラル値とホスト変数（OCCURS テーブル）で行を INSERT
+- **FETCHTBL.cbl** -- SELECT COUNT(*) で件数を取得後、カーソルで EMP テーブルを FETCH して整形表示（INSERTTBL.cbl の後に実行）

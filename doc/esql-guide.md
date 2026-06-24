@@ -481,3 +481,5 @@ See the [example/esql/](../example/esql/) directory for complete working example
 - **sample.cbl** -- Basic CONNECT, INSERT, SELECT, DISCONNECT
 - **cursor.cbl** -- Cursor-based row iteration
 - **prepare.cbl** -- Prepared statements with EXECUTE USING
+- **INSERTTBL.cbl** -- Create the EMP table and INSERT rows with literal values and host variables (OCCURS table)
+- **FETCHTBL.cbl** -- SELECT COUNT(*), then fetch the EMP table via a cursor and display it (run after INSERTTBL.cbl)

@@ -37,10 +37,15 @@ make all
 Run a specific example:
 
 ```bash
-make sample    # Basic INSERT/SELECT
-make cursor    # Cursor-based row iteration
-make prepare   # Prepared statements
+make sample      # Basic INSERT/SELECT
+make cursor      # Cursor-based row iteration
+make prepare     # Prepared statements
+make inserttbl   # Populate the EMP table (run before fetchtbl)
+make fetchtbl    # Fetch and display the EMP table via a cursor
 ```
+
+`inserttbl` and `fetchtbl` share the `EMP` table, so `inserttbl` must run
+first. `make all` already runs them in the correct order.
 
 Clean up generated files:
 
@@ -55,6 +60,8 @@ make clean
 | `sample.cbl` | Basic CONNECT, CREATE TABLE, INSERT, SELECT INTO, DROP, DISCONNECT |
 | `cursor.cbl` | DECLARE CURSOR, OPEN, FETCH loop, CLOSE |
 | `prepare.cbl` | PREPARE statement, EXECUTE with USING |
+| `INSERTTBL.cbl` | Create the EMP table and INSERT rows with literals and host variables |
+| `FETCHTBL.cbl` | SELECT COUNT(*), then fetch the EMP table via a cursor and display it (run after INSERTTBL) |
 
 ## How It Works
 
