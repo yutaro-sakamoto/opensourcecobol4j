@@ -100,6 +100,6 @@ AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [+0001, Alice               , +0100
 ],
-[ignore])
+[])
 
 AT_CLEANUP

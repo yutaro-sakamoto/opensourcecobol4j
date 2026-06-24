@@ -158,6 +158,6 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 -000009999
 42P01
 ],
-[ignore])
+[])
 
 AT_CLEANUP
