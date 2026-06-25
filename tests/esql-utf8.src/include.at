@@ -207,6 +207,6 @@ AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
 +0008, 茨城　八郎          , +0050
 +0009, 群馬　九郎          , -0200
 +0010, 埼玉　十郎          , +0350
-], [ignore])
+])
 
 AT_CLEANUP

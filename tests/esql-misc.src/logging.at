@@ -4,8 +4,10 @@ dnl This is the dedicated test for the CobolSql debug/error logging output.
 dnl It exercises every statement kind that emits a log line (CONNECT, plain
 dnl EXEC SQL, parameterized EXEC SQL, SELECT INTO, DECLARE/OPEN CURSOR, a
 dnl failing statement that logs at ERROR, and DISCONNECT) and pins the exact
-dnl stderr produced by ${RUN_MODULE_LOG}. The other esql tests intentionally
-dnl ignore stderr so that log-format changes only need to be updated here.
+dnl stderr produced by ${RUN_MODULE_LOG}, the only run that enables logging.
+dnl Every other esql test runs with logging off (the default bundled in
+dnl libcobj.jar) and asserts an empty stderr, so log-format changes only need
+dnl to be updated here.
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.

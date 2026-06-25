@@ -430,32 +430,39 @@ Key points:
 
 ### Configuring logging
 
-`libcobj.jar` bundles slf4j-simple, and logs are written to standard error. The level to
-output is set with the `org.slf4j.simpleLogger.defaultLogLevel` system property. The ESQL
-runtime emits three kinds of logs — ERROR / DEBUG / TRACE — so there are three patterns to
-choose from depending on the value you set.
+`libcobj.jar` bundles slf4j-simple, and logs are written to standard error. By default
+the ESQL loggers are turned **off**: `libcobj.jar` ships a `simplelogger.properties` that sets
+`org.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql=off`, so a program run with a
+plain `java` command and no options produces no ESQL logs. The setting is scoped to the ESQL logger
+namespace (rather than the global `defaultLogLevel`) so the bundled file never silences other
+slf4j loggers your application may use. To see logs, raise the level for that namespace with a `-D`
+system property (a `-D` property always overrides the bundled default). The ESQL runtime emits three
+kinds of logs — ERROR / DEBUG / TRACE — so there are three patterns to choose from depending on the
+value you set.
 
-ERROR only (output just the errors on failure; this is also the default behavior):
+ERROR only (output just the errors on failure):
 
 ```bash
-java -Dorg.slf4j.simpleLogger.defaultLogLevel=error YourProgram
+java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql=error YourProgram
 ```
 
 ERROR and DEBUG (also output the SQL being executed, connect/disconnect, and cursor operations):
 
 ```bash
-java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug YourProgram
+java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql=debug YourProgram
 ```
 
 ERROR, DEBUG, and TRACE (output everything, including the `CONNECT` host-variable values and `FETCH`):
 
 ```bash
-java -Dorg.slf4j.simpleLogger.defaultLogLevel=trace YourProgram
+java -Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql=trace YourProgram
 ```
 
 > [!NOTE]
-> By default (no property set), the threshold is INFO, so among the logs the ESQL runtime
-> emits only ERROR is shown (DEBUG / TRACE are not).
+> The `...libcobj.sql` namespace covers both the `CobolSql` logger (EXEC SQL execution) and the
+> `SqlConnection` logger (connect/disconnect), so the settings above enable all ESQL logs. To target
+> a single logger instead, append its class name, e.g.
+> `-Dorg.slf4j.simpleLogger.log.jp.osscons.opensourcecobol.libcobj.sql.CobolSql=debug`.
 
 ## Limitations
 
