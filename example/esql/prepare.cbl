@@ -68,9 +68,9 @@
       *---------------------------------------------------------------
       * Prepare a statement from a host variable
       *---------------------------------------------------------------
-           MOVE "INSERT INTO esql_prepare_emp (emp_no, emp_name) VALU
-      -    "ES (?, ?)"
-             TO SQL-STMT.
+           STRING "INSERT INTO esql_prepare_emp (emp_no, emp_name)"
+                  " VALUES (?, ?)"
+                  DELIMITED BY SIZE INTO SQL-STMT.
 
            EXEC SQL
                PREPARE ins_stmt FROM :SQL-STMT
