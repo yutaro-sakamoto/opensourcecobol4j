@@ -177,7 +177,7 @@ opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポ�
 
 - [ESQLガイド](./doc/esql-guide_JP.md) -- サポートされるSQL文、ホスト変数の型、エラーハンドリング、SQL実行ログの有効化・設定方法などを網羅したドキュメント。
 - [ESQL設計ドキュメント](./doc/esql-design_JP.md) -- コンパイルパイプライン、AST ノード、ランタイム構造などの内部設計メモ。
-- [ESQLサンプル](./example/esql/) -- 基本操作、カーソル、プリペアドステートメントを示す実行可能なサンプルプログラム。
+- [ESQLサンプル](./example/esql/) -- 基本操作、カーソル、プリペアドステートメント、テーブルへの登録・取得を示す実行可能なサンプルプログラム。
 
 ## ドキュメント
 

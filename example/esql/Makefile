@@ -17,9 +17,9 @@ define embed_db_info
 	    -e 's/<|DB_PASSWORD|>/$(DB_PASSWORD)/g' $1 > $1.tmp && mv $1.tmp $1
 endef
 
-.PHONY: all clean sample cursor prepare
+.PHONY: all clean sample cursor prepare inserttbl fetchtbl
 
-all: sample cursor prepare
+all: sample cursor prepare inserttbl fetchtbl
 
 sample: sample.cbl
 	cp sample.cbl sample_run.cbl
@@ -38,6 +38,20 @@ prepare: prepare.cbl
 	$(call embed_db_info,prepare_run.cbl)
 	$(COBJ) -I $(COPY_DIR) prepare_run.cbl
 	java prepare_run
+
+# inserttbl must run before fetchtbl; they share the EMP table.
+# fetchtbl depends on inserttbl so the order holds even under "make -j".
+inserttbl: INSERTTBL.cbl
+	cp INSERTTBL.cbl INSERTTBL_run.cbl
+	$(call embed_db_info,INSERTTBL_run.cbl)
+	$(COBJ) -I $(COPY_DIR) INSERTTBL_run.cbl
+	java INSERTTBL_run
+
+fetchtbl: FETCHTBL.cbl inserttbl
+	cp FETCHTBL.cbl FETCHTBL_run.cbl
+	$(call embed_db_info,FETCHTBL_run.cbl)
+	$(COBJ) -I $(COPY_DIR) FETCHTBL_run.cbl
+	java FETCHTBL_run
 
 clean:
 	rm -f *.class *.java *_run.cbl

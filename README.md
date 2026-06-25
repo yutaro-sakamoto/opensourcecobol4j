@@ -188,7 +188,7 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 
 - [ESQL Guide](./doc/esql-guide.md) -- Comprehensive documentation covering all supported SQL statements, host variable types, error handling, how to enable SQL execution logging, and more.
 - [ESQL Design](./doc/esql-design.md) -- Internal design notes: the compilation pipeline, AST nodes, and runtime structure.
-- [ESQL Examples](./example/esql/) -- Working example programs demonstrating basic operations, cursors, and prepared statements.
+- [ESQL Examples](./example/esql/) -- Working example programs demonstrating basic operations, cursors, prepared statements, and populating and fetching a table.
 
 ## Documentation
 
