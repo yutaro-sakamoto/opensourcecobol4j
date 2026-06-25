@@ -127,7 +127,6 @@ AT_CHECK([COB_TERMINAL_ENCODING=UTF8 ${RUN_MODULE} prog], [0],
 ＠｛｝＊＋
 ＿？＞＜，
 日本＞＜，
-],
-[ignore])
+])
 
 AT_CLEANUP

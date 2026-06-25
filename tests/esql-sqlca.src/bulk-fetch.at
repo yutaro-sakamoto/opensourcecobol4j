@@ -71,8 +71,7 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 0005, Name5     |
 0006, Name6     |
 0007, Name7     |
-],
-[ignore])
+])
 
 dnl 先読み 3 件（DB 往復はまとまるが、出力は既定と同一）
 AT_CHECK([OCESQL4J_FETCH_RECORDS=3 ${RUN_MODULE} prog], [0],
@@ -83,8 +82,7 @@ AT_CHECK([OCESQL4J_FETCH_RECORDS=3 ${RUN_MODULE} prog], [0],
 0005, Name5     |
 0006, Name6     |
 0007, Name7     |
-],
-[ignore])
+])
 
 AT_CLEANUP
 
@@ -180,8 +178,7 @@ update SQLCODE: +000000000
 0003, Name3     |
 0004, Name4     |
 0005, Name5     |
-],
-[ignore])
+])
 
 dnl 先読み 3 件でも位置補正により同一結果
 AT_CHECK([OCESQL4J_FETCH_RECORDS=3 ${RUN_MODULE} prog], [0],
@@ -192,8 +189,7 @@ update SQLCODE: +000000000
 0003, Name3     |
 0004, Name4     |
 0005, Name5     |
-],
-[ignore])
+])
 
 dnl 先読み 10 件でも位置補正により同一結果
 AT_CHECK([OCESQL4J_FETCH_RECORDS=10 ${RUN_MODULE} prog], [0],
@@ -204,7 +200,6 @@ update SQLCODE: +000000000
 0003, Name3     |
 0004, Name4     |
 0005, Name5     |
-],
-[ignore])
+])
 
 AT_CLEANUP
