@@ -121,6 +121,5 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 [0001 <log> success test_return_code
 0002 <log> success test_return_code
 0003 <log> success test_return_code
-],
-[])
+])
 AT_CLEANUP

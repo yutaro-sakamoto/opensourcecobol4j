@@ -291,7 +291,6 @@ AT_CHECK([${RUN_MODULE} prog | tr -d "\00" | grep -v "Position:"], [0],
 <invalid open> SQLERRMC:ERROR: relation "empqrstvq13256" does not exist
 <invalid fetch> SQLERRML:+0038
 <invalid fetch> SQLERRMC:ERROR: cursor "prog_c2" does not exist
-],
-[])
+])
 
 AT_CLEANUP

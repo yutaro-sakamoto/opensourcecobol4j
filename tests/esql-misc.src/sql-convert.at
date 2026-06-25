@@ -142,8 +142,7 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [+0001, ñkäCÅ@ëæòY          , +0400
-],
-[])
+])
 
 AT_CLEANUP
 
@@ -291,8 +290,7 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [+0001, ñkäCÅ@ëæòY          , +0400
-],
-[])
+])
 
 AT_CLEANUP
 
@@ -423,8 +421,7 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz                                               abcdef
-],
-[])
+])
 
 AT_CLEANUP
 
@@ -555,8 +552,7 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [abcdefghijklmnopqrstuvwxyz'abcdefghijklmnopqrstuvwxyz'                                             abcdef
-],
-[])
+])
 
 AT_CLEANUP
 
@@ -692,7 +688,6 @@ AT_CHECK([${EMBED_DB_INFO} prog.cbl])
 AT_CHECK([${COMPILE_MODULE} prog.cbl])
 AT_CHECK([${RUN_MODULE} prog], [0],
 [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg
-],
-[])
+])
 
 AT_CLEANUP

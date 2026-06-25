@@ -254,7 +254,6 @@ AT_CHECK([${RUN_MODULE} prog], [0],
 1000
 2000
 9999
-],
-[])
+])
 
 AT_CLEANUP
