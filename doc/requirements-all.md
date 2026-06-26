@@ -1,5 +1,9 @@
 | version (opensource COBOL 4J) | OS | version (JDK) | 
 | -- | -- | -- |
+| 2.0.0 | Windows | 21 |
+| 2.0.0 | Ubuntu 24.04 | 21 |
+| 2.0.0 | AlmaLinux 9 | 11 |
+| 2.0.0 | Amazon Linux 2023 | 21 |
 | 1.1.20 | Windows | 21 |
 | 1.1.20 | Ubuntu 24.04 | 21 |
 | 1.1.20 | AlmaLinux 9 | 11 |
