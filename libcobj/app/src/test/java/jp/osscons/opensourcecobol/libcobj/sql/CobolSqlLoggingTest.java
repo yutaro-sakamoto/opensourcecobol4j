@@ -33,7 +33,7 @@ class CobolSqlLoggingTest {
 
     // 操作系ログ（CONNECT/EXEC SQL/DISCONNECT/エラー）は CobolSql 名のロガーへ出る。
     private TestLogger cobolSqlLogger;
-    // 接続確立ログ（Connecting to...）は backend 実装クラス名のロガーへ出る。
+    // 接続確立ログ（Connecting to...）は抽象基底クラス AbstractCobolSqlBackend のロガーへ出る。
     private TestLogger connLogger;
 
     @BeforeEach

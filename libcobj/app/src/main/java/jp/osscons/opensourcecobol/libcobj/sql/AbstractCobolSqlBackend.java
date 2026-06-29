@@ -57,6 +57,12 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     protected static final byte[] EMPTY_RESULT = new byte[0];
 
     // === 旧 SqlState：グローバル registry → バックエンドのインスタンス状態へ ===
+    // スレッドモデル: 生成 COBOL ランタイムは単一プロセス・単一スレッド実行を前提とする
+    // (旧 SqlState もグローバル static registry だった)。このため接続/カーソル/prepared の
+    // registry と defaultConnId は同期せず素の HashMap/フィールドのまま扱う。
+    // マルチスレッド対応が必要になった場合は、ConcurrentHashMap 化と defaultConnId 更新を含む
+    // 同期、または public API 全体の直列化を別途検討する (stmtCache の ConcurrentHashMap 化も
+    // 同前提下の保守的な保護であり、現時点で全レジストリの同期を意味するものではない)。
     private final Map<String, Connection> connections = new HashMap<>();
     private final Map<String, Cursor> cursors = new HashMap<>();
     private final Map<String, String[]> prepared = new HashMap<>();
@@ -213,7 +219,9 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             String passwdStr = fieldToString(passwd);
             String dbnameStr = fieldToString(dbname);
 
-            LOG.trace("CONNECT user={} dbname={}", userStr.trim(), dbnameStr.trim());
+            // user/dbname は null になり得る (フィールド未指定 → fieldToString が null を返す)。
+            // 引数の .trim() はログレベルに関わらず評価されるため、null セーフに整形する。
+            LOG.trace("CONNECT user={} dbname={}", trimForLog(userStr), trimForLog(dbnameStr));
             DbSpec spec = buildSpec(userStr, passwdStr, dbnameStr);
             Connection conn = openConnection(spec);
             addConnection(DEFAULT_CONN_ID, conn);
@@ -1165,6 +1173,11 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             return null;
         }
         return storageToString(field.getDataStorage(), field.getSize());
+    }
+
+    /** ログ出力用に末尾空白を除去する。null も安全に扱う (接続パラメータ未指定時のため)。 */
+    private static String trimForLog(String s) {
+        return s == null ? null : s.trim();
     }
 
     /** :name ホスト変数名を構成しうる文字 (COBOL データ名: 英数字・ハイフン、加えてアンダースコア) か。 */
