@@ -57,7 +57,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     private String defaultConnId;
 
     // === 旧 CobolSql：PreparedStatement キャッシュ（DB 非依存）===
-    // backend は singleton 共有のため、ConcurrentHashMap で保護する（設計 §11 のスレッド安全性の注記）。
+    // backend は singleton 共有のため、ConcurrentHashMap で保護する。
     private final Map<Connection, Map<String, PreparedStatement>> stmtCache =
             new ConcurrentHashMap<>();
 
