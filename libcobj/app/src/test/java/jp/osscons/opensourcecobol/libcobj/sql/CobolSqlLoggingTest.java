@@ -5,11 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.github.valfirst.slf4jtest.LoggingEvent;
 import com.github.valfirst.slf4jtest.TestLogger;
 import com.github.valfirst.slf4jtest.TestLoggerFactory;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.sql.Connection;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import jp.osscons.opensourcecobol.libcobj.data.CobolFieldAttribute;
@@ -33,67 +30,26 @@ class CobolSqlLoggingTest {
                     .withPassword("test_pass");
 
     private CobolDataStorage sqlca;
+
+    // 操作系ログ（CONNECT/EXEC SQL/DISCONNECT/エラー）は CobolSql 名のロガーへ出る。
     private TestLogger cobolSqlLogger;
-    private TestLogger sqlConnectionLogger;
+    // 接続確立ログ（Connecting to...）は backend 実装クラス名のロガーへ出る。
+    private TestLogger connLogger;
 
     @BeforeEach
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
-    void setUp() throws Exception {
+    void setUp() {
         sqlca = new CobolDataStorage(136);
-        resetStaticField(SqlState.class, "connections", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "cursors", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "preparedStatements", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "defaultConnId", null);
-        Field cacheField = CobolSql.class.getDeclaredField("stmtCache");
-        cacheField.setAccessible(true);
-        ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
-
+        CobolSql.resetBackend();
         cobolSqlLogger = TestLoggerFactory.getTestLogger(CobolSql.class);
-        sqlConnectionLogger = TestLoggerFactory.getTestLogger(SqlConnection.class);
+        connLogger = TestLoggerFactory.getTestLogger(AbstractCobolSqlBackend.class);
         TestLoggerFactory.clear();
     }
 
-    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     @AfterEach
-    void tearDown() throws Exception {
-        try {
-            Field connField = SqlState.class.getDeclaredField("connections");
-            connField.setAccessible(true);
-            java.util.Map<String, SqlConnection> allConns =
-                    (java.util.Map<String, SqlConnection>) connField.get(null);
-            for (SqlConnection sc : allConns.values()) {
-                try {
-                    Connection c = sc.getConnection();
-                    if (c != null && !c.isClosed()) {
-                        c.close();
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (ReflectiveOperationException ignored) {
-        }
-        resetStaticField(SqlState.class, "connections", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "cursors", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "preparedStatements", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "defaultConnId", null);
-        Field cacheField = CobolSql.class.getDeclaredField("stmtCache");
-        cacheField.setAccessible(true);
-        ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
+    void tearDown() {
+        ((AbstractCobolSqlBackend) CobolSql.backendForTest()).closeAllConnectionsForTest();
+        CobolSql.resetBackend();
         TestLoggerFactory.clear();
-    }
-
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
-    private void resetStaticField(Class<?> clazz, String fieldName, Object value) throws Exception {
-        Field f = clazz.getDeclaredField(fieldName);
-        f.setAccessible(true);
-        f.set(null, value);
-    }
-
-    private CobolDataStorage makeStorage(String value) {
-        byte[] bytes = value.getBytes();
-        CobolDataStorage s = new CobolDataStorage(bytes.length);
-        s.memcpy(bytes, bytes.length);
-        return s;
     }
 
     private static AbstractCobolField makeAlphaField(int size, byte[] data) {
@@ -138,11 +94,11 @@ class CobolSqlLoggingTest {
     }
 
     @Test
-    void testConnect_SqlConnection_logsDebugMessage() {
+    void testConnect_connectionLog_logsDebugMessage() {
         connectToPostgres();
         assertEquals(0, getSqlCode());
 
-        List<LoggingEvent> events = sqlConnectionLogger.getLoggingEvents();
+        List<LoggingEvent> events = connLogger.getLoggingEvents();
         assertTrue(
                 events.stream()
                         .anyMatch(
@@ -207,7 +163,7 @@ class CobolSqlLoggingTest {
         connectToPostgres();
 
         List<LoggingEvent> allEvents = new java.util.ArrayList<>(cobolSqlLogger.getLoggingEvents());
-        allEvents.addAll(sqlConnectionLogger.getLoggingEvents());
+        allEvents.addAll(connLogger.getLoggingEvents());
 
         String password = postgres.getPassword();
         assertTrue(

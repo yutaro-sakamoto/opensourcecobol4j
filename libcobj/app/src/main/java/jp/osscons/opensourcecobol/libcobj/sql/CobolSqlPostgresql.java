@@ -247,7 +247,7 @@ final class CobolSqlPostgresql extends AbstractCobolSqlBackend {
 
     @Override
     protected int sqlStateToCode(SQLException e) {
-        // 移行前 SqlCA.sqlStateToCode の switch をこのフック内へ移植（別クラスには切り出さない）。
+        // SQLSTATE → ECPG コードの変換表。エラー変換は backend 実装に閉じ込め、別クラスへは切り出さない。
         String sqlState = e.getSQLState();
         if (sqlState == null) {
             return SqlCA.ECPG_UNKNOWN_ERROR;

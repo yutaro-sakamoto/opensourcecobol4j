@@ -30,6 +30,18 @@ public final class CobolSql {
         return backend;
     }
 
+    // --- テスト支援（package-private。本番 API には露出しない）---
+
+    /** テスト用: 解決済み backend を破棄し、次回呼び出しで再解決させる。 */
+    static synchronized void resetBackend() {
+        backend = null;
+    }
+
+    /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。 */
+    static CobolSqlBackend backendForTest() {
+        return backend();
+    }
+
     // -------------------------------------------------------
     // 接続
     // -------------------------------------------------------

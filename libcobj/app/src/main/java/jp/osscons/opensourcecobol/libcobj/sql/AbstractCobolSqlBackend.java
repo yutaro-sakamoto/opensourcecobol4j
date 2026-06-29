@@ -35,7 +35,13 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractCobolSqlBackend.class);
+    // 操作系ログ（CONNECT/EXEC SQL/カーソル/DISCONNECT/エラー）は、公開エントリポイント
+    // CobolSql のロガー名で出す。運用者が有効化するロガー名（...sql.CobolSql）を維持するため。
+    private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
+
+    // 低レベルの接続確立ログ（Connecting to.../Connected successfully）は別ロガーに出す。
+    // CobolSql のロガーだけを debug 有効化しても、これらは出力されない（接続詳細を分離する）。
+    private static final Logger CONN_LOG = LoggerFactory.getLogger(AbstractCobolSqlBackend.class);
 
     /** COBOL 固定長フィールドのバイト表現に用いる文字コード（接続パラメータの取り出し用）。 */
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
@@ -341,10 +347,10 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
         }
         props.put("encoding", spec.charset);
 
-        LOG.debug("Connecting to {} (user={})", url, spec.user);
+        CONN_LOG.debug("Connecting to {} (user={})", url, spec.user);
         Connection connection = DriverManager.getConnection(url, props);
         configureConnection(connection);
-        LOG.debug("Connected successfully (id={})", DEFAULT_CONN_ID);
+        CONN_LOG.debug("Connected successfully (id={})", DEFAULT_CONN_ID);
         return connection;
     }
 
@@ -987,7 +993,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     // -------------------------------------------------------
 
     /** 接続を登録する。最初に登録された接続がデフォルトになる。 */
-    private void addConnection(String id, Connection conn) {
+    void addConnection(String id, Connection conn) {
         connections.put(id, conn);
         if (defaultConnId == null) {
             defaultConnId = id;
@@ -1018,7 +1024,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     }
 
     /** 現在のデフォルト接続の JDBC Connection を返す。未登録なら null。 */
-    private Connection getDefaultConnection() {
+    Connection getDefaultConnection() {
         String id = currentConnectionId();
         return id == null ? null : connections.get(id);
     }
@@ -1030,6 +1036,51 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
             cursor.clearBuffer();
         }
+    }
+
+    // -------------------------------------------------------
+    // テスト支援（package-private。本番 API には露出しない）
+    // -------------------------------------------------------
+
+    /** テスト用: カーソルを直接登録する。 */
+    final void addCursor(String name, Cursor cursor) {
+        cursors.put(name, cursor);
+    }
+
+    /** テスト用: 登録済みカーソルを取得する。 */
+    final Cursor getCursor(String name) {
+        return cursors.get(name);
+    }
+
+    /** テスト用: prepared statement を直接登録する。 */
+    final void addPrepared(String name, String query, int nParams) {
+        prepared.put(name, new String[] {query, String.valueOf(nParams)});
+    }
+
+    /** テスト用: 登録済み prepared statement（[query, nParams]）を取得する。 */
+    final String[] getPrepared(String name) {
+        return prepared.get(name);
+    }
+
+    /** テスト用: 接続文字列のパース・env フォールバック結果（{@link DbSpec}）を返す。 */
+    final DbSpec buildSpecForTest(String user, String passwd, String dbname) {
+        return buildSpec(user, passwd, dbname);
+    }
+
+    /** テスト用: 登録済みの全 JDBC 接続を閉じ、レジストリと文キャッシュをクリアする。 */
+    final void closeAllConnectionsForTest() {
+        for (Connection c : connections.values()) {
+            try {
+                if (c != null && !c.isClosed()) {
+                    c.close();
+                }
+            } catch (SQLException ignored) {
+                // テスト後始末のエラーは無視する
+            }
+        }
+        connections.clear();
+        defaultConnId = null;
+        stmtCache.clear();
     }
 
     // -------------------------------------------------------

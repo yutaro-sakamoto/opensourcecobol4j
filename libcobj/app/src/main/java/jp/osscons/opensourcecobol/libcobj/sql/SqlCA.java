@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
-import java.sql.SQLException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /** COBOL の埋め込み SQL で使用する SQLCA (SQL Communication Area) 構造体を管理する。 */
@@ -333,70 +332,5 @@ final class SqlCA {
         setCode(sqlca, code);
         setState(sqlca, state);
         setErrmc(sqlca, message);
-    }
-
-    /**
-     * SQLException から SQLCA を設定し、SQLSTATE を ECPG エラーコードにマッピングする。
-     *
-     * @param sqlca SQLCA のデータストレージ
-     * @param e SQL 例外
-     */
-    static void setResultFromException(CobolDataStorage sqlca, SQLException e) {
-        if (sqlca == null) {
-            return;
-        }
-        String sqlState = e.getSQLState();
-        if (sqlState == null) {
-            sqlState = "     ";
-        }
-        int code = sqlStateToCode(sqlState);
-        String message = e.getMessage();
-        if (message == null) {
-            message = "";
-        }
-        setError(sqlca, code, sqlState, message);
-    }
-
-    /**
-     * 5 文字の SQLSTATE 文字列を対応する ECPG エラーコードにマッピングする。
-     *
-     * @param sqlState SQLSTATE 文字列
-     * @return ECPG エラーコード定数
-     */
-    static int sqlStateToCode(String sqlState) {
-        if (sqlState == null) {
-            return ECPG_UNKNOWN_ERROR;
-        }
-        switch (sqlState) {
-            case "00000":
-                return ECPG_NO_ERROR;
-            case "02000":
-                return ECPG_NOT_FOUND;
-            case "YE002":
-                return ECPG_EMPTY;
-            case "08001":
-            case "08003":
-                return ECPG_CONNECT;
-            case "08007":
-                return ECPG_TRANS;
-            case "21000":
-                return ECPG_SUBSELECT_NOT_ONE;
-            case "23505":
-                return ECPG_DUPLICATE_KEY;
-            case "25001":
-                return ECPG_WARNING_IN_TRANSACTION;
-            case "25P01":
-                return ECPG_WARNING_NO_TRANSACTION;
-            case "34000":
-                return ECPG_WARNING_UNKNOWN_PORTAL;
-            case "42804":
-                return ECPG_DATA_FORMAT_ERROR;
-            case "42P03":
-                return ECPG_WARNING_PORTAL_EXISTS;
-            case "55P03":
-                return ECPG_PGSQL;
-            default:
-                return ECPG_UNKNOWN_ERROR;
-        }
     }
 }
