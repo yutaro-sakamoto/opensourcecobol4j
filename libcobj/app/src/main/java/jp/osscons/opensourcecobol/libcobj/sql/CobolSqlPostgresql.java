@@ -47,20 +47,19 @@ final class CobolSqlPostgresql extends AbstractCobolSqlBackend {
     }
 
     @Override
-    protected void doCommit(Connection c) throws SQLException {
+    protected void commitTransaction(Connection c) throws SQLException {
+        // PostgreSQL は autoCommit(true) + 明示 BEGIN/COMMIT で TX を管理するため、COMMIT を発行する。
+        // 再 BEGIN は基底側（doCommit）/切断フローが beginTransaction で制御する。
         try (Statement stmt = c.createStatement()) {
             stmt.execute("COMMIT");
         }
-        // 現状の「再 BEGIN」を内包する。
-        beginTransaction(c);
     }
 
     @Override
-    protected void doRollback(Connection c) throws SQLException {
+    protected void rollbackTransaction(Connection c) throws SQLException {
         try (Statement stmt = c.createStatement()) {
             stmt.execute("ROLLBACK");
         }
-        beginTransaction(c);
     }
 
     // -------------------------------------------------------

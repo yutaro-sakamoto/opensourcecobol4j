@@ -104,7 +104,9 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     protected abstract void configureConnection(Connection c) throws SQLException;
 
     /**
-     * 新しいトランザクションを開始する（DB 流儀を内包）。
+     * 新しいトランザクションを開始する（DB 流儀を内包）。明示的な {@code BEGIN} を発行する DB は
+     * ここで発行し、最初の文で暗黙にトランザクションが始まる DB（JDBC の {@code autoCommit=false}
+     * など）では no-op でよい。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
@@ -112,20 +114,28 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     protected abstract void beginTransaction(Connection c) throws SQLException;
 
     /**
-     * 現在のトランザクションを commit する（PostgreSQL は COMMIT + 再 BEGIN を内包）。
+     * 現在のトランザクションを commit する（再 BEGIN は含まない、確定のみ）。コミットの発行手段だけを
+     * DB 実装へ委ねる。例: PostgreSQL は {@code stmt.execute("COMMIT")}、JDBC の
+     * {@code autoCommit=false} 流儀の DB は {@code c.commit()}。
+     *
+     * <p>「commit して新しいトランザクションを継続する」公開操作（{@link #commit(CobolDataStorage)}）と、
+     * 「commit して接続を閉じる」操作（{@link #disconnect(CobolDataStorage)}）の双方が本フックを再利用する。
+     * 再 BEGIN の要否は呼び出し側が {@link #beginTransaction(Connection)} で制御する。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
      */
-    protected abstract void doCommit(Connection c) throws SQLException;
+    protected abstract void commitTransaction(Connection c) throws SQLException;
 
     /**
-     * 現在のトランザクションを rollback する（PostgreSQL は ROLLBACK + 再 BEGIN を内包）。
+     * 現在のトランザクションを rollback する（再 BEGIN は含まない、ロールバックのみ）。発行手段だけを
+     * DB 実装へ委ねる。例: PostgreSQL は {@code stmt.execute("ROLLBACK")}、JDBC の
+     * {@code autoCommit=false} 流儀の DB は {@code c.rollback()}。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
      */
-    protected abstract void doRollback(Connection c) throws SQLException;
+    protected abstract void rollbackTransaction(Connection c) throws SQLException;
 
     /**
      * カーソルをオープンする（DECLARE 等の DB 別の発行手段を内包）。成功時に {@code cur} を
@@ -247,9 +257,9 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
                 return;
             }
             LOG.debug("DISCONNECT (id={})", id);
-            // 切断前に commit する
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("COMMIT");
+            // 切断前に commit する（再 BEGIN はしない）。発行手段は DB 実装の commitTransaction に委ねる。
+            try {
+                commitTransaction(conn);
             } catch (SQLException ignored) {
                 // 切断時の commit エラーは無視する
             }
@@ -968,6 +978,22 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     // -------------------------------------------------------
     // トランザクション
     // -------------------------------------------------------
+
+    /**
+     * commit して新しいトランザクションを継続する（確定 + 再 BEGIN）。{@link #commit(CobolDataStorage)}
+     * の公開操作で使う。確定手段は {@link #commitTransaction(Connection)}、再開は
+     * {@link #beginTransaction(Connection)} に委ねる（暗黙 BEGIN の DB では後者が no-op）。
+     */
+    private void doCommit(Connection c) throws SQLException {
+        commitTransaction(c);
+        beginTransaction(c);
+    }
+
+    /** rollback して新しいトランザクションを継続する（ロールバック + 再 BEGIN）。 */
+    private void doRollback(Connection c) throws SQLException {
+        rollbackTransaction(c);
+        beginTransaction(c);
+    }
 
     @Override
     public final void commit(CobolDataStorage sqlca) {
