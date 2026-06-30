@@ -185,6 +185,23 @@ class CobolSqlPostgresqlTest {
                 "setResultFromException with null sqlca should not throw");
     }
 
+    // ---------- SqlCA.setNotFound（NOT_FOUND 集約ヘルパ）----------
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testSetNotFound() {
+        SqlCA.setNotFound(sqlca);
+        assertEquals(
+                SqlCA.ECPG_NOT_FOUND, SqlCA.getCode(sqlca), "SQLCODE should be ECPG_NOT_FOUND");
+        assertEquals("02000", new String(sqlca.getByteArray(128, 5)), "SQLSTATE should be 02000");
+    }
+
+    @Test
+    void testSetNotFound_NullSqlca() {
+        assertDoesNotThrow(
+                () -> SqlCA.setNotFound(null), "setNotFound with null sqlca should not throw");
+    }
+
     // ---------- buildJdbcUrl / 接続文字列パース（旧 SqlConnectionTest から移植）----------
 
     private String url(String dbSpecString) {

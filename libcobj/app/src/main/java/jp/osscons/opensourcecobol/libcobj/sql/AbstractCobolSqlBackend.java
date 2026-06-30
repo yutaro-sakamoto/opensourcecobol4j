@@ -588,9 +588,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
         // ResultSet を閉じる (サーバ側カーソルのリーク防止)。
         try (ResultSet rs = resultSet) {
             if (rs == null || !rs.next()) {
-                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
-                SqlCA.setState(sqlca, "02000");
-                SqlCA.clearErrmc(sqlca);
+                SqlCA.setNotFound(sqlca);
                 return;
             }
             if (resultParams == null || resultParams.length == 0) {
@@ -631,9 +629,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             throws SQLException {
         try (ResultSet rs = resultSet) {
             if (rs == null || !rs.next()) {
-                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
-                SqlCA.setState(sqlca, "02000");
-                SqlCA.clearErrmc(sqlca);
+                SqlCA.setNotFound(sqlca);
                 return;
             }
             int rowCount = 0;
@@ -794,9 +790,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             SqlCA.setSuccess(sqlca);
             boolean hasRow = fetchRowImpl(conn, cursor, resultParams, sqlca);
             if (!hasRow) {
-                SqlCA.setCode(sqlca, SqlCA.ECPG_NOT_FOUND);
-                SqlCA.setState(sqlca, "02000");
-                SqlCA.clearErrmc(sqlca);
+                SqlCA.setNotFound(sqlca);
             }
         } catch (SQLException e) {
             setResultFromException(sqlca, e);

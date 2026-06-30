@@ -304,6 +304,21 @@ final class SqlCA {
     }
 
     /**
+     * SQLCA を「該当行なし」を示す状態に設定する (SQLCODE=ECPG_NOT_FOUND, SQLSTATE="02000")。
+     * SELECT INTO やカーソル FETCH で結果が得られなかった場合に使う。
+     *
+     * @param sqlca SQLCA のデータストレージ
+     */
+    static void setNotFound(CobolDataStorage sqlca) {
+        if (sqlca == null) {
+            return;
+        }
+        setCode(sqlca, ECPG_NOT_FOUND);
+        setState(sqlca, "02000");
+        clearErrmc(sqlca);
+    }
+
+    /**
      * SQLCA を ECPG_MISSING_INDICATOR に設定する (sqlcode=-213, sqlstate="22002")。
      *
      * <p>「指標変数なしの NULL 値」を通知する。これは、フェッチした列が SQL NULL であり、
