@@ -629,40 +629,67 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             throws SQLException {
         try (ResultSet rs = resultSet) {
             if (rs == null || !rs.next()) {
+                // SELECT INTO ... OCCURS で結果 0 行は「該当なし」。
                 SqlCA.setNotFound(sqlca);
                 return;
             }
-            int rowCount = 0;
-            boolean sawNullWithoutIndicator = false;
-            do {
-                if (rowCount >= occursMax) {
-                    break;
-                }
-                int storageOffset = rowCount * occursSize;
-                for (int i = 0; i < resultParams.length; i++) {
-                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                    CobolDataStorage fieldStorage =
-                            resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
-                    int fieldSize = resultParams[i].getSize();
-                    if (value != null) {
-                        CobolDataConverter.stringToCobolRaw(
-                                resultParams[i], fieldStorage, fieldSize, value);
-                    } else {
-                        // 指標変数なしの NULL は型に応じた空値で埋める。raw な memset 0 は
-                        // packed の符号ニブルやゾーン10進が不正表現になるため避ける。
-                        CobolDataConverter.stringToCobolRaw(
-                                resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
-                        sawNullWithoutIndicator = true;
-                    }
-                }
-                rowCount++;
-            } while (rs.next());
-            SqlCA.setRowCount(sqlca, rowCount);
-            if (sawNullWithoutIndicator) {
-                SqlCA.setMissingIndicator(sqlca);
-            } else {
-                SqlCA.setSuccess(sqlca);
+            writeOccursRows(rs, resultParams, occursSize, occursMax, sqlca);
+        }
+    }
+
+    /**
+     * 1 行目に位置付け済みの {@link ResultSet} から OCCURS 配列へ複数行を書き込み、行数・NULL 処理を
+     * 含めて {@code sqlca} を更新する共通処理（SELECT INTO ... OCCURS とカーソルの複数行 FETCH で共用）。
+     *
+     * <p>呼び出し側は本メソッドの前に最初の {@code rs.next()} と 0 行時の扱い（SELECT INTO は
+     * {@code NOT_FOUND}、カーソル FETCH の末尾は {@code SUCCESS}）を済ませておく。本メソッドは
+     * 1 行以上ある前提で、{@code occursMax} 件まで各列を OCCURS のストライド {@code occursSize} で
+     * 書き込み、{@code SQLERRD(3)} に取得行数を設定する。
+     *
+     * @param rs 1 行目に位置付け済みの ResultSet
+     * @param resultParams 結果パラメータフィールド（列ごとに 1 つ）
+     * @param occursSize OCCURS 要素 1 つあたりのバイトサイズ（ストライド）
+     * @param occursMax 取得する行の最大数
+     * @param sqlca SQLCA データストレージ
+     * @throws SQLException データベースアクセスエラー
+     */
+    protected final void writeOccursRows(
+            ResultSet rs,
+            AbstractCobolField[] resultParams,
+            int occursSize,
+            int occursMax,
+            CobolDataStorage sqlca)
+            throws SQLException {
+        int rowCount = 0;
+        boolean sawNullWithoutIndicator = false;
+        do {
+            if (rowCount >= occursMax) {
+                break;
             }
+            int storageOffset = rowCount * occursSize;
+            for (int i = 0; i < resultParams.length; i++) {
+                byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
+                CobolDataStorage fieldStorage =
+                        resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
+                int fieldSize = resultParams[i].getSize();
+                if (value != null) {
+                    CobolDataConverter.stringToCobolRaw(
+                            resultParams[i], fieldStorage, fieldSize, value);
+                } else {
+                    // 指標変数なしの NULL は型に応じた空値で埋める。raw な memset 0 は
+                    // packed の符号ニブルやゾーン10進が不正表現になるため避ける。
+                    CobolDataConverter.stringToCobolRaw(
+                            resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
+                    sawNullWithoutIndicator = true;
+                }
+            }
+            rowCount++;
+        } while (rs.next());
+        SqlCA.setRowCount(sqlca, rowCount);
+        if (sawNullWithoutIndicator) {
+            SqlCA.setMissingIndicator(sqlca);
+        } else {
+            SqlCA.setSuccess(sqlca);
         }
     }
 

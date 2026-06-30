@@ -181,40 +181,13 @@ final class CobolSqlPostgresql extends AbstractCobolSqlBackend {
         try (Statement stmt = c.createStatement();
                 ResultSet rs = stmt.executeQuery(fetchSql)) {
             if (!rs.next()) {
+                // カーソル FETCH の末尾 (0 行) は SQLCODE=0。SQLERRD(3) は呼び出し側
+                // (fetchCursorOccurs) が委譲前に 0 へ初期化済みなのでここでは触らない。
                 SqlCA.setSuccess(sqlca);
                 return;
             }
-            int rowCount = 0;
-            boolean sawNullWithoutIndicator = false;
-            do {
-                if (rowCount >= occursMax) {
-                    break;
-                }
-                int storageOffset = rowCount * occursSize;
-                for (int i = 0; i < resultParams.length; i++) {
-                    byte[] value = CobolDataConverter.getValueFromResultSet(rs, i + 1);
-                    CobolDataStorage fieldStorage =
-                            resultParams[i].getDataStorage().getSubDataStorage(storageOffset);
-                    int fieldSize = resultParams[i].getSize();
-                    if (value != null) {
-                        CobolDataConverter.stringToCobolRaw(
-                                resultParams[i], fieldStorage, fieldSize, value);
-                    } else {
-                        // 指標変数なしの NULL は型に応じた空値で埋める (memset 0 は
-                        // packed/ゾーン10進で不正表現になる)。
-                        CobolDataConverter.stringToCobolRaw(
-                                resultParams[i], fieldStorage, fieldSize, EMPTY_RESULT);
-                        sawNullWithoutIndicator = true;
-                    }
-                }
-                rowCount++;
-            } while (rs.next());
-            SqlCA.setRowCount(sqlca, rowCount);
-            if (sawNullWithoutIndicator) {
-                SqlCA.setMissingIndicator(sqlca);
-            } else {
-                SqlCA.setSuccess(sqlca);
-            }
+            // OCCURS 配列への複数行書き込みと SQLCA 更新は基底の共通処理を再利用する。
+            writeOccursRows(rs, resultParams, occursSize, occursMax, sqlca);
         }
     }
 
