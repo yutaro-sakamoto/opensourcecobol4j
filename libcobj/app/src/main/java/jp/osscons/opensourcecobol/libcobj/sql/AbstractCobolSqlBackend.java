@@ -253,7 +253,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     }
 
     @Override
-    public void disconnect(CobolDataStorage sqlca) {
+    public final void disconnect(CobolDataStorage sqlca) {
         try {
             String id = currentConnectionId();
             Connection conn = id == null ? null : connections.get(id);
