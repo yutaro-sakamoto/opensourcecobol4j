@@ -937,6 +937,102 @@ class CobolSqlTest {
         }
     }
 
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testWhereCurrentOf_OverFetchPastEnd() throws Exception {
+        // 先読み件数 (5) > 全行数 (2) のため、1 回の先読みで結果末尾に到達し overFetch=true になる
+        // （server カーソルは最終行の「さらに先」へ進む）。この状態でも WHERE CURRENT OF が +1 補正して
+        // 論理現在行（1 行目）だけを更新できることを検証する。overFetch=true 経路の回帰テスト。
+        BulkFetchConfig.setFetchRecords(5);
+        Connection realConn = registerRealConnection();
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS wco_of");
+            stmt.execute("CREATE TABLE wco_of (id INTEGER, name VARCHAR(20))");
+            stmt.execute("INSERT INTO wco_of VALUES (1, 'Name1')");
+            stmt.execute("INSERT INTO wco_of VALUES (2, 'Name2')");
+        }
+        // WHERE CURRENT OF の要件に合わせ ORDER BY を持たない単純スキャン。連番 INSERT なので
+        // スキャン順＝挿入順で 1 行目は id=1。
+        CobolSql.declareCursor(sqlca, "wof", "SELECT name FROM wco_of");
+        CobolSql.openCursor(sqlca, "wof");
+        assertEquals(0, getSqlCode(), "open should succeed");
+
+        // 1 行だけ FETCH（論理現在行は 1 行目）。先読みは 2 行取得して末尾に達し overFetch=true。
+        CobolSql.fetchCursor(sqlca, "wof", makeAlphaField(20, new byte[20]));
+        assertEquals(0, getSqlCode(), "first fetch should succeed");
+        assertTrue(
+                backend().getCursor("wof").overFetch,
+                "prefetch returned fewer rows than requested -> overFetch=true");
+
+        CobolSql.execWhereCurrentOf(
+                sqlca, "UPDATE wco_of SET name = 'UPDATED' WHERE CURRENT OF", "wof");
+        assertEquals(0, getSqlCode(), "positioned update should succeed: " + getSqlState());
+
+        CobolSql.closeCursor(sqlca, "wof");
+
+        // id=1 のみ 'UPDATED'、id=2 は元のまま（誤位置なら id=2 が更新される）。
+        try (Statement stmt = realConn.createStatement();
+                java.sql.ResultSet rs =
+                        stmt.executeQuery("SELECT id, name FROM wco_of ORDER BY id")) {
+            String[] expected = {"UPDATED", "Name2"};
+            int idx = 0;
+            while (rs.next()) {
+                assertEquals(expected[idx], rs.getString(2).trim(), "row id=" + rs.getInt(1));
+                idx++;
+            }
+            assertEquals(2, idx, "should have 2 rows");
+        }
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE wco_of");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testWhereCurrentOf_ExactPrefetchBoundary() throws Exception {
+        // 先読み件数 (2) == 全行数 (2)。ちょうど要求件数ぶん返るため overFetch=false で、server
+        // カーソルは最終行の「上」に留まる（末尾の先ではない）。1 行だけ FETCH した後の WHERE CURRENT OF
+        // が +1 せずに論理現在行（1 行目）だけを更新できることを検証する。境界での off-by-one を防ぐ。
+        BulkFetchConfig.setFetchRecords(2);
+        Connection realConn = registerRealConnection();
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS wco_eb");
+            stmt.execute("CREATE TABLE wco_eb (id INTEGER, name VARCHAR(20))");
+            stmt.execute("INSERT INTO wco_eb VALUES (1, 'Name1')");
+            stmt.execute("INSERT INTO wco_eb VALUES (2, 'Name2')");
+        }
+        CobolSql.declareCursor(sqlca, "web", "SELECT name FROM wco_eb");
+        CobolSql.openCursor(sqlca, "web");
+        assertEquals(0, getSqlCode(), "open should succeed");
+
+        CobolSql.fetchCursor(sqlca, "web", makeAlphaField(20, new byte[20]));
+        assertEquals(0, getSqlCode(), "first fetch should succeed");
+        assertFalse(
+                backend().getCursor("web").overFetch,
+                "exact-count prefetch -> overFetch=false (cursor on last row, not past end)");
+
+        CobolSql.execWhereCurrentOf(
+                sqlca, "UPDATE wco_eb SET name = 'UPDATED' WHERE CURRENT OF", "web");
+        assertEquals(0, getSqlCode(), "positioned update should succeed: " + getSqlState());
+
+        CobolSql.closeCursor(sqlca, "web");
+
+        try (Statement stmt = realConn.createStatement();
+                java.sql.ResultSet rs =
+                        stmt.executeQuery("SELECT id, name FROM wco_eb ORDER BY id")) {
+            String[] expected = {"UPDATED", "Name2"};
+            int idx = 0;
+            while (rs.next()) {
+                assertEquals(expected[idx], rs.getString(2).trim(), "row id=" + rs.getInt(1));
+                idx++;
+            }
+            assertEquals(2, idx, "should have 2 rows");
+        }
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE wco_eb");
+        }
+    }
+
     // ============================================================
     // selectIntoOccurs
     // ============================================================
