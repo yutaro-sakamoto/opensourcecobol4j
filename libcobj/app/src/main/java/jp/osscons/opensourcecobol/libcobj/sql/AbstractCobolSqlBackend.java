@@ -1249,6 +1249,10 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
         /** 正規化済み SQLSTATE（5 桁、SQLSTATE に書かれる）。{@code null} のとき共通側で空白を補う。 */
         final String sqlState;
 
+        /**
+         * @param ecpgCode ECPG 正規エラーコード（SQLCODE）
+         * @param sqlState 正規化済み SQLSTATE（5 桁、{@code null} 可）
+         */
         protected SqlErrorMapping(int ecpgCode, String sqlState) {
             this.ecpgCode = ecpgCode;
             this.sqlState = sqlState;
