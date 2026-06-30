@@ -1319,9 +1319,6 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
          */
         boolean overFetch;
 
-        /** スクロール可能 ResultSet 系（将来の Db2/Oracle）が使う保持。PostgreSQL では未使用。 */
-        ResultSet resultSet;
-
         Cursor(String name, String query, int nParams) {
             this.name = name;
             this.query = query;
