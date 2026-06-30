@@ -28,6 +28,12 @@ public final class CobolSql {
     private static String backendResolutionError;
 
     /**
+     * テスト用: {@code OCDB_DB_TYPE} の値を上書きする seam（env に依存せず解決経路を駆動する）。
+     * {@code null} のとき環境変数を使う（本番動作）。
+     */
+    private static String dbTypeOverrideForTest;
+
+    /**
      * backend を遅延初期化して返す。{@code OCDB_DB_TYPE} の解決はプロセスで 1 回だけ行う。
      * アクセスを synchronized で直列化し、初回同時アクセス時も生成は 1 回に保たれる。
      *
@@ -38,7 +44,11 @@ public final class CobolSql {
     private static synchronized CobolSqlBackend backend() {
         if (backend == null && backendResolutionError == null) {
             try {
-                backend = CobolSqlFactory.resolve();
+                String dbType =
+                        dbTypeOverrideForTest != null
+                                ? dbTypeOverrideForTest
+                                : System.getenv("OCDB_DB_TYPE");
+                backend = CobolSqlFactory.resolve(dbType);
             } catch (RuntimeException e) {
                 backendResolutionError =
                         (e.getMessage() == null || e.getMessage().isEmpty())
@@ -63,10 +73,11 @@ public final class CobolSql {
 
     // --- テスト支援（package-private。本番 API には露出しない）---
 
-    /** テスト用: 解決済み backend と解決失敗状態を破棄し、次回呼び出しで再解決させる。 */
+    /** テスト用: 解決済み backend・解決失敗状態・型上書きを破棄し、次回呼び出しで再解決させる。 */
     static synchronized void resetBackend() {
         backend = null;
         backendResolutionError = null;
+        dbTypeOverrideForTest = null;
     }
 
     /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。解決失敗時は {@code null}。 */
@@ -75,13 +86,14 @@ public final class CobolSql {
     }
 
     /**
-     * テスト用: backend の解決失敗状態を強制する（設定不正時の挙動検証用）。{@code message} は
-     * CONNECT 時に SQLCA の SQLERRMC へ載るメッセージ。{@link #resetBackend()} で解除する。
+     * テスト用: {@code OCDB_DB_TYPE} の値を上書きして次回の backend 解決を駆動する（env 非依存）。
+     * 未対応の値（例 {@code "mysql"}）を渡すと、実際の解決失敗経路（{@link #backend()} の catch）を
+     * 通して設定不正時の挙動を検証できる。{@link #resetBackend()} で解除する。
      */
-    static synchronized void forceResolutionFailureForTest(String message) {
+    static synchronized void setDbTypeForTest(String dbType) {
+        dbTypeOverrideForTest = dbType;
         backend = null;
-        backendResolutionError =
-                (message == null || message.isEmpty()) ? "Unsupported OCDB_DB_TYPE" : message;
+        backendResolutionError = null;
     }
 
     // -------------------------------------------------------
