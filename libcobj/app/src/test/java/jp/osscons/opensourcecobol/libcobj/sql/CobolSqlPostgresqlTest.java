@@ -26,7 +26,7 @@ class CobolSqlPostgresqlTest {
     }
 
     private int codeOf(String sqlState) {
-        return pg.sqlStateToCode(new SQLException("msg", sqlState));
+        return pg.mapSqlException(new SQLException("msg", sqlState)).ecpgCode;
     }
 
     // ---------- sqlStateToCode（旧 SqlCATest から移植。SQLException 経由で検証）----------
@@ -130,6 +130,27 @@ class CobolSqlPostgresqlTest {
     @Test
     void testSqlStateToCode_Null() {
         assertEquals(SqlCA.ECPG_UNKNOWN_ERROR, codeOf(null), "null state -> ECPG_UNKNOWN_ERROR");
+    }
+
+    // ---------- mapSqlException が (コード, SQLSTATE) を一貫して返すこと ----------
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testMapSqlException_CarriesSqlState() {
+        AbstractCobolSqlBackend.SqlErrorMapping m =
+                pg.mapSqlException(new SQLException("dup", "23505"));
+        assertEquals(SqlCA.ECPG_DUPLICATE_KEY, m.ecpgCode, "code mapped from 23505");
+        // PostgreSQL のネイティブ SQLSTATE はそのまま正規化値として採用される。
+        assertEquals("23505", m.sqlState, "SQLSTATE carried through unchanged");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testMapSqlException_NullSqlState() {
+        AbstractCobolSqlBackend.SqlErrorMapping m =
+                pg.mapSqlException(new SQLException("err", (String) null));
+        assertEquals(SqlCA.ECPG_UNKNOWN_ERROR, m.ecpgCode, "null state -> ECPG_UNKNOWN_ERROR");
+        assertNull(m.sqlState, "null SQLSTATE carried through as null (common flow fills spaces)");
     }
 
     // ---------- setResultFromException（旧 SqlCATest から移植。共通フローを backend で検証）----------

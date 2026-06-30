@@ -245,9 +245,17 @@ final class CobolSqlPostgresql extends AbstractCobolSqlBackend {
     // -------------------------------------------------------
 
     @Override
-    protected int sqlStateToCode(SQLException e) {
-        // SQLSTATE → ECPG コードの変換表。エラー変換は backend 実装に閉じ込め、別クラスへは切り出さない。
+    protected SqlErrorMapping mapSqlException(SQLException e) {
+        // 生エラー → (ECPG コード, 正規化 SQLSTATE)。エラー変換は backend 実装に閉じ込め、別クラスへは
+        // 切り出さない。PostgreSQL のネイティブ SQLSTATE は ECPG が前提とする語彙そのものなので、
+        // SQLSTATE はそのまま採用する（将来の Db2/Oracle 実装はここでネイティブ値を ECPG 語彙へ
+        // 正規化する）。整数コードと SQLSTATE を 1 箇所で一貫して決める。
         String sqlState = e.getSQLState();
+        return new SqlErrorMapping(sqlStateToCode(sqlState), sqlState);
+    }
+
+    /** PostgreSQL の SQLSTATE → ECPG コード変換表。 */
+    private static int sqlStateToCode(String sqlState) {
         if (sqlState == null) {
             return SqlCA.ECPG_UNKNOWN_ERROR;
         }

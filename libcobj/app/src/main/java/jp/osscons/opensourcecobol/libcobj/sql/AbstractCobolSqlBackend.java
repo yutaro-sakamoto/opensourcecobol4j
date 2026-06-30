@@ -26,11 +26,12 @@ import org.slf4j.LoggerFactory;
  * <p>旧 {@code SqlState}（接続/カーソル/prepared のグローバル registry）の状態を本クラスの
  * インスタンスフィールドへ集約し、旧 {@code SqlConnection}/{@code SqlCursor} の振る舞いを
  * DB 依存フックへ移している。SQLCA 構造体の byte エンコードは DB 非依存の COBOL ABI のため
- * {@link SqlCA} の static ヘルパを共有し、{@code SQLState → ECPG コード} 変換のみ
- * {@link #sqlStateToCode(SQLException)} フックとして DB ごとに実装する。
+ * {@link SqlCA} の static ヘルパを共有し、{@code 生エラー → (ECPG コード, 正規化 SQLSTATE)} 変換のみ
+ * {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
  *
  * <p>本クラスは将来の DB 実装（Db2/Oracle など）から継承される拡張点であり、{@code protected}
- * フック群と {@link DbSpec}/{@link Cursor} ネストクラスは「拡張点としての契約」として扱う。
+ * フック群と {@link DbSpec}/{@link Cursor}/{@link SqlErrorMapping} ネストクラスは「拡張点としての
+ * 契約」として扱う。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
@@ -206,13 +207,17 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             throws SQLException;
 
     /**
-     * DB ごとの「生エラー → ECPG 正規番号」変換。{@link SQLException} 全体を受け取るため、
-     * {@code getSQLState()} に加えて {@code getErrorCode()} も併用できる。
+     * DB ごとの「生エラー → (ECPG 正規コード, 正規化 SQLSTATE)」変換。{@link SQLException} 全体を
+     * 受け取るため、{@code getSQLState()} に加えて {@code getErrorCode()} も併用できる。
+     *
+     * <p>SQLCODE（整数）と SQLSTATE（文字列）の両方を 1 つのフックで一貫して返すことで、DB ごとに
+     * 異なる生エラーを COBOL 側が見る ECPG 語彙へ正規化する。整数だけ変換して SQLSTATE 文字列を
+     * 素通りさせると、SQLSTATE で分岐する COBOL が DB 依存の値を見てしまうため、両者を揃える。
      *
      * @param e DB から来た SQL 例外
-     * @return ECPG 正規エラーコード
+     * @return ECPG 正規コードと正規化 SQLSTATE の組（{@link SqlErrorMapping}）
      */
-    protected abstract int sqlStateToCode(SQLException e);
+    protected abstract SqlErrorMapping mapSqlException(SQLException e);
 
     // -------------------------------------------------------
     // 接続（共通フロー）
@@ -1127,8 +1132,8 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     // -------------------------------------------------------
 
     /**
-     * {@link SQLException} から SQLCA を設定する。ECPG コードへの変換のみを
-     * {@link #sqlStateToCode(SQLException)} フックへ委譲し、構造体の書き込みは共通。
+     * {@link SQLException} から SQLCA を設定する。ECPG コードと SQLSTATE への変換を
+     * {@link #mapSqlException(SQLException)} フックへ委譲し、構造体の書き込みは共通。
      *
      * @param sqlca SQLCA のデータストレージ
      * @param e SQL 例外
@@ -1137,8 +1142,8 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
         if (sqlca == null) {
             return;
         }
-        int code = sqlStateToCode(e);
-        String sqlState = e.getSQLState();
+        SqlErrorMapping mapping = mapSqlException(e);
+        String sqlState = mapping.sqlState;
         if (sqlState == null) {
             sqlState = "     ";
         }
@@ -1146,7 +1151,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
         if (message == null) {
             message = "";
         }
-        SqlCA.setError(sqlca, code, sqlState, message);
+        SqlCA.setError(sqlca, mapping.ecpgCode, sqlState, message);
     }
 
     // -------------------------------------------------------
@@ -1232,6 +1237,23 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     // -------------------------------------------------------
     // 接続パラメータ・カーソル状態（DB 非依存）
     // -------------------------------------------------------
+
+    /**
+     * {@link #mapSqlException(SQLException)} の戻り値。DB の生エラーを、COBOL 側が見る
+     * ECPG 正規コード（SQLCODE）と正規化済み SQLSTATE の組へ変換した結果を保持する。
+     */
+    protected static final class SqlErrorMapping {
+        /** ECPG 正規エラーコード（SQLCODE に書かれる）。 */
+        final int ecpgCode;
+
+        /** 正規化済み SQLSTATE（5 桁、SQLSTATE に書かれる）。{@code null} のとき共通側で空白を補う。 */
+        final String sqlState;
+
+        protected SqlErrorMapping(int ecpgCode, String sqlState) {
+            this.ecpgCode = ecpgCode;
+            this.sqlState = sqlState;
+        }
+    }
 
     /**
      * {@link #buildJdbcUrl(DbSpec)} の入力。接続文字列 {@code dbname@host:port} のパース・
