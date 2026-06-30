@@ -816,6 +816,11 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
             // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
             // 食い違うため、ここで破棄しておく。
             cursor.clearBuffer();
+            // 取得行数 SQLERRD(3) を 0 で初期化してから委譲する。結果末尾 (0 行) の場合に
+            // fetchOccursImpl が SQLCODE=0 のみ設定して早期 return しても、SQLERRD(3) が
+            // 前回バッチの件数として残らないようにする (満杯バッチの次に 0 行 FETCH した際の
+            // stale な行数による再処理・無限ループを防ぐ)。通常パスは実件数で上書きする。
+            SqlCA.setRowCount(sqlca, 0);
             fetchOccursImpl(conn, cursor, occursSize, occursMax, resultParams, sqlca);
         } catch (SQLException e) {
             // フェッチ失敗時は取得行数 SQLERRD(3) を 0 にしてから DB エラーを反映する。

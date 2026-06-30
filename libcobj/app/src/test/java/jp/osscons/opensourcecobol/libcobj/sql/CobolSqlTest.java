@@ -96,6 +96,11 @@ class CobolSqlTest {
         return new String(sqlca.getByteArray(128, 5));
     }
 
+    // SQLERRD(3) = 直前の文が処理した行数。SQLERRD はオフセット 96、3 番目 (0 始まり index 2)。
+    private int getRowCount() {
+        return ByteBuffer.wrap(sqlca.getByteArray(96 + 2 * 4, 4)).getInt();
+    }
+
     // 生の JDBC 接続を作って backend へ直接登録するヘルパ（CobolSql.connect を経由しない）。
     // PostgreSQL バックエンドの connect 相当（autoCommit(true) + 明示 BEGIN）を再現する。
     private Connection registerRealConnection() throws Exception {
@@ -1421,6 +1426,42 @@ class CobolSqlTest {
         CobolSql.closeCursor(sqlca, "focc2");
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE focc_test2");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testFetchCursorOccurs_EndOfDataResetsRowCount() throws Exception {
+        // 全行数 (2) が occursMax (2) のちょうど整数倍。満杯バッチを取得した後の 2 回目の
+        // FETCH は 0 行 (結果末尾) になる。このとき SQLCODE=0 を保ちつつ SQLERRD(3) が
+        // 前回の 2 のまま残らず 0 にリセットされることを検証する (stale 行数による再処理防止)。
+        Connection realConn = registerRealConnection();
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS focc_eod");
+            stmt.execute("CREATE TABLE focc_eod (val VARCHAR(10))");
+            stmt.execute("INSERT INTO focc_eod VALUES ('AA')");
+            stmt.execute("INSERT INTO focc_eod VALUES ('BB')");
+        }
+
+        CobolSql.declareCursor(sqlca, "feod", "SELECT val FROM focc_eod ORDER BY val");
+        CobolSql.openCursor(sqlca, "feod");
+        assertEquals(0, getSqlCode(), "open should succeed");
+
+        // 1 回目: 満杯の 2 行を取得。SQLERRD(3)=2。
+        byte[] data = new byte[20];
+        AbstractCobolField field = makeAlphaField(10, data);
+        CobolSql.fetchCursorOccurs(sqlca, "feod", 10, 2, field);
+        assertEquals(0, getSqlCode(), "first batch should succeed");
+        assertEquals(2, getRowCount(), "first batch should fetch 2 rows");
+
+        // 2 回目: 末尾なので 0 行。SQLCODE=0 を保ちつつ SQLERRD(3)=0 にリセットされること。
+        CobolSql.fetchCursorOccurs(sqlca, "feod", 10, 2, field);
+        assertEquals(0, getSqlCode(), "end-of-data batch should keep SQLCODE=0");
+        assertEquals(0, getRowCount(), "end-of-data batch should reset SQLERRD(3) to 0");
+
+        CobolSql.closeCursor(sqlca, "feod");
+        try (Statement stmt = realConn.createStatement()) {
+            stmt.execute("DROP TABLE focc_eod");
         }
     }
 
