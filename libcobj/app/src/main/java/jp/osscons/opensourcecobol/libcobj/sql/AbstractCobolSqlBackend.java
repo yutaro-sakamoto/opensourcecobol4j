@@ -672,31 +672,21 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
 
     @Override
     public final void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
-        try {
-            if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
-                SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
-                return;
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("DECLARE CURSOR {} FOR: {}", cursorName, collapseWhitespace(query));
-            }
-            Cursor existing = cursors.get(cursorName);
-            if (existing != null && existing.isOpened) {
-                SqlCA.setError(
-                        sqlca, SqlCA.ECPG_WARNING_PORTAL_EXISTS, "42P03", "Cursor already opened");
-                return;
-            }
-            Cursor cursor = new Cursor(cursorName, query, 0);
-            cursors.put(cursorName, cursor);
-            SqlCA.setSuccess(sqlca);
-        } catch (Exception e) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_PGSQL, "     ", e.getMessage());
-        }
+        declareCursorInternal(sqlca, cursorName, query, null);
     }
 
     @Override
     public final void declareCursorWithParams(
             CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField... params) {
+        declareCursorInternal(sqlca, cursorName, query, params);
+    }
+
+    /**
+     * カーソルを宣言して registry に登録する（パラメータ有無の共通処理）。{@code params} が
+     * {@code null} の場合はパラメータなしの DECLARE と同じ（nParams=0・params 未バインド）。
+     */
+    private void declareCursorInternal(
+            CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField[] params) {
         try {
             if (cursorName == null || cursorName.isEmpty() || query == null || query.isEmpty()) {
                 SqlCA.setError(sqlca, SqlCA.ECPG_EMPTY, "YE002", "Empty cursor name or query");
