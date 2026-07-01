@@ -36,6 +36,9 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
 
+    /** サブクラス（DB 依存バックエンド）から継承するための既定コンストラクタ。 */
+    protected AbstractCobolSqlBackend() {}
+
     // 操作系ログ（CONNECT/EXEC SQL/カーソル/DISCONNECT/エラー）は、公開エントリポイント
     // CobolSql のロガー名で出す。運用者が有効化するロガー名（...sql.CobolSql）を維持するため。
     private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
