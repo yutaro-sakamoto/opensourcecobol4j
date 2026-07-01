@@ -32,7 +32,7 @@ final class CobolSqlFactory {
      */
     static CobolSqlBackend resolve(String t) {
         String type = (t == null || t.isEmpty()) ? "postgresql" : t.toLowerCase(Locale.ROOT);
-        if (type.equals("postgres")) {
+        if ("postgres".equals(type)) {
             type = "postgresql"; // 後方互換エイリアス
         }
         String className = backendClassName(type);
