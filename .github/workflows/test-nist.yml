@@ -16,6 +16,10 @@ on:
         required: false
         type: string
         default: ""
+      java-version:
+        required: false
+        type: string
+        default: "11"
 
 permissions:
   contents: read
@@ -41,7 +45,7 @@ jobs:
         if: inputs.os != 'amazonlinux:2023'
         with:
           distribution: 'temurin'
-          java-version: '11'
+          java-version: ${{ inputs.java-version }}
 
       - name: Install dependencies on Ubuntu 24.04
         if: inputs.os == 'ubuntu:24.04'

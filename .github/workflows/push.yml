@@ -29,20 +29,22 @@ jobs:
     needs: check-workflows
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
+      java-version: '21'
 
   build-utf8:
     needs: check-workflows
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
+      java-version: '21'
 
   coverage:
     needs: check-workflows
@@ -65,12 +67,13 @@ jobs:
           - "file-lock"
           - "file-lock2"
           - "misc"
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
       os: ${{ matrix.os }}
-  
+      java-version: '21'
+
   run-test-other-utf8:
     needs: build-utf8
     strategy:
@@ -87,48 +90,53 @@ jobs:
           - "cobj-idx"
           - "file-lock2"
           #- "misc"
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
+      java-version: '21'
 
   run-test-esql:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-esql.yml
     with:
       os: ${{ matrix.os }}
+      java-version: '21'
 
   run-test-esql-utf8:
     needs: build-utf8
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-esql-utf8.yml
     with:
       os: ${{ matrix.os }}
+      java-version: '21'
 
   run-test-esql-examples:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-esql-examples.yml
     with:
       os: ${{ matrix.os }}
+      java-version: '21'
 
   run-test-cobj-api:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-cobj-api.yml
     with:
       os: ${{ matrix.os }}
+      java-version: '21'
 
   run-test-nist:
     needs: build
@@ -136,12 +144,13 @@ jobs:
       fail-fast: false
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
       check-result: true
       os: ${{ matrix.os }}
+      java-version: '21'
 
   run-test-nist-utf8:
     needs: build-utf8
@@ -149,25 +158,27 @@ jobs:
       fail-fast: false
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
       check-result: true
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
+      java-version: '21'
 
   run-test-nist-extra:
     needs: build
     strategy:
       matrix:
         test_name: ["CM", "DB", "RW"]
-        os: ["ubuntu:24.04"]
+        os: ["almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
       check-result: false
       os: ${{ matrix.os }}
+      java-version: '21'
 
   build-gcc9:
     needs: check-workflows
