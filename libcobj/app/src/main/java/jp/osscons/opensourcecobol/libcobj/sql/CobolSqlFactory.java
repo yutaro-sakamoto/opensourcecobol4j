@@ -31,10 +31,11 @@ final class CobolSqlFactory {
      * @return 解決された DB バックエンド
      */
     static CobolSqlBackend resolve(String t) {
-        if (t == null || t.isEmpty()) {
-            t = "postgresql"; // 後方互換：未指定は PostgreSQL
+        String type = (t == null || t.isEmpty()) ? "postgresql" : t.toLowerCase(Locale.ROOT);
+        if (type.equals("postgres")) {
+            type = "postgresql"; // 後方互換エイリアス
         }
-        String className = backendClassName(t);
+        String className = backendClassName(type);
         try {
             Class<?> c = Class.forName(className);
             return (CobolSqlBackend) c.getDeclaredConstructor().newInstance();
@@ -47,20 +48,21 @@ final class CobolSqlFactory {
     private static final String BACKEND_PACKAGE = "jp.osscons.opensourcecobol.libcobj.sql";
 
     /**
-     * {@code OCDB_DB_TYPE} の値から、バックエンド実装の完全修飾クラス名を規約で組み立てる。
+     * 小文字化済みの DB 種別文字列から、バックエンド実装の完全修飾クラス名を規約で組み立てる。
      *
-     * <p>規約：値を小文字化し先頭 1 文字を大文字にして {@code CobolSql} に連結する。
+     * <p>規約：先頭 1 文字を大文字にして {@code CobolSql} に連結する。
      * 例）{@code "db2"} → {@code CobolSqlDb2} / {@code "postgresql"} → {@code CobolSqlPostgresql}。
      * これにより新しい DB を追加してもこの Factory は無変更で、環境変数値と実装クラス名を
      * 規約どおりに揃えるだけで動的ロードできる。Db2/Oracle など有償拡張が別 JAR で提供され
      * コンパイル時参照を持てないケースにも、リフレクションロードで一様に対応する（設計メモ §6/§12）。
      *
-     * @param t DB 種別文字列（{@code OCDB_DB_TYPE} の値。null/空でないこと）
+     * @param type 小文字化・正規化済みの DB 種別文字列（null/空でないこと）
      * @return バックエンド実装の完全修飾クラス名
      */
-    private static String backendClassName(String t) {
-        String type = t.toLowerCase(Locale.ROOT);
-        return BACKEND_PACKAGE + ".CobolSql"
-                + Character.toUpperCase(type.charAt(0)) + type.substring(1);
+    private static String backendClassName(String type) {
+        return BACKEND_PACKAGE
+                + ".CobolSql"
+                + Character.toUpperCase(type.charAt(0))
+                + type.substring(1);
     }
 }
