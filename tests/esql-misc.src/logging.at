@@ -1,6 +1,6 @@
 AT_SETUP([debug logging output])
 
-dnl This is the dedicated test for the CobolSql debug/error logging output.
+dnl This is the dedicated test for the CobolEsql debug/error logging output.
 dnl It exercises every statement kind that emits a log line (CONNECT, plain
 dnl EXEC SQL, parameterized EXEC SQL, SELECT INTO, DECLARE/OPEN CURSOR, a
 dnl failing statement that logs at ERROR, and DISCONNECT) and pins the exact

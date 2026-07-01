@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link CobolSqlBackend} の共通処理（DB 非依存）を実装し、DB 依存部分を {@code protected abstract}
+ * {@link CobolEsqlBackend} の共通処理（DB 非依存）を実装し、DB 依存部分を {@code protected abstract}
  * フックとして切り出した抽象基底クラス（Template Method）。
  *
  * <p>旧 {@code SqlState}（接続/カーソル/prepared のグローバル registry）の状態を本クラスの
@@ -34,18 +34,18 @@ import org.slf4j.LoggerFactory;
  * 契約」として扱う。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
-public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
+public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackend {
 
     /** サブクラス（DB 依存バックエンド）から継承するための既定コンストラクタ。 */
-    protected AbstractCobolSqlBackend() {}
+    protected AbstractCobolEsqlBackend() {}
 
     // 操作系ログ（CONNECT/EXEC SQL/カーソル/DISCONNECT/エラー）は、公開エントリポイント
-    // CobolSql のロガー名で出す。運用者が有効化するロガー名（...sql.CobolSql）を維持するため。
-    private static final Logger LOG = LoggerFactory.getLogger(CobolSql.class);
+    // CobolEsql のロガー名で出す。運用者が有効化するロガー名（...sql.CobolEsql）を維持するため。
+    private static final Logger LOG = LoggerFactory.getLogger(CobolEsql.class);
 
     // 低レベルの接続確立ログ（Connecting to.../Connected successfully）は別ロガーに出す。
-    // CobolSql のロガーだけを debug 有効化しても、これらは出力されない（接続詳細を分離する）。
-    private static final Logger CONN_LOG = LoggerFactory.getLogger(AbstractCobolSqlBackend.class);
+    // CobolEsql のロガーだけを debug 有効化しても、これらは出力されない（接続詳細を分離する）。
+    private static final Logger CONN_LOG = LoggerFactory.getLogger(AbstractCobolEsqlBackend.class);
 
     /** COBOL 固定長フィールドのバイト表現に用いる文字コード（接続パラメータの取り出し用）。 */
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
@@ -72,7 +72,7 @@ public abstract class AbstractCobolSqlBackend implements CobolSqlBackend {
     private final Map<String, String[]> prepared = new HashMap<>();
     private String defaultConnId;
 
-    // === 旧 CobolSql：PreparedStatement キャッシュ（DB 非依存）===
+    // === 旧 CobolEsql：PreparedStatement キャッシュ（DB 非依存）===
     // backend は singleton 共有のため、ConcurrentHashMap で保護する。
     private final Map<Connection, Map<String, PreparedStatement>> stmtCache =
             new ConcurrentHashMap<>();

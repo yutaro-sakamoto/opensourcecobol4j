@@ -20,7 +20,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-class CobolSqlLoggingTest {
+class CobolEsqlLoggingTest {
 
     @Container
     static PostgreSQLContainer<?> postgres =
@@ -31,24 +31,24 @@ class CobolSqlLoggingTest {
 
     private CobolDataStorage sqlca;
 
-    // 操作系ログ（CONNECT/EXEC SQL/DISCONNECT/エラー）は CobolSql 名のロガーへ出る。
+    // 操作系ログ（CONNECT/EXEC SQL/DISCONNECT/エラー）は CobolEsql 名のロガーへ出る。
     private TestLogger cobolSqlLogger;
-    // 接続確立ログ（Connecting to...）は抽象基底クラス AbstractCobolSqlBackend のロガーへ出る。
+    // 接続確立ログ（Connecting to...）は抽象基底クラス AbstractCobolEsqlBackend のロガーへ出る。
     private TestLogger connLogger;
 
     @BeforeEach
     void setUp() {
         sqlca = new CobolDataStorage(136);
-        CobolSql.resetBackend();
-        cobolSqlLogger = TestLoggerFactory.getTestLogger(CobolSql.class);
-        connLogger = TestLoggerFactory.getTestLogger(AbstractCobolSqlBackend.class);
+        CobolEsql.resetBackend();
+        cobolSqlLogger = TestLoggerFactory.getTestLogger(CobolEsql.class);
+        connLogger = TestLoggerFactory.getTestLogger(AbstractCobolEsqlBackend.class);
         TestLoggerFactory.clear();
     }
 
     @AfterEach
     void tearDown() {
-        ((AbstractCobolSqlBackend) CobolSql.backendForTest()).closeAllConnectionsForTest();
-        CobolSql.resetBackend();
+        ((AbstractCobolEsqlBackend) CobolEsql.backendForTest()).closeAllConnectionsForTest();
+        CobolEsql.resetBackend();
         TestLoggerFactory.clear();
     }
 
@@ -75,7 +75,7 @@ class CobolSqlLoggingTest {
         AbstractCobolField userField = makeAlphaField(userBytes.length, userBytes);
         AbstractCobolField passField = makeAlphaField(passBytes.length, passBytes);
         AbstractCobolField dbField = makeAlphaField(dbBytes.length, dbBytes);
-        CobolSql.connect(sqlca, userField, passField, dbField);
+        CobolEsql.connect(sqlca, userField, passField, dbField);
     }
 
     @Test
@@ -113,7 +113,7 @@ class CobolSqlLoggingTest {
         connectToPostgres();
         TestLoggerFactory.clear();
 
-        CobolSql.exec(sqlca, "DROP TABLE IF EXISTS test_log_tbl");
+        CobolEsql.exec(sqlca, "DROP TABLE IF EXISTS test_log_tbl");
         assertEquals(0, getSqlCode());
 
         List<LoggingEvent> events = cobolSqlLogger.getLoggingEvents();
@@ -131,7 +131,7 @@ class CobolSqlLoggingTest {
         connectToPostgres();
         TestLoggerFactory.clear();
 
-        CobolSql.exec(sqlca, "INVALID SQL SYNTAX HERE");
+        CobolEsql.exec(sqlca, "INVALID SQL SYNTAX HERE");
         assertNotEquals(0, getSqlCode());
 
         List<LoggingEvent> events = cobolSqlLogger.getLoggingEvents();
@@ -145,7 +145,7 @@ class CobolSqlLoggingTest {
         connectToPostgres();
         TestLoggerFactory.clear();
 
-        CobolSql.disconnect(sqlca);
+        CobolEsql.disconnect(sqlca);
         assertEquals(0, getSqlCode());
 
         List<LoggingEvent> events = cobolSqlLogger.getLoggingEvents();

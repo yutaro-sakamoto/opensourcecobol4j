@@ -10,18 +10,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link CobolSqlPostgresql} の DB 依存ロジック（SQLSTATE→ECPG 変換、JDBC URL 構築、接続文字列
- * パース）と、{@link AbstractCobolSqlBackend} の共通エラー報告（setResultFromException）を、
+ * {@link CobolEsqlPostgresql} の DB 依存ロジック（SQLSTATE→ECPG 変換、JDBC URL 構築、接続文字列
+ * パース）と、{@link AbstractCobolEsqlBackend} の共通エラー報告（setResultFromException）を、
  * DB 接続なしで検証する。旧 SqlCATest の変換検証と旧 SqlConnectionTest の URL 検証の移植先。
  */
-class CobolSqlPostgresqlTest {
+class CobolEsqlPostgresqlTest {
 
-    private CobolSqlPostgresql pg;
+    private CobolEsqlPostgresql pg;
     private CobolDataStorage sqlca;
 
     @BeforeEach
     void setUp() {
-        pg = new CobolSqlPostgresql();
+        pg = new CobolEsqlPostgresql();
         sqlca = new CobolDataStorage(133);
     }
 
@@ -137,7 +137,7 @@ class CobolSqlPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testMapSqlException_CarriesSqlState() {
-        AbstractCobolSqlBackend.SqlErrorMapping m =
+        AbstractCobolEsqlBackend.SqlErrorMapping m =
                 pg.mapSqlException(new SQLException("dup", "23505"));
         assertEquals(SqlCA.ECPG_DUPLICATE_KEY, m.ecpgCode, "code mapped from 23505");
         // PostgreSQL のネイティブ SQLSTATE はそのまま正規化値として採用される。
@@ -147,7 +147,7 @@ class CobolSqlPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testMapSqlException_NullSqlState() {
-        AbstractCobolSqlBackend.SqlErrorMapping m =
+        AbstractCobolEsqlBackend.SqlErrorMapping m =
                 pg.mapSqlException(new SQLException("err", (String) null));
         assertEquals(SqlCA.ECPG_UNKNOWN_ERROR, m.ecpgCode, "null state -> ECPG_UNKNOWN_ERROR");
         assertNull(m.sqlState, "null SQLSTATE carried through as null (common flow fills spaces)");
@@ -256,7 +256,7 @@ class CobolSqlPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testBuildSpec_StripsTrailingSpaces() {
-        AbstractCobolSqlBackend.DbSpec spec =
+        AbstractCobolEsqlBackend.DbSpec spec =
                 pg.buildSpecForTest("user  ", "pass  ", "mydb@myhost  ");
         assertEquals("user", spec.user, "trailing spaces stripped from user");
         assertEquals("pass", spec.passwd, "trailing spaces stripped from passwd");

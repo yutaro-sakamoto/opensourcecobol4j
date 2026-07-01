@@ -8,15 +8,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link CobolSqlFactory} の env 非依存な解決ロジック（resolve(String)）と、解決失敗時に
- * {@link CobolSql} ファサードが例外を投げず SQLCA へエラーを報告する挙動を検証する。
+ * {@link CobolEsqlFactory} の env 非依存な解決ロジック（resolve(String)）と、解決失敗時に
+ * {@link CobolEsql} ファサードが例外を投げず SQLCA へエラーを報告する挙動を検証する。
  */
-class CobolSqlFactoryTest {
+class CobolEsqlFactoryTest {
 
     @AfterEach
     void tearDown() {
         // 強制した解決失敗状態を解除し、テスト間でリークさせない。
-        CobolSql.resetBackend();
+        CobolEsql.resetBackend();
     }
 
     private static int sqlCode(CobolDataStorage sqlca) {
@@ -29,41 +29,41 @@ class CobolSqlFactoryTest {
 
     @Test
     void testResolve_Null_DefaultsToPostgresql() {
-        assertInstanceOf(CobolSqlPostgresql.class, CobolSqlFactory.resolve((String) null));
+        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve((String) null));
     }
 
     @Test
     void testResolve_Empty_DefaultsToPostgresql() {
-        assertInstanceOf(CobolSqlPostgresql.class, CobolSqlFactory.resolve(""));
+        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve(""));
     }
 
     @Test
     void testResolve_Postgresql() {
-        assertInstanceOf(CobolSqlPostgresql.class, CobolSqlFactory.resolve("postgresql"));
+        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("postgresql"));
     }
 
     @Test
     void testResolve_PostgresAlias() {
-        assertInstanceOf(CobolSqlPostgresql.class, CobolSqlFactory.resolve("postgres"));
+        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("postgres"));
     }
 
     @Test
     void testResolve_CaseInsensitive() {
-        assertInstanceOf(CobolSqlPostgresql.class, CobolSqlFactory.resolve("PostgreSQL"));
+        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("PostgreSQL"));
     }
 
     @Test
     void testResolve_Unsupported_Throws() {
-        assertThrows(IllegalArgumentException.class, () -> CobolSqlFactory.resolve("mysql"));
+        assertThrows(IllegalArgumentException.class, () -> CobolEsqlFactory.resolve("mysql"));
     }
 
     @Test
     void testUnconfigured_ConnectReportsConnectError() {
         // 未対応の OCDB_DB_TYPE を上書きし、実際の解決失敗経路を駆動する。
-        CobolSql.setDbTypeForTest("mysql");
+        CobolEsql.setDbTypeForTest("mysql");
         CobolDataStorage sqlca = new CobolDataStorage(136);
         // 例外を投げず、CONNECT は ECPG_CONNECT/08001 を SQLCA に報告する。
-        assertDoesNotThrow(() -> CobolSql.connect(sqlca, null, null, null));
+        assertDoesNotThrow(() -> CobolEsql.connect(sqlca, null, null, null));
         assertEquals(SqlCA.ECPG_CONNECT, sqlCode(sqlca), "CONNECT should report ECPG_CONNECT");
         assertEquals("08001", sqlState(sqlca), "CONNECT should set SQLSTATE 08001");
     }
@@ -71,44 +71,47 @@ class CobolSqlFactoryTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testUnconfigured_AllOtherOperationsReportNoConnection() {
-        CobolSql.setDbTypeForTest("mysql");
+        CobolEsql.setDbTypeForTest("mysql");
         CobolDataStorage sqlca = new CobolDataStorage(136);
         // CONNECT 以外の全エントリポイントは、backend 未解決＝接続なしとして例外を投げず
         // ECPG_NO_CONN/08003 を報告する（接続失敗時と同じ挙動）。
-        assertNoConn(sqlca, "disconnect", () -> CobolSql.disconnect(sqlca));
-        assertNoConn(sqlca, "exec", () -> CobolSql.exec(sqlca, "SELECT 1"));
-        assertNoConn(sqlca, "execWithParams", () -> CobolSql.execWithParams(sqlca, "SELECT 1"));
+        assertNoConn(sqlca, "disconnect", () -> CobolEsql.disconnect(sqlca));
+        assertNoConn(sqlca, "exec", () -> CobolEsql.exec(sqlca, "SELECT 1"));
+        assertNoConn(sqlca, "execWithParams", () -> CobolEsql.execWithParams(sqlca, "SELECT 1"));
         assertNoConn(
                 sqlca,
                 "execWhereCurrentOf",
-                () -> CobolSql.execWhereCurrentOf(sqlca, "UPDATE t SET a=1 WHERE CURRENT OF", "c"));
+                () ->
+                        CobolEsql.execWhereCurrentOf(
+                                sqlca, "UPDATE t SET a=1 WHERE CURRENT OF", "c"));
         assertNoConn(
                 sqlca,
                 "execWithParamsWhereCurrentOf",
                 () ->
-                        CobolSql.execWithParamsWhereCurrentOf(
+                        CobolEsql.execWithParamsWhereCurrentOf(
                                 sqlca, "UPDATE t SET a=1 WHERE CURRENT OF", "c"));
-        assertNoConn(sqlca, "selectInto", () -> CobolSql.selectInto(sqlca, "SELECT 1", null, null));
+        assertNoConn(
+                sqlca, "selectInto", () -> CobolEsql.selectInto(sqlca, "SELECT 1", null, null));
         assertNoConn(
                 sqlca,
                 "selectIntoOccurs",
-                () -> CobolSql.selectIntoOccurs(sqlca, 10, 2, "SELECT 1", null, null));
-        assertNoConn(sqlca, "declareCursor", () -> CobolSql.declareCursor(sqlca, "c", "SELECT 1"));
+                () -> CobolEsql.selectIntoOccurs(sqlca, 10, 2, "SELECT 1", null, null));
+        assertNoConn(sqlca, "declareCursor", () -> CobolEsql.declareCursor(sqlca, "c", "SELECT 1"));
         assertNoConn(
                 sqlca,
                 "declareCursorWithParams",
-                () -> CobolSql.declareCursorWithParams(sqlca, "c", "SELECT 1"));
-        assertNoConn(sqlca, "openCursor", () -> CobolSql.openCursor(sqlca, "c"));
+                () -> CobolEsql.declareCursorWithParams(sqlca, "c", "SELECT 1"));
+        assertNoConn(sqlca, "openCursor", () -> CobolEsql.openCursor(sqlca, "c"));
         assertNoConn(
-                sqlca, "openCursorWithParams", () -> CobolSql.openCursorWithParams(sqlca, "c"));
-        assertNoConn(sqlca, "fetchCursor", () -> CobolSql.fetchCursor(sqlca, "c"));
+                sqlca, "openCursorWithParams", () -> CobolEsql.openCursorWithParams(sqlca, "c"));
+        assertNoConn(sqlca, "fetchCursor", () -> CobolEsql.fetchCursor(sqlca, "c"));
         assertNoConn(
-                sqlca, "fetchCursorOccurs", () -> CobolSql.fetchCursorOccurs(sqlca, "c", 10, 2));
-        assertNoConn(sqlca, "closeCursor", () -> CobolSql.closeCursor(sqlca, "c"));
-        assertNoConn(sqlca, "prepare", () -> CobolSql.prepare(sqlca, "s", null));
-        assertNoConn(sqlca, "executePrepared", () -> CobolSql.executePrepared(sqlca, "s"));
-        assertNoConn(sqlca, "commit", () -> CobolSql.commit(sqlca));
-        assertNoConn(sqlca, "rollback", () -> CobolSql.rollback(sqlca));
+                sqlca, "fetchCursorOccurs", () -> CobolEsql.fetchCursorOccurs(sqlca, "c", 10, 2));
+        assertNoConn(sqlca, "closeCursor", () -> CobolEsql.closeCursor(sqlca, "c"));
+        assertNoConn(sqlca, "prepare", () -> CobolEsql.prepare(sqlca, "s", null));
+        assertNoConn(sqlca, "executePrepared", () -> CobolEsql.executePrepared(sqlca, "s"));
+        assertNoConn(sqlca, "commit", () -> CobolEsql.commit(sqlca));
+        assertNoConn(sqlca, "rollback", () -> CobolEsql.rollback(sqlca));
     }
 
     private void assertNoConn(CobolDataStorage sqlca, String name, Runnable op) {
