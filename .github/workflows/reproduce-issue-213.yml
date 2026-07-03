@@ -1,0 +1,100 @@
+name: reproduce issue 213 (Tomcat INDEXED file)
+
+# Reproduces opensourcecobol/opensourcecobol4j#213:
+# INDEXED-file OPEN fails under Tomcat's class-loader isolation because the
+# bundled SQLite JDBC driver is never registered with DriverManager.
+#
+# The job is RED while the bug is present (it is a reproduction / regression
+# test) and turns green once libcobj registers the driver explicitly.
+
+on:
+  push:
+    paths-ignore:
+      - '*.md'
+      - 'ChangeLog'
+      - 'NEWS'
+      - 'README'
+      - 'COPYING'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Fast pre-check: reproduce the bug with a plain JVM that recreates Tomcat's
+  # class-loader isolation (no servlet container needed).
+  reproduce-classloader-sim:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install build dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential gettext autoconf bison flex
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+
+      - name: Build and install cobj + libcobj
+        run: |
+          ./configure --prefix=/usr/
+          make
+          make install
+
+      - name: Reproduce issue #213 (class-loader simulation)
+        run: |
+          COBJ=/usr/bin/cobj \
+          LIBCOBJ_JAR=/usr/lib/opensourcecobol4j/libcobj.jar \
+            bash reproductions/issue-213-tomcat-indexed/reproduce.sh
+
+  # Authoritative check: deploy the generated program to a REAL Apache Tomcat
+  # and confirm the INDEXED-file OPEN fails over HTTP.
+  reproduce-tomcat:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install build dependencies
+        run: |
+          apt-get update -y
+          apt-get install -y build-essential gettext autoconf bison flex curl ca-certificates
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+
+      - name: Build and install cobj + libcobj
+        run: |
+          ./configure --prefix=/usr/
+          make
+          make install
+
+      - name: Reproduce issue #213 on real Tomcat
+        run: |
+          COBJ=/usr/bin/cobj \
+          LIBCOBJ_JAR=/usr/lib/opensourcecobol4j/libcobj.jar \
+            bash reproductions/issue-213-tomcat-indexed/tomcat/reproduce-tomcat.sh
