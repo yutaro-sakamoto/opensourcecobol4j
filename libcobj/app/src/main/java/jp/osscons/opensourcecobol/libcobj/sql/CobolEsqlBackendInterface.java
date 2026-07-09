@@ -8,11 +8,11 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
  * 公開すべき全操作を定義するインターフェース。
  *
  * <p>{@link CobolEsql} 静的ファサードはこのインターフェースの実装インスタンスへ委譲する。DB ごとの
- * 差し替えはこのインターフェースの実装（{@link CobolEsqlPostgresql} など）を切り替えることで実現する。
+ * 差し替えはこのインターフェースの実装（{@link CobolEsqlBackendPostgresql} など）を切り替えることで実現する。
  * 接続・文の実行・カーソル・WHERE CURRENT OF・SELECT INTO・prepared statement・トランザクション・
  * エラー報告までを、すべてこの 1 インターフェースの表面に置く。
  */
-public interface CobolEsqlBackend {
+public interface CobolEsqlBackendInterface {
 
     /**
      * 実装ごとに固定の正規 ID を返す（ログ・デバッグ用）。例: {@code "postgresql"} / {@code "db2"}。

@@ -10,18 +10,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link CobolEsqlPostgresql} の DB 依存ロジック（SQLSTATE→ECPG 変換、JDBC URL 構築、接続文字列
+ * {@link CobolEsqlBackendPostgresql} の DB 依存ロジック（SQLSTATE→ECPG 変換、JDBC URL 構築、接続文字列
  * パース）と、{@link AbstractCobolEsqlBackend} の共通エラー報告（setResultFromException）を、
  * DB 接続なしで検証する。旧 SqlCATest の変換検証と旧 SqlConnectionTest の URL 検証の移植先。
  */
-class CobolEsqlPostgresqlTest {
+class CobolEsqlBackendPostgresqlTest {
 
-    private CobolEsqlPostgresql pg;
+    private CobolEsqlBackendPostgresql pg;
     private CobolDataStorage sqlca;
 
     @BeforeEach
     void setUp() {
-        pg = new CobolEsqlPostgresql();
+        pg = new CobolEsqlBackendPostgresql();
         sqlca = new CobolDataStorage(133);
     }
 

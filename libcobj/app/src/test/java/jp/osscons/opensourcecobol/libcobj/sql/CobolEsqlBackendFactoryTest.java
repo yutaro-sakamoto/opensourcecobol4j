@@ -8,10 +8,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link CobolEsqlFactory} の env 非依存な解決ロジック（resolve(String)）と、解決失敗時に
+ * {@link CobolEsqlBackendFactory} の env 非依存な解決ロジック（resolve(String)）と、解決失敗時に
  * {@link CobolEsql} ファサードが例外を投げず SQLCA へエラーを報告する挙動を検証する。
  */
-class CobolEsqlFactoryTest {
+class CobolEsqlBackendFactoryTest {
 
     @AfterEach
     void tearDown() {
@@ -29,32 +29,32 @@ class CobolEsqlFactoryTest {
 
     @Test
     void testResolve_Null_DefaultsToPostgresql() {
-        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve((String) null));
+        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve((String) null));
     }
 
     @Test
     void testResolve_Empty_DefaultsToPostgresql() {
-        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve(""));
+        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve(""));
     }
 
     @Test
     void testResolve_Postgresql() {
-        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("postgresql"));
+        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgresql"));
     }
 
     @Test
     void testResolve_PostgresAlias() {
-        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("postgres"));
+        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
     }
 
     @Test
     void testResolve_CaseInsensitive() {
-        assertInstanceOf(CobolEsqlPostgresql.class, CobolEsqlFactory.resolve("PostgreSQL"));
+        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));
     }
 
     @Test
     void testResolve_Unsupported_Throws() {
-        assertThrows(IllegalArgumentException.class, () -> CobolEsqlFactory.resolve("mysql"));
+        assertThrows(IllegalArgumentException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
     }
 
     @Test

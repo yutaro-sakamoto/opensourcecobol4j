@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link CobolEsqlBackend} の共通処理（DB 非依存）を実装し、DB 依存部分を {@code protected abstract}
+ * {@link CobolEsqlBackendInterface} の共通処理（DB 非依存）を実装し、DB 依存部分を {@code protected abstract}
  * フックとして切り出した抽象基底クラス（Template Method）。
  *
  * <p>旧 {@code SqlState}（接続/カーソル/prepared のグローバル registry）の状態を本クラスの
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * 契約」として扱う。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
-public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackend {
+public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterface {
 
     /** サブクラス（DB 依存バックエンド）から継承するための既定コンストラクタ。 */
     protected AbstractCobolEsqlBackend() {}

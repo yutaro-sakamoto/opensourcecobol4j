@@ -10,11 +10,11 @@ import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /**
- * PostgreSQL 向けの {@link CobolEsqlBackend} 実装。{@link AbstractCobolEsqlBackend} の DB 依存フックを
+ * PostgreSQL 向けの {@link CobolEsqlBackendInterface} 実装。{@link AbstractCobolEsqlBackend} の DB 依存フックを
  * PostgreSQL の流儀（明示 BEGIN によるトランザクション管理、サーバカーソル + {@code FETCH FORWARD}
  * 先読み、SQLSTATE ベースのエラー変換）で実装する。挙動は移行前の {@code CobolEsql} と一致させている。
  */
-final class CobolEsqlPostgresql extends AbstractCobolEsqlBackend {
+final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     public String id() {
