@@ -40,6 +40,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     @Override
     protected void beginTransaction(Connection c) throws SQLException {
         if (c != null && !c.isClosed()) {
+            LOG.debug("BEGIN (postgresql)");
             try (Statement stmt = c.createStatement()) {
                 stmt.execute("BEGIN");
             }
@@ -50,6 +51,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     protected void commitTransaction(Connection c) throws SQLException {
         // PostgreSQL は autoCommit(true) + 明示 BEGIN/COMMIT で TX を管理するため、COMMIT を発行する。
         // 再 BEGIN は基底側（doCommit）/切断フローが beginTransaction で制御する。
+        LOG.debug("COMMIT (postgresql)");
         try (Statement stmt = c.createStatement()) {
             stmt.execute("COMMIT");
         }
@@ -57,6 +59,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     protected void rollbackTransaction(Connection c) throws SQLException {
+        LOG.debug("ROLLBACK (postgresql)");
         try (Statement stmt = c.createStatement()) {
             stmt.execute("ROLLBACK");
         }
@@ -82,6 +85,12 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             bindParams = null;
         }
 
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "DECLARE CURSOR (postgresql): {} [params={}]",
+                    collapseWhitespace(command),
+                    bindParams != null ? bindParams.length : 0);
+        }
         if (bindParams != null) {
             try (PreparedStatement pstmt = c.prepareStatement(command)) {
                 ParameterMetaData metaData = pstmt.getParameterMetaData();
@@ -142,6 +151,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         cur.bufferPos = 0;
         int fetchRecords = BulkFetchConfig.getFetchRecords();
         String fetchSql = "FETCH FORWARD " + fetchRecords + " FROM " + cur.name;
+        LOG.trace("FETCH FORWARD (postgresql): {}", fetchSql);
         try (Statement stmt = c.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
             if (!hasResult) {
@@ -178,6 +188,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を PostgreSQL へ送り、
         // そのエラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4J と同じ)。
         String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cur.name;
+        LOG.trace("FETCH FORWARD occurs (postgresql): {}", fetchSql);
         try (Statement stmt = c.createStatement();
                 ResultSet rs = stmt.executeQuery(fetchSql)) {
             if (!rs.next()) {
@@ -193,6 +204,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     protected void closeCursorImpl(Connection c, Cursor cur) throws SQLException {
+        LOG.trace("CLOSE CURSOR (postgresql): {}", cur.name);
         try (Statement stmt = c.createStatement()) {
             stmt.execute("CLOSE " + cur.name);
         }
@@ -205,6 +217,7 @@ final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         // サーバカーソルが末尾の先にある）なら +1 行ぶん FETCH BACKWARD してから、バッファを破棄する。
         int backward = cur.remainingBuffered() + (cur.overFetch ? 1 : 0);
         if (backward > 0) {
+            LOG.trace("FETCH BACKWARD (postgresql): {} FROM {}", backward, cur.name);
             try (Statement stmt = c.createStatement()) {
                 stmt.execute("FETCH BACKWARD " + backward + " FROM " + cur.name);
             }

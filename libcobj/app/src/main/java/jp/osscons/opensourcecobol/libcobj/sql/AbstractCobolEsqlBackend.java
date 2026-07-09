@@ -1208,8 +1208,11 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     // ヘルパー
     // -------------------------------------------------------
 
-    /** ログ出力用に、空白文字（改行、タブ、連続するスペース）を単一のスペースにまとめる。 */
-    private static String collapseWhitespace(String s) {
+    /**
+     * ログ出力用に、空白文字（改行、タブ、連続するスペース）を単一のスペースにまとめる。
+     * サブクラスのフック実装が発行 SQL をログ整形するのにも使えるよう protected にする。
+     */
+    protected static String collapseWhitespace(String s) {
         return s.replaceAll("\\s+", " ").trim();
     }
 
