@@ -39,10 +39,12 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     /** サブクラス（DB 依存バックエンド）から継承するための既定コンストラクタ。 */
     protected AbstractCobolEsqlBackend() {}
 
-    // 操作系ログ（CONNECT/EXEC SQL/カーソル/DISCONNECT/エラー）は、公開エントリポイント
-    // CobolEsql のロガー名で出す。運用者が有効化するロガー名（...sql.CobolEsql）を維持するため。
-    // サブクラス（CobolEsqlBackendPostgresql など）の protected フック実装からも DB 固有ログを
-    // 発行できるよう protected にする。
+    /**
+     * 操作系ログ（CONNECT/EXEC SQL/カーソル/DISCONNECT/エラー）用のロガー。公開エントリポイント
+     * {@link CobolEsql} のロガー名で出す（運用者が有効化するロガー名 {@code ...sql.CobolEsql} を
+     * 維持するため）。サブクラス（{@link CobolEsqlBackendPostgresql} など）の {@code protected} フック
+     * 実装からも DB 固有ログを発行できるよう {@code protected} にしている。
+     */
     protected static final Logger LOG = LoggerFactory.getLogger(CobolEsql.class);
 
     // 低レベルの接続確立ログ（Connecting to.../Connected successfully）は別ロガーに出す。

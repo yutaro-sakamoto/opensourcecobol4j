@@ -29,7 +29,8 @@ class CobolEsqlBackendFactoryTest {
 
     @Test
     void testResolve_Null_DefaultsToPostgresql() throws ClassNotFoundException {
-        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve((String) null));
+        assertInstanceOf(
+                CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve((String) null));
     }
 
     @Test
@@ -39,17 +40,20 @@ class CobolEsqlBackendFactoryTest {
 
     @Test
     void testResolve_Postgresql() throws ClassNotFoundException {
-        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgresql"));
+        assertInstanceOf(
+                CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgresql"));
     }
 
     @Test
     void testResolve_PostgresAlias() throws ClassNotFoundException {
-        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
+        assertInstanceOf(
+                CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
     }
 
     @Test
     void testResolve_CaseInsensitive() throws ClassNotFoundException {
-        assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));
+        assertInstanceOf(
+                CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));
     }
 
     @Test
