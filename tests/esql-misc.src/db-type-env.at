@@ -1,0 +1,55 @@
+AT_SETUP([OCDB_DB_TYPE selects backend at runtime])
+
+dnl Verifies that CobolEsql reads the OCDB_DB_TYPE environment variable at run
+dnl time (through CobolEsqlBackendFactory.resolve()) to choose the SQL backend,
+dnl rather than binding the backend at build time. The same compiled program is
+dnl run twice with different OCDB_DB_TYPE values passed as a shell variable:
+dnl   - postgresql: resolves the PostgreSQL backend and CONNECT succeeds
+dnl     (SQLCODE 0 / SQLSTATE 00000). This run also confirms the test database
+dnl     is reachable, so the mysql run below cannot be mistaken for a plain
+dnl     "database down" failure.
+dnl   - mysql: no CobolEsqlBackendMysql implementation exists, so resolution
+dnl     fails and CONNECT reports a connection error (SQLCODE -402 /
+dnl     SQLSTATE 08001) instead of propagating the ClassNotFoundException to
+dnl     the COBOL runtime. This path never touches the database.
+dnl The contrast between the two runs shows the value is honored at run time.
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 prog.
+       DATA                        DIVISION.
+       WORKING-STORAGE             SECTION.
+           EXEC SQL INCLUDE SQLCA END-EXEC.
+       01  DBNAME                  PIC  X(30) VALUE SPACE.
+       01  USERNAME                PIC  X(30) VALUE SPACE.
+       01  PASSWD                  PIC  X(10) VALUE SPACE.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           MOVE  "<|DB_NAME|>@<|DB_HOST|>:<|DB_PORT|>" TO DBNAME.
+           MOVE  "<|DB_USER|>"                         TO USERNAME.
+           MOVE  "<|DB_PASSWORD|>"                     TO PASSWD.
+           EXEC SQL
+               CONNECT :USERNAME IDENTIFIED BY :PASSWD USING :DBNAME
+           END-EXEC.
+           DISPLAY "SQLCODE=" SQLCODE.
+           DISPLAY "SQLSTATE=" SQLSTATE.
+           STOP RUN.
+])
+
+AT_CHECK([${EMBED_DB_INFO} prog.cbl])
+AT_CHECK([${COMPILE_MODULE} prog.cbl])
+
+dnl A valid value resolves the PostgreSQL backend and connects.
+AT_CHECK([OCDB_DB_TYPE=postgresql ${RUN_MODULE} prog], [0],
+[SQLCODE=+000000000
+SQLSTATE=00000
+])
+
+dnl An unsupported value fails backend resolution; CONNECT reports the error
+dnl without touching the database and without throwing to the COBOL runtime.
+AT_CHECK([OCDB_DB_TYPE=mysql ${RUN_MODULE} prog], [0],
+[SQLCODE=-000000402
+SQLSTATE=08001
+])
+
+AT_CLEANUP
