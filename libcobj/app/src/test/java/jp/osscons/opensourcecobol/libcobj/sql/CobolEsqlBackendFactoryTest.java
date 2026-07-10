@@ -28,33 +28,33 @@ class CobolEsqlBackendFactoryTest {
     }
 
     @Test
-    void testResolve_Null_DefaultsToPostgresql() {
+    void testResolve_Null_DefaultsToPostgresql() throws ClassNotFoundException {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve((String) null));
     }
 
     @Test
-    void testResolve_Empty_DefaultsToPostgresql() {
+    void testResolve_Empty_DefaultsToPostgresql() throws ClassNotFoundException {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve(""));
     }
 
     @Test
-    void testResolve_Postgresql() {
+    void testResolve_Postgresql() throws ClassNotFoundException {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgresql"));
     }
 
     @Test
-    void testResolve_PostgresAlias() {
+    void testResolve_PostgresAlias() throws ClassNotFoundException {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
     }
 
     @Test
-    void testResolve_CaseInsensitive() {
+    void testResolve_CaseInsensitive() throws ClassNotFoundException {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));
     }
 
     @Test
     void testResolve_Unsupported_Throws() {
-        assertThrows(IllegalArgumentException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
+        assertThrows(ClassNotFoundException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
     }
 
     @Test

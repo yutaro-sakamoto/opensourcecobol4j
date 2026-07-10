@@ -1,6 +1,8 @@
 package jp.osscons.opensourcecobol.libcobj.sql;
 
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 環境変数 {@code OCDB_DB_TYPE} を見て {@link CobolEsqlBackendInterface} 実装を 1 つ生成する Factory。
@@ -11,6 +13,8 @@ import java.util.Locale;
  */
 final class CobolEsqlBackendFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(CobolEsqlBackendFactory.class);
+
     /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private CobolEsqlBackendFactory() {}
 
@@ -18,8 +22,9 @@ final class CobolEsqlBackendFactory {
      * 環境変数 {@code OCDB_DB_TYPE} からバックエンドを解決する。
      *
      * @return 解決された DB バックエンド
+     * @throws ClassNotFoundException {@code OCDB_DB_TYPE} に対応する実装クラスが無い/生成できない場合
      */
-    static CobolEsqlBackendInterface resolve() {
+    static CobolEsqlBackendInterface resolve() throws ClassNotFoundException {
         return resolve(System.getenv("OCDB_DB_TYPE"));
     }
 
@@ -29,8 +34,9 @@ final class CobolEsqlBackendFactory {
      *
      * @param t DB 種別文字列（{@code OCDB_DB_TYPE} の値）
      * @return 解決された DB バックエンド
+     * @throws ClassNotFoundException {@code t} に対応する実装クラスが無い/生成できない場合
      */
-    static CobolEsqlBackendInterface resolve(String t) {
+    static CobolEsqlBackendInterface resolve(String t) throws ClassNotFoundException {
         String type = (t == null || t.isEmpty()) ? "postgresql" : t.toLowerCase(Locale.ROOT);
         if ("postgres".equals(type)) {
             type = "postgresql"; // 後方互換エイリアス
@@ -40,7 +46,8 @@ final class CobolEsqlBackendFactory {
             Class<?> c = Class.forName(className);
             return (CobolEsqlBackendInterface) c.getDeclaredConstructor().newInstance();
         } catch (ReflectiveOperationException e) { // 実装クラスが無い/生成できない
-            throw new IllegalArgumentException("Unsupported OCDB_DB_TYPE: " + t, e);
+            LOG.error("Unsupported OCDB_DB_TYPE: {}", t, e);
+            throw new ClassNotFoundException("Unsupported OCDB_DB_TYPE: " + t, e);
         }
     }
 

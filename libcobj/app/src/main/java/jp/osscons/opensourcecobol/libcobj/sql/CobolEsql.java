@@ -49,7 +49,7 @@ public final class CobolEsql {
                                 ? dbTypeOverrideForTest
                                 : System.getenv("OCDB_DB_TYPE");
                 backend = CobolEsqlBackendFactory.resolve(dbType);
-            } catch (RuntimeException e) {
+            } catch (ClassNotFoundException | RuntimeException e) {
                 backendResolutionError =
                         (e.getMessage() == null || e.getMessage().isEmpty())
                                 ? "Unsupported OCDB_DB_TYPE"
