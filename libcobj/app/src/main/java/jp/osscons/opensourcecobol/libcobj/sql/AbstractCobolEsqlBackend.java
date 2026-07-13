@@ -1176,7 +1176,14 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     // PreparedStatement キャッシュ
     // -------------------------------------------------------
 
-    /** 接続ごとに SQL 文字列をキーとして PreparedStatement をキャッシュする。 */
+    /**
+     * 接続ごとに SQL 文字列をキーとして PreparedStatement をキャッシュする。
+     *
+     * @param conn JDBC 接続
+     * @param query SQL 文字列（キャッシュのキー）
+     * @return キャッシュ済み、または新規作成した PreparedStatement
+     * @throws SQLException PreparedStatement の生成に失敗した場合
+     */
     protected final PreparedStatement getOrCreatePreparedStatement(Connection conn, String query)
             throws SQLException {
         Map<String, PreparedStatement> perConnection =
@@ -1213,6 +1220,9 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     /**
      * ログ出力用に、空白文字（改行、タブ、連続するスペース）を単一のスペースにまとめる。
      * サブクラスのフック実装が発行 SQL をログ整形するのにも使えるよう protected にする。
+     *
+     * @param s 整形対象の文字列
+     * @return 空白をまとめて前後をトリムした文字列
      */
     protected static String collapseWhitespace(String s) {
         return s.replaceAll("\\s+", " ").trim();
@@ -1271,6 +1281,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         final String sqlState;
 
         /**
+         * ECPG 正規コードと正規化済み SQLSTATE の組を生成する。
+         *
          * @param ecpgCode ECPG 正規エラーコード（SQLCODE）
          * @param sqlState 正規化済み SQLSTATE（5 桁、{@code null} 可）
          */
@@ -1285,6 +1297,10 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * 環境変数フォールバック・末尾空白除去まで適用済みの、DB 非依存な接続情報。
      */
     protected static final class DbSpec {
+
+        /** 各フィールドを {@link #buildSpec(String, String, String)} が設定する空の接続情報を生成する。 */
+        DbSpec() {}
+
         /** ホスト名（既定 "localhost"）。 */
         String host;
 
