@@ -68,7 +68,7 @@ class IndexedFile {
     /** 予約済みのロック識別子。 */
     int lock_id;
 
-    /** このプロセスが現在レコードロックを保持している間は{@code true}。 */
+    /** 現在未使用。予約済み。 */
     boolean record_locked;
 
     /** {@link #filename}の文字数。 */
