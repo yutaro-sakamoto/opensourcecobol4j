@@ -624,7 +624,7 @@ public class CobolIndexedFile extends CobolFile {
      * @param cond 比較条件（{@link #COB_EQ}、{@link #COB_GT}、{@link #COB_GE}、{@link
      *     #COB_LT}、{@link #COB_LE}, {@link #COB_NE}のいずれか。
      * @param key 検索するキー値を保持するフィールド
-     * @param readOpts 読み込みオプションフラグ（{@code COB_READ_*}）
+     * @param readOpts 現在未使用
      * @param testLock レコードロックをテストするか（現状このメソッドでは未使用）
      * @return condが {@link #COB_NE}の場合 {@code COB_STATUS_23_KEY_NOT_EXISTS}。
      *     そうでない場合、レコードが見つかった場合は{@code COB_STATUS_00_SUCCESS}、一致するものがなかった場合は{@code COB_STATUS_23_KEY_NOT_EXISTS}、カーソル生成に失敗した場合は{@code
