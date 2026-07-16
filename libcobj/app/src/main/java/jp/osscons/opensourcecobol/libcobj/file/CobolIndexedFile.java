@@ -82,7 +82,7 @@ public class CobolIndexedFile extends CobolFile {
      * FD}宣言の属性に対応する。
      *
      * @param selectName {@code SELECT}句で指定された名前
-     * @param fileStatus COBOLの{@code FILE STATUS}用ストレージ（4バイトのバッファ）
+     * @param fileStatus COBOLの{@code FILE STATUS}用ストレージ（2バイトのバッファ）
      * @param assign 割り当て名（ファイルパス）を保持するフィールド
      * @param record レコード領域を表すフィールド
      * @param recordSize 現在のレコード長を保持するフィールド
