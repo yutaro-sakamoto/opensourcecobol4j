@@ -1322,6 +1322,60 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
 
         /** 文字コード（OCDB_DB_CHAR、既定 UTF-8）。 */
         String charset;
+
+        /**
+         * ホスト名を返す。
+         *
+         * @return ホスト名（既定 "localhost"）
+         */
+        public String getHost() {
+            return host;
+        }
+
+        /**
+         * ポートを返す。
+         *
+         * @return ":port" 形式のポート。未指定なら空文字
+         */
+        public String getPort() {
+            return port;
+        }
+
+        /**
+         * データベース名を返す。
+         *
+         * @return データベース名
+         */
+        public String getDbname() {
+            return dbname;
+        }
+
+        /**
+         * 接続ユーザー名を返す。
+         *
+         * @return 接続ユーザー名
+         */
+        public String getUser() {
+            return user;
+        }
+
+        /**
+         * 接続パスワードを返す。
+         *
+         * @return 接続パスワード
+         */
+        public String getPasswd() {
+            return passwd;
+        }
+
+        /**
+         * 文字コードを返す。
+         *
+         * @return 文字コード（OCDB_DB_CHAR、既定 UTF-8）
+         */
+        public String getCharset() {
+            return charset;
+        }
     }
 
     /**
@@ -1376,6 +1430,53 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             this.params = null;
         }
 
+        /**
+         * カーソル名（DECLARE/OPEN/FETCH/CLOSE 文で使用される）を返す。
+         *
+         * @return カーソル名
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * このカーソルに紐づく SQL クエリを返す。
+         *
+         * @return DECLARE されたクエリ文字列
+         */
+        public String getQuery() {
+            return query;
+        }
+
+        /**
+         * DECLARE 時にバインドされたホスト変数パラメータを返す。
+         *
+         * @return バインド済みパラメータ。未バインドなら {@code null}
+         */
+        public AbstractCobolField[] getParams() {
+            return params;
+        }
+
+        /**
+         * このカーソルに紐づく、クローズが必要な資源を登録する。登録した資源は基底クラスが
+         * カーソルの終端（明示 CLOSE および COMMIT/ROLLBACK）で {@link #closeResources()} により
+         * 解放する。並び順の意味づけは登録するバックエンド実装の規約に委ねる。
+         *
+         * @param resources 登録する資源。{@code null} で登録解除
+         */
+        public void setResources(AutoCloseable... resources) {
+            this.resources = resources;
+        }
+
+        /**
+         * 登録済みの資源を返す。
+         *
+         * @return {@link #setResources(AutoCloseable...)} で登録した資源。未登録なら {@code null}
+         */
+        public AutoCloseable[] getResources() {
+            return resources;
+        }
+
         /** まだ COBOL 側へ供給していない（バッファに残っている）先読み行数を返す。 */
         int remainingBuffered() {
             return fetchBuffer.size() - bufferPos;
@@ -1393,7 +1494,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
          * （{@code null}）なら何もしない。個々の {@code close()} の失敗は無視し、残りの資源の
          * クローズを続行する。
          */
-        void closeResources() {
+        public void closeResources() {
             if (resources == null) {
                 return;
             }

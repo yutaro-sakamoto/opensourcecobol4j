@@ -6,8 +6,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
-/** COBOL の埋め込み SQL で使用する SQLCA (SQL Communication Area) 構造体を管理する。 */
-final class SqlCA {
+/**
+ * COBOL の埋め込み SQL で使用する SQLCA (SQL Communication Area) 構造体を管理する。
+ *
+ * <p>{@code ECPG_*} 定数と {@link #setSuccess}・{@link #setMissingIndicator} は、
+ * {@link CobolEsqlBackendInterface} 実装（別パッケージで提供されるバックエンドを含む）が利用できる
+ * 公開 API。それ以外のメンバはパッケージ内部用である。
+ */
+public final class SqlCA {
 
     /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private SqlCA() {}
@@ -28,100 +34,100 @@ final class SqlCA {
     private static final int OFFSET_SQLSTATE = 128; // 5 バイト
 
     /** エラーなし。 */
-    static final int ECPG_NO_ERROR = 0;
+    public static final int ECPG_NO_ERROR = 0;
 
     /** 行が見つからない (SQLSTATE 02000)。 */
-    static final int ECPG_NOT_FOUND = 100;
+    public static final int ECPG_NOT_FOUND = 100;
 
     /** メモリ不足。 */
-    static final int ECPG_OUT_OF_MEMORY = -12;
+    public static final int ECPG_OUT_OF_MEMORY = -12;
 
     /** 未対応の機能。 */
-    static final int ECPG_UNSUPPORTED = -200;
+    public static final int ECPG_UNSUPPORTED = -200;
 
     /** ホスト変数の引数が多すぎる。 */
-    static final int ECPG_TOO_MANY_ARGUMENTS = -201;
+    public static final int ECPG_TOO_MANY_ARGUMENTS = -201;
 
     /** ホスト変数の引数が少なすぎる。 */
-    static final int ECPG_TOO_FEW_ARGUMENTS = -202;
+    public static final int ECPG_TOO_FEW_ARGUMENTS = -202;
 
     /** 一致する行が多すぎる。 */
-    static final int ECPG_TOO_MANY_MATCHES = -203;
+    public static final int ECPG_TOO_MANY_MATCHES = -203;
 
     /** データ形式エラー。 */
-    static final int ECPG_DATA_FORMAT_ERROR = -204;
+    public static final int ECPG_DATA_FORMAT_ERROR = -204;
 
     /** 空のクエリまたは文。 */
-    static final int ECPG_EMPTY = -212;
+    public static final int ECPG_EMPTY = -212;
 
     /** 指標変数が指定されていない。 */
-    static final int ECPG_MISSING_INDICATOR = -213;
+    public static final int ECPG_MISSING_INDICATOR = -213;
 
     /** 有効な接続がない。 */
-    static final int ECPG_NO_CONN = -220;
+    public static final int ECPG_NO_CONN = -220;
 
     /** 未接続。 */
-    static final int ECPG_NOT_CONN = -221;
+    public static final int ECPG_NOT_CONN = -221;
 
     /** 不正な準備済みステートメント。 */
-    static final int ECPG_INVALID_STMT = -230;
+    public static final int ECPG_INVALID_STMT = -230;
 
     /** Informix 互換の一意キー違反エラー。 */
-    static final int ECPG_INFORMIX_DUPLICATE_KEY = -239;
+    public static final int ECPG_INFORMIX_DUPLICATE_KEY = -239;
 
     /** 不明なデスクリプタ。 */
-    static final int ECPG_UNKNOWN_DESCRIPTOR = -240;
+    public static final int ECPG_UNKNOWN_DESCRIPTOR = -240;
 
     /** 不正なデスクリプタインデックス。 */
-    static final int ECPG_INVALID_DESCRIPTOR_INDEX = -241;
+    public static final int ECPG_INVALID_DESCRIPTOR_INDEX = -241;
 
     /** 不明なデスクリプタ項目。 */
-    static final int ECPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
+    public static final int ECPG_UNKNOWN_DESCRIPTOR_ITEM = -242;
 
     /** 変数が数値型でない。 */
-    static final int ECPG_VAR_NOT_NUMERIC = -243;
+    public static final int ECPG_VAR_NOT_NUMERIC = -243;
 
     /** 変数が文字型でない。 */
-    static final int ECPG_VAR_NOT_CHAR = -244;
+    public static final int ECPG_VAR_NOT_CHAR = -244;
 
     /** Informix 互換の副問い合わせが 2 行以上を返した。 */
-    static final int ECPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
+    public static final int ECPG_INFORMIX_SUBSELECT_NOT_ONE = -284;
 
     /** PostgreSQL バックエンドエラー。 */
-    static final int ECPG_PGSQL = -400;
+    public static final int ECPG_PGSQL = -400;
 
     /** トランザクションエラー。 */
-    static final int ECPG_TRANS = -401;
+    public static final int ECPG_TRANS = -401;
 
     /** 接続エラー。 */
-    static final int ECPG_CONNECT = -402;
+    public static final int ECPG_CONNECT = -402;
 
     /** 一意キー違反。 */
-    static final int ECPG_DUPLICATE_KEY = -403;
+    public static final int ECPG_DUPLICATE_KEY = -403;
 
     /** 副問い合わせが 2 行以上を返した。 */
-    static final int ECPG_SUBSELECT_NOT_ONE = -404;
+    public static final int ECPG_SUBSELECT_NOT_ONE = -404;
 
     /** 不明なカーソル (ポータル)。 */
-    static final int ECPG_WARNING_UNKNOWN_PORTAL = -602;
+    public static final int ECPG_WARNING_UNKNOWN_PORTAL = -602;
 
     /** 既にトランザクション中。 */
-    static final int ECPG_WARNING_IN_TRANSACTION = -603;
+    public static final int ECPG_WARNING_IN_TRANSACTION = -603;
 
     /** 有効なトランザクションがない。 */
-    static final int ECPG_WARNING_NO_TRANSACTION = -604;
+    public static final int ECPG_WARNING_NO_TRANSACTION = -604;
 
     /** カーソル (ポータル) が既に存在する。 */
-    static final int ECPG_WARNING_PORTAL_EXISTS = -605;
+    public static final int ECPG_WARNING_PORTAL_EXISTS = -605;
 
     /** ロックエラー。 */
-    static final int ECPG_LOCK_ERROR = -606;
+    public static final int ECPG_LOCK_ERROR = -606;
 
     /** JDD (Java Database Driver) エラー。 */
-    static final int ECPG_JDD_ERROR = -607;
+    public static final int ECPG_JDD_ERROR = -607;
 
     /** 認識できないエラー。 */
-    static final int ECPG_UNKNOWN_ERROR = -9999;
+    public static final int ECPG_UNKNOWN_ERROR = -9999;
 
     /**
      * SQLCA 構造体の SQLCODE フィールドを設定する。
@@ -294,7 +300,7 @@ final class SqlCA {
      *
      * @param sqlca SQLCA のデータストレージ
      */
-    static void setSuccess(CobolDataStorage sqlca) {
+    public static void setSuccess(CobolDataStorage sqlca) {
         if (sqlca == null) {
             return;
         }
@@ -328,7 +334,7 @@ final class SqlCA {
      *
      * @param sqlca SQLCA のデータストレージ
      */
-    static void setMissingIndicator(CobolDataStorage sqlca) {
+    public static void setMissingIndicator(CobolDataStorage sqlca) {
         setError(sqlca, ECPG_MISSING_INDICATOR, "22002", "Null value without indicator");
     }
 
