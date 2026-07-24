@@ -13,8 +13,12 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
  * PostgreSQL 向けの {@link CobolEsqlBackendInterface} 実装。{@link AbstractCobolEsqlBackend} の DB 依存フックを
  * PostgreSQL の流儀（明示 BEGIN によるトランザクション管理、サーバカーソル + {@code FETCH FORWARD}
  * 先読み、SQLSTATE ベースのエラー変換）で実装する。挙動は移行前の {@code CobolEsql} と一致させている。
+ *
+ * <p>{@link java.util.ServiceLoader} 経由で発見されるため public であり、
+ * {@code META-INF/services/jp.osscons.opensourcecobol.libcobj.sql.CobolEsqlBackendInterface} に
+ * 登録されている。
  */
-final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
+public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     public String id() {

@@ -15,7 +15,10 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 public interface CobolEsqlBackendInterface {
 
     /**
-     * 実装ごとに固定の正規 ID を返す（ログ・デバッグ用）。例: {@code "postgresql"} / {@code "db2"}。
+     * 実装ごとに固定の正規 ID（小文字）を返す。例: {@code "postgresql"} / {@code "db2"}。
+     *
+     * <p>{@link java.util.ServiceLoader} で発見された実装の中から環境変数 {@code OCDB_DB_TYPE} の
+     * 値（小文字化済み）と突き合わせる発見キーであり、ログ・デバッグ表示にも使われる。
      *
      * @return DB 種別の正規 ID
      */
