@@ -722,6 +722,23 @@ class CobolEsqlTest {
                 "Close of a registered but not-opened cursor should succeed");
     }
 
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testCloseCursor_ClosesCursorResources() throws Exception {
+        registerRealConnection();
+        CobolEsql.declareCursor(sqlca, "c1", "SELECT 1");
+        CobolEsql.openCursor(sqlca, "c1");
+        assertEquals(0, getSqlCode(), "Open cursor should succeed");
+        RecordingResource resource = new RecordingResource(false);
+        backend().getCursor("c1").resources = new AutoCloseable[] {resource};
+        CobolEsql.closeCursor(sqlca, "c1");
+        assertEquals(0, getSqlCode(), "Close cursor should succeed");
+        assertTrue(resource.closed, "Cursor resource should be closed by CLOSE");
+        assertNull(
+                backend().getCursor("c1").resources,
+                "Cursor resources should be cleared after CLOSE");
+    }
+
     // ============================================================
     // declareCursorWithParams
     // ============================================================
@@ -1084,6 +1101,75 @@ class CobolEsqlTest {
         CobolEsql.commit(sqlca);
         assertEquals(0, getSqlCode(), "Commit should succeed");
         assertFalse(backend().getCursor("c1").isOpened, "Cursor should be closed after commit");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testCommit_ClosesCursorResources() throws Exception {
+        registerRealConnection();
+        AbstractCobolEsqlBackend.Cursor cursor =
+                new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
+        cursor.isOpened = true;
+        RecordingResource resource1 = new RecordingResource(false);
+        RecordingResource resource2 = new RecordingResource(false);
+        cursor.resources = new AutoCloseable[] {resource1, resource2};
+        backend().addCursor("c1", cursor);
+        CobolEsql.commit(sqlca);
+        assertEquals(0, getSqlCode(), "Commit should succeed");
+        assertTrue(resource1.closed, "First cursor resource should be closed by COMMIT");
+        assertTrue(resource2.closed, "Second cursor resource should be closed by COMMIT");
+        assertNull(cursor.resources, "Cursor resources should be cleared after COMMIT");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testCommit_ResourceCloseFailureDoesNotStopOthers() throws Exception {
+        registerRealConnection();
+        AbstractCobolEsqlBackend.Cursor cursor =
+                new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
+        cursor.isOpened = true;
+        RecordingResource failing = new RecordingResource(true);
+        RecordingResource following = new RecordingResource(false);
+        cursor.resources = new AutoCloseable[] {failing, following};
+        backend().addCursor("c1", cursor);
+        CobolEsql.commit(sqlca);
+        assertEquals(0, getSqlCode(), "Commit should succeed despite resource close failure");
+        assertTrue(following.closed, "Close failure should not stop closing remaining resources");
+        assertNull(cursor.resources, "Cursor resources should be cleared even on close failure");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testRollback_ClosesCursorResources() throws Exception {
+        registerRealConnection();
+        AbstractCobolEsqlBackend.Cursor cursor =
+                new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
+        cursor.isOpened = true;
+        RecordingResource resource = new RecordingResource(false);
+        cursor.resources = new AutoCloseable[] {resource};
+        backend().addCursor("c1", cursor);
+        CobolEsql.rollback(sqlca);
+        assertEquals(0, getSqlCode(), "Rollback should succeed");
+        assertTrue(resource.closed, "Cursor resource should be closed by ROLLBACK");
+        assertNull(cursor.resources, "Cursor resources should be cleared after ROLLBACK");
+    }
+
+    /** クローズされたことを記録するテスト用資源。{@code failOnClose} なら close() で例外を投げる。 */
+    private static final class RecordingResource implements AutoCloseable {
+        boolean closed;
+        private final boolean failOnClose;
+
+        RecordingResource(boolean failOnClose) {
+            this.failOnClose = failOnClose;
+        }
+
+        @Override
+        public void close() throws Exception {
+            closed = true;
+            if (failOnClose) {
+                throw new IllegalStateException("close failure (expected by test)");
+            }
+        }
     }
 
     @Test

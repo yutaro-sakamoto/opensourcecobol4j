@@ -887,6 +887,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 return;
             }
             closeCursorImpl(conn, cursor);
+            // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
+            cursor.closeResources();
             cursor.isOpened = false;
             cursor.clearBuffer();
             SqlCA.setSuccess(sqlca);
@@ -1094,6 +1096,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     /** すべてのカーソルをクローズ済みとしてマークする（例: COMMIT や ROLLBACK の後）。 */
     private void clearCursors() {
         for (Cursor cursor : cursors.values()) {
+            // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
+            cursor.closeResources();
             cursor.isOpened = false;
             // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
             cursor.clearBuffer();
@@ -1356,6 +1360,14 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
          */
         boolean overFetch;
 
+        /**
+         * このカーソルに紐づく、クローズが必要な資源。バックエンド実装が {@code openCursorImpl} で
+         * 登録すると、基底クラスがカーソルの終端（明示 CLOSE および COMMIT/ROLLBACK）で
+         * {@link #closeResources()} により解放する。カーソルの外に生きた資源を持たないバックエンド
+         * （例: サーバカーソル + 先読みバッファ方式）は {@code null} のままでよい。
+         */
+        AutoCloseable[] resources;
+
         Cursor(String name, String query, int nParams) {
             this.name = name;
             this.query = query;
@@ -1374,6 +1386,28 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             fetchBuffer = new ArrayList<>();
             bufferPos = 0;
             overFetch = false;
+        }
+
+        /**
+         * {@link #resources} に登録された資源をすべて閉じて {@code null} 化する。未登録
+         * （{@code null}）なら何もしない。個々の {@code close()} の失敗は無視し、残りの資源の
+         * クローズを続行する。
+         */
+        void closeResources() {
+            if (resources == null) {
+                return;
+            }
+            for (AutoCloseable resource : resources) {
+                if (resource == null) {
+                    continue;
+                }
+                try {
+                    resource.close();
+                } catch (Exception ignored) {
+                    // クローズ失敗が残りの資源の解放を妨げないようにする。
+                }
+            }
+            resources = null;
         }
     }
 }
