@@ -1,0 +1,10 @@
+# Configuration for actionlint (run by check-workflows.yml).
+paths:
+  # docker-image.yml uses the "parallel" steps syntax shipped by GitHub
+  # Actions in June 2026, which actionlint does not understand yet
+  # (https://github.com/rhysd/actionlint/pull/694). Ignore only the
+  # resulting false-positive error for that file until actionlint
+  # supports the syntax.
+  .github/workflows/docker-image.yml:
+    ignore:
+      - 'step must run script with "run" section or run action with "uses" section'

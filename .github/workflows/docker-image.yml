@@ -29,62 +29,63 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - variant: default
-            configure-args: ""
-            tag-suffix: ""
-            push-latest: true
-          - variant: utf8
-            configure-args: "--enable-utf8"
-            tag-suffix: "-utf8"
-            push-latest: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Resolve the image tag
+      - name: Resolve the image version
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
+          PUSH_TO_DOCKERHUB: ${{ inputs.push-to-dockerhub }}
         run: |
           # On release the git tag (without the leading "v") is the image
           # version. PR / dispatch builds only verify the image and never push,
-          # so they fall back to a placeholder tag.
+          # so they fall back to a placeholder tag. Fail fast when a push is
+          # requested without a release tag, so the placeholder is never
+          # pushed to Docker Hub.
+          if [ "$PUSH_TO_DOCKERHUB" = "true" ] && [ -z "$RELEASE_TAG" ]; then
+            echo "release-tag is required when push-to-dockerhub is true" >&2
+            exit 1
+          fi
           version="${RELEASE_TAG#v}"
           if [ -z "$version" ]; then
             version="dev"
           fi
-          echo "IMAGE_TAG=${version}${{ matrix.tag-suffix }}" >> "$GITHUB_ENV"
+          echo "IMAGE_VERSION=${version}" >> "$GITHUB_ENV"
 
-      - name: Build a docker image
-        run: |
-          docker build -f docker/Dockerfile \
-            -t "$IMAGE_NAME:$IMAGE_TAG" \
-            --build-arg configure_args="${{ matrix.configure-args }}" \
-            .
+      # Build and verify the two image variants concurrently. The implicit
+      # wait at the end of the parallel group fails the job if either variant
+      # fails, so nothing is pushed unless both images are good.
+      - parallel:
+          - name: Build and verify the default image
+            run: |
+              tag="$IMAGE_NAME:$IMAGE_VERSION"
+              docker build -f docker/Dockerfile \
+                -t "$tag" \
+                --build-arg configure_args="" \
+                .
+              docker images "$tag" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+              docker run --rm "$tag" cobj --version
+              output="$(docker run --rm "$tag" \
+                bash -lc 'cd /root/cobol_sample && cobj HELLO.cbl && java HELLO')"
+              echo "$output"
+              echo "$output" | grep -q "HELLO WORLD!"
 
-      - name: Show the docker image size
-        run: |
-          docker images "$IMAGE_NAME:$IMAGE_TAG" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
-
-      - name: Check the version of the installed compiler
-        run: |
-          docker run --rm "$IMAGE_NAME:$IMAGE_TAG" cobj --version
-
-      - name: Check unicode/utf-8 support
-        if: matrix.variant == 'utf8'
-        run: |
-          docker run --rm "$IMAGE_NAME:$IMAGE_TAG" sh -c "cobj --version | grep 'unicode/utf-8 support'"
-
-      - name: Run the Hello World sample inside the container
-        run: |
-          output="$(docker run --rm "$IMAGE_NAME:$IMAGE_TAG" \
-            bash -lc 'cd /root/cobol_sample && cobj HELLO.cbl && java HELLO')"
-          echo "$output"
-          echo "$output" | grep -q "HELLO WORLD!"
+          - name: Build and verify the UTF-8 image
+            run: |
+              tag="$IMAGE_NAME:$IMAGE_VERSION-utf8"
+              docker build -f docker/Dockerfile \
+                -t "$tag" \
+                --build-arg configure_args="--enable-utf8" \
+                .
+              docker images "$tag" --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}"
+              docker run --rm "$tag" cobj --version
+              docker run --rm "$tag" sh -c "cobj --version | grep 'unicode/utf-8 support'"
+              output="$(docker run --rm "$tag" \
+                bash -lc 'cd /root/cobol_sample && cobj HELLO.cbl && java HELLO')"
+              echo "$output"
+              echo "$output" | grep -q "HELLO WORLD!"
 
       - name: Login to Docker Hub
         if: inputs.push-to-dockerhub
@@ -93,11 +94,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Push the image to Docker Hub
+      - name: Push the images to Docker Hub
         if: inputs.push-to-dockerhub
         run: |
-          docker push "$IMAGE_NAME:$IMAGE_TAG"
-          if [ "${{ matrix.push-latest }}" = "true" ]; then
-            docker tag "$IMAGE_NAME:$IMAGE_TAG" "$IMAGE_NAME:latest"
-            docker push "$IMAGE_NAME:latest"
-          fi
+          # Push in a fixed order: the UTF-8 image first, then the versioned
+          # default image, and "latest" at the end.
+          docker push "$IMAGE_NAME:${IMAGE_VERSION}-utf8"
+          docker push "$IMAGE_NAME:${IMAGE_VERSION}"
+          docker tag "$IMAGE_NAME:${IMAGE_VERSION}" "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:latest"
