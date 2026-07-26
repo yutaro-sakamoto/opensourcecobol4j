@@ -1795,6 +1795,25 @@ static int process_translate(struct filename *fn) {
     return 0;
   }
 
+#ifdef _WIN32
+  /* Every program in a translation unit is generated as its own
+     .java/.class file named after the program ID. On a case-insensitive
+     file system, two programs whose IDs differ only in letter case
+     overwrite each other's files, so reject them with an explicit error
+     instead of silently producing broken output. */
+  for (q = current_program; q; q = q->next_program) {
+    for (r = q->next_program; r; r = r->next_program) {
+      if (strcmp(q->program_id, r->program_id) != 0 &&
+          strcasecmp(q->program_id, r->program_id) == 0) {
+        cb_error(_("Class names '%s' and '%s' differ only in letter case "
+                   "and cannot coexist on a case-insensitive file system"),
+                 q->program_id, r->program_id);
+        return -1;
+      }
+    }
+  }
+#endif
+
   /* Set up USE GLOBAL handlers */
   p = current_program;
   for (q = p; q; q = q->next_program) {
