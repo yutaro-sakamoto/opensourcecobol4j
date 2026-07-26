@@ -25,11 +25,18 @@ AT_DATA([prog.cbl], [
            STOP RUN.
 ])
 
+# The version embedded in the JSON must match the version of the cobj
+# binary, so derive it from `cobj --version` instead of hardcoding a
+# release number that breaks on every version bump. The sed commands
+# below replace the version with a placeholder only when it matches the
+# binary's version, so a mismatch still fails the comparison.
+COBJ_VERSION=$(${COBJ} --version | sed -n '1s/.* //p')
+
 # a basic usecase
 AT_CHECK([${COBJ} -info-json-dir=./ callee.cbl prog.cbl])
-AT_CHECK([cat info_callee.json], [0],
+AT_CHECK([sed "s/\"opensourcecobol4j_version\": \"$COBJ_VERSION\"/\"opensourcecobol4j_version\": \"COBJ_VERSION\"/" info_callee.json], [0],
 [{
-  "opensourcecobol4j_version": "2.0.0",
+  "opensourcecobol4j_version": "COBJ_VERSION",
   "program_id": "callee",
   "procedure_division_using_parameters": @<:@
     {
@@ -48,9 +55,9 @@ AT_CHECK([cat info_callee.json], [0],
 }
 ])
 
-AT_CHECK([cat info_prog.json], [0],
+AT_CHECK([sed "s/\"opensourcecobol4j_version\": \"$COBJ_VERSION\"/\"opensourcecobol4j_version\": \"COBJ_VERSION\"/" info_prog.json], [0],
 [{
-  "opensourcecobol4j_version": "2.0.0",
+  "opensourcecobol4j_version": "COBJ_VERSION",
   "program_id": "prog",
   "procedure_division_using_parameters": @<:@
   @:>@
@@ -67,9 +74,9 @@ Warning: failed to open a json file aaa/info_prog.json
 AT_CHECK([mkdir bbb])
 AT_CHECK([${COBJ} -info-json-dir=bbb callee.cbl prog.cbl])
 
-AT_CHECK([cat bbb/info_callee.json], [0],
+AT_CHECK([sed "s/\"opensourcecobol4j_version\": \"$COBJ_VERSION\"/\"opensourcecobol4j_version\": \"COBJ_VERSION\"/" bbb/info_callee.json], [0],
 [{
-  "opensourcecobol4j_version": "2.0.0",
+  "opensourcecobol4j_version": "COBJ_VERSION",
   "program_id": "callee",
   "procedure_division_using_parameters": @<:@
     {
@@ -88,9 +95,9 @@ AT_CHECK([cat bbb/info_callee.json], [0],
 }
 ])
 
-AT_CHECK([cat bbb/info_prog.json], [0],
+AT_CHECK([sed "s/\"opensourcecobol4j_version\": \"$COBJ_VERSION\"/\"opensourcecobol4j_version\": \"COBJ_VERSION\"/" bbb/info_prog.json], [0],
 [{
-  "opensourcecobol4j_version": "2.0.0",
+  "opensourcecobol4j_version": "COBJ_VERSION",
   "program_id": "prog",
   "procedure_division_using_parameters": @<:@
   @:>@
