@@ -100,8 +100,11 @@ enum cb_compile_level {
 
 #ifdef _WIN32
 const char file_path_delimitor = '\\';
+/* cmd.exe's "cd" does not change the current drive without /d */
+static const char cd_command[] = "cd /d";
 #else
 const char file_path_delimitor = '/';
+static const char cd_command[] = "cd";
 #endif
 
 /*
@@ -1851,17 +1854,13 @@ static int process_translate(struct filename *fn) {
   return 0;
 }
 
-static void package_name_to_path(char *buff, char *package_name) {
-  char *b_p = buff;
-  char *p_p = package_name;
-  for (; *p_p; ++p_p, ++b_p) {
-    if (*p_p == '.') {
-      *b_p = '/';
-    } else {
-      *b_p = *p_p;
-    }
+static void package_name_to_path(char *buff, size_t size,
+                                 const char *package_name) {
+  size_t i;
+  for (i = 0; package_name[i] && i + 1 < size; ++i) {
+    buff[i] = (package_name[i] == '.') ? '/' : package_name[i];
   }
-  *b_p = '\0';
+  buff[i] = '\0';
 }
 
 static int process_compile_all(void) {
@@ -1911,7 +1910,7 @@ static int process_compile_all(void) {
   if (cb_flag_jar) {
     char *package_dir;
     if (cb_java_package_name) {
-      package_name_to_path(buff2, cb_java_package_name);
+      package_name_to_path(buff2, sizeof(buff2), cb_java_package_name);
       package_dir = buff2;
     } else {
       package_dir = (char *)".";
@@ -1923,9 +1922,9 @@ static int process_compile_all(void) {
        the class file paths with '/'. */
     for (program_id = program_id_list; *program_id; ++program_id) {
       snprintf(buff, BUFF_SIZE,
-               "cd %s && jar --create --main-class=%s --file=%s.jar "
+               "%s %s && jar --create --main-class=%s --file=%s.jar "
                "%s/%s.class %s/%s$*.class",
-               output_name_a, *program_id, *program_id, package_dir,
+               cd_command, output_name_a, *program_id, *program_id, package_dir,
                *program_id, package_dir, *program_id);
       ret = process(buff);
       if (ret) {
@@ -1940,7 +1939,8 @@ static int process_compile_all(void) {
          paths for the remove command with the native separator and let
          "cd" handle the output directory. */
       char package_dir_native[COB_SMALL_BUFF];
-      strcpy(package_dir_native, package_dir);
+      snprintf(package_dir_native, sizeof(package_dir_native), "%s",
+               package_dir);
 #ifdef _WIN32
       {
         char *q;
@@ -1951,8 +1951,8 @@ static int process_compile_all(void) {
         }
       }
 #endif
-      snprintf(buff, BUFF_SIZE, "cd %s && %s %s%c%s.class %s%c%s$*.class",
-               output_name_a, remove_cmd, package_dir_native,
+      snprintf(buff, BUFF_SIZE, "%s %s && %s %s%c%s.class %s%c%s$*.class",
+               cd_command, output_name_a, remove_cmd, package_dir_native,
                file_path_delimitor, *program_id, package_dir_native,
                file_path_delimitor, *program_id);
       process(buff);
@@ -2191,21 +2191,21 @@ static int process_build_single_jar() {
 
   char *package_dir;
   if (cb_java_package_name) {
-    package_name_to_path(buff2, cb_java_package_name);
+    package_name_to_path(buff2, sizeof(buff2), cb_java_package_name);
     package_dir = buff2;
   } else {
     package_dir = (char *)".";
   }
 
-  snprintf(buff, COB_MEDIUM_BUFF, "cd %s && jar --create --file=%s %s/*.class",
-           output_name_a, cb_single_jar_name, package_dir);
+  snprintf(buff, COB_MEDIUM_BUFF, "%s %s && jar --create --file=%s %s/*.class",
+           cd_command, output_name_a, cb_single_jar_name, package_dir);
   ret = process(buff);
 
   /* cmd.exe's "del" requires '\\' as the path separator, so build the
      paths for the remove command with the native separator and let "cd"
      handle the output directory. */
   char package_dir_native[COB_SMALL_BUFF];
-  strcpy(package_dir_native, package_dir);
+  snprintf(package_dir_native, sizeof(package_dir_native), "%s", package_dir);
 #ifdef _WIN32
   {
     char *q;
@@ -2216,8 +2216,8 @@ static int process_build_single_jar() {
     }
   }
 #endif
-  snprintf(buff, COB_MEDIUM_BUFF, "cd %s && %s %s%c*.class", output_name_a,
-           remove_cmd, package_dir_native, file_path_delimitor);
+  snprintf(buff, COB_MEDIUM_BUFF, "%s %s && %s %s%c*.class", cd_command,
+           output_name_a, remove_cmd, package_dir_native, file_path_delimitor);
   process(buff);
   return ret;
 }
