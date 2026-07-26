@@ -182,8 +182,6 @@ java [PROGRAM-ID]
 > cobj file3.cbl
 > ```
 
-> **Note:** On Windows, where the file system is case-insensitive, two programs whose PROGRAM-IDs differ only in letter case (for example `PROG` and `prog`) would be generated as class files with the same name. `cobj` reports a compile error in that case, so give such programs distinct names.
-
 ## Embedded SQL (ESQL)
 
 opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing COBOL programs to execute SQL statements directly using host variables.
