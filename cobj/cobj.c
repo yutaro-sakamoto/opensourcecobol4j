@@ -1898,13 +1898,16 @@ static int process_compile_all(void) {
       package_dir = (char *)".";
     }
 
+    /* The jar tool accepts '/' as the path separator on every platform,
+       and mixing '/' (from the package name) with '\\' would store
+       malformed entry names in the archive on Windows, so always join
+       the class file paths with '/'. */
     for (program_id = program_id_list; *program_id; ++program_id) {
       snprintf(buff, BUFF_SIZE,
                "cd %s && jar --create --main-class=%s --file=%s.jar "
-               "%s%c%s.class %s%c%s$*.class",
+               "%s/%s.class %s/%s$*.class",
                output_name_a, *program_id, *program_id, package_dir,
-               file_path_delimitor, *program_id, package_dir,
-               file_path_delimitor, *program_id);
+               *program_id, package_dir, *program_id);
       ret = process(buff);
       if (ret) {
         return ret;
@@ -1914,11 +1917,25 @@ static int process_compile_all(void) {
 #else
       char remove_cmd[] = "rm";
 #endif
-      snprintf(buff, BUFF_SIZE, "%s %s%c%s%c%s.class %s%c%s%c%s$*.class",
-               remove_cmd, output_name_a, file_path_delimitor, package_dir,
-               file_path_delimitor, *program_id, output_name_a,
-               file_path_delimitor, package_dir, file_path_delimitor,
-               *program_id);
+      /* cmd.exe's "del" requires '\\' as the path separator, so build the
+         paths for the remove command with the native separator and let
+         "cd" handle the output directory. */
+      char package_dir_native[COB_SMALL_BUFF];
+      strcpy(package_dir_native, package_dir);
+#ifdef _WIN32
+      {
+        char *q;
+        for (q = package_dir_native; *q; ++q) {
+          if (*q == '/') {
+            *q = '\\';
+          }
+        }
+      }
+#endif
+      snprintf(buff, BUFF_SIZE, "cd %s && %s %s%c%s.class %s%c%s$*.class",
+               output_name_a, remove_cmd, package_dir_native,
+               file_path_delimitor, *program_id, package_dir_native,
+               file_path_delimitor, *program_id);
       process(buff);
     }
   }
@@ -2164,8 +2181,24 @@ static int process_build_single_jar() {
   snprintf(buff, COB_MEDIUM_BUFF, "cd %s && jar --create --file=%s %s/*.class",
            output_name_a, cb_single_jar_name, package_dir);
   ret = process(buff);
-  snprintf(buff, COB_MEDIUM_BUFF, "%s %s/%s/*.class #aaa", remove_cmd,
-           output_name_a, package_dir);
+
+  /* cmd.exe's "del" requires '\\' as the path separator, so build the
+     paths for the remove command with the native separator and let "cd"
+     handle the output directory. */
+  char package_dir_native[COB_SMALL_BUFF];
+  strcpy(package_dir_native, package_dir);
+#ifdef _WIN32
+  {
+    char *q;
+    for (q = package_dir_native; *q; ++q) {
+      if (*q == '/') {
+        *q = '\\';
+      }
+    }
+  }
+#endif
+  snprintf(buff, COB_MEDIUM_BUFF, "cd %s && %s %s%c*.class", output_name_a,
+           remove_cmd, package_dir_native, file_path_delimitor);
   process(buff);
   return ret;
 }
