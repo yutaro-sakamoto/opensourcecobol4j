@@ -81,7 +81,12 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/opensourcecobol/opensourcecobol4j")
+            // Publish to the repository the workflow runs in, so publishing
+            // works on forks with the automatic GITHUB_TOKEN as well.
+            url =
+                uri(
+                    "https://maven.pkg.github.com/" +
+                        (System.getenv("GITHUB_REPOSITORY") ?: "opensourcecobol/opensourcecobol4j"))
             credentials {
                 username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
                 password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
