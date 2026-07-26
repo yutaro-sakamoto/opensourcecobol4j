@@ -171,8 +171,6 @@ java [PROGRAM-ID]
 > cobj file3.cbl
 > ```
 
-> **Note:** ファイル名の大文字・小文字が区別されないWindowsでは、大文字・小文字のみが異なるPROGRAM-ID(例えば`PROG`と`prog`)を持つプログラムは、同じ名前のクラスファイルとして生成されてしまいます。この場合`cobj`はコンパイルエラーを報告するため、プログラム名は大文字・小文字以外でも区別できるように付けてください。
-
 ## Embedded SQL (ESQL)
 
 opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポートしており、COBOLプログラムからホスト変数を使用してSQL文を直接実行できます。
