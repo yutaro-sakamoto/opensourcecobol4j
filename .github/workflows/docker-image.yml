@@ -37,7 +37,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: opensourcecobol/opensourcecobol4j
+  IMAGE_NAME: ossyutarosakamoto/opensourcecobol4j
   # Keep in sync with the build job's matrix. The push job uses this list to
   # verify that no variant's image is missing before pushing anything; a
   # variant present in the matrix but missing here is still pushed (the push
