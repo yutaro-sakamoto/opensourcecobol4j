@@ -4059,7 +4059,6 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
   struct cb_label *lp;
   struct cb_assign *ap;
   struct cb_if *ip;
-  int code;
   int putParen = 0;
 
   stack_id = 0;
@@ -4151,7 +4150,7 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
 
     if (p->handler1 || p->handler2 ||
         (p->file && CB_EXCEPTION_ENABLE(COB_EC_I_O))) {
-      code = CB_EXCEPTION_CODE(p->handler_id);
+      int code = CB_EXCEPTION_CODE(p->handler_id);
       if (p->file) {
         joutput_ferror_stmt(p, code);
       } else {
