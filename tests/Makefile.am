@@ -89,20 +89,6 @@ data_rep_DEPENDENCIES = \
 	data-rep.src/numeric-dump.cob \
 	data-rep.src/numeric-display.cob
 
-i18n_utf8_DEPENDENCIES = \
-	i18n_utf8.at \
-	i18n_utf8.src/user-defined-word.at \
-	i18n_utf8.src/pic-x.at \
-	i18n_utf8.src/pic-n.at \
-	i18n_utf8.src/pic-bn.at \
-	i18n_utf8.src/program-id.at \
-	i18n_utf8.src/error-print.at \
-	i18n_utf8.src/stored-char-length.at \
-	i18n_utf8.src/warn-mixture-byte.at \
-	i18n_utf8.src/limits.at \
-	i18n_utf8.src/national.at \
-	i18n_utf8.src/mb-space.at
-
 i18n_sjis_DEPENDENCIES = \
 	i18n_sjis.at \
 	i18n_sjis.src/user-defined-word.at \
@@ -128,7 +114,11 @@ cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.src/compare-national.at \
 	cobol_utf8.src/file-handler-japanese.at \
 	cobol_utf8.src/japanese-char-section-var.at \
-	cobol_utf8.src/java-interface.at
+	cobol_utf8.src/java-interface.at \
+	cobol_utf8.src/pic-bn.at \
+	cobol_utf8.src/stored-char-length.at \
+	cobol_utf8.src/warn-mixture-byte.at \
+	cobol_utf8.src/convert-string-concat.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \
@@ -345,7 +335,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(TESTS) \
 	$(syntax_DEPENDENCIES) \
 	$(data_rep_DEPENDENCIES) \
-	$(i18n_utf8_DEPENDENCIES) \
+	$(cobol_utf8_DEPENDENCIES) \
 	$(i18n_sjis_DEPENDENCIES) \
 	$(jp_compat_DEPENDENCIES) \
 	$(command_line_options_DEPENDENCIES) \
@@ -386,7 +376,6 @@ $(srcdir)/%: $(srcdir)/%.at $(srcdir)/package.m4
 $(srcdir)/syntax: $(syntax_DEPENDENCIES)
 $(srcdir)/run: $(run_DEPENDENCIES)
 $(srcdir)/data-rep: $(data_rep_DEPENDENCIES)
-$(srcdir)/i18n_utf8: $(i18n_utf8_DEPENDENCIES)
 $(srcdir)/cobol_utf8: $(cobol_utf8_DEPENDENCIES)
 $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)

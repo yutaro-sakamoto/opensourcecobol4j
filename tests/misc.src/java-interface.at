@@ -476,6 +476,9 @@ AT_CLEANUP
 
 AT_SETUP([Japanese])
 
+# The COBOL source below is written in Shift_JIS.
+AT_CHECK([${SKIP_IF_UTF8}])
+
 AT_DATA([b.cbl], [
        identification division.
        program-id. b.

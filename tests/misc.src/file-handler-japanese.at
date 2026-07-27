@@ -1,5 +1,8 @@
 AT_SETUP([file-handler-japanese])
 
+# The COBOL source below is written in Shift_JIS.
+AT_CHECK([${SKIP_IF_UTF8}])
+
 # This test verifies that Issue 539 is fixed.
 
 AT_DATA([prog.cbl], [

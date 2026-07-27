@@ -677,22 +677,35 @@ void sjis_spc_to_ascii(char *str) {
 #endif /*I18N_UTF8*/
 
 #ifdef I18N_UTF8
+/* Byte length of the UTF-8 character starting at p, which never exceeds the
+   bytes left before ub and is never 0.  An invalid lead byte (a stray
+   continuation byte, or a source file that is not UTF-8 at all) is consumed
+   one byte at a time, so callers stepping with this value always advance. */
+static int utf8_char_size(const unsigned char *p, const unsigned char *ub) {
+  int char_size = COB_U8BYTE_1(*p);
+
+  if (char_size < 1) {
+    char_size = 1;
+  } else if (char_size > ub - p) {
+    char_size = (int)(ub - p);
+  }
+  return char_size;
+}
+
 size_t utf8_calc_sjis_size(const unsigned char *p, int len) {
   const unsigned char *ub = p + len;
   int char_size = 0;
   size_t name_size = 0;
   while (p < ub) {
-    char_size = COB_U8BYTE_1(*p);
+    char_size = utf8_char_size(p, ub);
     if (char_size == 1) {
       name_size += 1;
-      p++;
     } else if (char_size == 3 && utf8_hankaku_kana(p)) {
       name_size += 1;
-      p += char_size;
     } else {
       name_size += 2;
-      p += char_size;
     }
+    p += char_size;
   }
   return name_size;
 }
@@ -714,21 +727,20 @@ int utf8_hankaku_kana(const unsigned char *p) {
 
 int utf8_calc_sjis_column(const unsigned char *p, int column) {
   const unsigned char *start = p;
+  const unsigned char *ub = p + strlen((const char *)p);
   int char_size = 0;
   int i = 0;
 
-  while (i < column && *p != '\0') {
-    char_size = COB_U8BYTE_1(*p);
+  while (i < column && p < ub) {
+    char_size = utf8_char_size(p, ub);
     if (char_size == 1) {
       i++;
-      p++;
     } else if (char_size == 3 && utf8_hankaku_kana(p)) {
       i++;
-      p += char_size;
     } else {
       i += 2;
-      p += char_size;
     }
+    p += char_size;
   }
   return p - start;
 }

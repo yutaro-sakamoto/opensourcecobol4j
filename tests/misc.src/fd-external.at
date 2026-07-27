@@ -69,6 +69,9 @@ AT_CLEANUP
 
 AT_SETUP([FD EXTERNAL nihongo])
 
+# The COBOL source below is written in Shift_JIS.
+AT_CHECK([${SKIP_IF_UTF8}])
+
 AT_DATA([prog1.cbl], [
        IDENTIFICATION DIVISION.
        PROGRAM-ID. prog1.

@@ -80,13 +80,12 @@ jobs:
           - "command-line-options"
           - "data-rep"
           - "cobol_utf8"
-          #- "i18n_utf8"
           - "jp-compat"
           - "run"
           - "syntax"
           - "cobj-idx"
           - "file-lock2"
-          #- "misc"
+          - "misc"
         os: ["ubuntu:24.04"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -218,12 +217,9 @@ jobs:
     with:
       test-name: ${{ matrix.test_name }}
 
-  # TODO: Re-enable when Windows PostgreSQL setup is resolved.
-  # The pre-installed PostgreSQL on Windows runners requires initdb
-  # in RUNNER_TEMP, but cobj.exe segfaults with the new esql-scanner.
-  # windows-test-esql:
-  #   needs: [windows-build, windows-generate-test-scripts]
-  #   uses: ./.github/workflows/windows-test-esql.yml
+  windows-test-esql:
+    needs: [windows-build, windows-generate-test-scripts]
+    uses: ./.github/workflows/windows-test-esql.yml
 
   static-analysis:
     needs: check-workflows

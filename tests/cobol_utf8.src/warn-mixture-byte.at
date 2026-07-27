@@ -1,4 +1,5 @@
 AT_SETUP([STRING Alphanumeric to National])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION  DIVISION.
@@ -13,12 +14,15 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobc -m prog.cob])
-AT_CHECK([java prog], [0], [procob            ])
+AT_CHECK([${COMPILE} prog.cob])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n "procob　　　" | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
 
 AT_SETUP([STRING National to Alphanumeric])
+export LC_ALL=''
 
 AT_DATA([prog.cob], [
        IDENTIFICATION  DIVISION.
@@ -33,8 +37,9 @@ AT_DATA([prog.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([cobc -m prog.cob])
-AT_CHECK([java prog], [0], [ｐｒｏｃｏｂ])
+AT_CHECK([${COMPILE} prog.cob])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([echo -n "ｐｒｏｃｏｂ      " | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
 
 AT_CLEANUP
-

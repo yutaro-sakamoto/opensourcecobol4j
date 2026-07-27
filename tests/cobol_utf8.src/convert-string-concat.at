@@ -1,0 +1,40 @@
+AT_SETUP([convert '&' concatenated strings to Java])
+export LC_ALL=''
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA DIVISION.
+       WORKING-STORAGE  SECTION.
+       01  X-CONCAT     PIC X(25) VALUE "abcde"
+        &  "fghij"
+        &  "klmno"
+        &  "pqrst"
+        &  "uvwxy".
+       01  N-CONCAT     PIC N(25) VALUE "あいうえお"
+        &  "かきくけこ"
+        &  "さしすせそ"
+        &  "たちつてと"
+        &  "なにぬねの".
+       PROCEDURE        DIVISION.
+       MAIN-RTN.
+           DISPLAY X-CONCAT.
+           DISPLAY N-CONCAT.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE} prog.cbl])
+AT_CHECK([java prog > out1.txt])
+AT_CHECK([printf '%s\n%s\n' abcdefghijklmnopqrstuvwxy あいうえおかきくけこさしすせそたちつてとなにぬねの | nkf --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([diff out1.txt out2.txt])
+AT_CHECK([grep -q '    "abcde" +' prog.java])
+AT_CHECK([grep -q '    "fghij" +' prog.java])
+AT_CHECK([grep -q '    "klmno" +' prog.java])
+AT_CHECK([grep -q '    "pqrst" +' prog.java])
+AT_CHECK([grep -q '    "uvwxy"' prog.java])
+AT_CHECK([grep -q '    "あいうえお" +' prog.java])
+AT_CHECK([grep -q '    "かきくけこ" +' prog.java])
+AT_CHECK([grep -q '    "さしすせそ" +' prog.java])
+AT_CHECK([grep -q '    "たちつてと" +' prog.java])
+AT_CHECK([grep -q '    "なにぬねの"' prog.java])
+AT_CLEANUP

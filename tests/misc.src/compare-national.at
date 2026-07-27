@@ -1,5 +1,8 @@
 AT_SETUP([compare national])
 
+# The COBOL source below is written in Shift_JIS.
+AT_CHECK([${SKIP_IF_UTF8}])
+
 AT_DATA([prog.cbl], [
        IDENTIFICATION DIVISION.
        PROGRAM-ID. prog.

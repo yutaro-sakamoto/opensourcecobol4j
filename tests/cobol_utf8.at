@@ -19,7 +19,7 @@
 # the Free Software Foundation, 51 Franklin Street, Fifth Floor
 # Boston, MA 02110-1301 USA
 
-AT_INIT([I18n Shift_JIS Tests])
+AT_INIT([COBOL UTF-8 Tests])
 
 m4_include([user-defined-word.at])
 m4_include([pic-x.at])
@@ -35,3 +35,7 @@ m4_include([compare-national.at])
 m4_include([file-handler-japanese.at])
 m4_include([japanese-char-section-var.at])
 m4_include([java-interface.at])
+m4_include([pic-bn.at])
+m4_include([stored-char-length.at])
+m4_include([warn-mixture-byte.at])
+m4_include([convert-string-concat.at])

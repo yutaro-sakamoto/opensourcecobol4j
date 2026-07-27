@@ -70,6 +70,15 @@ export COB_SPLITKEY_FLAGS
 
 SKIP_TEST="exit 77"
 
+# Tests whose COBOL source is written in Shift_JIS cannot be compiled by a
+# compiler built with --enable-utf8.  They skip themselves through
+# ${SKIP_IF_UTF8}; their UTF-8 counterparts live in cobol_utf8.src.
+if test "@COB_M4_FLAGS@" = "-DM4.I18N_UTF8"; then
+  SKIP_IF_UTF8="exit 77"
+else
+  SKIP_IF_UTF8="true"
+fi
+
 # ESQL test variables
 EMBED_DB_INFO="sh ${abs_srcdir}/embed_db_info.sh"
 COMPILE_MODULE_ESQL="${COBJ} ${FLAGS} -I ${abs_top_srcdir}/copy"

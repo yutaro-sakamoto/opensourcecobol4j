@@ -566,14 +566,32 @@ static void joutput_string_write(const unsigned char *s, int size,
     joutput("\"");
 
 #ifdef I18N_UTF8
+    int sum_sgmt_size = 0;
+    int sgmt_index = 0;
     for (i = 0; i < size; i++) {
       int c = s[i];
+      /* UTF-8 continuation bytes are always >= 0x80, so no byte of a
+         multi-byte character can be mistaken for a character to escape. */
       if (c == '\"' || c == '\\') {
         joutput("\\%c", c);
       } else if (c == '\n') {
         joutput("\\n");
       } else {
         joutput("%c", c);
+      }
+
+      // insert line breaks between segments concatenated with '&'
+      if (tmp_sgmt_sizes && i < size - 1) {
+        size_t segment_end_position =
+            sum_sgmt_size + tmp_sgmt_sizes[sgmt_index] - 1;
+        if (i == segment_end_position) {
+          joutput("\" + ");
+          joutput_newline();
+          joutput_prefix();
+          joutput("\"");
+          sum_sgmt_size += tmp_sgmt_sizes[sgmt_index];
+          sgmt_index++;
+        }
       }
     }
 #else
