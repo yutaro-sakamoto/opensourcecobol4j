@@ -44,7 +44,11 @@ AT_DATA([prog.cbl], [
            END-EXEC.
            PERFORM SHOW-STATUS.
 
-           MOVE  "invalid"
+      *    Port 1 never has a listener, so the connection is refused before
+      *    any authentication happens.  Naming only the database would reach
+      *    a PostgreSQL server whenever one runs on localhost, and the
+      *    authentication failure reported there is not what this checks.
+           MOVE  "invalid@127.0.0.1:1"
              TO DBNAME.
            MOVE  "invalid"
              TO USERNAME.
