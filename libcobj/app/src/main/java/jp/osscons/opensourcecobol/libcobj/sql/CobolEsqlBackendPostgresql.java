@@ -6,6 +6,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
@@ -19,6 +23,45 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
  * 登録されている。
  */
 public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
+
+    /**
+     * カーソル名 → PostgreSQL 固有のカーソル状態（先読みバッファ）。サーバカーソル + {@code FETCH
+     * FORWARD} 先読み方式は PostgreSQL 実装の内部事情のため、基底の登録簿ではなく本クラスが持つ。
+     * 生きた JDBC 資源は含まないため、破棄はメモリ解放のみ（close 漏れの概念はない）。
+     */
+    private final Map<String, PgCursorState> cursorStates = new HashMap<>();
+
+    /** 1 カーソルぶんの先読み（バルクフェッチ）状態。OPEN のたびに空の状態へ置き換える。 */
+    private static final class PgCursorState {
+
+        /** 先読みバッファ。各要素は 1 行ぶんの列値配列で、SQL NULL の列は null。 */
+        List<byte[][]> fetchBuffer = new ArrayList<>();
+
+        /** {@link #fetchBuffer} 内で次に供給する行の位置。 */
+        int bufferPos;
+
+        /**
+         * 直近の先読みが要求件数より少ない行数で終わった（＝結果末尾に達した）かどうか。
+         * WHERE CURRENT OF のカーソル位置補正に使う（Open COBOL ESQL 4J の overFetch 相当）。
+         */
+        boolean overFetch;
+
+        /** まだ COBOL 側へ供給していない（バッファに残っている）先読み行数を返す。 */
+        int remainingBuffered() {
+            return fetchBuffer.size() - bufferPos;
+        }
+    }
+
+    /** 指定カーソルの先読み状態を返す（未登録なら空の状態を割り当てる）。 */
+    private PgCursorState state(String cursorName) {
+        return cursorStates.computeIfAbsent(cursorName, k -> new PgCursorState());
+    }
+
+    /** テスト用: 指定カーソルの overFetch フラグ（先読みが結果末尾に達したか）を返す。 */
+    boolean overFetchForTest(String cursorName) {
+        PgCursorState st = cursorStates.get(cursorName);
+        return st != null && st.overFetch;
+    }
 
     @Override
     public String id() {
@@ -108,23 +151,26 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
                 stmt.execute(command);
             }
         }
+        // 新たにオープンしたカーソルは先読みバッファを空から始める（DECLARE 失敗時は置き換えない）。
+        cursorStates.put(cur.name, new PgCursorState());
     }
 
     @Override
     protected boolean fetchRowImpl(
             Connection c, Cursor cur, AbstractCobolField[] out, CobolDataStorage sqlca)
             throws SQLException {
+        PgCursorState st = state(cur.name);
         // バッファを使い切っていれば、OCESQL4J_FETCH_RECORDS 件をまとめて先読みする。
-        if (cur.bufferPos >= cur.fetchBuffer.size()) {
-            refill(c, cur);
+        if (st.bufferPos >= st.fetchBuffer.size()) {
+            refill(c, cur.name, st);
         }
-        if (cur.bufferPos >= cur.fetchBuffer.size()) {
+        if (st.bufferPos >= st.fetchBuffer.size()) {
             // 先読みしても行が無い＝これ以上の行は無い。
             return false;
         }
 
-        byte[][] row = cur.fetchBuffer.get(cur.bufferPos);
-        cur.bufferPos++;
+        byte[][] row = st.fetchBuffer.get(st.bufferPos);
+        st.bufferPos++;
         if (out != null) {
             boolean sawNullWithoutIndicator = false;
             for (int i = 0; i < out.length && i < row.length; i++) {
@@ -150,16 +196,16 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
      * {@code FETCH FORWARD <OCESQL4J_FETCH_RECORDS> FROM name} を実行し、返った全行を
      * 先読みバッファへ格納する。
      */
-    private void refill(Connection c, Cursor cur) throws SQLException {
-        cur.fetchBuffer = new java.util.ArrayList<>();
-        cur.bufferPos = 0;
+    private void refill(Connection c, String cursorName, PgCursorState st) throws SQLException {
+        st.fetchBuffer = new ArrayList<>();
+        st.bufferPos = 0;
         int fetchRecords = BulkFetchConfig.getFetchRecords();
-        String fetchSql = "FETCH FORWARD " + fetchRecords + " FROM " + cur.name;
+        String fetchSql = "FETCH FORWARD " + fetchRecords + " FROM " + cursorName;
         LOG.trace("FETCH FORWARD (postgresql): {}", fetchSql);
         try (Statement stmt = c.createStatement()) {
             boolean hasResult = stmt.execute(fetchSql);
             if (!hasResult) {
-                cur.overFetch = false;
+                st.overFetch = false;
                 return;
             }
             ResultSet rs = stmt.getResultSet();
@@ -170,13 +216,13 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
                     for (int i = 0; i < columnCount; i++) {
                         row[i] = CobolDataConverter.getValueFromResultSet(rs, i + 1);
                     }
-                    cur.fetchBuffer.add(row);
+                    st.fetchBuffer.add(row);
                 }
                 rs.close();
             }
-            int size = cur.fetchBuffer.size();
+            int size = st.fetchBuffer.size();
             // 要求件数より少ない行数しか取れなかった＝結果末尾に達した（サーバカーソルは末尾の先）。
-            cur.overFetch = size > 0 && size < fetchRecords;
+            st.overFetch = size > 0 && size < fetchRecords;
         }
     }
 
@@ -189,6 +235,10 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             AbstractCobolField[] resultParams,
             CobolDataStorage sqlca)
             throws SQLException {
+        // OCCURS への複数行 FETCH は単一行 FETCH の先読みバッファを使わない。
+        // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
+        // 食い違うため、ここで破棄しておく。
+        cursorStates.remove(cur.name);
         // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を PostgreSQL へ送り、
         // そのエラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4J と同じ)。
         String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cur.name;
@@ -212,6 +262,8 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         try (Statement stmt = c.createStatement()) {
             stmt.execute("CLOSE " + cur.name);
         }
+        // クローズしたカーソルの先読みバッファを破棄する（CLOSE 失敗時は保持したまま）。
+        cursorStates.remove(cur.name);
     }
 
     @Override
@@ -219,7 +271,8 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             throws SQLException {
         // 先読みバッファに未供給行が remaining 行残っていれば、さらに overFetch（結果末尾に達し
         // サーバカーソルが末尾の先にある）なら +1 行ぶん FETCH BACKWARD してから、バッファを破棄する。
-        int backward = cur.remainingBuffered() + (cur.overFetch ? 1 : 0);
+        PgCursorState st = state(cur.name);
+        int backward = st.remainingBuffered() + (st.overFetch ? 1 : 0);
         if (backward > 0) {
             LOG.trace("FETCH BACKWARD (postgresql): {} FROM {}", backward, cur.name);
             try (Statement stmt = c.createStatement()) {
@@ -227,7 +280,14 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             }
         }
         // 位置補正後は先読みバッファを無効化し、次の FETCH は補正後の位置から取り直す。
-        cur.clearBuffer();
+        cursorStates.remove(cur.name);
+    }
+
+    @Override
+    protected void onCursorsInvalidated() {
+        // COMMIT/ROLLBACK（および DISCONNECT）でサーバカーソルは消えるため、先読みバッファも
+        // すべて破棄する。生きた JDBC 資源は持たないので、メモリ上の状態を捨てるだけでよい。
+        cursorStates.clear();
     }
 
     // -------------------------------------------------------

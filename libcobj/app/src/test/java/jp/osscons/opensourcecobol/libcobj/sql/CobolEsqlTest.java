@@ -984,7 +984,7 @@ class CobolEsqlTest {
         CobolEsql.fetchCursor(sqlca, "wof", makeAlphaField(20, new byte[20]));
         assertEquals(0, getSqlCode(), "first fetch should succeed");
         assertTrue(
-                backend().getCursor("wof").overFetch,
+                ((CobolEsqlBackendPostgresql) backend()).overFetchForTest("wof"),
                 "prefetch returned fewer rows than requested -> overFetch=true");
 
         CobolEsql.execWhereCurrentOf(
@@ -1031,7 +1031,7 @@ class CobolEsqlTest {
         CobolEsql.fetchCursor(sqlca, "web", makeAlphaField(20, new byte[20]));
         assertEquals(0, getSqlCode(), "first fetch should succeed");
         assertFalse(
-                backend().getCursor("web").overFetch,
+                ((CobolEsqlBackendPostgresql) backend()).overFetchForTest("web"),
                 "exact-count prefetch -> overFetch=false (cursor on last row, not past end)");
 
         CobolEsql.execWhereCurrentOf(

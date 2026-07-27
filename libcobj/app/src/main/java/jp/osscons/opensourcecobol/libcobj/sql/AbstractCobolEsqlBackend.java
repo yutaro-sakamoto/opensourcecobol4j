@@ -8,9 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -219,8 +217,9 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * <p>呼ばれるのは (1) COMMIT/ROLLBACK によるトランザクション終端の直後、(2) DISCONNECT での
      * 接続クローズ直前、の 2 経路。カーソルごとに生きた資源（JDBC の {@code ResultSet}/{@code
      * Statement} など）を自前で保持するバックエンドは、本フックでそれらをすべて解放すること。解放を
-     * 怠ると COMMIT/ROLLBACK のたびに資源がリークする。カーソルの外に生きた資源を持たない
-     * バックエンド（例: サーバカーソル + 先読みバッファ方式の PostgreSQL）は既定の no-op のままでよい。
+     * 怠ると COMMIT/ROLLBACK のたびに資源がリークする。カーソルごとの内部状態（先読みバッファなど）を
+     * 持つバックエンドはここで破棄する。per-cursor の状態も資源も持たないバックエンドは既定の
+     * no-op のままでよい。
      *
      * <p>明示 CLOSE（1 本ずつの終端）はこのフックを通らない。per-cursor の解放は
      * {@link #closeCursorImpl} 側で行うこと。
@@ -796,8 +795,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             }
             openCursorImpl(conn, cursor, params);
             cursor.isOpened = true;
-            // 新たにオープンしたカーソルは先読みバッファを空から始める。
-            cursor.clearBuffer();
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             LOG.error("OPEN CURSOR {} failed: {}", cursorName, e.getMessage());
@@ -864,10 +861,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                         "Cursor not found: " + cursorName);
                 return;
             }
-            // OCCURS への複数行 FETCH は単一行 FETCH の先読みバッファを使わない。
-            // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
-            // 食い違うため、ここで破棄しておく。
-            cursor.clearBuffer();
             // 取得行数 SQLERRD(3) を 0 で初期化してから委譲する。結果末尾 (0 行) の場合に
             // fetchOccursImpl が SQLCODE=0 のみ設定して早期 return しても、SQLERRD(3) が
             // 前回バッチの件数として残らないようにする (満杯バッチの次に 0 行 FETCH した際の
@@ -909,7 +902,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
             cursor.closeResources();
             cursor.isOpened = false;
-            cursor.clearBuffer();
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
             setResultFromException(sqlca, e);
@@ -1118,8 +1110,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
             cursor.closeResources();
             cursor.isOpened = false;
-            // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
-            cursor.clearBuffer();
         }
         // バックエンドへ「全カーソル無効化」を通知する（自前で per-cursor 資源を持つ実装の解放点）。
         onCursorsInvalidated();
@@ -1421,21 +1411,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         AbstractCobolField[] params;
 
         /**
-         * 先読み（バルクフェッチ）バッファ。各要素は 1 行ぶんの列値配列で、SQL NULL の列は null。
-         * PostgreSQL（サーバカーソル）の {@code FETCH FORWARD N} 先読みに使う。
-         */
-        List<byte[][]> fetchBuffer = new ArrayList<>();
-
-        /** {@link #fetchBuffer} 内で次に供給する行の位置。 */
-        int bufferPos;
-
-        /**
-         * 直近の先読みが要求件数より少ない行数で終わった（＝結果末尾に達した）かどうか。
-         * WHERE CURRENT OF のカーソル位置補正に使う（Open COBOL ESQL 4J の overFetch 相当）。
-         */
-        boolean overFetch;
-
-        /**
          * このカーソルに紐づく、クローズが必要な資源。バックエンド実装が {@code openCursorImpl} で
          * 登録すると、基底クラスがカーソルの終端（明示 CLOSE および COMMIT/ROLLBACK）で
          * {@link #closeResources()} により解放する。カーソルの外に生きた資源を持たないバックエンド
@@ -1496,18 +1471,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
          */
         public AutoCloseable[] getResources() {
             return resources;
-        }
-
-        /** まだ COBOL 側へ供給していない（バッファに残っている）先読み行数を返す。 */
-        int remainingBuffered() {
-            return fetchBuffer.size() - bufferPos;
-        }
-
-        /** 先読みバッファと overFetch フラグをリセットする。 */
-        void clearBuffer() {
-            fetchBuffer = new ArrayList<>();
-            bufferPos = 0;
-            overFetch = false;
         }
 
         /**
