@@ -70,20 +70,21 @@ class AbstractCobolEsqlBackendLifecycleTest {
         }
 
         @Override
-        protected void openCursorImpl(Connection c, Cursor cur, AbstractCobolField[] params) {
+        protected void openCursorImpl(
+                Connection c, String cursorName, String query, AbstractCobolField[] params) {
             // no-op（SQL は発行しない）
         }
 
         @Override
         protected boolean fetchRowImpl(
-                Connection c, Cursor cur, AbstractCobolField[] out, CobolDataStorage sqlca) {
+                Connection c, String cursorName, AbstractCobolField[] out, CobolDataStorage sqlca) {
             return false;
         }
 
         @Override
         protected void fetchOccursImpl(
                 Connection c,
-                Cursor cur,
+                String cursorName,
                 int occursSize,
                 int occursMax,
                 AbstractCobolField[] resultParams,
@@ -92,12 +93,13 @@ class AbstractCobolEsqlBackendLifecycleTest {
         }
 
         @Override
-        protected void closeCursorImpl(Connection c, Cursor cur) {
+        protected void closeCursorImpl(Connection c, String cursorName) {
             events.add("closeCursorImpl");
         }
 
         @Override
-        protected void repositionForCurrentOf(Connection c, Cursor cur, CobolDataStorage sqlca) {
+        protected void repositionForCurrentOf(
+                Connection c, String cursorName, CobolDataStorage sqlca) {
             // no-op
         }
 
@@ -151,14 +153,15 @@ class AbstractCobolEsqlBackendLifecycleTest {
         }
 
         @Override
-        protected void openCursorImpl(Connection c, Cursor cur, AbstractCobolField[] params) {
-            openResources.put(cur.getName(), new RecordingResource(resourceEvents, cur.getName()));
+        protected void openCursorImpl(
+                Connection c, String cursorName, String query, AbstractCobolField[] params) {
+            openResources.put(cursorName, new RecordingResource(resourceEvents, cursorName));
         }
 
         @Override
-        protected void closeCursorImpl(Connection c, Cursor cur) {
-            super.closeCursorImpl(c, cur);
-            closeQuietly(openResources.remove(cur.getName()));
+        protected void closeCursorImpl(Connection c, String cursorName) {
+            super.closeCursorImpl(c, cursorName);
+            closeQuietly(openResources.remove(cursorName));
         }
 
         @Override

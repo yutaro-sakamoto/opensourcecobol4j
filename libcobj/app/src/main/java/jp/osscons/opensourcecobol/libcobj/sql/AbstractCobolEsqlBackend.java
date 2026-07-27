@@ -144,15 +144,19 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected abstract void rollbackTransaction(Connection c) throws SQLException;
 
     /**
-     * カーソルをオープンする（DECLARE 等の DB 別の発行手段を内包）。成功時に {@code cur} を
-     * オープン済みとして扱えるよう、SQL の発行のみを行う（状態の更新は共通フローが行う）。
+     * カーソルをオープンする（DECLARE 等の DB 別の発行手段を内包）。成功時にオープン済みとして
+     * 扱えるよう、SQL の発行のみを行う（状態の更新は共通フローが行う）。
      *
      * @param c JDBC 接続
-     * @param cur カーソル状態
-     * @param params OPEN ... USING のホスト変数（なければ {@code null}）
+     * @param cursorName カーソル名
+     * @param query このカーソルに紐づく SQL クエリ
+     * @param params バインドする有効なホスト変数パラメータ。OPEN ... USING を最優先し、なければ
+     *     DECLARE 時のパラメータへフォールバックする解決は基底が済ませている（どちらも無ければ
+     *     {@code null}）
      * @throws SQLException データベースアクセスエラー
      */
-    protected abstract void openCursorImpl(Connection c, Cursor cur, AbstractCobolField[] params)
+    protected abstract void openCursorImpl(
+            Connection c, String cursorName, String query, AbstractCobolField[] params)
             throws SQLException;
 
     /**
@@ -160,21 +164,21 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * {@code sqlca} に {@code ECPG_MISSING_INDICATOR} を設定する。
      *
      * @param c JDBC 接続
-     * @param cur カーソル状態
+     * @param cursorName カーソル名
      * @param out 列の値を受け取る出力ホスト変数
      * @param sqlca 指標変数なしの NULL をフラグするための SQLCA ストレージ
      * @return 行が取得できた場合 true、これ以上行がなければ false
      * @throws SQLException データベースアクセスエラー
      */
     protected abstract boolean fetchRowImpl(
-            Connection c, Cursor cur, AbstractCobolField[] out, CobolDataStorage sqlca)
+            Connection c, String cursorName, AbstractCobolField[] out, CobolDataStorage sqlca)
             throws SQLException;
 
     /**
      * カーソルから複数行を取得し、OCCURS 配列へ書き込む。行数・NULL 処理を含め {@code sqlca} を更新する。
      *
      * @param c JDBC 接続
-     * @param cur カーソル状態
+     * @param cursorName カーソル名
      * @param occursSize OCCURS 要素 1 つあたりのバイトサイズ
      * @param occursMax 取得する行の最大数
      * @param resultParams 結果パラメータフィールド（列ごとに 1 つ）
@@ -183,7 +187,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      */
     protected abstract void fetchOccursImpl(
             Connection c,
-            Cursor cur,
+            String cursorName,
             int occursSize,
             int occursMax,
             AbstractCobolField[] resultParams,
@@ -191,25 +195,26 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             throws SQLException;
 
     /**
-     * カーソルをクローズする（CLOSE 等の DB 別の発行手段を内包）。SQL の発行のみを行う。
+     * カーソルをクローズする（CLOSE 等の DB 別の発行手段を内包）。SQL の発行と、このカーソルに
+     * 紐づく資源・内部状態（あれば）の解放を行う。
      *
      * @param c JDBC 接続
-     * @param cur カーソル状態
+     * @param cursorName カーソル名
      * @throws SQLException データベースアクセスエラー
      */
-    protected abstract void closeCursorImpl(Connection c, Cursor cur) throws SQLException;
+    protected abstract void closeCursorImpl(Connection c, String cursorName) throws SQLException;
 
     /**
      * WHERE CURRENT OF の実行前に、論理現在行へカーソル位置を補正する（PostgreSQL は先読み分の
      * FETCH BACKWARD と先読みバッファ破棄を内包）。
      *
      * @param c JDBC 接続
-     * @param cur カーソル状態
+     * @param cursorName カーソル名
      * @param sqlca SQLCA データストレージ
      * @throws SQLException データベースアクセスエラー
      */
-    protected abstract void repositionForCurrentOf(Connection c, Cursor cur, CobolDataStorage sqlca)
-            throws SQLException;
+    protected abstract void repositionForCurrentOf(
+            Connection c, String cursorName, CobolDataStorage sqlca) throws SQLException;
 
     /**
      * すべてのカーソルが一括で無効化されるタイミングで呼ばれる通知フック。既定は no-op。
@@ -516,7 +521,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             return null;
         }
         try {
-            repositionForCurrentOf(conn, cursor, sqlca);
+            repositionForCurrentOf(conn, cursorName, sqlca);
         } catch (SQLException e) {
             setResultFromException(sqlca, e);
             return null;
@@ -793,7 +798,17 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             if (log) {
                 LOG.debug("OPEN CURSOR {}", cursorName);
             }
-            openCursorImpl(conn, cursor, params);
+            // OPEN ... USING のパラメータを最優先し、なければ DECLARE 時に保存したパラメータへ
+            // フォールバックする（DB 非依存の共通意味論。各バックエンドでの再実装を防ぐ）。
+            AbstractCobolField[] effectiveParams;
+            if (params != null && params.length > 0) {
+                effectiveParams = params;
+            } else if (cursor.params != null && cursor.params.length > 0) {
+                effectiveParams = cursor.params;
+            } else {
+                effectiveParams = null;
+            }
+            openCursorImpl(conn, cursor.name, cursor.query, effectiveParams);
             cursor.isOpened = true;
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
@@ -828,7 +843,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
             // ある場合、fetch が ECPG_MISSING_INDICATOR で上書きすることがある。
             SqlCA.setSuccess(sqlca);
-            boolean hasRow = fetchRowImpl(conn, cursor, resultParams, sqlca);
+            boolean hasRow = fetchRowImpl(conn, cursorName, resultParams, sqlca);
             if (!hasRow) {
                 SqlCA.setNotFound(sqlca);
             }
@@ -866,7 +881,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // 前回バッチの件数として残らないようにする (満杯バッチの次に 0 行 FETCH した際の
             // stale な行数による再処理・無限ループを防ぐ)。通常パスは実件数で上書きする。
             SqlCA.setRowCount(sqlca, 0);
-            fetchOccursImpl(conn, cursor, occursSize, occursMax, resultParams, sqlca);
+            fetchOccursImpl(conn, cursorName, occursSize, occursMax, resultParams, sqlca);
         } catch (SQLException e) {
             // フェッチ失敗時は取得行数 SQLERRD(3) を 0 にしてから DB エラーを反映する。
             SqlCA.setRowCount(sqlca, 0);
@@ -899,7 +914,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 return;
             }
             // カーソルに紐づく資源（あれば）の解放は closeCursorImpl（バックエンド実装）の責務。
-            closeCursorImpl(conn, cursor);
+            closeCursorImpl(conn, cursorName);
             cursor.isOpened = false;
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {

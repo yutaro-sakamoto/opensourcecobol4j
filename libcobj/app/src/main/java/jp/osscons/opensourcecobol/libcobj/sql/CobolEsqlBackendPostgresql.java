@@ -117,32 +117,24 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     // -------------------------------------------------------
 
     @Override
-    protected void openCursorImpl(Connection c, Cursor cur, AbstractCobolField[] params)
+    protected void openCursorImpl(
+            Connection c, String cursorName, String query, AbstractCobolField[] params)
             throws SQLException {
-        String command = "DECLARE " + cur.name + " CURSOR FOR " + cur.query;
+        String command = "DECLARE " + cursorName + " CURSOR FOR " + query;
 
-        // OPEN ... USING (params) を最優先し、なければ DECLARE 時に保存した cur.params に
-        // フォールバック。どちらも空ならパラメータなしで Statement を実行する。
-        AbstractCobolField[] bindParams;
-        if (params != null && params.length > 0) {
-            bindParams = params;
-        } else if (cur.params != null && cur.params.length > 0) {
-            bindParams = cur.params;
-        } else {
-            bindParams = null;
-        }
-
+        // params は基底が解決済みの有効パラメータ（OPEN ... USING 優先、なければ DECLARE 時の
+        // パラメータ）。空ならパラメータなしで Statement を実行する。
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "DECLARE CURSOR (postgresql): {} [params={}]",
                     collapseWhitespace(command),
-                    bindParams != null ? bindParams.length : 0);
+                    params != null ? params.length : 0);
         }
-        if (bindParams != null) {
+        if (params != null) {
             try (PreparedStatement pstmt = c.prepareStatement(command)) {
                 ParameterMetaData metaData = pstmt.getParameterMetaData();
-                for (int i = 0; i < bindParams.length; i++) {
-                    CobolDataConverter.setParam(pstmt, i + 1, metaData, bindParams[i]);
+                for (int i = 0; i < params.length; i++) {
+                    CobolDataConverter.setParam(pstmt, i + 1, metaData, params[i]);
                 }
                 pstmt.execute();
             }
@@ -152,17 +144,17 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             }
         }
         // 新たにオープンしたカーソルは先読みバッファを空から始める（DECLARE 失敗時は置き換えない）。
-        cursorStates.put(cur.name, new PgCursorState());
+        cursorStates.put(cursorName, new PgCursorState());
     }
 
     @Override
     protected boolean fetchRowImpl(
-            Connection c, Cursor cur, AbstractCobolField[] out, CobolDataStorage sqlca)
+            Connection c, String cursorName, AbstractCobolField[] out, CobolDataStorage sqlca)
             throws SQLException {
-        PgCursorState st = state(cur.name);
+        PgCursorState st = state(cursorName);
         // バッファを使い切っていれば、OCESQL4J_FETCH_RECORDS 件をまとめて先読みする。
         if (st.bufferPos >= st.fetchBuffer.size()) {
-            refill(c, cur.name, st);
+            refill(c, cursorName, st);
         }
         if (st.bufferPos >= st.fetchBuffer.size()) {
             // 先読みしても行が無い＝これ以上の行は無い。
@@ -229,7 +221,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     @Override
     protected void fetchOccursImpl(
             Connection c,
-            Cursor cur,
+            String cursorName,
             int occursSize,
             int occursMax,
             AbstractCobolField[] resultParams,
@@ -238,10 +230,10 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         // OCCURS への複数行 FETCH は単一行 FETCH の先読みバッファを使わない。
         // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
         // 食い違うため、ここで破棄しておく。
-        cursorStates.remove(cur.name);
+        cursorStates.remove(cursorName);
         // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を PostgreSQL へ送り、
         // そのエラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4J と同じ)。
-        String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cur.name;
+        String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursorName;
         LOG.trace("FETCH FORWARD occurs (postgresql): {}", fetchSql);
         try (Statement stmt = c.createStatement();
                 ResultSet rs = stmt.executeQuery(fetchSql)) {
@@ -257,30 +249,30 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     }
 
     @Override
-    protected void closeCursorImpl(Connection c, Cursor cur) throws SQLException {
-        LOG.trace("CLOSE CURSOR (postgresql): {}", cur.name);
+    protected void closeCursorImpl(Connection c, String cursorName) throws SQLException {
+        LOG.trace("CLOSE CURSOR (postgresql): {}", cursorName);
         try (Statement stmt = c.createStatement()) {
-            stmt.execute("CLOSE " + cur.name);
+            stmt.execute("CLOSE " + cursorName);
         }
         // クローズしたカーソルの先読みバッファを破棄する（CLOSE 失敗時は保持したまま）。
-        cursorStates.remove(cur.name);
+        cursorStates.remove(cursorName);
     }
 
     @Override
-    protected void repositionForCurrentOf(Connection c, Cursor cur, CobolDataStorage sqlca)
+    protected void repositionForCurrentOf(Connection c, String cursorName, CobolDataStorage sqlca)
             throws SQLException {
         // 先読みバッファに未供給行が remaining 行残っていれば、さらに overFetch（結果末尾に達し
         // サーバカーソルが末尾の先にある）なら +1 行ぶん FETCH BACKWARD してから、バッファを破棄する。
-        PgCursorState st = state(cur.name);
+        PgCursorState st = state(cursorName);
         int backward = st.remainingBuffered() + (st.overFetch ? 1 : 0);
         if (backward > 0) {
-            LOG.trace("FETCH BACKWARD (postgresql): {} FROM {}", backward, cur.name);
+            LOG.trace("FETCH BACKWARD (postgresql): {} FROM {}", backward, cursorName);
             try (Statement stmt = c.createStatement()) {
-                stmt.execute("FETCH BACKWARD " + backward + " FROM " + cur.name);
+                stmt.execute("FETCH BACKWARD " + backward + " FROM " + cursorName);
             }
         }
         // 位置補正後は先読みバッファを無効化し、次の FETCH は補正後の位置から取り直す。
-        cursorStates.remove(cur.name);
+        cursorStates.remove(cursorName);
     }
 
     @Override
