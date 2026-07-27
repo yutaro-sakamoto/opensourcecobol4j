@@ -752,6 +752,11 @@ static void cobc_check_action(const char *name) {
   struct stat st;
 
   if (name && !stat(name, &st)) {
+    if (S_ISDIR(st.st_mode)) {
+      /* Never remove or relocate a directory. Only intermediate files are
+         subject to clean-up, and rename() would succeed on a directory. */
+      return;
+    }
     if (!save_temps) {
       unlink(name);
     } else if (save_temps_dir) {
@@ -897,6 +902,8 @@ static void cobc_print_usage(void) {
          "compiler"));
   puts(_("  -conf=<file>                      User defined dialect "
          "configuration - See -std="));
+  puts(_("  --save-temps(=<dir>)              Save intermediate files, "
+         "optionally into <dir>"));
   puts(_("  --list-reserved                   Display reserved words"));
   puts(_("  -ext <extension>                  Add default file extension"));
   puts(
@@ -1527,10 +1534,11 @@ static struct filename *process_filename(const char *filename) {
   strcpy(fn->source, filename);
 
   /* Set preprocess filename */
+  /* Note: unlike opensource COBOL, -o of opensource COBOL 4J is a directory
+     (where class files are placed), not an output file name, so it must never
+     be used as the name of an intermediate file. */
   if (!fn->need_preprocess) {
     fn->preprocess = strdup(fn->source);
-  } else if (output_name && cb_compile_level == CB_LEVEL_PREPROCESS) {
-    fn->preprocess = strdup(output_name);
   } else if (save_temps) {
     fn->preprocess = cobc_malloc(strlen(basename) + 5);
     sprintf(fn->preprocess, "%s.i", basename);
@@ -1541,8 +1549,6 @@ static struct filename *process_filename(const char *filename) {
   /* Set translate filename */
   if (!fn->need_translate) {
     fn->translate = strdup(fn->source);
-  } else if (output_name && cb_compile_level == CB_LEVEL_TRANSLATE) {
-    fn->translate = strdup(output_name);
   } else if (save_csrc || save_temps ||
              cb_compile_level == CB_LEVEL_TRANSLATE) {
     fn->translate = cobc_malloc(strlen(basename) + 5);
@@ -1560,8 +1566,6 @@ static struct filename *process_filename(const char *filename) {
   /* Set object filename */
   if (!fn->need_assemble) {
     fn->object = strdup(fn->source);
-  } else if (output_name && cb_compile_level == CB_LEVEL_ASSEMBLE) {
-    fn->object = strdup(output_name);
   } else if (save_temps || cb_compile_level == CB_LEVEL_ASSEMBLE) {
 #if defined(_MSC_VER)
     fn->object = cobc_malloc(strlen(basename) + 5);
@@ -1637,7 +1641,9 @@ static int preprocess(struct filename *fn) {
   /* INCLUDE SQLCA 検出フラグをソースファイルごとにリセットする。 */
   cb_sqlca_include_seen = 0;
 
-  if (output_name || cb_compile_level > CB_LEVEL_PREPROCESS) {
+  /* -o names the directory for class files, so it has no meaning for -E:
+     the preprocessed source goes to stdout as it does without -o. */
+  if (cb_compile_level > CB_LEVEL_PREPROCESS) {
     ppout = fopen(fn->preprocess, "w");
     if (!ppout) {
       cobc_terminate(fn->preprocess);

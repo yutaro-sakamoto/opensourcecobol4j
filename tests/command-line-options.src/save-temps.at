@@ -1,0 +1,45 @@
+AT_SETUP([--save-temps])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           DISPLAY "HELLO".
+           STOP RUN.
+])
+
+AT_DATA([broken.cbl], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      broken.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           MOVE 1 TO NO-SUCH-VARIABLE.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} --help | grep '@<:@-@:>@@<:@-@:>@save@<:@-@:>@temps' > /dev/null], [0])
+
+# The directory given to -o must survive a translation error,
+# instead of being moved into the --save-temps directory.
+AT_CHECK([mkdir out save && echo important > out/important.txt], [0])
+AT_CHECK([${COBJ} -C -o out --save-temps=save prog.cbl broken.cbl], [1], [],
+[broken.cbl:7: Error: 'NO-SUCH-VARIABLE' undefined
+])
+AT_CHECK([test -f out/important.txt], [0])
+AT_CHECK([test -e save/out], [1])
+
+# -o denotes a directory, so -E keeps writing the preprocessed
+# source to stdout instead of failing on that directory.
+AT_CHECK([${COBJ} -E -o out prog.cbl | grep -i 'PROGRAM-ID. prog.' > /dev/null], [0])
+AT_CHECK([test -f out/important.txt], [0])
+
+# The same holds when --save-temps is given without a directory.
+AT_CHECK([${COBJ} -C -o out --save-temps prog.cbl broken.cbl], [1], [],
+[broken.cbl:7: Error: 'NO-SUCH-VARIABLE' undefined
+])
+AT_CHECK([test -f out/important.txt], [0])
+
+AT_CLEANUP
