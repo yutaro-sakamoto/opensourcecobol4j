@@ -214,6 +214,22 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             throws SQLException;
 
     /**
+     * すべてのカーソルが一括で無効化されるタイミングで呼ばれる通知フック。既定は no-op。
+     *
+     * <p>呼ばれるのは (1) COMMIT/ROLLBACK によるトランザクション終端の直後、(2) DISCONNECT での
+     * 接続クローズ直前、の 2 経路。カーソルごとに生きた資源（JDBC の {@code ResultSet}/{@code
+     * Statement} など）を自前で保持するバックエンドは、本フックでそれらをすべて解放すること。解放を
+     * 怠ると COMMIT/ROLLBACK のたびに資源がリークする。カーソルの外に生きた資源を持たない
+     * バックエンド（例: サーバカーソル + 先読みバッファ方式の PostgreSQL）は既定の no-op のままでよい。
+     *
+     * <p>明示 CLOSE（1 本ずつの終端）はこのフックを通らない。per-cursor の解放は
+     * {@link #closeCursorImpl} 側で行うこと。
+     */
+    protected void onCursorsInvalidated() {
+        // 既定は no-op（カーソルに紐づく生きた資源を持たないバックエンド向け）。
+    }
+
+    /**
      * DB ごとの「生エラー → (ECPG 正規コード, 正規化 SQLSTATE)」変換。{@link SQLException} 全体を
      * 受け取るため、{@code getSQLState()} に加えて {@code getErrorCode()} も併用できる。
      *
@@ -275,6 +291,9 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             } catch (SQLException ignored) {
                 // 切断時の commit エラーは無視する
             }
+            // 接続クローズ前に全カーソルを無効化し、カーソルに紐づく資源を解放する
+            // （「接続クローズが子の Statement/ResultSet を閉じる」JDBC カスケードに暗黙依存しない）。
+            clearCursors();
             if (!conn.isClosed()) {
                 conn.close();
             }
@@ -1102,6 +1121,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
             cursor.clearBuffer();
         }
+        // バックエンドへ「全カーソル無効化」を通知する（自前で per-cursor 資源を持つ実装の解放点）。
+        onCursorsInvalidated();
     }
 
     // -------------------------------------------------------
