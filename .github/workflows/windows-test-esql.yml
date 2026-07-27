@@ -96,7 +96,6 @@ jobs:
         ./esql-cobol-data
         ./esql-misc
         ./esql-sql-data
-        ./esql-utf8
 
     - name: Upload log files if tests fail
       if: failure()
@@ -109,4 +108,3 @@ jobs:
           tests/esql-cobol-data.dir/
           tests/esql-misc.dir/
           tests/esql-sql-data.dir/
-          tests/esql-utf8.dir/

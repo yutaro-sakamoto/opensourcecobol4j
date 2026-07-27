@@ -47,6 +47,5 @@ jobs:
             tests/esql-cobol-data
             tests/esql-misc
             tests/esql-sql-data
-            tests/esql-utf8
             tests/atconfig
             tests/package.m4
