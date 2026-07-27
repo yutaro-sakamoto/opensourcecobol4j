@@ -7,7 +7,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +31,7 @@ class AbstractCobolEsqlBackendLifecycleTest {
     private CobolDataStorage sqlca;
 
     /** DB へ接続しないスタブバックエンド。ライフサイクルフックの呼び出しを記録するだけ。 */
-    private static final class StubBackend extends AbstractCobolEsqlBackend {
+    private static class StubBackend extends AbstractCobolEsqlBackend {
 
         private final List<String> events;
 
@@ -107,6 +109,77 @@ class AbstractCobolEsqlBackendLifecycleTest {
         @Override
         protected void onCursorsInvalidated() {
             events.add("onCursorsInvalidated");
+        }
+    }
+
+    /** クローズされたことをイベントログに記録するテスト用資源。 */
+    private static final class RecordingResource implements AutoCloseable {
+
+        private final List<String> events;
+        private final String name;
+        boolean closed;
+        boolean failOnClose;
+
+        RecordingResource(List<String> events, String name) {
+            this.events = events;
+            this.name = name;
+        }
+
+        @Override
+        public void close() {
+            closed = true;
+            events.add("resourceClose:" + name);
+            if (failOnClose) {
+                throw new IllegalStateException("close failure (expected by test)");
+            }
+        }
+    }
+
+    /**
+     * カーソルごとに生きた資源を自前の Map で管理するバックエンド（Db2 の ライブ ResultSet 方式を
+     * 模す）。SPI 契約どおり、明示 CLOSE は {@code closeCursorImpl} で、COMMIT/ROLLBACK/DISCONNECT
+     * の一括無効化は {@code onCursorsInvalidated} で解放する。
+     */
+    private static final class ResourceOwningBackend extends StubBackend {
+
+        final Map<String, RecordingResource> openResources = new LinkedHashMap<>();
+        private final List<String> resourceEvents;
+
+        ResourceOwningBackend(List<String> events) {
+            super(events);
+            this.resourceEvents = events;
+        }
+
+        @Override
+        protected void openCursorImpl(Connection c, Cursor cur, AbstractCobolField[] params) {
+            openResources.put(cur.getName(), new RecordingResource(resourceEvents, cur.getName()));
+        }
+
+        @Override
+        protected void closeCursorImpl(Connection c, Cursor cur) {
+            super.closeCursorImpl(c, cur);
+            closeQuietly(openResources.remove(cur.getName()));
+        }
+
+        @Override
+        protected void onCursorsInvalidated() {
+            super.onCursorsInvalidated();
+            for (RecordingResource resource : openResources.values()) {
+                closeQuietly(resource);
+            }
+            openResources.clear();
+        }
+
+        /** 個々の close() 失敗が残りの資源の解放を妨げないようにする。 */
+        private static void closeQuietly(RecordingResource resource) {
+            if (resource == null) {
+                return;
+            }
+            try {
+                resource.close();
+            } catch (RuntimeException ignored) {
+                // クローズ失敗は無視して続行する。
+            }
         }
     }
 
@@ -219,5 +292,84 @@ class AbstractCobolEsqlBackendLifecycleTest {
         assertEquals(SqlCA.ECPG_NO_CONN, sqlCode(), "commit without connection should fail");
         assertEquals(
                 0, count("onCursorsInvalidated"), "failed commit should not notify invalidation");
+    }
+
+    // ============================================================
+    // 自前 Map で per-cursor 資源を管理するバックエンド（Db2 型）の解放契約
+    // ============================================================
+
+    /** 資源管理型バックエンドを生成し、接続を登録して名前のカーソルを DECLARE + OPEN する。 */
+    private ResourceOwningBackend openResourceCursors(String... cursorNames) {
+        ResourceOwningBackend rb = new ResourceOwningBackend(events);
+        rb.addConnection(CONN_ID, stubConnection());
+        for (String name : cursorNames) {
+            rb.declareCursor(sqlca, name, "SELECT 1");
+            rb.openCursor(sqlca, name);
+            assertEquals(0, sqlCode(), "open of " + name + " should succeed");
+        }
+        return rb;
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testResourceBackend_CloseCursorReleasesResource() {
+        ResourceOwningBackend rb = openResourceCursors("c1");
+        RecordingResource resource = rb.openResources.get("c1");
+        assertNotNull(resource, "OPEN should register a live resource");
+        rb.closeCursor(sqlca, "c1");
+        assertEquals(0, sqlCode(), "close cursor should succeed");
+        assertTrue(resource.closed, "explicit CLOSE should release the cursor resource");
+        assertTrue(rb.openResources.isEmpty(), "resource map should be empty after CLOSE");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testResourceBackend_CommitReleasesAllResources() {
+        ResourceOwningBackend rb = openResourceCursors("c1", "c2");
+        RecordingResource r1 = rb.openResources.get("c1");
+        RecordingResource r2 = rb.openResources.get("c2");
+        rb.commit(sqlca);
+        assertEquals(0, sqlCode(), "commit should succeed");
+        assertTrue(r1.closed, "COMMIT should release the first cursor resource");
+        assertTrue(r2.closed, "COMMIT should release the second cursor resource");
+        assertTrue(rb.openResources.isEmpty(), "resource map should be empty after COMMIT");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testResourceBackend_RollbackReleasesAllResources() {
+        ResourceOwningBackend rb = openResourceCursors("c1");
+        RecordingResource resource = rb.openResources.get("c1");
+        rb.rollback(sqlca);
+        assertEquals(0, sqlCode(), "rollback should succeed");
+        assertTrue(resource.closed, "ROLLBACK should release the cursor resource");
+        assertTrue(rb.openResources.isEmpty(), "resource map should be empty after ROLLBACK");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testResourceBackend_DisconnectReleasesResourcesBeforeConnectionClose() {
+        ResourceOwningBackend rb = openResourceCursors("c1");
+        rb.disconnect(sqlca);
+        assertEquals(0, sqlCode(), "disconnect should succeed");
+        int resourceClose = events.indexOf("resourceClose:c1");
+        int connectionClose = events.indexOf("connectionClose");
+        assertTrue(resourceClose >= 0, "DISCONNECT should release the cursor resource");
+        assertTrue(
+                resourceClose < connectionClose,
+                "cursor resource should be released before the connection is closed");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testResourceBackend_CloseFailureDoesNotStopOthers() {
+        ResourceOwningBackend rb = openResourceCursors("c1", "c2");
+        rb.openResources.get("c1").failOnClose = true;
+        RecordingResource following = rb.openResources.get("c2");
+        rb.commit(sqlca);
+        assertEquals(0, sqlCode(), "commit should succeed despite resource close failure");
+        assertTrue(following.closed, "close failure should not stop closing remaining resources");
+        assertTrue(
+                rb.openResources.isEmpty(), "resource map should be cleared even on close failure");
     }
 }

@@ -898,9 +898,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 SqlCA.setSuccess(sqlca);
                 return;
             }
+            // カーソルに紐づく資源（あれば）の解放は closeCursorImpl（バックエンド実装）の責務。
             closeCursorImpl(conn, cursor);
-            // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
-            cursor.closeResources();
             cursor.isOpened = false;
             SqlCA.setSuccess(sqlca);
         } catch (SQLException e) {
@@ -1107,11 +1106,10 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     /** すべてのカーソルをクローズ済みとしてマークする（例: COMMIT や ROLLBACK の後）。 */
     private void clearCursors() {
         for (Cursor cursor : cursors.values()) {
-            // カーソルに紐づく資源（あれば）を解放する。資源を登録しないバックエンドでは no-op。
-            cursor.closeResources();
             cursor.isOpened = false;
         }
-        // バックエンドへ「全カーソル無効化」を通知する（自前で per-cursor 資源を持つ実装の解放点）。
+        // バックエンドへ「全カーソル無効化」を通知する。カーソルに紐づく生きた資源・内部状態を
+        // 持つ実装はこのフックで解放する（基底は簿記のみを行う）。
         onCursorsInvalidated();
     }
 
@@ -1410,14 +1408,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         /** DECLARE 時にバインドされたホスト変数パラメータ。 */
         AbstractCobolField[] params;
 
-        /**
-         * このカーソルに紐づく、クローズが必要な資源。バックエンド実装が {@code openCursorImpl} で
-         * 登録すると、基底クラスがカーソルの終端（明示 CLOSE および COMMIT/ROLLBACK）で
-         * {@link #closeResources()} により解放する。カーソルの外に生きた資源を持たないバックエンド
-         * （例: サーバカーソル + 先読みバッファ方式）は {@code null} のままでよい。
-         */
-        AutoCloseable[] resources;
-
         Cursor(String name, String query, int nParams) {
             this.name = name;
             this.query = query;
@@ -1451,48 +1441,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
          */
         public AbstractCobolField[] getParams() {
             return params;
-        }
-
-        /**
-         * このカーソルに紐づく、クローズが必要な資源を登録する。登録した資源は基底クラスが
-         * カーソルの終端（明示 CLOSE および COMMIT/ROLLBACK）で {@link #closeResources()} により
-         * 解放する。並び順の意味づけは登録するバックエンド実装の規約に委ねる。
-         *
-         * @param resources 登録する資源。{@code null} で登録解除
-         */
-        public void setResources(AutoCloseable... resources) {
-            this.resources = resources;
-        }
-
-        /**
-         * 登録済みの資源を返す。
-         *
-         * @return {@link #setResources(AutoCloseable...)} で登録した資源。未登録なら {@code null}
-         */
-        public AutoCloseable[] getResources() {
-            return resources;
-        }
-
-        /**
-         * {@link #resources} に登録された資源をすべて閉じて {@code null} 化する。未登録
-         * （{@code null}）なら何もしない。個々の {@code close()} の失敗は無視し、残りの資源の
-         * クローズを続行する。
-         */
-        public void closeResources() {
-            if (resources == null) {
-                return;
-            }
-            for (AutoCloseable resource : resources) {
-                if (resource == null) {
-                    continue;
-                }
-                try {
-                    resource.close();
-                } catch (Exception ignored) {
-                    // クローズ失敗が残りの資源の解放を妨げないようにする。
-                }
-            }
-            resources = null;
         }
     }
 }
