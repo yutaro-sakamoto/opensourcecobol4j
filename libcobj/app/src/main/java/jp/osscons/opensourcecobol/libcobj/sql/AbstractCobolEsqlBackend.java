@@ -28,8 +28,9 @@ import org.slf4j.LoggerFactory;
  * {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
  *
  * <p>本クラスは将来の DB 実装（Db2/Oracle など）から継承される拡張点であり、{@code protected}
- * フック群と {@link DbSpec}/{@link Cursor}/{@link SqlErrorMapping} ネストクラスは「拡張点としての
- * 契約」として扱う。
+ * フック群と {@link DbSpec}/{@link SqlErrorMapping} ネストクラスは「拡張点としての契約」として扱う。
+ * カーソルのフックは素の値（カーソル名・クエリ・解決済みパラメータ）を受け取り、カーソル登録簿の
+ * 簿記レコード（{@link Cursor}）は基底クラス内部に閉じる（SPI には露出しない）。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterface {
@@ -1403,10 +1404,12 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     }
 
     /**
-     * カーソルの状態保持オブジェクト（旧 {@code SqlCursor} の状態部）。DECLARE/FETCH/CLOSE の
-     * 振る舞いはバックエンドのフックが担い、本クラスは状態のみを持つ。
+     * カーソル登録簿の最小簿記レコード（旧 {@code SqlCursor} の状態部）。基底クラスが DB 共通の
+     * エラー意味論（未 DECLARE の検出、OPEN 済み再 DECLARE 拒否、未 OPEN CLOSE の成功扱いなど）に
+     * 使う内部状態であり、<strong>SPI（{@code protected} フック契約）には露出しない</strong>。
+     * バックエンド実装はフックが受け取る素の値（カーソル名・クエリ・パラメータ）だけを見る。
      */
-    protected static final class Cursor {
+    static final class Cursor {
 
         /** DECLARE/OPEN/FETCH/CLOSE 文で使用されるカーソル名。 */
         String name;
@@ -1429,33 +1432,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             this.nParams = nParams;
             this.isOpened = false;
             this.params = null;
-        }
-
-        /**
-         * カーソル名（DECLARE/OPEN/FETCH/CLOSE 文で使用される）を返す。
-         *
-         * @return カーソル名
-         */
-        public String getName() {
-            return name;
-        }
-
-        /**
-         * このカーソルに紐づく SQL クエリを返す。
-         *
-         * @return DECLARE されたクエリ文字列
-         */
-        public String getQuery() {
-            return query;
-        }
-
-        /**
-         * DECLARE 時にバインドされたホスト変数パラメータを返す。
-         *
-         * @return バインド済みパラメータ。未バインドなら {@code null}
-         */
-        public AbstractCobolField[] getParams() {
-            return params;
         }
     }
 }
