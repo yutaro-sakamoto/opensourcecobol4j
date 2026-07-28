@@ -8,3 +8,19 @@ m4_include([cobj-idx.src/misc.at])
 m4_include([migrate.at])
 m4_include([unlock.at])
 m4_include([indexed-file.at])
+
+# COBOL level INDEXED file tests, moved here from the suites that CI runs
+# with autotest -j.  INDEXED files are backed by SQLite via sqlite-jdbc,
+# which unpacks its native library into a shared temporary directory and
+# prunes stale copies at JVM startup.  When several JVMs do that at once the
+# prune fails on Windows, because another JVM still holds the library open,
+# and sqlite-jdbc reports it on stderr, which fails the test group.  This
+# suite runs serially, so the tests below never overlap.
+m4_include([index-file-status.at])
+m4_include([validate-indexed-file-keys.at])
+m4_include([record-key-duplicates-error.at])
+m4_include([read_prev_after_start.at])
+m4_include([assign_external.at])
+m4_include([split-keys.at])
+m4_include([file-control-indexed.at])
+m4_include([abort-on-file-error.at])
