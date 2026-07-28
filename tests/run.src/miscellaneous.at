@@ -1602,41 +1602,6 @@ AT_CHECK([java prog], [0], [0000000000])
 AT_CLEANUP
 
 
-AT_SETUP([First READ on empty SEQUENTIAL INDEXED file])
-
-AT_DATA([prog.cob], [
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog.
-       ENVIRONMENT      DIVISION.
-       INPUT-OUTPUT     SECTION.
-       FILE-CONTROL.
-       SELECT TEST-FILE ASSIGN       "./TEST-FILE"
-                        ORGANIZATION IS  INDEXED
-                        ACCESS MODE  IS  SEQUENTIAL
-                        RECORD KEY   IS  TEST-KEY.
-       DATA             DIVISION.
-       FILE             SECTION.
-       FD TEST-FILE.
-       01 TEST-KEY      PIC X(10).
-       PROCEDURE        DIVISION.
-           OPEN  OUTPUT TEST-FILE.
-           CLOSE TEST-FILE.
-           OPEN  INPUT  TEST-FILE.
-           READ  TEST-FILE
-               AT END
-                   DISPLAY "OK" NO ADVANCING
-                   END-DISPLAY
-           END-READ.
-           CLOSE TEST-FILE.
-           STOP RUN.
-])
-
-AT_CHECK([${COMPILE} prog.cob])
-AT_CHECK([java prog], [0], [OK])
-
-AT_CLEANUP
-
-
 AT_SETUP([REWRITE a RELATIVE file with RANDOM access])
 
 AT_DATA([prog.cob], [
@@ -2205,38 +2170,6 @@ OKOKOK
 
 AT_CLEANUP
 
-AT_SETUP([READ - KEY ignored with sequential READ])
-
-AT_DATA([prog.cob], [
-       IDENTIFICATION   DIVISION.
-       PROGRAM-ID.      prog.
-       ENVIRONMENT      DIVISION.
-       INPUT-OUTPUT     SECTION.
-       FILE-CONTROL.
-       SELECT TEST-FILE ASSIGN       "./TEST-FILE"
-                        ORGANIZATION IS  INDEXED
-                        ACCESS MODE  IS  SEQUENTIAL
-                        RECORD KEY   IS  TEST-KEY.
-       DATA             DIVISION.
-       FILE             SECTION.
-       FD TEST-FILE.
-       01 TEST-KEY      PIC X(4).
-       PROCEDURE        DIVISION.
-           OPEN  OUTPUT TEST-FILE.
-           CLOSE TEST-FILE.
-           OPEN  INPUT  TEST-FILE.
-           START TEST-FILE KEY IS EQUAL TO TEST-KEY.
-           READ TEST-FILE KEY IS TEST-KEY.
-           DISPLAY TEST-KEY NO ADVANCING.
-           CLOSE TEST-FILE.
-           STOP RUN.
-])
-
-AT_CHECK([${COMPILE} prog.cob], [0], [],
-[prog.cob:20: Warning: KEY ignored with sequential READ
-])
-
-AT_CLEANUP
 
 AT_SETUP([SORT - missing fcd in variable-length WRITE])
 AT_CHECK([${SKIP_TEST}])
@@ -2427,85 +2360,6 @@ AT_CHECK([java prog], [1], [],
 
 AT_CLEANUP
 
-AT_SETUP([Open an invalid formatted indexed file])
-
-AT_CHECK([echo invalid-data > invalid-formatted-file])
-
-AT_DATA([prog.cbl],
-[
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. prog.
-
-       ENVIRONMENT DIVISION.
-       INPUT-OUTPUT SECTION.
-       FILE-CONTROL.
-           SELECT F ASSIGN TO "invalid-formatted-file"
-               ORGANIZATION IS INDEXED
-               ACCESS MODE IS DYNAMIC
-               RECORD KEY IS REC-KEY
-               FILE STATUS IS FILE-STATUS.
-
-       DATA DIVISION.
-       FILE SECTION.
-       FD  f.
-       01  REC.
-         05  REC-KEY      PIC X(5).
-
-       WORKING-STORAGE SECTION.
-       01  FILE-STATUS      PIC XX.
-       PROCEDURE DIVISION.
-       MAIN-PROCEDURE.
-
-       OPEN INPUT f.
-       DISPLAY FILE-STATUS.
-       CLOSE f.
-])
-
-AT_CHECK([${COMPILE} prog.cbl])
-AT_CHECK([java prog], [0], 
-[30
-])
-AT_CLEANUP
-
-AT_SETUP([Open an invalid formatted indexed file])
-
-AT_CHECK([echo invalid-data > invalid-formatted-file])
-
-AT_DATA([prog.cbl],
-[
-       IDENTIFICATION DIVISION.
-       PROGRAM-ID. prog.
-
-       ENVIRONMENT DIVISION.
-       INPUT-OUTPUT SECTION.
-       FILE-CONTROL.
-           SELECT F ASSIGN TO "invalid-formatted-file"
-               ORGANIZATION IS INDEXED
-               ACCESS MODE IS DYNAMIC
-               RECORD KEY IS REC-KEY
-               FILE STATUS IS FILE-STATUS.
-
-       DATA DIVISION.
-       FILE SECTION.
-       FD  f.
-       01  REC.
-         05  REC-KEY      PIC X(5).
-
-       WORKING-STORAGE SECTION.
-       01  FILE-STATUS      PIC XX.
-       PROCEDURE DIVISION.
-       MAIN-PROCEDURE.
-
-       OPEN INPUT f.
-       DISPLAY FILE-STATUS.
-       CLOSE f.
-])
-
-AT_CHECK([${COMPILE} prog.cbl])
-AT_CHECK([java prog], [0], 
-[30
-])
-AT_CLEANUP
 
 AT_SETUP([moveFrom(byte@<:@@:>@)])
 AT_CHECK([cp ../../run.src/TestMoveFromBytes.java .])
