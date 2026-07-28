@@ -72,9 +72,10 @@ jobs:
         #               processes, and are timing sensitive
         #   cobj-idx    fails intermittently once several test groups run
         #               at the same time
+        echo "nproc=$(nproc)"
         case "${{ inputs.test-name }}" in
           file-lock*|cobj-idx) ./${{ inputs.test-name }} ;;
-          *)                   ./${{ inputs.test-name }} -j"$(nproc)" ;;
+          *)                   ./${{ inputs.test-name }} -j"$(( $(nproc) * 2 ))" ;;
         esac
 
     - name: Upload log files if tests fail
