@@ -21,13 +21,14 @@ package jp.osscons.opensourcecobol.libcobj.common;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import jp.osscons.opensourcecobol.libcobj.common.CobolControl.LabelType;
 import org.junit.jupiter.api.Test;
 
 class CobolControlTest {
 
-    /** 実行された順に自身の名前を記録し、配列上の次の要素を返す制御単位。 */
+    /** 実行された順に自身の名前を記録し、続けて実行すべき制御単位を返す制御単位。 */
     private static class Label extends CobolControl {
         private final String name;
         private final List<String> executed;
@@ -47,13 +48,13 @@ class CobolControlTest {
     }
 
     /**
-     * 各要素が次の要素へフォールスルーする制御単位の配列を生成する。
+     * 各要素が次の要素へフォールスルーする制御単位の配列を生成する。 最後の要素は続きが無いことを表すnullを返す。
      *
      * @param executed 実行された制御単位の名前が追記されるリスト
      * @param types 生成する制御単位の種別(配列の要素数が制御単位の数になる)
      * @return 生成した制御単位の配列。名前は"L0", "L1", ...となる
      */
-    private static CobolControl[] contListOf(List<String> executed, LabelType... types) {
+    private static Label[] contListOf(List<String> executed, LabelType... types) {
         Label[] contList = new Label[types.length];
         for (int i = 0; i < types.length; i++) {
             contList[i] = new Label(i, types[i], "L" + i, executed);
@@ -72,7 +73,7 @@ class CobolControlTest {
 
         CobolControl.perform(contList, 1);
 
-        assertEquals(List.of("L1"), executed);
+        assertEquals(Arrays.asList("L1"), executed);
     }
 
     @Test
@@ -88,18 +89,30 @@ class CobolControlTest {
 
         CobolControl.performThrough(contList, 1, 2);
 
-        assertEquals(List.of("L1", "L2"), executed);
+        assertEquals(Arrays.asList("L1", "L2"), executed);
     }
 
     @Test
-    void performThroughStopsAtTheEndOfContList() throws Exception {
+    void performThroughEndingWithParagraphDoesNotFallThrough() throws Exception {
         List<String> executed = new ArrayList<>();
-        CobolControl[] contList = contListOf(executed, LabelType.label, LabelType.label);
+        CobolControl[] contList =
+                contListOf(executed, LabelType.label, LabelType.label, LabelType.label);
 
-        // 最後の制御単位はnull(続きなし)を返すため、endに到達しなくても実行が終わる
         CobolControl.performThrough(contList, 0, 1);
 
-        assertEquals(List.of("L0", "L1"), executed);
+        assertEquals(Arrays.asList("L0", "L1"), executed);
+    }
+
+    @Test
+    void performThroughStopsWhenControlEndsBeforeEnd() throws Exception {
+        List<String> executed = new ArrayList<>();
+        Label[] contList = contListOf(executed, LabelType.label, LabelType.label, LabelType.label);
+        // L1でGO TOやEXIT PROGRAMにより制御が途切れる状況を再現する
+        contList[1].next = null;
+
+        CobolControl.performThrough(contList, 0, 2);
+
+        assertEquals(Arrays.asList("L0", "L1"), executed);
     }
 
     @Test
@@ -116,17 +129,19 @@ class CobolControlTest {
 
         CobolControl.perform(contList, 0);
 
-        assertEquals(List.of("L0", "L1", "L2"), executed);
+        assertEquals(Arrays.asList("L0", "L1", "L2"), executed);
     }
 
     @Test
-    void performThroughEndingWithParagraphDoesNotFallThrough() throws Exception {
+    void performOnSectionStopsWhenControlEndsInTheSection() throws Exception {
         List<String> executed = new ArrayList<>();
-        CobolControl[] contList =
-                contListOf(executed, LabelType.label, LabelType.label, LabelType.label);
+        Label[] contList =
+                contListOf(executed, LabelType.section, LabelType.label, LabelType.label);
+        // 節に属する段落の途中で制御が途切れる状況を再現する
+        contList[1].next = null;
 
-        CobolControl.performThrough(contList, 0, 1);
+        CobolControl.perform(contList, 0);
 
-        assertEquals(List.of("L0", "L1"), executed);
+        assertEquals(Arrays.asList("L0", "L1"), executed);
     }
 }

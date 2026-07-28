@@ -267,7 +267,7 @@ public CobolControl[] contList = {
         // A-01の処理
         //...
     },
-    new CobolControl(l_SUB__A_01, CobolControl.LabelType.label) {
+    new CobolControl(l_SUB__A_02, CobolControl.LabelType.label) {
         // A-02の処理
         //...
     },
