@@ -3279,15 +3279,15 @@ static void joutput_goto(struct cb_goto *p) {
   } else if (p->target == NULL) {
     needs_exit_prog = 1;
     if (cb_flag_implicit_init) {
-      joutput_line("if(true) return contList[contList.length - 1];");
+      joutput_line("if(true) return null; /* exit program */");
     } else {
       joutput_line("if (!CobolModule.isQueueEmpty()) {");
-      joutput_line("  return contList[contList.length - 1];");
+      joutput_line("  return null; /* exit program */");
       joutput_line("}");
     }
   } else if (p->target == cb_int1) {
     needs_exit_prog = 1;
-    joutput_line("if(true) return contList[contList.length - 1];");
+    joutput_line("if(true) return null; /* exit program */");
   } else {
     joutput_goto_1(p->target);
   }
@@ -4190,7 +4190,7 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
       joutput_label_variable_by_value(++control_counter);
       joutput("];\n");
     } else {
-      joutput_line("return null;");
+      joutput_line("return null; /* no more control to run */");
     }
     joutput_indent_level -= 2;
     joutput_line("}");
@@ -6679,13 +6679,12 @@ static void joutput_execution_list(struct cb_program *prog) {
     joutput_newline();
   }
 
-  joutput_line("return null;");
+  joutput_line("return null; /* no more control to run */");
   joutput_indent_level -= 2;
   joutput_line("}");
   joutput_indent_level -= 2;
   joutput_line("},");
 
-  joutput_line("CobolControl.pure()");
   joutput_indent_level -= 2;
   joutput_line("};");
 }
