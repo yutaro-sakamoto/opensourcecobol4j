@@ -1,5 +1,4 @@
 AT_INIT([file-lock2])
 
-m4_include([access-same-record.at])
 m4_include([access-different-record.at])
-m4_include([release-lock.at])
+m4_include([lock-mode-automatic.at])

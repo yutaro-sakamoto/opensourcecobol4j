@@ -1,3 +1,4 @@
 AT_INIT([file-lock])
 
 m4_include([lock-file.at])
+m4_include([release-lock.at])
