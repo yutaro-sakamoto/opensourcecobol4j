@@ -4,21 +4,23 @@
 This is the multiprocessor scheduling problem (P||Cmax): assign each test to
 one of N groups so that the largest group total is as small as possible.
 
-With 11 tests and 4 groups the search space is small enough (4^11, minus
-symmetric duplicates) to enumerate exhaustively, so the answer is provably
-optimal rather than a heuristic such as longest-processing-time-first.
+At 11 tests the search space is small enough to enumerate exhaustively, so
+the answer is provably optimal rather than a heuristic such as
+longest-processing-time-first.
 
 Run times below were measured in CI (run 30346475956) by taking the
 difference between the GitHub Actions timestamps of consecutive autotest
 result lines, so they include compilation and JVM startup exactly as the
 CI jobs see them.
 
+lock-file is 248s on Windows on its own, so no split can push the largest
+group below that: 5 groups reaches it exactly and 6 groups gains nothing.
+
 Usage:
     python3 file-lock-balance.py [--groups N] [--platform NAME]
 """
 
 import argparse
-import itertools
 
 # seconds, measured in CI
 TIMES = {
@@ -40,18 +42,28 @@ PLATFORMS = ["linux", "linux-utf8", "windows"]
 
 
 def partitions(tests, n):
-    """Enumerate every assignment of tests to n groups, skipping the
-    relabelings of a partition we have already produced."""
-    for assign in itertools.product(range(n), repeat=len(tests)):
-        if len(set(assign)) < n:
-            continue  # an empty group is never useful here
-        first_seen = {}
-        for group in assign:
-            if group not in first_seen:
-                first_seen[group] = len(first_seen)
-        if [first_seen[g] for g in assign] != list(assign):
-            continue  # symmetric duplicate
-        yield assign
+    """Enumerate every way to split the tests into exactly n groups.
+
+    Groups are interchangeable, so this walks restricted growth strings
+    (test i may only open group max(previous)+1) instead of the full n^len
+    product. That drops 5 groups over 11 tests from 48.8M assignments to
+    the 246,730 genuinely distinct ones.
+    """
+    total = len(tests)
+    assign = [0] * total
+
+    def walk(i, used):
+        if total - i < n - used:
+            return  # cannot still fill every group
+        if i == total:
+            if used == n:
+                yield tuple(assign)
+            return
+        for group in range(min(used + 1, n)):
+            assign[i] = group
+            yield from walk(i + 1, max(used, group + 1))
+
+    yield from walk(0, 0)
 
 
 def totals(tests, assign, n, platform):
@@ -92,7 +104,7 @@ def solve(n, platforms):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--groups", type=int, default=4)
+    parser.add_argument("--groups", type=int, default=5)
     parser.add_argument("--platform", choices=PLATFORMS)
     args = parser.parse_args()
     platforms = [args.platform] if args.platform else PLATFORMS
