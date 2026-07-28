@@ -22,11 +22,12 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 
 /**
- * COBOLの手続き部における制御の流れ(PERFORM文・GO TO文)を表現する抽象クラス<br>
+ * COBOLの手続き部における1つの段落・節を表す抽象クラス<br>
  * 各段落・節を1つのCobolControlとして表し、{@link #run()}でその単位を実行する。<br>
  * {@link #run()}は実行後に続けて実行すべき次の制御を返すことで、段落の連続実行(フォールスルー)を表現する。<br>
- * 続けて実行すべき制御が無いことは{@code null}で表す。実行のたびに生成される{@link java.util.Optional}を
- * 用いないことで、手続き部の実行に伴うオブジェクト生成を抑えている。
+ * 続けて実行すべき制御が無い場合は{@code null}を返す。<br>
+ * PERFORM文は{@link #perform(CobolControl[], int)}および{@link #performThrough(CobolControl[], int,
+ * int)}に変換され、GO TO文は移行先のCobolControlを{@link #run()}の戻り値として返すコードに変換される。
  */
 public abstract class CobolControl {
     /** 制御単位の種別(段落か節か)を表す列挙型 */
@@ -36,15 +37,6 @@ public abstract class CobolControl {
         /** 節(section)を表す */
         section,
     }
-
-    /** 何も実行しない制御単位。状態を持たないため単一のインスタンスを使い回す。 */
-    private static final CobolControl PURE =
-            new CobolControl() {
-                @Override
-                public CobolControl run() {
-                    return null;
-                }
-            };
 
     /**
      * この制御単位を実行する。
@@ -76,15 +68,6 @@ public abstract class CobolControl {
     public CobolControl(int contId, LabelType type) {
         this.contId = contId;
         this.type = type;
-    }
-
-    /**
-     * 何も実行せず、続きの制御も持たない空の制御単位を返す。
-     *
-     * @return 何も行わない制御単位
-     */
-    public static CobolControl pure() {
-        return PURE;
     }
 
     /**
