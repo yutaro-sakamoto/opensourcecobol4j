@@ -39,6 +39,7 @@ jobs:
             tests/jp-compat
             tests/command-line-options
             tests/cobj-idx
+            tests/indexed
             tests/file-lock
             tests/file-lock2
             tests/file-lock3

@@ -30,6 +30,7 @@ TESTS = syntax \
 	jp-compat \
 	command-line-options \
 	cobj-idx \
+	indexed \
 	file-lock \
 	file-lock2 \
 	file-lock3 \
@@ -46,6 +47,7 @@ TESTS = syntax \
 	jp-compat \
 	command-line-options \
 	cobj-idx \
+	indexed \
 	file-lock \
 	file-lock2 \
 	file-lock3 \
@@ -138,7 +140,6 @@ cobol_utf8_DEPENDENCIES = \
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \
-	jp-compat.src/split-keys.at \
 	jp-compat.src/compat-check.at \
 	jp-compat.src/copy-leading-trailing.at \
 	jp-compat.src/end-program-wrong.at \
@@ -164,7 +165,6 @@ jp_compat_DEPENDENCIES = \
 	jp-compat.src/io-control.at \
 	jp-compat.src/greater-less-than-equal.at \
 	jp-compat.src/file-desc.at \
-	jp-compat.src/abort-on-file-error.at \
 	jp-compat.src/system-routine.at \
 	jp-compat.src/catch-exception.at
 
@@ -178,7 +178,6 @@ command_line_options_DEPENDENCIES = \
 	command-line-options.src/B.at \
 	command-line-options.src/list-reserved.at \
 	command-line-options.src/ext.at \
-	command-line-options.src/assign_external.at \
 	command-line-options.src/Wobsolete-Warchaic.at \
 	command-line-options.src/Wredefinition.at \
 	command-line-options.src/Wconstant.at \
@@ -216,6 +215,17 @@ cobj_idx_DEPENDENCIES = \
 	cobj-idx.src/unlock.at \
 	cobj-idx.src/misc.at \
 	cobj-idx.src/indexed-file.at
+
+indexed_DEPENDENCIES = \
+	indexed.at \
+	indexed.src/index-file-status.at \
+	indexed.src/validate-indexed-file-keys.at \
+	indexed.src/record-key-duplicates-error.at \
+	indexed.src/read_prev_after_start.at \
+	indexed.src/assign_external.at \
+	indexed.src/split-keys.at \
+	indexed.src/file-control-indexed.at \
+	indexed.src/abort-on-file-error.at
 
 indexed_lock_DEPENDENCIES = \
 	file-lock.at \
@@ -334,15 +344,11 @@ misc_DEPENDENCIES = \
 	misc.src/display-numeric.at \
 	misc.src/version-string-in-java.at \
 	misc.src/comp3-compute.at \
-	misc.src/index-file-status.at \
 	misc.src/comp-n.at \
 	misc.src/fd-external.at \
 	misc.src/compile-multiple-files.at \
 	misc.src/compare-large-number.at \
-	misc.src/validate-indexed-file-keys.at \
-	misc.src/record-key-duplicates-error.at \
 	misc.src/copy-comments.at \
-	misc.src/read_prev_after_start.at \
 	misc.src/japanese-char-section-var.at \
 	misc.src/evaluate-switch.at \
 	misc.src/fserial-variable.at \
@@ -366,6 +372,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(jp_compat_DEPENDENCIES) \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
+	$(indexed_DEPENDENCIES) \
 	$(misc_DEPENDENCIES) \
 	$(esql_basic_DEPENDENCIES) \
 	$(esql_sqlca_DEPENDENCIES) \
@@ -408,6 +415,7 @@ $(srcdir)/i18n_sjis: $(i18n_sjis_DEPENDENCIES)
 $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
+$(srcdir)/indexed: $(indexed_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
 $(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)
