@@ -32,6 +32,8 @@ TESTS = syntax \
 	cobj-idx \
 	file-lock \
 	file-lock2 \
+	file-lock3 \
+	file-lock4 \
 	misc
 else
 TESTS = syntax \
@@ -45,6 +47,8 @@ TESTS = syntax \
 	cobj-idx \
 	file-lock \
 	file-lock2 \
+	file-lock3 \
+	file-lock4 \
 	misc
 endif
 
@@ -212,20 +216,26 @@ cobj_idx_DEPENDENCIES = \
 
 indexed_lock_DEPENDENCIES = \
 	file-lock.at \
-	file-lock.src/lock-file.at \
-	file-lock.src/access-same-record.at \
-	file-lock.src/access-different-record.at
+	file-lock.src/lock-file.at
 
 indexed_lock2_DEPENDENCIES = \
 	file-lock2.at \
-	file-lock2.src/input-mode.at \
-	file-lock2.src/same-process.at \
-	file-lock2.src/open-start-write-rewrite.at \
-	file-lock2.src/release-lock.at \
-	file-lock2.src/open-input.at \
-	file-lock2.src/lock-mode-clause.at \
-	file-lock2.src/old-file.at \
-	file-lock2.src/lock-mode-automatic.at
+	file-lock2.src/access-same-record.at \
+	file-lock2.src/access-different-record.at \
+	file-lock2.src/release-lock.at
+
+indexed_lock3_DEPENDENCIES = \
+	file-lock3.at \
+	file-lock3.src/lock-mode-clause.at \
+	file-lock3.src/open-input.at \
+	file-lock3.src/same-process.at \
+	file-lock3.src/old-file.at
+
+indexed_lock4_DEPENDENCIES = \
+	file-lock4.at \
+	file-lock4.src/lock-mode-automatic.at \
+	file-lock4.src/open-start-write-rewrite.at \
+	file-lock4.src/input-mode.at
 
 # ESQL tests (require PostgreSQL, run separately in CI)
 esql_basic_DEPENDENCIES = \
@@ -394,4 +404,6 @@ $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
+$(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)
+$(srcdir)/file-lock4: $(indexed_lock4_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)

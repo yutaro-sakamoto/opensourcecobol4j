@@ -1,0 +1,6 @@
+AT_INIT([file-lock3])
+
+m4_include([lock-mode-clause.at])
+m4_include([open-input.at])
+m4_include([same-process.at])
+m4_include([old-file.at])
