@@ -75,8 +75,17 @@ jobs:
       
       - name: Run tests ${{ inputs.test-name }}
         working-directory: tests/
-        run:
-          ./${{ inputs.test-name }}
+        run: |
+          # Autotest gives every test group its own directory, so most suites
+          # run in parallel safely. Two stay serial:
+          #   file-lock*  deliberately contend for locks between concurrent
+          #               processes, and are timing sensitive
+          #   cobj-idx    fails intermittently once several test groups run
+          #               at the same time
+          case "${{ inputs.test-name }}" in
+            file-lock*|cobj-idx) ./${{ inputs.test-name }} ;;
+            *)                   ./${{ inputs.test-name }} -j"$(nproc)" ;;
+          esac
       
       - name: Upload log files if tests fail
         if: failure()
