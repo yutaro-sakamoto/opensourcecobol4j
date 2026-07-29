@@ -71,13 +71,13 @@ jobs:
         # serial:
         #   file-lock*         deliberately contend for locks between
         #                      concurrent processes, and are timing sensitive
-        #   cobj-idx, indexed  fail intermittently once several test groups
+        #   cobj-idx, indexed* fail intermittently once several test groups
         #                      run at the same time, because sqlite-jdbc
         #                      races with itself when several JVMs unpack
         #                      its native library
         case "${{ inputs.test-name }}" in
-          file-lock*|cobj-idx|indexed) ./${{ inputs.test-name }} ;;
-          *)                           ./${{ inputs.test-name }} -j"$(nproc)" ;;
+          file-lock*|cobj-idx|indexed*) ./${{ inputs.test-name }} ;;
+          *)                            ./${{ inputs.test-name }} -j"$(nproc)" ;;
         esac
 
     - name: Upload log files if tests fail

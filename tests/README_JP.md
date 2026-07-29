@@ -12,6 +12,7 @@ makeコマンドを実行すると,下記のテストスクリプトが生成さ
 * i18n\_sjis
 * i18n\_utf8
 * indexed
+* indexed\_utf8 (--enable-utf8 ビルドのみ)
 * jp-compat
 * misc
 * run

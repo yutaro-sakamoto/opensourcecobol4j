@@ -31,6 +31,7 @@ TESTS = syntax \
 	command-line-options \
 	cobj-idx \
 	indexed \
+	indexed_utf8 \
 	file-lock \
 	file-lock2 \
 	file-lock3 \
@@ -227,6 +228,10 @@ indexed_DEPENDENCIES = \
 	indexed.src/file-control-indexed.at \
 	indexed.src/abort-on-file-error.at
 
+indexed_utf8_DEPENDENCIES = \
+	indexed_utf8.at \
+	indexed_utf8.src/nihongo-filename.at
+
 indexed_lock_DEPENDENCIES = \
 	file-lock.at \
 	file-lock.src/lock-file.at
@@ -373,6 +378,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
 	$(indexed_DEPENDENCIES) \
+	$(indexed_utf8_DEPENDENCIES) \
 	$(misc_DEPENDENCIES) \
 	$(esql_basic_DEPENDENCIES) \
 	$(esql_sqlca_DEPENDENCIES) \
@@ -416,6 +422,7 @@ $(srcdir)/jp-compat: $(jp_compat_DEPENDENCIES)
 $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
 $(srcdir)/indexed: $(indexed_DEPENDENCIES)
+$(srcdir)/indexed_utf8: $(indexed_utf8_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
 $(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)

@@ -12,6 +12,7 @@ Execute make command to generate the following test scripts.
 * i18n\_sjis
 * i18n\_utf8
 * indexed
+* indexed\_utf8 (--enable-utf8 build only)
 * jp-compat
 * misc
 * run

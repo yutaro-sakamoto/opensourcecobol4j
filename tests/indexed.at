@@ -28,12 +28,17 @@
 # a different reason: they deliberately contend for locks between concurrent
 # processes.
 #
-# The Nihongo Filename group of i18n_sjis.src, i18n_utf8.src and
-# cobol_utf8.src/user-defined-word.at is the exception: it opens an INDEXED
-# file but cannot move here, because each of those suites exists in only one
-# of the SJIS and UTF-8 builds while this suite is built in both.  It is
-# harmless where it is: it is the only group in its suite that loads
-# sqlite-jdbc, so there is never a second JVM to race with.
+# This suite is built in both the SJIS and the UTF-8 build, so it can only
+# hold tests that work in either one.  The UTF-8 only INDEXED file tests
+# live in indexed_utf8, which is built and run in the --enable-utf8 build
+# alone.
+#
+# The Nihongo Filename group of i18n_sjis.src/user-defined-word.at also
+# opens an INDEXED file and stays where it is: it needs an SJIS source file,
+# and there is no SJIS counterpart of indexed_utf8 yet.  It is harmless
+# there, because it is the only group in that suite that loads sqlite-jdbc,
+# so there is never a second JVM to race with.  The same holds for
+# i18n_utf8.src/user-defined-word.at, whose suite is not part of TESTS.
 
 AT_INIT([INDEXED file])
 

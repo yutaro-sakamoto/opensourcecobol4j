@@ -53,6 +53,7 @@ tests/cobol_utf8
 tests/jp-compat
 tests/cobj-idx
 tests/indexed
+tests/indexed_utf8
 tests/misc
 tests/run
 tests/file-lock
