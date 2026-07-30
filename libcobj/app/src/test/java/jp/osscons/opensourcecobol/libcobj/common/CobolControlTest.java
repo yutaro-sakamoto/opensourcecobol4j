@@ -116,6 +116,24 @@ class CobolControlTest {
     }
 
     @Test
+    void performThroughEndingWithSectionRunsItsFollowingParagraphs() throws Exception {
+        List<String> executed = new ArrayList<>();
+        CobolControl[] contList =
+                contListOf(
+                        executed,
+                        LabelType.label, // L0: 範囲外の段落
+                        LabelType.label, // L1: 範囲の開始
+                        LabelType.section, // L2: 範囲の終端となる節
+                        LabelType.label, // L3: L2に属する段落
+                        LabelType.label, // L4: L2に属する段落
+                        LabelType.section); // L5: 次の節(実行されない)
+
+        CobolControl.performThrough(contList, 1, 2);
+
+        assertEquals(Arrays.asList("L1", "L2", "L3", "L4"), executed);
+    }
+
+    @Test
     void performOnSectionRunsItsFollowingParagraphs() throws Exception {
         List<String> executed = new ArrayList<>();
         CobolControl[] contList =
