@@ -148,7 +148,7 @@ public final class SqlCA {
      * @param sqlca SQLCA のデータストレージ
      * @return 現在の SQLCODE 値。sqlca が null の場合は 0
      */
-    static int getCode(CobolDataStorage sqlca) {
+    public static int getCode(CobolDataStorage sqlca) {
         if (sqlca == null) {
             return 0;
         }
