@@ -1302,7 +1302,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * {@link #mapSqlException(SQLException)} の戻り値。DB の生エラーを、COBOL 側が見る
      * ECPG 正規コード（SQLCODE）と正規化済み SQLSTATE の組へ変換した結果を保持する。
      */
-    protected static final class SqlErrorMapping {
+    public static final class SqlErrorMapping {
         /** ECPG 正規エラーコード（SQLCODE に書かれる）。 */
         final int ecpgCode;
 
@@ -1315,7 +1315,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
          * @param ecpgCode ECPG 正規エラーコード（SQLCODE）
          * @param sqlState 正規化済み SQLSTATE（5 桁、{@code null} 可）
          */
-        protected SqlErrorMapping(int ecpgCode, String sqlState) {
+        public SqlErrorMapping(int ecpgCode, String sqlState) {
             this.ecpgCode = ecpgCode;
             this.sqlState = sqlState;
         }
