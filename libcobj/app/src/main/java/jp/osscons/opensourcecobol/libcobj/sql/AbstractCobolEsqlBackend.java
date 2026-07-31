@@ -1319,6 +1319,24 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             this.ecpgCode = ecpgCode;
             this.sqlState = sqlState;
         }
+
+        /**
+         * ECPG 正規エラーコード（SQLCODE）を返す。
+         *
+         * @return ECPG 正規エラーコード
+         */
+        public int getEcpgCode() {
+            return ecpgCode;
+        }
+
+        /**
+         * 正規化済み SQLSTATE を返す。
+         *
+         * @return 正規化済み SQLSTATE（5 桁）。未設定なら {@code null}
+         */
+        public String getSqlState() {
+            return sqlState;
+        }
     }
 
     /**
