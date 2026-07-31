@@ -1153,8 +1153,19 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         return prepared.get(name);
     }
 
-    /** テスト用: 接続文字列のパース・env フォールバック結果（{@link DbSpec}）を返す。 */
-    final DbSpec buildSpecForTest(String user, String passwd, String dbname) {
+    /**
+     * テスト用: 接続文字列のパース・env フォールバック結果（{@link DbSpec}）を返す。
+     *
+     * <p>別 jar のバックエンド実装が {@link #buildJdbcUrl(DbSpec)} を DB 接続なしで検証できるよう public
+     * にしている（呼び出し側は戻り値を {@code buildJdbcUrl} へ直接渡す想定で、{@code DbSpec} 型を名前で
+     * 参照する必要はない）。
+     *
+     * @param user ユーザ名（{@code null} なら env フォールバック）
+     * @param passwd パスワード（{@code null} なら env フォールバック）
+     * @param dbname 接続文字列 {@code dbname@host:port}（{@code null} なら env フォールバック）
+     * @return パース済みの接続情報
+     */
+    public final DbSpec buildSpecForTest(String user, String passwd, String dbname) {
         return buildSpec(user, passwd, dbname);
     }
 
