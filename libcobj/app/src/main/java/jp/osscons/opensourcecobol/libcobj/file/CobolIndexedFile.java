@@ -18,6 +18,10 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -54,6 +58,16 @@ public class CobolIndexedFile extends CobolFile {
     private boolean commitOnModification = true;
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
+
+    /** 他プロセスのトランザクションの終了を待つ時間(ミリ秒)。SQLiteの{@code busy_timeout}に設定する。 */
+    private static final int BUSY_TIMEOUT_MILLIS = 5000;
+
+    /**
+     * {@code SQLITE_BUSY_SNAPSHOT}によるリトライの上限回数。
+     *
+     * <p>1回あたりの待機時間と合わせて、{@link #BUSY_TIMEOUT_MILLIS}と同程度の総待ち時間になるようにしている。
+     */
+    private static final int MAX_SNAPSHOT_RETRIES = 50;
 
     /** {@code START}/{@code READ}の比較条件：キーが等しい（{@code =}）。 */
     public static final int COB_EQ = 1;
@@ -230,6 +244,32 @@ public class CobolIndexedFile extends CobolFile {
         return field.getDataStorage().getByteArray(0, field.getSize());
     }
 
+    /** WALモードでSQLiteが作成する補助ファイルの接尾辞。 */
+    private static final String[] SQLITE_AUXILIARY_SUFFIXES = {"-wal", "-shm"};
+
+    /**
+     * INDEXEDファイルに付随するSQLiteの補助ファイル({@code -wal}／{@code -shm})を削除する。
+     *
+     * <p>正常にクローズされたINDEXEDファイルにはこれらは存在しない。存在するのは、ファイルを閉じずに終了したプロセスが残していった場合である。
+     * これらを消し残すとINDEXEDファイルを削除したはずのディレクトリにごみが残り、「1つのINDEXEDファイルはディスク上の1ファイル」という前提が崩れる。
+     *
+     * <p>ジャーナルモードの設定にかかわらず常に削除する。WALモードで運用した後に{@code
+     * COB_INDEXED_JOURNAL_MODE=DELETE}へ切り替えた場合も取り残されないようにするためである。
+     *
+     * @param filePath 削除された主ファイルのパス
+     */
+    @Override
+    protected void deleteAuxiliaryFiles(Path filePath) {
+        for (String suffix : SQLITE_AUXILIARY_SUFFIXES) {
+            try {
+                Files.deleteIfExists(Paths.get(filePath.toString() + suffix));
+            } catch (IOException ignored) {
+                // 補助ファイルが消せなくても主ファイルの削除は成功しているため、
+                // DELETE FILE自体は成功として扱う。
+            }
+        }
+    }
+
     @Override
     public int open_(String filename, int mode, int sharing) {
         IndexedFile p = new IndexedFile();
@@ -249,6 +289,31 @@ public class CobolIndexedFile extends CobolFile {
             return getConnectionStatus;
         }
 
+        final boolean fileExistsOnOpen = fileExists;
+        int status =
+                retryOnSnapshotConflict(
+                        () -> this.openWithConnection(filename, mode, fileExistsOnOpen));
+        if (status != COB_STATUS_00_SUCCESS) {
+            // The connection is only kept open for a successful OPEN. Closing it here also
+            // covers the paths that used to leak it, such as an incompatible file version.
+            try {
+                p.connection.close();
+            } catch (SQLException closeEx) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        }
+        return status;
+    }
+
+    /**
+     * データベースへの接続が確立された後の{@code OPEN}処理を行う。
+     *
+     * <p>{@code
+     * SQLITE_BUSY_SNAPSHOT}が発生した場合にやり直せるよう、接続の確立を含まない部分だけを切り出したもの。失敗しても接続はクローズしない。クローズは呼び出し元の{@link
+     * #open_(String, int, int)}が行う。
+     */
+    private int openWithConnection(String filename, int mode, boolean fileExists) {
+        IndexedFile p = this.filei;
         if (fileExists) {
             int code = this.checkVersionOld();
             if (code != COB_STATUS_00_SUCCESS) {
@@ -271,19 +336,10 @@ public class CobolIndexedFile extends CobolFile {
                 this.setInitialParameters(filename);
                 return COB_STATUS_00_SUCCESS;
             } else {
-                try {
-                    p.connection.close();
-                } catch (SQLException closeEx) {
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
                 return COB_STATUS_61_FILE_SHARING;
             }
         } catch (SQLException e) {
-            try {
-                p.connection.close();
-            } catch (SQLException closeEx) {
-                return COB_STATUS_30_PERMANENT_ERROR;
-            }
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return COB_STATUS_30_PERMANENT_ERROR;
         }
     }
@@ -294,24 +350,30 @@ public class CobolIndexedFile extends CobolFile {
         // Establishes a connection to the SQLite database using the provided filename.
         SQLiteConfig config = new SQLiteConfig();
         config.setReadOnly(false);
+        // Wait for finishing other processes' transactions up to 5 seconds.
+        // This has to be part of the connection properties rather than a PRAGMA executed later,
+        // because setAutoCommit(false) below issues BEGIN immediately and the timeout must
+        // already be in effect by then.
+        config.setBusyTimeout(BUSY_TIMEOUT_MILLIS);
 
         p.connection = null;
         try {
             p.connection =
                     DriverManager.getConnection("jdbc:sqlite:" + filename, config.toProperties());
+            // PRAGMA journal_mode cannot be changed from within a transaction, and
+            // setAutoCommit(false) issues BEGIN eagerly. It therefore has to be applied here,
+            // while the connection is still in auto-commit mode.
+            IndexedJournalConfig.applyTo(p.connection);
             p.connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             p.connection.setAutoCommit(false);
 
             // Check if the file is accessible
             try (Statement st = p.connection.createStatement()) {
-                // Wait for finishing other processes' transactions up to 5 seconds
-                st.execute("PRAGMA busy_timeout = 5000");
                 st.execute("select 1");
             }
             p.connection.commit();
         } catch (SQLException e) {
-            int errorCode = e.getErrorCode();
-            if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
+            if (isBusy(e)) {
                 return COB_STATUS_61_FILE_SHARING;
             } else {
                 return COB_STATUS_30_PERMANENT_ERROR;
@@ -320,6 +382,58 @@ public class CobolIndexedFile extends CobolFile {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         return COB_STATUS_00_SUCCESS;
+    }
+
+    /**
+     * 例外がSQLiteのビジー状態を表すかどうかを判定する。
+     *
+     * <p>WALモードで発生する{@code SQLITE_BUSY_SNAPSHOT}も主エラーコードは{@code
+     * SQLITE_BUSY}と同じ{@code 5}であるため、両者はここでまとめて扱われる。
+     */
+    private static boolean isBusy(SQLException e) {
+        return e.getErrorCode() == SQLiteErrorCode.SQLITE_BUSY.code;
+    }
+
+    /** {@link #retryOnSnapshotConflict}に渡す、ステータスコードを返す入出力処理。 */
+    private interface IndexedIoOperation {
+        int run();
+    }
+
+    /**
+     * {@code SQLITE_BUSY_SNAPSHOT}が発生した場合にトランザクションをロールバックして処理をやり直す。
+     *
+     * <p>WALモードでは、読み取りを行ってから書き込みを行うトランザクションの実行中に他の接続がコミットすると、書き込み時に{@code
+     * SQLITE_BUSY_SNAPSHOT}が返る。これは{@code
+     * busy_timeout}では再試行されないため、ここで明示的にやり直す必要がある。
+     *
+     * <p>{@link IndexedCursor}は取得位置を保持するステートフルなカーソルであるため、{@code READ
+     * NEXT}のようにカーソルを進める処理をこのメソッドで丸ごと包んではならない。やり直しのたびにカーソルが進み、レコードを読み飛ばしてしまう。
+     *
+     * @param operation やり直しても副作用が変わらない処理
+     * @return {@code operation}の戻り値。リトライ回数を使い切った場合は{@code
+     *     COB_STATUS_61_FILE_SHARING}、ロールバックに失敗した場合は{@code COB_STATUS_30_PERMANENT_ERROR}
+     */
+    private int retryOnSnapshotConflict(IndexedIoOperation operation) {
+        for (int attempt = 0; ; ++attempt) {
+            try {
+                return operation.run();
+            } catch (SnapshotConflictException e) {
+                try {
+                    this.filei.connection.rollback();
+                } catch (SQLException rollbackEx) {
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+                if (attempt >= MAX_SNAPSHOT_RETRIES) {
+                    return COB_STATUS_61_FILE_SHARING;
+                }
+                try {
+                    Thread.sleep(1L + (attempt & 7));
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+            }
+        }
     }
 
     private int checkVersionOld() {
@@ -357,6 +471,7 @@ public class CobolIndexedFile extends CobolFile {
                 }
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         return COB_STATUS_92_VERSION_INCOMPATIBLE;
@@ -408,6 +523,7 @@ public class CobolIndexedFile extends CobolFile {
             p.connection.commit();
             return true;
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             p.connection.rollback();
             return false;
         }
@@ -450,6 +566,7 @@ public class CobolIndexedFile extends CobolFile {
             }
             return true;
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             p.connection.rollback();
             return false;
         }
@@ -578,6 +695,11 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int close_(int opt) {
+        return retryOnSnapshotConflict(() -> this.closeOnce(opt));
+    }
+
+    /** {@link #close_(int)}の本体。{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。 */
+    private int closeOnce(int opt) {
         IndexedFile p = this.filei;
 
         this.closeCursor();
@@ -607,6 +729,7 @@ public class CobolIndexedFile extends CobolFile {
             p.connection.commit();
             p.connection.close();
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         this.fetchKeyIndex = -1;
@@ -666,6 +789,15 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int start_(int cond, AbstractCobolField key) {
+        return retryOnSnapshotConflict(() -> this.startOnce(cond, key));
+    }
+
+    /**
+     * {@link #start_(int, AbstractCobolField)}の本体。
+     *
+     * <p>カーソルはキーから作り直されるため、{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。
+     */
+    private int startOnce(int cond, AbstractCobolField key) {
         int ret = indexed_start_internal(cond, key, 0, false);
         if (ret == COB_STATUS_00_SUCCESS) {
             this.callStart = true;
@@ -744,12 +876,18 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     protected boolean postProcess() {
+        return retryOnSnapshotConflict(this::postProcessOnce) == COB_STATUS_00_SUCCESS;
+    }
+
+    /** {@link #postProcess()}の本体。{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。 */
+    private int postProcessOnce() {
         try {
             unlockPreviousRecord();
         } catch (SQLException e) {
-            return false;
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
+            return COB_STATUS_30_PERMANENT_ERROR;
         }
-        return true;
+        return COB_STATUS_00_SUCCESS;
     }
 
     private void unlockPreviousRecord(byte[] key) throws SQLException {
@@ -796,6 +934,31 @@ public class CobolIndexedFile extends CobolFile {
             return retCode;
         }
         byte[] primaryKey = DBT_SET(this.keys[0].getField());
+        // Only the locking phase is retried. Re-running read_internal would be wasteful here and
+        // is outright wrong for READ NEXT, so both verbs share this narrow retry scope.
+        int lockStatus = retryOnSnapshotConflict(() -> lockReadRecord(primaryKey, readOpts));
+        if (lockStatus != COB_STATUS_00_SUCCESS) {
+            return lockStatus;
+        }
+
+        this.record.setSize(p.data.length);
+        this.record.getDataStorage().memcpy(p.data, p.data.length);
+        return COB_STATUS_00_SUCCESS;
+    }
+
+    /**
+     * {@code READ}で読み込んだレコードに対するロック処理を行う。
+     *
+     * <p>{@link #read_(AbstractCobolField, int)}と{@link
+     * #readNext(int)}が読み込みに成功した後に共通で実行する部分であり、レコードの取得そのものを含まないため、{@code
+     * SQLITE_BUSY_SNAPSHOT}が発生してもそのままやり直せる。
+     *
+     * @param primaryKey 読み込んだレコードの主キー
+     * @param readOpts {@code READ}のオプション
+     * @return 正常時は{@code COB_STATUS_00_SUCCESS}
+     */
+    private int lockReadRecord(byte[] primaryKey, int readOpts) {
+        IndexedFile p = this.filei;
         if (shouldLockRecord(readOpts)) {
             try {
                 if (checkOtherProcessLockedRecord(primaryKey)) {
@@ -813,6 +976,7 @@ public class CobolIndexedFile extends CobolFile {
                 unlockPreviousRecord(primaryKey);
                 p.connection.commit();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 try {
                     p.connection.rollback();
                 } catch (SQLException rollbackEx) {
@@ -825,6 +989,7 @@ public class CobolIndexedFile extends CobolFile {
                 unlockPreviousRecord(primaryKey);
                 p.connection.commit();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 try {
                     p.connection.rollback();
                 } catch (SQLException rollbackEx) {
@@ -833,9 +998,6 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         }
-
-        this.record.setSize(p.data.length);
-        this.record.getDataStorage().memcpy(p.data, p.data.length);
         return COB_STATUS_00_SUCCESS;
     }
 
@@ -938,42 +1100,11 @@ public class CobolIndexedFile extends CobolFile {
             return retCode;
         }
         byte[] primaryKey = DBT_SET(this.keys[0].getField());
-        if (shouldLockRecord(readOpts)) {
-            try {
-                if (checkOtherProcessLockedRecord(primaryKey)) {
-                    p.connection.rollback();
-                    unlockPreviousRecord();
-                    p.connection.commit();
-                    return COB_STATUS_51_RECORD_LOCKED;
-                }
-                if (!lockRecord(primaryKey)) {
-                    p.connection.rollback();
-                    unlockPreviousRecord();
-                    p.connection.commit();
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
-                unlockPreviousRecord(primaryKey);
-                p.connection.commit();
-            } catch (SQLException e) {
-                try {
-                    p.connection.rollback();
-                } catch (SQLException rollbackEx) {
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
-                return COB_STATUS_30_PERMANENT_ERROR;
-            }
-        } else {
-            try {
-                unlockPreviousRecord(primaryKey);
-                p.connection.commit();
-            } catch (SQLException e) {
-                try {
-                    p.connection.rollback();
-                } catch (SQLException rollbackEx) {
-                    return COB_STATUS_30_PERMANENT_ERROR;
-                }
-                return COB_STATUS_30_PERMANENT_ERROR;
-            }
+        // Retrying readNext_internal would advance the stateful cursor a second time and skip a
+        // record, so only the locking phase is retried.
+        int lockStatus = retryOnSnapshotConflict(() -> lockReadRecord(primaryKey, readOpts));
+        if (lockStatus != COB_STATUS_00_SUCCESS) {
+            return lockStatus;
         }
         this.record.setSize(p.data.length);
         this.record.getDataStorage().memcpy(p.data, p.data.length);
@@ -997,6 +1128,7 @@ public class CobolIndexedFile extends CobolFile {
                 return rs.next();
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return false;
         }
     }
@@ -1015,6 +1147,7 @@ public class CobolIndexedFile extends CobolFile {
                 return rs.getInt(1) + 1;
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return 0;
         }
     }
@@ -1062,6 +1195,7 @@ public class CobolIndexedFile extends CobolFile {
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
         }
 
@@ -1101,6 +1235,7 @@ public class CobolIndexedFile extends CobolFile {
                 insertStatement.execute();
                 insertStatement.close();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
             }
         }
@@ -1112,6 +1247,16 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int write_(int opt) {
+        return retryOnSnapshotConflict(() -> this.writeOnce(opt));
+    }
+
+    /**
+     * {@link #write_(int)}の本体。
+     *
+     * <p>キーは毎回{@code this.keys}から導出し直され、{@code p.last_key}にも同じ値が入るため、{@code
+     * SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。
+     */
+    private int writeOnce(int opt) {
         IndexedFile p = this.filei;
 
         p.key = DBT_SET(this.keys[0].getField());
@@ -1125,6 +1270,7 @@ public class CobolIndexedFile extends CobolFile {
                     unlockPreviousRecord();
                     p.connection.commit();
                 } catch (SQLException e) {
+                    SnapshotConflictException.rethrowIfSnapshotConflict(e);
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
                 return COB_STATUS_21_KEY_INVALID;
@@ -1142,6 +1288,7 @@ public class CobolIndexedFile extends CobolFile {
                     p.connection.commit();
                 }
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         } else {
@@ -1190,6 +1337,7 @@ public class CobolIndexedFile extends CobolFile {
                 return rs.next();
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return false;
         }
     }
@@ -1197,6 +1345,15 @@ public class CobolIndexedFile extends CobolFile {
     @Override
     /** Equivalent to indexed_rewrite in libcob/fileio.c */
     public int rewrite_(int opt) {
+        return retryOnSnapshotConflict(() -> this.rewriteOnce(opt));
+    }
+
+    /**
+     * {@link #rewrite_(int)}の本体。
+     *
+     * <p>主キーから対象レコードを特定し直すため、{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。
+     */
+    private int rewriteOnce(int opt) {
         IndexedFile p = this.filei;
 
         p.write_cursor_open = true;
@@ -1207,6 +1364,7 @@ public class CobolIndexedFile extends CobolFile {
                 unlockPreviousRecord();
                 p.connection.commit();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
             return COB_STATUS_21_KEY_INVALID;
@@ -1226,6 +1384,7 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             try {
                 unlockPreviousRecord();
                 p.connection.commit();
@@ -1259,6 +1418,7 @@ public class CobolIndexedFile extends CobolFile {
                 unlockPreviousRecord();
                 p.connection.commit();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 p.write_cursor_open = false;
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
@@ -1301,6 +1461,7 @@ public class CobolIndexedFile extends CobolFile {
             statement.setBytes(1, p.key);
             statement.execute();
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
         }
 
@@ -1322,6 +1483,7 @@ public class CobolIndexedFile extends CobolFile {
                         }
                     }
                 } catch (SQLException e) {
+                    SnapshotConflictException.rethrowIfSnapshotConflict(e);
                     return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
                 }
             }
@@ -1332,6 +1494,7 @@ public class CobolIndexedFile extends CobolFile {
                 statement.setBytes(1, p.key);
                 statement.execute();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 return returnWith(p, closeCursor, 0, COB_STATUS_30_PERMANENT_ERROR);
             }
         }
@@ -1343,6 +1506,15 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int delete_() {
+        return retryOnSnapshotConflict(this::deleteOnce);
+    }
+
+    /**
+     * {@link #delete_()}の本体。
+     *
+     * <p>主キーから対象レコードを特定し直すため、{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。
+     */
+    private int deleteOnce() {
         IndexedFile p = this.filei;
         byte[] currentKey = DBT_SET(this.keys[0].getField());
         try {
@@ -1358,6 +1530,7 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             try {
                 unlockPreviousRecord();
                 p.connection.commit();
@@ -1374,6 +1547,7 @@ public class CobolIndexedFile extends CobolFile {
                 unlockPreviousRecord();
                 p.connection.commit();
             } catch (SQLException e) {
+                SnapshotConflictException.rethrowIfSnapshotConflict(e);
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         } else {
@@ -1400,12 +1574,36 @@ public class CobolIndexedFile extends CobolFile {
      * (false)}と組み合わせて使うことを想定している。文ごとのコミットを抑制した状態で一連の更新を行った後、このメソッドがそれらをまとめて1回のコミットでフラッシュする。
      */
     public void commitJdbcTransaction() {
+        if (retryOnSnapshotConflict(this::commitJdbcTransactionOnce) != COB_STATUS_00_SUCCESS) {
+            System.err.println("Failed to commit a transaction");
+        }
+    }
+
+    /**
+     * 未コミットのトランザクションを破棄する。
+     *
+     * <p>{@link #setCommitOnModification(boolean)}{@code
+     * (false)}で一括ロードを行っている途中でエラーが発生した場合に、それまでの更新を取り消すために使う。{@link
+     * #close(int, jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField)}は保留中の更新をコミットしてしまうため、その前に呼び出す必要がある。
+     */
+    public void rollbackJdbcTransaction() {
+        IndexedFile p = this.filei;
+        try {
+            p.connection.rollback();
+        } catch (SQLException e) {
+            System.err.println("Failed to roll back a transaction");
+        }
+    }
+
+    private int commitJdbcTransactionOnce() {
         IndexedFile p = this.filei;
         try {
             p.connection.commit();
         } catch (SQLException e) {
-            System.err.println("Failed to commit a transaction");
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
+            return COB_STATUS_30_PERMANENT_ERROR;
         }
+        return COB_STATUS_00_SUCCESS;
     }
 
     /**
@@ -1414,6 +1612,15 @@ public class CobolIndexedFile extends CobolFile {
      * @return true if all records are deleted successfully, otherwise false
      */
     public boolean deleteAllRecords() {
+        return retryOnSnapshotConflict(
+                        () ->
+                                this.deleteAllRecordsOnce()
+                                        ? COB_STATUS_00_SUCCESS
+                                        : COB_STATUS_30_PERMANENT_ERROR)
+                == COB_STATUS_00_SUCCESS;
+    }
+
+    private boolean deleteAllRecordsOnce() {
         IndexedFile p = this.filei;
         try {
             for (int i = this.nkeys - 1; i >= 0; --i) {
@@ -1426,6 +1633,7 @@ public class CobolIndexedFile extends CobolFile {
             }
             return true;
         } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
             return false;
         }
     }

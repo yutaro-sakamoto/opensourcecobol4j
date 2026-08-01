@@ -42,3 +42,40 @@ cobj-idx unlock <<INDEXED_FILE>>
 ## Behavior When Opening Legacy INDEXED Files
 
 When attempting to open legacy INDEXED files, the file status becomes 92.
+
+## Journal Mode of INDEXED Files
+
+INDEXED files are backed by SQLite, and since opensource COBOL 4J 2.1.0 they use the WAL
+(write-ahead logging) journal mode by default. The mode is selected with the
+`COB_INDEXED_JOURNAL_MODE` environment variable, which accepts `WAL` (the default) and `DELETE`;
+`DELETE` restores the rollback-journal behaviour of earlier versions. See
+[Environment Variables Reference](./environment_variables.md) for details.
+
+The journal mode is recorded in the SQLite file header. The runtime applies the configured mode
+every time it opens an INDEXED file, so switching the environment variable converts existing files
+in both directions. If another process currently holds the file open, SQLite silently declines the
+conversion and the file keeps its current mode; this is not an error, and the next OPEN that finds
+the file unused converts it.
+
+While an INDEXED file is open in WAL mode, SQLite maintains two auxiliary files beside it:
+
+| File | Purpose |
+| --- | --- |
+| `<file>-wal` | The write-ahead log holding committed data not yet folded into the main file |
+| `<file>-shm` | The shared-memory index of the log, used to coordinate concurrent processes |
+
+Both are removed automatically when the last connection closes normally, so a cleanly closed
+INDEXED file consists of a single file exactly as before. `DELETE FILE` removes them together with
+the main file.
+
+If a process terminates abnormally, the `-wal` file survives and holds committed records that are
+not yet in the main file. The next OPEN recovers them, so no data is lost. Two consequences follow:
+
+- Copying or moving an INDEXED file that has a `-wal` beside it must include the `-wal` file, or the
+  records it holds are lost. Closing the file first is the more reliable option, as that leaves
+  nothing to copy but the main file.
+- A file left behind by an abnormally terminated process also keeps its file lock. `cobj-idx unlock`
+  releases it, as described above.
+
+WAL requires shared memory and therefore does not work on network filesystems such as NFS. Set
+`COB_INDEXED_JOURNAL_MODE=DELETE` when INDEXED files are stored on one.

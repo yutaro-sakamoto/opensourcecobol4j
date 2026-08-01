@@ -515,6 +515,70 @@ $ cat TEST-REWRITE
 0000AAAA2222
 ```
 
+#### COB_INDEXED_JOURNAL_MODE
+
+INDEXEDファイルで使用するSQLiteのジャーナルモードを指定します。
+
+- **値**: `WAL`（既定値）または `DELETE`。大文字小文字は区別しません。それ以外の値を指定した場合は標準エラー出力に警告を表示し、`WAL` として扱います。
+- **例**: `COB_INDEXED_JOURNAL_MODE=DELETE`
+- **用途**: INDEXEDファイルはSQLiteをバックエンドとしています。`WAL`（ライトアヘッドログ）では、`WRITE` / `REWRITE` / `DELETE` のたびにロールバックジャーナルを作成してfsyncする代わりに、ログへの追記だけでコミットが完了するため、更新の多いプログラムが大幅に高速化します。`DELETE` を指定すると opensource COBOL 4J 2.0.0 以前と同じ動作に戻ります。
+
+ジャーナルモードはSQLiteファイルのヘッダに保存されます。ランタイムはINDEXEDファイルを開くたびにこの設定を適用するため、環境変数を切り替えれば既存のファイルも両方向に変換されます。
+
+WALモードでINDEXEDファイルを開いている間、SQLiteは同じディレクトリに `<ファイル名>-wal` と `<ファイル名>-shm` の2つの補助ファイルを作成します。これらは最後の接続が正常にクローズされた時点で自動的に削除され、`DELETE FILE` は主ファイルと一緒にこれらも削除します。プログラムが異常終了した場合は `-wal` が残りますが、その内容は次にファイルを開いたときに復元されます。
+
+NFSなどのネットワークファイルシステム上にINDEXEDファイルを置く場合は `COB_INDEXED_JOURNAL_MODE=DELETE` を指定してください。WALはそれらのファイルシステムが提供しない共有メモリを必要とします。
+
+**サンプルプログラム**
+
+INDEXEDファイルに1レコード書き込むプログラムです。ジャーナルモードはCOBOLから参照できないため、`sqlite3` コマンドで確認します。
+
+```cobol
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 cobjournal.
+       ENVIRONMENT                 DIVISION.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+       SELECT IDX-FILE ASSIGN      "IDXTEST"
+           ORGANIZATION IS         INDEXED
+           ACCESS MODE  IS         RANDOM
+           RECORD KEY   IS         IDX-KEY
+           FILE STATUS  IS         IDX-STATUS.
+       DATA                        DIVISION.
+       FILE SECTION.
+       FD  IDX-FILE.
+       01  IDX-REC.
+           03  IDX-KEY             PIC  X(05).
+           03  IDX-VAL             PIC  X(10).
+       WORKING-STORAGE             SECTION.
+       01  IDX-STATUS              PIC  99.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           OPEN OUTPUT IDX-FILE.
+           MOVE "K0001" TO IDX-KEY.
+           MOVE "hello"     TO IDX-VAL.
+           WRITE IDX-REC.
+           DISPLAY "FILE STATUS: " IDX-STATUS.
+           CLOSE IDX-FILE.
+           STOP RUN.
+```
+
+実行例:
+
+```bash
+# 環境変数なし（既定のWAL）
+$ java cobjournal
+FILE STATUS: 00
+$ sqlite3 IDXTEST 'pragma journal_mode;'
+wal
+
+# COB_INDEXED_JOURNAL_MODE=DELETE を設定して実行（ファイルが変換される）
+$ COB_INDEXED_JOURNAL_MODE=DELETE java cobjournal
+FILE STATUS: 00
+$ sqlite3 IDXTEST 'pragma journal_mode;'
+delete
+```
+
 ### 一時ファイル
 
 #### TMPDIR / TMP / TEMP

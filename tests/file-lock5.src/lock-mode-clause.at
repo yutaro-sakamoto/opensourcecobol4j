@@ -118,7 +118,7 @@ function run_test() {
     PROG2_MESSAGE=$5
     FINAL_RECORD_STATE=$6
 
-    rm -f playground-record-lock-* f.dat pro1.log prog2.log
+    rm -f playground-record-lock-* f.dat f.dat-wal f.dat-shm pro1.log prog2.log
 
     java ${PROGRAM_ID_TABLE1@<:@$OPERATION1@:>@} > prog1.log &
     PID1=$!

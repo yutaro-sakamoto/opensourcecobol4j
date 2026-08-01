@@ -515,6 +515,70 @@ $ cat TEST-REWRITE
 0000AAAA2222
 ```
 
+#### COB_INDEXED_JOURNAL_MODE
+
+Selects the SQLite journal mode used for INDEXED files.
+
+- **Value**: `WAL` (default) or `DELETE`, case-insensitive. Any other value produces a warning on stderr and is treated as `WAL`.
+- **Example**: `COB_INDEXED_JOURNAL_MODE=DELETE`
+- **Purpose**: INDEXED files are backed by SQLite. `WAL` (write-ahead logging) makes each `WRITE` / `REWRITE` / `DELETE` commit by appending to a log instead of creating and fsync-ing a rollback journal, which is substantially faster for update-heavy programs. `DELETE` restores the behaviour of opensource COBOL 4J 2.0.0 and earlier.
+
+The journal mode is stored in the SQLite file header, and the runtime applies this setting every time it opens an INDEXED file. Changing the variable therefore converts existing files in both directions.
+
+While an INDEXED file is open in WAL mode, SQLite creates two auxiliary files next to it, `<file>-wal` and `<file>-shm`. They are removed automatically when the last connection closes normally, and `DELETE FILE` removes them along with the main file. If a program terminates abnormally the `-wal` file remains; the data in it is recovered the next time the file is opened.
+
+Use `COB_INDEXED_JOURNAL_MODE=DELETE` when INDEXED files live on a network filesystem such as NFS. WAL requires shared memory that those filesystems do not provide.
+
+**Sample Program**
+
+This program writes one record to an INDEXED file. The journal mode is not visible from COBOL, so the `sqlite3` command is used to observe it.
+
+```cobol
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 cobjournal.
+       ENVIRONMENT                 DIVISION.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+       SELECT IDX-FILE ASSIGN      "IDXTEST"
+           ORGANIZATION IS         INDEXED
+           ACCESS MODE  IS         RANDOM
+           RECORD KEY   IS         IDX-KEY
+           FILE STATUS  IS         IDX-STATUS.
+       DATA                        DIVISION.
+       FILE SECTION.
+       FD  IDX-FILE.
+       01  IDX-REC.
+           03  IDX-KEY             PIC  X(05).
+           03  IDX-VAL             PIC  X(10).
+       WORKING-STORAGE             SECTION.
+       01  IDX-STATUS              PIC  99.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           OPEN OUTPUT IDX-FILE.
+           MOVE "K0001" TO IDX-KEY.
+           MOVE "hello"     TO IDX-VAL.
+           WRITE IDX-REC.
+           DISPLAY "FILE STATUS: " IDX-STATUS.
+           CLOSE IDX-FILE.
+           STOP RUN.
+```
+
+Example run:
+
+```bash
+# Without the environment variable (WAL is the default)
+$ java cobjournal
+FILE STATUS: 00
+$ sqlite3 IDXTEST 'pragma journal_mode;'
+wal
+
+# With COB_INDEXED_JOURNAL_MODE=DELETE (the file is converted back)
+$ COB_INDEXED_JOURNAL_MODE=DELETE java cobjournal
+FILE STATUS: 00
+$ sqlite3 IDXTEST 'pragma journal_mode;'
+delete
+```
+
 ### Temporary Files
 
 #### TMPDIR / TMP / TEMP
