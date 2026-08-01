@@ -519,13 +519,15 @@ $ cat TEST-REWRITE
 
 Selects the SQLite journal mode used for INDEXED files.
 
-- **Value**: `WAL` (default) or `DELETE`, case-insensitive. Any other value produces a warning on stderr and is treated as `WAL`.
+- **Value**: `WAL` (default) or `DELETE`, case-insensitive. Any other non-empty value produces a warning on stderr and is treated as `WAL`.
 - **Example**: `COB_INDEXED_JOURNAL_MODE=DELETE`
-- **Purpose**: INDEXED files are backed by SQLite. `WAL` (write-ahead logging) makes each `WRITE` / `REWRITE` / `DELETE` commit by appending to a log instead of creating and fsync-ing a rollback journal, which is substantially faster for update-heavy programs. `DELETE` restores the behaviour of opensource COBOL 4J 2.0.0 and earlier.
+- **Purpose**: INDEXED files are backed by SQLite. `WAL` (write-ahead logging) makes each `WRITE` / `REWRITE` / `DELETE` commit by appending to a log instead of creating and fsync-ing a rollback journal, which is substantially faster for update-heavy programs. `DELETE` restores the behavior of opensource COBOL 4J 2.0.0 and earlier.
 
-The journal mode is stored in the SQLite file header, and the runtime applies this setting every time it opens an INDEXED file. Changing the variable therefore converts existing files in both directions.
+The journal mode is stored in the SQLite file header, and the runtime applies this setting every time it opens an INDEXED file. Changing the variable therefore converts existing files in both directions. Conversion is skipped, without an error, while another process has the file open; the file keeps its current mode and converts at the next OPEN that finds it idle. `cobj-idx migrate` and `cobj-idx unlock` apply the setting as well.
 
-While an INDEXED file is open in WAL mode, SQLite creates two auxiliary files next to it, `<file>-wal` and `<file>-shm`. They are removed automatically when the last connection closes normally, and `DELETE FILE` removes them along with the main file. If a program terminates abnormally the `-wal` file remains; the data in it is recovered the next time the file is opened.
+Unlike most `COB_*` variables, this one is read once when the process starts and is not affected by the COBOL `SET ENVIRONMENT` statement.
+
+While an INDEXED file is open in WAL mode, SQLite creates two auxiliary files next to it, `<file>-wal` and `<file>-shm` (in `DELETE` mode, `<file>-journal`). They are removed automatically when the last connection closes normally, and `DELETE FILE` removes them along with the main file. If a program terminates abnormally the `-wal` file remains; the data in it is recovered the next time the file is opened, but a copy of the INDEXED file made in that state must include the `-wal` file or those records are lost.
 
 Use `COB_INDEXED_JOURNAL_MODE=DELETE` when INDEXED files live on a network filesystem such as NFS. WAL requires shared memory that those filesystems do not provide.
 
@@ -566,6 +568,8 @@ This program writes one record to an INDEXED file. The journal mode is not visib
 Example run:
 
 ```bash
+$ cobj cobjournal.cbl
+
 # Without the environment variable (WAL is the default)
 $ java cobjournal
 FILE STATUS: 00

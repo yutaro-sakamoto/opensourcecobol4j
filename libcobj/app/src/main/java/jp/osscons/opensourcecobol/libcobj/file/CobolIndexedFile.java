@@ -38,7 +38,9 @@ import org.sqlite.SQLiteErrorCode;
  * INDEXEDファイル（{@code ORGANIZATION IS INDEXED}）向けの{@link CobolFile}の具象実装。
  *
  * <p>各INDEXEDファイルは1つのSQLiteデータベースをバックエンドとする（1ファイル＝1データベースであり、xerialの{@code
- * sqlite-jdbc}ドライバ経由でアクセスする）。主キーは{@code table0}テーブルに、各副キーは{@code
+ * sqlite-jdbc}ドライバ経由でアクセスする）。ファイルを開いている間は、SQLiteが{@code -wal}／{@code
+ * -shm}（WALモードの場合）または{@code -journal}（ロールバックジャーナルモードの場合）を隣に作成する。詳細は{@link
+ * IndexedJournalConfig}を参照。主キーは{@code table0}テーブルに、各副キーは{@code
  * tableI}に格納される。ファイル全体のロックは{@code file_lock}テーブルで、レコードロックは{@code table0}の{@code
  * locked_by}列で管理する。ファイルのメタデータ（レコードサイズとキーのレイアウト）は{@code metadata_*}テーブルに保持する。
  *
@@ -65,9 +67,14 @@ public class CobolIndexedFile extends CobolFile {
     /**
      * {@code SQLITE_BUSY_SNAPSHOT}によるリトライの上限回数。
      *
-     * <p>1回あたりの待機時間と合わせて、{@link #BUSY_TIMEOUT_MILLIS}と同程度の総待ち時間になるようにしている。
+     * <p>待機時間は1ミリ秒から{@link #MAX_SNAPSHOT_BACKOFF_MILLIS}まで1回ごとに延びる。
+     * この回数と合わせた総待ち時間はおよそ4秒であり、通常の{@code SQLITE_BUSY}に適用される{@link
+     * #BUSY_TIMEOUT_MILLIS}と同程度になる。
      */
-    private static final int MAX_SNAPSHOT_RETRIES = 50;
+    private static final int MAX_SNAPSHOT_RETRIES = 100;
+
+    /** {@code SQLITE_BUSY_SNAPSHOT}のリトライ1回あたりの最大待機時間(ミリ秒)。 */
+    private static final long MAX_SNAPSHOT_BACKOFF_MILLIS = 50;
 
     /** {@code START}/{@code READ}の比較条件：キーが等しい（{@code =}）。 */
     public static final int COB_EQ = 1;
@@ -244,17 +251,17 @@ public class CobolIndexedFile extends CobolFile {
         return field.getDataStorage().getByteArray(0, field.getSize());
     }
 
-    /** WALモードでSQLiteが作成する補助ファイルの接尾辞。 */
-    private static final String[] SQLITE_AUXILIARY_SUFFIXES = {"-wal", "-shm"};
+    /** SQLiteがINDEXEDファイルの隣に作成する補助ファイルの接尾辞。 */
+    private static final String[] SQLITE_AUXILIARY_SUFFIXES = {"-wal", "-shm", "-journal"};
 
     /**
-     * INDEXEDファイルに付随するSQLiteの補助ファイル({@code -wal}／{@code -shm})を削除する。
+     * INDEXEDファイルに付随するSQLiteの補助ファイル({@code -wal}／{@code -shm}／{@code -journal})を削除する。
      *
-     * <p>正常にクローズされたINDEXEDファイルにはこれらは存在しない。存在するのは、ファイルを閉じずに終了したプロセスが残していった場合である。
+     * <p>通常これらはファイルを閉じた時点で削除される。残っているのは、ファイルを閉じずに終了したプロセスがあった場合である。
      * これらを消し残すとINDEXEDファイルを削除したはずのディレクトリにごみが残り、「1つのINDEXEDファイルはディスク上の1ファイル」という前提が崩れる。
      *
-     * <p>ジャーナルモードの設定にかかわらず常に削除する。WALモードで運用した後に{@code
-     * COB_INDEXED_JOURNAL_MODE=DELETE}へ切り替えた場合も取り残されないようにするためである。
+     * <p>ジャーナルモードの設定にかかわらず全種類を削除する。WALモードで運用した後に{@code
+     * COB_INDEXED_JOURNAL_MODE=DELETE}へ切り替えた場合(およびその逆)も取り残されないようにするためである。
      *
      * @param filePath 削除された主ファイルのパス
      */
@@ -373,15 +380,33 @@ public class CobolIndexedFile extends CobolFile {
             }
             p.connection.commit();
         } catch (SQLException e) {
+            // The connection may already be open at this point. Leaving it behind would pin the
+            // -wal/-shm files for the life of the JVM, which is exactly the debris this class
+            // tries to avoid.
+            closeConnectionQuietly(p);
             if (isBusy(e)) {
                 return COB_STATUS_61_FILE_SHARING;
             } else {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
         } catch (Exception e) {
+            closeConnectionQuietly(p);
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         return COB_STATUS_00_SUCCESS;
+    }
+
+    /** 接続が開いていれば閉じる。閉じられなくても、報告すべきは元の失敗のほうなので無視する。 */
+    private static void closeConnectionQuietly(IndexedFile p) {
+        if (p.connection == null) {
+            return;
+        }
+        try {
+            p.connection.close();
+        } catch (SQLException ignored) {
+            // 元の失敗を上書きしないよう、ここでの失敗は無視する。
+        }
+        p.connection = null;
     }
 
     /**
@@ -418,6 +443,15 @@ public class CobolIndexedFile extends CobolFile {
             try {
                 return operation.run();
             } catch (SnapshotConflictException e) {
+                if (!this.commitOnModification) {
+                    // A bulk load keeps one transaction open across many statements, so rolling
+                    // back here would silently discard every record written so far and the load
+                    // would still report success. Report the conflict instead.
+                    // This is currently unreachable: the first successful write of the bulk
+                    // transaction takes the WAL writer lock and holds it until COMMIT, so no other
+                    // connection can commit and cause a snapshot conflict afterwards.
+                    return COB_STATUS_61_FILE_SHARING;
+                }
                 try {
                     this.filei.connection.rollback();
                 } catch (SQLException rollbackEx) {
@@ -427,7 +461,10 @@ public class CobolIndexedFile extends CobolFile {
                     return COB_STATUS_61_FILE_SHARING;
                 }
                 try {
-                    Thread.sleep(1L + (attempt & 7));
+                    // Back off a little further on each attempt, with a per-process offset so
+                    // that two contending processes do not resynchronise on the same schedule.
+                    long backoff = Math.min(attempt + 1L, MAX_SNAPSHOT_BACKOFF_MILLIS);
+                    Thread.sleep(backoff + (getProcessUuid().hashCode() & 3));
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt();
                     return COB_STATUS_30_PERMANENT_ERROR;
@@ -695,7 +732,15 @@ public class CobolIndexedFile extends CobolFile {
 
     @Override
     public int close_(int opt) {
-        return retryOnSnapshotConflict(() -> this.closeOnce(opt));
+        int status = retryOnSnapshotConflict(() -> this.closeOnce(opt));
+        if (status != COB_STATUS_00_SUCCESS) {
+            // closeOnce did not reach connection.close(). Closing here keeps the failure from
+            // pinning the connection and the -wal/-shm files for the life of the JVM. The
+            // file_lock row stays behind, which is what `cobj-idx unlock` exists for.
+            closeConnectionQuietly(this.filei);
+            this.fetchKeyIndex = -1;
+        }
+        return status;
     }
 
     /** {@link #close_(int)}の本体。{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。 */
@@ -925,11 +970,12 @@ public class CobolIndexedFile extends CobolFile {
         IndexedFile p = this.filei;
         int retCode = read_internal(key, readOpts);
         if (retCode != COB_STATUS_00_SUCCESS) {
-            try {
-                unlockPreviousRecord();
-                p.connection.commit();
-            } catch (SQLException rollbackEx) {
-                return COB_STATUS_30_PERMANENT_ERROR;
+            // This releases the previous record lock with an UPDATE after the reads above, so it
+            // can hit SQLITE_BUSY_SNAPSHOT. Without the retry a plain "no more records" would be
+            // reported as a permanent error under concurrency.
+            int unlockStatus = retryOnSnapshotConflict(this::releasePreviousRecordLock);
+            if (unlockStatus != COB_STATUS_00_SUCCESS) {
+                return unlockStatus;
             }
             return retCode;
         }
@@ -957,6 +1003,26 @@ public class CobolIndexedFile extends CobolFile {
      * @param readOpts {@code READ}のオプション
      * @return 正常時は{@code COB_STATUS_00_SUCCESS}
      */
+    /**
+     * 直前にロックしたレコードのロックを解放してコミットする。
+     *
+     * <p>{@code READ}／{@code READ NEXT}がレコードを取得できなかった場合の後始末であり、キーを保持したまま何度でもやり直せる({@link
+     * #unlockPreviousRecord()}は更新が成功してから{@code previousLockedRecordKey}をクリアする)。
+     *
+     * @return 正常時は{@code COB_STATUS_00_SUCCESS}
+     */
+    private int releasePreviousRecordLock() {
+        IndexedFile p = this.filei;
+        try {
+            unlockPreviousRecord();
+            p.connection.commit();
+        } catch (SQLException e) {
+            SnapshotConflictException.rethrowIfSnapshotConflict(e);
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+        return COB_STATUS_00_SUCCESS;
+    }
+
     private int lockReadRecord(byte[] primaryKey, int readOpts) {
         IndexedFile p = this.filei;
         if (shouldLockRecord(readOpts)) {
@@ -1091,11 +1157,12 @@ public class CobolIndexedFile extends CobolFile {
         IndexedFile p = this.filei;
         int retCode = readNext_internal(readOpts);
         if (retCode != COB_STATUS_00_SUCCESS) {
-            try {
-                unlockPreviousRecord();
-                p.connection.commit();
-            } catch (SQLException rollbackEx) {
-                return COB_STATUS_30_PERMANENT_ERROR;
+            // This releases the previous record lock with an UPDATE after the reads above, so it
+            // can hit SQLITE_BUSY_SNAPSHOT. Without the retry a plain "no more records" would be
+            // reported as a permanent error under concurrency.
+            int unlockStatus = retryOnSnapshotConflict(this::releasePreviousRecordLock);
+            if (unlockStatus != COB_STATUS_00_SUCCESS) {
+                return unlockStatus;
             }
             return retCode;
         }
@@ -1352,6 +1419,11 @@ public class CobolIndexedFile extends CobolFile {
      * {@link #rewrite_(int)}の本体。
      *
      * <p>主キーから対象レコードを特定し直すため、{@code SQLITE_BUSY_SNAPSHOT}が発生した場合はそのままやり直せる。
+     *
+     * <p>ただしやり直せるのは{@code
+     * indexed_write_internal}に入る前までである。この中では{@code p.key}が副キーの値で上書きされるため、そこから先でやり直すと{@code
+     * matchKeyHead}の比較対象が壊れる。実際には競合が起きうるのは最初の{@code lockRecord}の時点だけであり、{@code
+     * p.key}はまだ書き換わっていない。
      */
     private int rewriteOnce(int opt) {
         IndexedFile p = this.filei;
