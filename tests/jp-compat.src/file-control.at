@@ -121,7 +121,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_MODULE} prog.cob])
-AT_CHECK([export OC_IO_CREATES=yes && ${RUN_MODULE} prog], [0], [00
+AT_CHECK([export OC_IO_CREATES=yes && ${WITHOUT_SQLITE_JDBC_LOG} ${RUN_MODULE} prog], [0], [00
 ])
 
 AT_CLEANUP
@@ -249,7 +249,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_MODULE} prog.cob])
-AT_CHECK([export OC_EXTEND_CREATES=yes && ${RUN_MODULE} prog], [0], [00
+AT_CHECK([export OC_EXTEND_CREATES=yes && ${WITHOUT_SQLITE_JDBC_LOG} ${RUN_MODULE} prog], [0], [00
 ])
 
 AT_CLEANUP

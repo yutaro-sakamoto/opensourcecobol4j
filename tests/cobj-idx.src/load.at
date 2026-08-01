@@ -160,7 +160,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0002e000200002
@@ -175,7 +175,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample input.txt --format=txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0002e000200002
@@ -191,7 +191,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0000e000000002
@@ -206,7 +206,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0000e000000002
@@ -220,7 +220,7 @@ AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -231,7 +231,7 @@ AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -245,7 +245,7 @@ AT_DATA([input.txt],
 [a0002b0002c0002d0002e000200002a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0002e000200002
@@ -259,7 +259,7 @@ AT_DATA([input.txt],
 [a0002b0002c0002d0002e000200002a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0002e000200002
@@ -274,7 +274,7 @@ AT_DATA([input.txt],
 [a0002b0002c0002d0000e000000002a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0000e000000002
@@ -288,7 +288,7 @@ AT_DATA([input.txt],
 [a0002b0002c0002d0000e000000002a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-sample input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0002b0002c0002d0000e000000002
@@ -302,7 +302,7 @@ AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -313,7 +313,7 @@ AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -328,7 +328,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load --new -f txt work-sample < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
@@ -338,46 +338,46 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load --new -f txt work-sample input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load -n work-sample --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load -n work-sample --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load -f txt work-sample --new < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load -f txt work-sample --new input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt -n < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([cp idx-file work-sample])
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt -n input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
@@ -387,13 +387,13 @@ AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample -n < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-file work-sample])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-sample -n input.txt])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 ####### test for the file 'sample' with invalid input and --format=txt option #######
@@ -407,7 +407,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -421,7 +421,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -437,7 +437,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -451,7 +451,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -466,7 +466,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample < input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -479,7 +479,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -494,7 +494,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -507,7 +507,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -523,7 +523,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -538,7 +538,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -553,7 +553,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -566,7 +566,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -582,7 +582,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -596,7 +596,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -611,7 +611,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample -format=bin < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -624,7 +624,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample -format=bin input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -639,7 +639,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load -f bin work-sample < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -652,7 +652,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load -f bin work-sample input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -667,7 +667,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load --format=bin work-sample < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -680,7 +680,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load --format=bin work-sample input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -695,7 +695,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample -f bin < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -708,7 +708,7 @@ AT_DATA([input.txt],
 AT_CHECK([${COBJ_IDX} load work-sample -f bin input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -724,7 +724,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load --new work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -738,7 +738,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load --new work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -754,7 +754,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load --new work-sample --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -768,7 +768,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load --new work-sample --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-sample java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-sample ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0000b0000c0000d0000e000000000
 a0001b0001c0001d0001e000100001
 a0010b0010c0010d0010e001000010
@@ -783,7 +783,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
@@ -793,7 +793,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0012e001200012
 ])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0002e000200002
 a0012b0012c0012d0012e001200012
 ])
@@ -805,7 +805,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0000e000000002
 a0012b0012c0012d0010e001000012
 ])
@@ -815,7 +815,7 @@ AT_DATA([input.txt],
 a0012b0012c0012d0010e001000012
 ])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [a0002b0002c0002d0000e000000002
 a0012b0012c0012d0010e001000012
 ])
@@ -825,13 +825,13 @@ AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
 [])
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 ####### test for the file 'empty' with invalid input #######
@@ -845,7 +845,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
@@ -855,7 +855,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input containing long records
@@ -867,7 +867,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
@@ -877,7 +877,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt], [1], [],
 [error: all record must have the length of 30 bytes.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input violating the key duplication rule (primary key)
@@ -889,7 +889,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
@@ -899,7 +899,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input violating the key duplication rule (alternate key)
@@ -911,7 +911,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt < input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-empty-file work-empty])
 AT_DATA([input.txt],
@@ -921,7 +921,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-empty --format=txt input.txt], [1], [],
 [error: loading fails because of duplicate keys.
 ])
-AT_CHECK([IDX_FILE_PATH=work-empty java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-empty ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 ####### test for the file 'idx-invalid-file' with valid input #######
@@ -986,7 +986,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
@@ -996,7 +996,7 @@ a0012b0012c0012d0012e001200
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input containing long records
@@ -1008,7 +1008,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
@@ -1018,7 +1018,7 @@ a0012b0012c0012d0012e001200012aaa
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input violating the key duplication rule (primary key)
@@ -1030,7 +1030,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
@@ -1040,7 +1040,7 @@ a0002b0003c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 # test for input violating the key duplication rule (alternate key)
@@ -1052,7 +1052,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt < input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 AT_CHECK([cp idx-invalid-file work-idx-invalid-file])
 AT_DATA([input.txt],
@@ -1062,7 +1062,7 @@ a0003b0002c0003d0003e000300003
 AT_CHECK([${COBJ_IDX} load work-idx-invalid-file --format=txt input.txt], [1], [],
 [error: 'work-idx-invalid-file' is not a valid indexed file.
 ])
-AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file java load], [0],
+AT_CHECK([IDX_FILE_PATH=work-idx-invalid-file ${WITHOUT_SQLITE_JDBC_LOG} java load], [0],
 [])
 
 ####### test for the file 'dir-idx-file' with valid input #######

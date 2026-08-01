@@ -70,7 +70,7 @@ AT_DATA([prog.cbl], [
 ])
 
 AT_CHECK([${COBJ} -assign_external prog.cbl])
-AT_CHECK([SEQ_FILE_PATH=./seq_file LINE_SEQ_FILE_PATH=./line_seq_file INDEXED_FILE_PATH=./indexed_file ${RUN_MODULE} prog], [0],
+AT_CHECK([SEQ_FILE_PATH=./seq_file LINE_SEQ_FILE_PATH=./line_seq_file INDEXED_FILE_PATH=./indexed_file ${WITHOUT_SQLITE_JDBC_LOG} ${RUN_MODULE} prog], [0],
 [seq-file-record               @&t@
 line-seq-file-record          @&t@
 indexed-file-record           @&t@

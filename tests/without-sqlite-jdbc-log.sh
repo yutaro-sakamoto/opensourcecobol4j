@@ -31,6 +31,10 @@ stderr_file=without-sqlite-jdbc-log.$$.stderr
 command_status=$?
 
 tab=$(printf '\t')
+# On Windows the JVM ends its lines with CRLF, so the CR has to come off before
+# matching or the pattern anchored at the end of the message never fires. Only
+# the matching uses the trimmed line; what is written out keeps the CR.
+cr=$(printf '\r')
 skipping=no
 
 # What is passed through has to be byte for byte what the command wrote, or a
@@ -42,9 +46,11 @@ newline='
 terminator=$newline
 
 while IFS= read -r line || { terminator=''; test -n "$line"; }; do
+    trimmed=${line%"$cr"}
+
     if test "$skipping" = yes; then
         # Swallow the exception and the stack trace reporting the failure.
-        case $line in
+        case $trimmed in
             java.* | "Caused by: "* | "$tab"at\ * | "$tab"...\ * | "$tab"Suppressed:\ *)
                 continue
                 ;;
@@ -54,7 +60,7 @@ while IFS= read -r line || { terminator=''; test -n "$line"; }; do
         esac
     fi
 
-    case $line in
+    case $trimmed in
         *"ERROR org.sqlite.SQLiteJDBCLoader - Failed to delete old native lib")
             skipping=yes
             continue
