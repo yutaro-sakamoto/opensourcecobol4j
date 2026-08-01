@@ -415,7 +415,7 @@ class IndexedFileUtilMain {
 
         StringBuilder sb = new StringBuilder();
 
-        try (Connection conn = openReadOnlyConnection(indexedFilePath);
+        try (Connection conn = openMetadataConnection(indexedFilePath);
                 Statement stmt = conn.createStatement(); ) {
             // Retrieve the record size
             ResultSet rs =
@@ -735,18 +735,6 @@ class IndexedFileUtilMain {
     }
 
     /**
-     * インデックスファイルのメタデータを読み出すための読み取り専用接続を開く。
-     *
-     * <p>WALモードのデータベースを読み取り専用({@code SQLITE_OPEN_READONLY})で開く場合、SQLiteはWALインデックス({@code
-     * -shm})を作成する必要があるため、データベースと同じディレクトリへの書き込み権限を要求する。
-     * 権限がない場合は{@code SQLITE_READONLY_DIRECTORY}で失敗するので、{@code -wal}が存在せず
-     * 復元すべき内容がないことを確認したうえで{@code immutable=1}で開き直す。
-     *
-     * @param indexedFilePath インデックスファイルのパス
-     * @return 読み取り専用の接続
-     * @throws SQLException 接続に失敗した場合
-     */
-    /**
      * インデックスファイルを更新するための接続を開き、設定されたジャーナルモードを適用する。
      *
      * <p>{@code migrate}や{@code
@@ -768,25 +756,91 @@ class IndexedFileUtilMain {
         return conn;
     }
 
-    private static Connection openReadOnlyConnection(String indexedFilePath) throws SQLException {
-        SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(true);
+    /**
+     * インデックスファイルのメタデータを読み出すための接続を開く。この接続では{@code SELECT}しか実行しない。
+     *
+     * <p>書き込み可能な場合は読み書きモードで開く。WALモードのデータベースを読み取り専用({@code
+     * SQLITE_OPEN_READONLY})で開くと、SQLiteが作成したWALインデックス({@code -shm})と{@code
+     * -wal}をクローズ時に削除できず、{@code cobj-idx info}を実行しただけでファイルが残ってしまうためである。
+     *
+     * <p>書き込めない場合は読み取り専用で開く。それも失敗する場合(WALモードのデータベースは{@code
+     * -shm}を作成するためディレクトリへの書き込み権限を必要とし、権限がないと{@code
+     * SQLITE_READONLY_DIRECTORY}になる)は、{@code -wal}が存在せず復元すべき内容がないことを確認したうえで{@code
+     * immutable=1}で開き直す。
+     *
+     * @param indexedFilePath インデックスファイルのパス
+     * @return メタデータ読み出し用の接続
+     * @throws SQLException いずれの方法でも接続できなかった場合
+     */
+    private static Connection openMetadataConnection(String indexedFilePath) throws SQLException {
         try {
-            return DriverManager.getConnection(
-                    "jdbc:sqlite:" + indexedFilePath, config.toProperties());
-        } catch (SQLException e) {
-            if (new File(indexedFilePath + "-wal").exists()) {
-                // A write-ahead log is present and has to be taken into account, so falling back
-                // to an immutable connection would silently read stale data.
-                throw e;
+            return openAndProbe("jdbc:sqlite:" + indexedFilePath, false);
+        } catch (SQLException readWriteFailure) {
+            try {
+                return openAndProbe("jdbc:sqlite:" + indexedFilePath, true);
+            } catch (SQLException readOnlyFailure) {
+                if (new File(indexedFilePath + "-wal").exists()) {
+                    // A write-ahead log is present and has to be taken into account, so falling
+                    // back to an immutable connection would silently read stale data.
+                    throw readOnlyFailure;
+                }
+                return openAndProbe(
+                        "jdbc:sqlite:file:" + toFileUriPath(indexedFilePath) + "?immutable=1",
+                        true);
             }
-            return DriverManager.getConnection(
-                    "jdbc:sqlite:file:" + indexedFilePath + "?immutable=1", config.toProperties());
         }
     }
 
+    /**
+     * 接続を開き、実際に文を1つ実行して使用可能なことを確かめる。
+     *
+     * <p>sqlite-jdbcの{@code
+     * getConnection}は遅延して開くため、たとえば書き込み権限のないディレクトリにあるWALモードのデータベースは、接続時ではなく最初の文の実行時に{@code
+     * SQLITE_READONLY_DIRECTORY}で失敗する。ここで実際に文を実行しておかないと、呼び出し側のフォールバックが機能しない。
+     *
+     * @param url JDBC URL
+     * @param readOnly 読み取り専用で開く場合は{@code true}
+     * @return 使用可能な接続
+     * @throws SQLException 接続できないか、文を実行できない場合
+     */
+    private static Connection openAndProbe(String url, boolean readOnly) throws SQLException {
+        SQLiteConfig config = new SQLiteConfig();
+        config.setReadOnly(readOnly);
+        Connection conn = DriverManager.getConnection(url, config.toProperties());
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("select 1");
+        } catch (SQLException e) {
+            try {
+                conn.close();
+            } catch (SQLException ignored) {
+                // 使えない接続を閉じられなくても、報告すべきは元の失敗のほうである。
+            }
+            throw e;
+        }
+        return conn;
+    }
+
+    /**
+     * ファイルパスを{@code file:} URIのパス部分に変換する。
+     *
+     * <p>{@code immutable=1}を指定するにはURI形式で開く必要があるが、{@code ?}や{@code
+     * #}を含むパスはそのまま連結するとクエリ部分と解釈されてしまう。Windowsの絶対パスも{@code
+     * ///}で始める必要がある。
+     *
+     * @param path ファイルパス
+     * @return {@code file:}に続けて使えるパス文字列
+     */
+    private static String toFileUriPath(String path) {
+        String normalized = path.replace(File.separatorChar, '/');
+        // Windowsの絶対パス(C:/...)はfile:///C:/...の形にする必要がある。
+        if (normalized.length() >= 2 && normalized.charAt(1) == ':') {
+            normalized = "//" + normalized;
+        }
+        return normalized.replace("?", "%3f").replace("#", "%23");
+    }
+
     private static Optional<CobolFile> createCobolFileFromIndexedFilePath(String indexedFilePath) {
-        try (Connection conn = openReadOnlyConnection(indexedFilePath);
+        try (Connection conn = openMetadataConnection(indexedFilePath);
                 Statement stmt = conn.createStatement(); ) {
 
             ResultSet rs =

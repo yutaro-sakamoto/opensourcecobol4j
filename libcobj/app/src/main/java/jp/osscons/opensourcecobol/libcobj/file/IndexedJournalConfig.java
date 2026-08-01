@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.sqlite.SQLiteErrorCode;
 
 /**
  * INDEXEDファイルのバックエンドであるSQLiteデータベースのジャーナルモードの設定。
@@ -102,16 +103,24 @@ public final class IndexedJournalConfig {
      * journal_mode}はトランザクションの内側では変更できないため、必ず{@code Connection.setAutoCommit(false)}を呼び出す前に、
      * すなわち自動コミットが有効な状態で呼び出さなければならない。
      *
+     * <p>他のプロセスが同じファイルを開いていると、変換は行われない。WALへの変換の場合、SQLiteはエラーを返さずに現在のモードをそのまま返す。
+     * 一方WALから抜ける変換は排他ロックを必要とするため{@code
+     * SQLITE_BUSY}になる。いずれの場合もファイルは現在のモードのまま正しく読み書きできるので、ここでは失敗として扱わない。
+     * そうしないと、WALをやめようとした利用者が、他のプロセスがファイルを開いているというだけでファイルステータス61でOPENに失敗してしまう。
+     *
      * @param connection 適用先の接続。自動コミットが有効であること
-     * @throws SQLException PRAGMAの実行に失敗した場合
+     * @throws SQLException ビジー以外の理由でPRAGMAの実行に失敗した場合
      */
     public static void applyTo(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement();
                 ResultSet rs = statement.executeQuery("PRAGMA journal_mode = " + journalMode)) {
-            // PRAGMA journal_modeは変換後のモードを1行返す。
-            // 他のプロセスが同じファイルを開いていて変換できない場合、SQLiteはエラーを返さずに
-            // 現在のモードをそのまま返す。これは異常ではないため戻り値は検査しない。
+            // PRAGMA journal_modeは変換後のモードを1行返すが、変換が見送られた場合は現在のモードが
+            // 返るだけなので、戻り値は検査しない。
             rs.next();
+        } catch (SQLException e) {
+            if (e.getErrorCode() != SQLiteErrorCode.SQLITE_BUSY.code) {
+                throw e;
+            }
         }
     }
 }

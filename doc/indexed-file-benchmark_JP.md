@@ -1,6 +1,6 @@
 # INDEXEDファイルのジャーナルモードによる性能差の計測
 
-INDEXEDファイルはSQLiteをバックエンドとしている。opensource COBOL 4J 2.1.0 以降は既定でWAL(ライトアヘッドログ)ジャーナルモードを使用し、
+INDEXEDファイルはSQLiteをバックエンドとしている。既定でWAL（ライトアヘッドログ）ジャーナルモードを使用し、
 `COB_INDEXED_JOURNAL_MODE=DELETE` を指定すると以前のバージョンと同じロールバックジャーナルの動作に戻る
 ([環境変数リファレンス](./environment_variables_JP.md) を参照)。
 

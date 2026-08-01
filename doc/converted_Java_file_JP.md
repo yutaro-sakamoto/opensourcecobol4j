@@ -452,9 +452,11 @@ libcobj.jarはopensource COBOL 4Jのランタイムであり、
 | FileStruct.java | ファイルに関する情報を保持するクラス。 |
 | IndexedCursor.java | 索引ファイルの処理で使用するクラス。 |
 | IndexedFile.java | 索引ファイルに関する情報を保持するクラス。 |
+| IndexedJournalConfig.java | 索引ファイルのSQLiteジャーナルモードの設定を保持するクラス。 |
 | KeyComponent.java | ファイルのキーに関連するクラス。 |
 | Linage.java | LINAGEに関するクラス。 |
 | MemoryStruct.java | ソート処理で使用するクラス。 |
+| SnapshotConflictException.java | 索引ファイルの更新時の競合をリトライ処理へ伝える例外クラス。 |
 
 ### termioディレクトリ
 `opensourcecobol4j/libcobj/src/jp/osscons/opensourcecobol/libcobj/termio`に格納されているソースコードについて説明する。

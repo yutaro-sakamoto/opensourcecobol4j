@@ -1,8 +1,7 @@
 # Measuring the Effect of the INDEXED File Journal Mode
 
-INDEXED files are backed by SQLite. Since opensource COBOL 4J 2.1.0 they use the WAL
-(write-ahead logging) journal mode by default, and `COB_INDEXED_JOURNAL_MODE=DELETE` restores the
-rollback-journal behaviour of earlier versions (see
+INDEXED files are backed by SQLite and use the WAL (write-ahead logging) journal mode by default.
+`COB_INDEXED_JOURNAL_MODE=DELETE` restores the rollback-journal behavior of earlier versions (see
 [Environment Variables Reference](./environment_variables.md)).
 
 This page describes a self-contained benchmark you can run on your own machine to see what that
