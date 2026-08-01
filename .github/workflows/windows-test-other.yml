@@ -66,14 +66,10 @@ jobs:
         export PATH="/tmp/diff-wrapper:$PATH"
         export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
         cd tests
-        # The file lock suites spend most of their wall clock time waiting for
-        # the second process each test case synchronises with, so run their
-        # test groups in parallel. Autotest gives every group its own working
-        # directory, so the groups do not interfere with each other.
-        case "${{ inputs.test-name }}" in
-          file-lock*) ./${{ inputs.test-name }} -j"$(nproc)" ;;
-          *)          ./${{ inputs.test-name }} ;;
-        esac
+        # Autotest gives every test group its own working directory, so the
+        # groups do not interfere with each other and the suites can run their
+        # groups in parallel. The runners have 4 cores.
+        ./${{ inputs.test-name }} -j4
 
     - name: Upload log files if tests fail
       if: failure()
