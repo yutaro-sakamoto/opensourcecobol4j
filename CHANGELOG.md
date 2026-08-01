@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### New Features
+
+- INDEXED files now use the SQLite WAL (write-ahead logging) journal mode by default, which
+  significantly speeds up `WRITE` / `REWRITE` / `DELETE`.
+  - The new environment variable `COB_INDEXED_JOURNAL_MODE` selects the journal mode. `WAL` is the
+    default; `DELETE` restores the behaviour of 2.0.0 and earlier, which is required on network
+    filesystems such as NFS.
+  - see doc/environment_variables.md or doc/environment_variables_JP.md
+  - see doc/indexed-file-benchmark.md or doc/indexed-file-benchmark_JP.md for how to measure the
+    difference on your own machine
+
+### Fixed
+
+- `DELETE FILE` on an INDEXED file now also removes the SQLite `-wal` and `-shm` auxiliary files
+  left behind by a process that terminated without closing the file. Previously the deleted file
+  left debris in the directory.
+- `cobj-idx load` and `cobj-idx unload` no longer leave the INDEXED file open when they fail. The
+  file lock held by the process is now released on every path, and a failed `load` no longer risks
+  committing a partially loaded file.
+- Opening an INDEXED file created by an older version (file status 92) no longer leaks the database
+  connection.
+
 ## [2.0.0] - 2026-06-26
 
 ### New Features

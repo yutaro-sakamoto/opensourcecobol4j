@@ -1993,6 +1993,16 @@ public class CobolFile {
     }
 
     /**
+     * 主ファイルの削除に伴って削除すべき補助ファイルを削除する。
+     *
+     * <p>既定では何もしない。1つのCOBOLファイルがディスク上の複数のファイルで構成される実装が、それらを削除するためにオーバーライドする。{@link
+     * CobolIndexedFile}はSQLiteのWALモードで生成される{@code -wal}／{@code -shm}をここで削除する。
+     *
+     * @param filePath 削除された主ファイルのパス
+     */
+    protected void deleteAuxiliaryFiles(Path filePath) {}
+
+    /**
      * TODO: 準備中
      *
      * @param fnstatus TODO: 準備中
@@ -2110,6 +2120,7 @@ public class CobolFile {
         try {
             saveStatus(COB_STATUS_00_SUCCESS, fnstatus);
             Files.delete(filePath);
+            deleteAuxiliaryFiles(filePath);
             return;
         } catch (IOException e) {
             int mode = (int) this.last_open_mode;
