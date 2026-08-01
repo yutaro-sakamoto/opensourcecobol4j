@@ -3259,6 +3259,9 @@ local_storage_section:
 	if (current_program->nested_level) {
 		cb_error (_("LOCAL-STORAGE not allowed in nested programs"));
 	}
+	if (current_program->flag_recursive) {
+		cb_warning (_("LOCAL-STORAGE is shared between invocations of a RECURSIVE program"));
+	}
   }
   record_description_list
   {

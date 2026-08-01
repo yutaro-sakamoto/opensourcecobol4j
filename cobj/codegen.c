@@ -129,11 +129,6 @@ static struct base_list {
   const char *curr_prog;
 } *base_cache = NULL;
 
-static struct local_list {
-  struct local_list *next;
-  struct cb_field *f;
-} *local_cache = NULL;
-
 struct sort_list {
   struct sort_list *next;
 };
@@ -874,9 +869,10 @@ static void joutput_base(struct cb_field *f) {
   register_data_storage_list(f, top);
 
   if (!top->flag_base) {
-    /* CobolDataStorage型のメンバ変数として宣言・確保する項目を登録する。
-     * LINKAGE SECTIONやBASED項目のように格納先が実行時に決まる項目は
-     * flag_baseが立っているためここには到達しない。 */
+    /* CobolDataStorage型のメンバ変数として宣言し、記憶域を確保する項目を
+     * 登録する。flag_baseは「記憶域の与え方が別途決まっている」ことを表す
+     * 印であり、LINKAGE SECTIONやBASED項目のように格納先が実行時に決まる
+     * 項目は最初から立っているためここには到達しない。 */
     bl = cobc_malloc(sizeof(struct base_list));
     bl->f = top;
     bl->curr_prog = excp_current_program_id;
@@ -4716,10 +4712,15 @@ static int literal_value(cb_tree x) {
   }
 }
 
-static void joutput_initial_values(struct cb_field *p) {
+/* force_defaultが真のときは、設定ファイルのauto-initializeの値に関わらず、
+ * VALUE句を持たない項目も既定値(英数字項目なら空白、数字項目ならゼロ)で
+ * 初期化する。LOCAL-STORAGE SECTIONの項目は呼び出しの度に確保し直されたかの
+ * ように振る舞う必要があるため、前回の呼び出しの値を残さないようこれを指定する。
+ */
+static void joutput_initial_values(struct cb_field *p, int force_default) {
   cb_tree def;
 
-  def = cb_auto_initialize ? cb_true : NULL;
+  def = (cb_auto_initialize || force_default) ? cb_true : NULL;
   for (; p; p = p->sister) {
     cb_tree x = cb_build_field_reference(p, NULL);
     if (p->flag_item_based) {
@@ -5151,7 +5152,7 @@ static void joutput_internal_function(struct cb_program *prog,
         joutput_newline();
       }
     }
-    joutput_initial_values(prog->working_storage);
+    joutput_initial_values(prog->working_storage, 0);
 
     if (has_external) {
       joutput_line("/* init_extern */");
@@ -5178,28 +5179,6 @@ static void joutput_internal_function(struct cb_program *prog,
   // }
   // output_newline ();
 
-  /* Set up LOCAL-STORAGE cache */
-  // if (prog->local_storage) {
-  //	for (f = prog->local_storage; f; f = f->sister) {
-  //		ff = cb_field_founder (f);
-  //		if (ff->redefines) {
-  //			ff = ff->redefines;
-  //		}
-  //		if (ff->flag_item_based || ff->flag_local_alloced) {
-  //			continue;
-  //		}
-  //		if (ff->flag_item_78) {
-  //			fprintf (stderr, "Unexpected CONSTANT item\n");
-  //			ABORT ();
-  //		}
-  //		ff->flag_local_alloced = 1;
-  //		locptr = cobc_malloc (sizeof (struct local_list));
-  //		locptr->f = ff;
-  //		locptr->next = local_cache;
-  //		local_cache = locptr;
-  //	}
-  //	local_cache = local_list_reverse (local_cache);
-  // }
   ///* Global entry dispatch */
   // if (prog->global_list) {
   //	output_line ("/* Global entry dispatch */");
@@ -5244,7 +5223,7 @@ static void joutput_internal_function(struct cb_program *prog,
                      f->name, CB_FILE(CB_VALUE(l))->record_max);
       }
     }
-    joutput_initial_values(prog->working_storage);
+    joutput_initial_values(prog->working_storage, 0);
     if (has_external) {
       joutput_line("this.initExternProc();");
     }
@@ -5260,7 +5239,7 @@ static void joutput_internal_function(struct cb_program *prog,
    * 初期化されるため、呼び出し間で値は引き継がれない。 */
   if (prog->local_storage) {
     joutput_line("/* Initialize LOCAL-STORAGE SECTION */");
-    joutput_initial_values(prog->local_storage);
+    joutput_initial_values(prog->local_storage, 1);
     joutput_newline();
   }
 
@@ -5366,17 +5345,6 @@ static void joutput_internal_function(struct cb_program *prog,
 
   // if (needs_exit_prog) {
   //	output_line ("exit_program:");
-  //	output_newline ();
-  // }
-  // if (prog->local_storage) {
-  //	output_line ("/* Deallocate LOCAL storage */");
-  //	local_cache = local_list_reverse (local_cache);
-  //	for (locptr = local_cache; locptr; locptr = locptr->next) {
-  //		output_line ("if (%s%d) {", CB_PREFIX_BASE, locptr->f->id);
-  //		output_line ("\tfree (%s%d);", CB_PREFIX_BASE, locptr->f->id);
-  //		output_line ("\t%s%d = NULL;", CB_PREFIX_BASE, locptr->f->id);
-  //		output_line ("}");
-  //	}
   //	output_newline ();
   // }
   joutput_line("/* Pop module stack */");
@@ -6704,7 +6672,6 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   }
   call_parameter_cache = NULL;
   label_cache = NULL;
-  local_cache = NULL;
   excp_current_program_id = prog->orig_source_name;
   excp_current_section = NULL;
   excp_current_paragraph = NULL;

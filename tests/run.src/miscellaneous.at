@@ -108,6 +108,8 @@ AT_DATA([callee.cob], [
            END-DISPLAY.
            DISPLAY "GRP = " LCL-GRP " TBL = " LCL-TBL
            END-DISPLAY.
+      * Overwrite every item so that the second call proves that
+      * LOCAL-STORAGE items are re-initialized on each invocation.
            MOVE "ZZZ" TO LCL-NOVAL.
            MOVE 999 TO LCL-NUM.
            MOVE 99 TO LCL-COMP.
@@ -164,6 +166,136 @@ AT_DATA([prog.cob], [
 
 AT_CHECK([${COMPILE_ONLY} prog.cob], [1], [],
 [prog.cob:11: Error: LOCAL-STORAGE not allowed in nested programs
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([LOCAL-STORAGE with 77, 88, REDEFINES and OCCURS DEPENDING ON])
+
+AT_DATA([callee.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      callee.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 WRK-CNT       PIC 9 VALUE 2.
+       LOCAL-STORAGE    SECTION.
+       77 LCL-77        PIC 99 VALUE 42.
+       01 LCL-FLG       PIC X VALUE "Y".
+          88 LCL-FLG-ON VALUE "Y".
+       01 LCL-R         PIC X(4) VALUE "abcd".
+       01 LCL-R2 REDEFINES LCL-R.
+          05 LCL-R2A    PIC XX.
+          05 LCL-R2B    PIC XX.
+       01 LCL-ODO.
+          05 LCL-ITM    PIC X OCCURS 1 TO 5 DEPENDING ON WRK-CNT.
+       PROCEDURE        DIVISION.
+           DISPLAY "77 = " LCL-77 " R2A = " LCL-R2A " R2B = " LCL-R2B
+           END-DISPLAY.
+           IF LCL-FLG-ON
+               DISPLAY "FLAG IS ON"
+               END-DISPLAY
+           END-IF.
+           MOVE 99 TO LCL-77.
+           MOVE "N" TO LCL-FLG.
+           MOVE "zzzz" TO LCL-R.
+           EXIT PROGRAM.
+])
+
+AT_DATA([caller.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      caller.
+       PROCEDURE        DIVISION.
+           CALL "callee"
+           END-CALL.
+      * CANCEL must not affect the re-initialization of LOCAL-STORAGE.
+           CANCEL "callee".
+           CALL "callee"
+           END-CALL.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE_MODULE} callee.cob])
+AT_CHECK([${COMPILE} caller.cob])
+AT_CHECK([${RUN_MODULE} caller], [0],
+[77 = 42 R2A = ab R2B = cd
+FLAG IS ON
+77 = 42 R2A = ab R2B = cd
+FLAG IS ON
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([LOCAL-STORAGE in an INITIAL program with a nested program])
+
+AT_DATA([callee.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      callee IS INITIAL.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 WRK-X         PIC XXX VALUE "abc".
+       LOCAL-STORAGE    SECTION.
+       01 LCL-X         PIC XXX VALUE "abc".
+       PROCEDURE        DIVISION.
+           DISPLAY "WRK-X = " WRK-X " LCL-X = " LCL-X
+           END-DISPLAY.
+           MOVE "xyz" TO WRK-X LCL-X.
+           CALL "inner"
+           END-CALL.
+           EXIT PROGRAM.
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      inner.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 INNER-X       PIC XXX VALUE "def".
+       PROCEDURE        DIVISION.
+           DISPLAY "INNER-X = " INNER-X
+           END-DISPLAY.
+           EXIT PROGRAM.
+       END PROGRAM inner.
+       END PROGRAM callee.
+])
+
+AT_DATA([caller.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      caller.
+       PROCEDURE        DIVISION.
+           CALL "callee"
+           END-CALL.
+           CALL "callee"
+           END-CALL.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE_MODULE} callee.cob])
+AT_CHECK([${COMPILE} caller.cob])
+AT_CHECK([${RUN_MODULE} caller], [0],
+[WRK-X = abc LCL-X = abc
+INNER-X = def
+WRK-X = abc LCL-X = abc
+INNER-X = def
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([LOCAL-STORAGE in a RECURSIVE program])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog RECURSIVE.
+       DATA             DIVISION.
+       LOCAL-STORAGE    SECTION.
+       01 LCL-X         PIC XXX VALUE "abc".
+       PROCEDURE        DIVISION.
+           DISPLAY LCL-X
+           END-DISPLAY.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE_ONLY} prog.cob], [0], [],
+[prog.cob:5: Warning: LOCAL-STORAGE is shared between invocations of a RECURSIVE program
 ])
 
 AT_CLEANUP
