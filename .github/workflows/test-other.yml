@@ -63,9 +63,16 @@ jobs:
       
       - name: Run tests ${{ inputs.test-name }}
         working-directory: tests/
-        run:
-          ./${{ inputs.test-name }}
-      
+        run: |
+          # The file lock suites spend most of their wall clock time waiting
+          # for the second process each test case synchronises with, so run
+          # their test groups in parallel. Autotest gives every group its own
+          # working directory, so the groups do not interfere with each other.
+          case "${{ inputs.test-name }}" in
+            file-lock*) ./${{ inputs.test-name }} -j"$(nproc)" ;;
+            *)          ./${{ inputs.test-name }} ;;
+          esac
+
       - name: Upload log files if tests fail
         if: failure()
         uses: actions/upload-artifact@v7
