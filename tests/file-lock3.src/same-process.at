@@ -120,5 +120,5 @@ AT_DATA([prog.cbl], [
 ])
 
 AT_CHECK([${COBJ} prog.cbl])
-AT_CHECK([java -Xlog:perf+memops=off prog])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java -Xlog:perf+memops=off prog])
 AT_CLEANUP

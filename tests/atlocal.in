@@ -30,7 +30,9 @@ PATH="${abs_top_builddir}/cobj:${abs_top_builddir}/bin:${abs_top_builddir}/libco
 CONF_JP_COMPAT="-conf=${abs_top_builddir}/config/jp-compat.conf"
 CONF_LIMIT_TEST="-conf=${abs_top_builddir}/config/boundary-limit.conf"
 COBJ="${abs_top_builddir}/cobj/cobj"
-COBJ_IDX="${abs_top_builddir}/libcobj/bin/cobj-idx-test"
+# cobj-idx only ever operates on INDEXED files, so the wrapper is built into
+# the variable instead of being repeated at each of its several hundred uses.
+COBJ_IDX="sh ${abs_srcdir}/without-sqlite-jdbc-log.sh ${abs_top_builddir}/libcobj/bin/cobj-idx-test"
 RUN_MODULE="java"
 PATHSEP=":"
 export COBJ COBJ_IDX PATHSEP
@@ -69,6 +71,13 @@ export COB_HAS_ISAM
 export COB_SPLITKEY_FLAGS
 
 SKIP_TEST="exit 77"
+
+# Wrapper for checks that run a program using INDEXED files. It drops the
+# clean-up message the sqlite-jdbc native library loader writes to stderr when
+# several JVMs start at the same time, and passes everything else through.
+# See without-sqlite-jdbc-log.sh for the details.
+WITHOUT_SQLITE_JDBC_LOG="sh ${abs_srcdir}/without-sqlite-jdbc-log.sh"
+export WITHOUT_SQLITE_JDBC_LOG
 
 # ESQL test variables
 EMBED_DB_INFO="sh ${abs_srcdir}/embed_db_info.sh"

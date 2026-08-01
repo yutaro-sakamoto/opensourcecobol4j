@@ -381,7 +381,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_MODULE} prog.cob])
-AT_CHECK([${RUN_MODULE} prog], [0], [00
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} ${RUN_MODULE} prog], [0], [00
 ])
 
 AT_CLEANUP
@@ -417,7 +417,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE_MODULE} prog.cob])
-AT_CHECK([${RUN_MODULE} prog], [0], [91
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} ${RUN_MODULE} prog], [0], [91
 ])
 
 AT_CLEANUP

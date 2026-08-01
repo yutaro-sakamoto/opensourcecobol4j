@@ -224,7 +224,7 @@ run_test 14 EXTEND I-O 00
 run_test 15 EXTEND EXTEND 00
 ])
 
-AT_CHECK([bash run.sh])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} bash run.sh])
 AT_CLEANUP
 
 AT_SETUP([File locking of SEQUENTIAL, LINE SEQUENTIAL and RELATIVE files])

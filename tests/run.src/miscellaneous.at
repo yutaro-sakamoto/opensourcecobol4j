@@ -1629,7 +1629,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} prog.cob])
-AT_CHECK([java prog], [0], [OK])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java prog], [0], [OK])
 
 AT_CLEANUP
 
@@ -2459,7 +2459,7 @@ AT_DATA([prog.cbl],
 ])
 
 AT_CHECK([${COMPILE} prog.cbl])
-AT_CHECK([java prog], [0], 
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java prog], [0], 
 [30
 ])
 AT_CLEANUP
@@ -2499,7 +2499,7 @@ AT_DATA([prog.cbl],
 ])
 
 AT_CHECK([${COMPILE} prog.cbl])
-AT_CHECK([java prog], [0], 
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java prog], [0], 
 [30
 ])
 AT_CLEANUP

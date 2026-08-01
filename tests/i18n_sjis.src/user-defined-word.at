@@ -189,7 +189,7 @@ AT_DATA([prog.cob], [
 ])
 
 AT_CHECK([${COMPILE} prog.cob])
-AT_CHECK([java prog], [0], [OK])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java prog], [0], [OK])
 
 AT_CLEANUP
 

@@ -96,7 +96,7 @@ AT_DATA([prog.cbl],
 ])
 
 AT_CHECK([${COBJ} prog.cbl])
-AT_CHECK([java prog], [0],
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java prog], [0],
 [22222BBBBBbbbbbbbbbb
 33333BBBBBcccccccccc
 55555CCCCCeeeeeeeeee

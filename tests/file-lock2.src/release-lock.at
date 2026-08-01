@@ -313,7 +313,7 @@ AT_DATA([prog2.template.cbl], [
 
 ])
 
-AT_CHECK([bash a.sh])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} bash a.sh])
 AT_CLEANUP
 
 AT_SETUP([unlock (READ)])
@@ -448,7 +448,7 @@ AT_CHECK([${COBJ} p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
 # run a test
-AT_CHECK([bash run.sh]
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} bash run.sh]
 )
 AT_CHECK([cat p1.log], [0],
 [00
@@ -583,7 +583,7 @@ AT_CHECK([${COBJ} p1.cbl p2.cbl])
 AT_CHECK([javac wait.java setValue.java])
 
 # run a test
-AT_CHECK([bash run.sh])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} bash run.sh])
 
 AT_CHECK([cat p1.log], [0],
 [21

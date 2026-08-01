@@ -99,9 +99,9 @@ AT_DATA([empty.cbl],
 AT_CHECK([${COMPILE} sample.cbl empty.cbl])
 
 # Create a sample indexed file
-AT_CHECK([java sample])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java sample])
 # Create an empty indexed file (This is a valid indexed file)
-AT_CHECK([java empty])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java empty])
 # Create an invalid indexed file
 AT_CHECK([echo "invalid data" > idx-invalid-file])
 # Create a directory (This is not a valid indexed file)

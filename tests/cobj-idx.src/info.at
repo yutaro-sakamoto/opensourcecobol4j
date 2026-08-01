@@ -62,7 +62,7 @@ AT_DATA([sample.cbl],[
 ])
 
 AT_CHECK([${COMPILE} sample.cbl])
-AT_CHECK([java sample])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java sample])
 
 # Create an empty indexed file named 'idx-empty-file'
 
@@ -98,7 +98,7 @@ AT_DATA([empty.cbl],[
 ])
 
 AT_CHECK([${COMPILE} empty.cbl])
-AT_CHECK([java empty])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java empty])
 
 # a test for an indexed file
 AT_CHECK([${COBJ_IDX} info idx-file], [0],
@@ -201,7 +201,7 @@ AT_DATA([sample.cbl],[
 ])
 
 AT_CHECK([${COMPILE} sample.cbl])
-AT_CHECK([java sample])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java sample])
 
 # Shuffle the order of key definitions of an empty indexed file
 
@@ -237,7 +237,7 @@ AT_DATA([empty.cbl],[
 ])
 
 AT_CHECK([${COMPILE} empty.cbl])
-AT_CHECK([java empty])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} java empty])
 
 # a test for an indexed file
 AT_CHECK([${COBJ_IDX} info idx-file], [0],

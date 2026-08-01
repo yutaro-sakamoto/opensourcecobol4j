@@ -329,5 +329,5 @@ AT_DATA([prog2.template.cbl], [
 
 ])
 
-AT_CHECK([bash a.sh])
+AT_CHECK([${WITHOUT_SQLITE_JDBC_LOG} bash a.sh])
 AT_CLEANUP
