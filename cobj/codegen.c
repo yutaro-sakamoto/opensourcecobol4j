@@ -860,7 +860,6 @@ static void joutput_base(struct cb_field *f) {
   struct cb_field *top;
   struct cb_field *p;
   struct base_list *bl;
-  char name[COB_SMALL_BUFF];
   top = cb_field_founder(f);
 
   if (f->flag_item_78) {
@@ -872,35 +871,17 @@ static void joutput_base(struct cb_field *f) {
     top = top->redefines;
   }
 
-  // EDIT
-  /* Base name */
-  strcpy_identifier_cobol_to_java(name, top->name);
-
   register_data_storage_list(f, top);
 
   if (!top->flag_base) {
-    if (!top->flag_local || top->flag_is_global) {
-      bl = cobc_malloc(sizeof(struct base_list));
-      bl->f = top;
-      bl->curr_prog = excp_current_program_id;
-      bl->next = base_cache;
-      base_cache = bl;
-    } else {
-      /* FIXME: LOCAL-STORAGEのフィールドがbase_cacheに登録されないため、
-       * JavaのCobolDataStorage宣言に出力されない。
-       * 以下のC言語スタイルの"unsigned char *"はJavaとして不正。 */
-      if (current_prog->flag_global_use) {
-        /* USE GLOBAL宣言がある場合(DECLARATIVESでUSE GLOBAL指定時) */
-        joutput_local("unsigned char\t\t*%s%s = NULL;", CB_PREFIX_BASE, name);
-        joutput_local("\t/* %s */\n", top->name);
-        joutput_local("static unsigned char\t*save_%s%s;\n", CB_PREFIX_BASE,
-                      name);
-      } else {
-        /* USE GLOBAL宣言がない場合 */
-        joutput_local("unsigned char\t*%s%s = NULL;", CB_PREFIX_BASE, name);
-        joutput_local("\t/* %s */\n", top->name);
-      }
-    }
+    /* CobolDataStorage型のメンバ変数として宣言・確保する項目を登録する。
+     * LINKAGE SECTIONやBASED項目のように格納先が実行時に決まる項目は
+     * flag_baseが立っているためここには到達しない。 */
+    bl = cobc_malloc(sizeof(struct base_list));
+    bl->f = top;
+    bl->curr_prog = excp_current_program_id;
+    bl->next = base_cache;
+    base_cache = bl;
     top->flag_base = 1;
   }
 
@@ -5273,24 +5254,15 @@ static void joutput_internal_function(struct cb_program *prog,
     }
     joutput_newline();
   }
-  // if (prog->local_storage) {
-  //	if (local_cache) {
-  //		output_line ("/* Allocate LOCAL storage */");
-  //	}
-  //	for (locptr = local_cache; locptr; locptr = locptr->next) {
-  //		output_line ("%s%d = cob_malloc (%d);", CB_PREFIX_BASE,
-  //				locptr->f->id, locptr->f->memory_size);
-  //		if (current_prog->flag_global_use) {
-  //			output_line ("save_%s%d = %s%d;",
-  //					CB_PREFIX_BASE, locptr->f->id,
-  //					CB_PREFIX_BASE, locptr->f->id);
-  //		}
-  //	}
-  //	output_newline ();
-  //	output_line ("/* Initialialize LOCAL storage */");
-  //	output_initial_values (prog->local_storage);
-  //	output_newline ();
-  // }
+  /* LOCAL-STORAGE SECTIONの項目はプログラムに入る度に初期化する。
+   * 記憶域自体はWORKING-STORAGE SECTIONの項目と同じくJavaのメンバ変数として
+   * 確保されるが、値は呼び出しの度にVALUE句(VALUE句がない場合は既定値)で
+   * 初期化されるため、呼び出し間で値は引き継がれない。 */
+  if (prog->local_storage) {
+    joutput_line("/* Initialize LOCAL-STORAGE SECTION */");
+    joutput_initial_values(prog->local_storage);
+    joutput_newline();
+  }
 
   if (cb_field(current_prog->cb_call_params)->count) {
     joutput_line("/* Initialize number of call params */");

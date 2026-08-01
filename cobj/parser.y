@@ -3255,7 +3255,6 @@ varying_clause:
 local_storage_section:
 | LOCAL_STORAGE SECTION '.'
   {
-	cb_error (_("LOCAL-STORAGE SECTION is not supported"));
 	current_storage = CB_STORAGE_LOCAL;
 	if (current_program->nested_level) {
 		cb_error (_("LOCAL-STORAGE not allowed in nested programs"));

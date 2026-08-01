@@ -74,16 +74,97 @@ AT_DATA([caller.cob], [
            STOP RUN.
 ])
 
-AT_CHECK([${COMPILE_MODULE} callee.cob], [1], [], 
-[callee.cob:7: Error: LOCAL-STORAGE SECTION is not supported
+AT_CHECK([${COMPILE_MODULE} callee.cob])
+AT_CHECK([${COMPILE} caller.cob])
+AT_CHECK([${RUN_MODULE} caller], [0],
+[WRK-X = abc
+LCL-X = abc
+WRK-X = 000
+LCL-X = abc
 ])
-# AT_CHECK([${COMPILE} caller.cob])
-# AT_CHECK([java prog], [0],
-# [WRK-X = abc
-# LCL-X = abc
-# WRK-X = 000
-# LCL-X = abc
-# ])
+
+AT_CLEANUP
+
+
+AT_SETUP([LOCAL-STORAGE with various data items])
+
+AT_DATA([callee.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      callee.
+       DATA             DIVISION.
+       LOCAL-STORAGE    SECTION.
+       01 LCL-NOVAL     PIC XXX.
+       01 LCL-NUM       PIC 9(3) VALUE 12.
+       01 LCL-COMP      PIC S9(4) COMP VALUE 7.
+       01 LCL-GRP.
+          05 LCL-A      PIC XX VALUE "AB".
+          05 LCL-B      PIC 99 VALUE 34.
+       01 LCL-TBL.
+          05 LCL-ITM    PIC XX OCCURS 3 TIMES VALUE "XY".
+       PROCEDURE        DIVISION.
+           DISPLAY "NOVAL = <" LCL-NOVAL ">"
+           END-DISPLAY.
+           DISPLAY "NUM = " LCL-NUM " COMP = " LCL-COMP
+           END-DISPLAY.
+           DISPLAY "GRP = " LCL-GRP " TBL = " LCL-TBL
+           END-DISPLAY.
+           MOVE "ZZZ" TO LCL-NOVAL.
+           MOVE 999 TO LCL-NUM.
+           MOVE 99 TO LCL-COMP.
+           MOVE ALL "@" TO LCL-GRP LCL-TBL.
+           EXIT PROGRAM.
+])
+
+AT_DATA([caller.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      caller.
+       PROCEDURE        DIVISION.
+           CALL "callee"
+           END-CALL.
+           CALL "callee"
+           END-CALL.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE_MODULE} callee.cob])
+AT_CHECK([${COMPILE} caller.cob])
+AT_CHECK([${RUN_MODULE} caller], [0],
+[NOVAL = <   >
+NUM = 012 COMP = +0007
+GRP = AB34 TBL = XYXYXY
+NOVAL = <   >
+NUM = 012 COMP = +0007
+GRP = AB34 TBL = XYXYXY
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([LOCAL-STORAGE not allowed in nested programs])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       PROCEDURE        DIVISION.
+           CALL "inner"
+           END-CALL.
+           STOP RUN.
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      inner.
+       DATA             DIVISION.
+       LOCAL-STORAGE    SECTION.
+       01 LCL-X         PIC XXX VALUE "abc".
+       PROCEDURE        DIVISION.
+           DISPLAY LCL-X
+           END-DISPLAY.
+           EXIT PROGRAM.
+       END PROGRAM inner.
+       END PROGRAM prog.
+])
+
+AT_CHECK([${COMPILE_ONLY} prog.cob], [1], [],
+[prog.cob:11: Error: LOCAL-STORAGE not allowed in nested programs
+])
 
 AT_CLEANUP
 
