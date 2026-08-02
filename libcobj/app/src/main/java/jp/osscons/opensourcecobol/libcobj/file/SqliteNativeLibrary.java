@@ -107,6 +107,9 @@ public final class SqliteNativeLibrary {
 
                 // sqlite-jdbcが自身のネイティブライブラリを探すときと同じ規則で名前と場所を組み立てる。
                 // ここがずれると手順3で取り出せず、結局sqlite-jdbc自身の展開に任せることになる。
+                //
+                // resourceが指すのはjarの中の位置であって、ファイルシステム上の場所ではない。
+                // ネイティブライブラリはlibcobj.jarに同梱されている。
                 // 例: Linux x86_64 なら "/org/sqlite/native/Linux/x86_64/libsqlitejdbc.so"
                 String libraryName = System.mapLibraryName("sqlitejdbc");
                 String nativeFolder = OSInfo.getNativeLibFolderPathForCurrentOS();
@@ -234,13 +237,26 @@ public final class SqliteNativeLibrary {
      * 書き出し途中の中途半端な内容が読み込まれることはない。 複数のプロセスが同時にここへ来ても、それぞれ別の一時的な名前へ書き出すので互いを壊さず、
      * 移動が成功した1つだけが残る。
      *
+     * <p>「展開」といっても、どこかに置かれているものを探してくるわけではない。 ネイティブライブラリはjarの中に同梱されており、それをファイルとして
+     * 取り出すことを指す。ネイティブライブラリはJavaのクラスと違ってjarの中のままでは読み込めないため、 誰かが必ず一度ファイルへ取り出す必要がある。
+     *
      * @param resource jarの中のネイティブライブラリの位置
-     * @param directory 展開先のディレクトリ
+     * @param directory 取り出し先のディレクトリ
      * @param library 最終的なファイルの位置
      * @param libraryName ネイティブライブラリのファイル名。一時的な名前の元にする
      */
     private static void extract(String resource, Path directory, Path library, String libraryName)
             throws IOException {
+        // ここで開くのは「取り出し元」であって、展開先ではない。
+        // libcobj.jarにはsqlite-jdbcの内容が同梱されており、その中の
+        // org/sqlite/native/<プラットフォーム>/<ライブラリ名> を読み出している。
+        // sqlite-jdbc自身も、同じjarの同じ位置から読み出している。
+        //
+        // 既定の「展開先」はこれとは別で、java.io.tmpdirである。
+        // そこへ sqlite-<バージョン>-<UUID>-<ライブラリ名> という名前で書き出すのが本来の動作で、
+        // 全プロセスがそこを共有するために後始末が競合していた。
+        // このクラスは、同じものを読み出した上で、書き出す先だけを共有の一時ディレクトリから
+        // 専用のディレクトリへ移している。
         try (InputStream input = SqliteNativeLibrary.class.getResourceAsStream(resource)) {
             if (input == null) {
                 // jar内の配置が想定と違う。sqlite-jdbcの更新で配置が変わるとここに来る。
