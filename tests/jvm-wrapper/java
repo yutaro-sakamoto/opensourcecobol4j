@@ -15,16 +15,18 @@
 # The only thing lost is that these JVMs no longer show up in jps/jstat, which
 # the tests never use.
 #
-# The wrappers cover the `java`, `javac` and `jar` calls written in the test
-# sources as well as the `javac` and `jar` that cobj itself starts, because
-# cobj runs them through a shell and therefore resolves them from PATH.
+# The wrappers cover the java, javac, javap and jar calls written in the test
+# sources as well as the javac and jar that cobj itself starts, because cobj
+# runs them through a shell and therefore resolves them from PATH.
 #
 # COB4J_REAL_JAVA is resolved in atlocal before this directory is put on PATH;
 # without it the wrapper would find itself again and loop forever.
 
-if [ -z "${COB4J_REAL_JAVA}" ]; then
-  echo "$0: COB4J_REAL_JAVA is not set" >&2
+case "${COB4J_REAL_JAVA}" in
+"" | */jvm-wrapper/java)
+  echo "$0: COB4J_REAL_JAVA does not point at a real java" >&2
   exit 127
-fi
+  ;;
+esac
 
 exec "${COB4J_REAL_JAVA}" -XX:-UsePerfData "$@"

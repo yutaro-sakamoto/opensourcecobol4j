@@ -4,9 +4,11 @@
 # See tests/jvm-wrapper/java for why the flag is needed; javac is a JVM too,
 # and it takes runtime options through -J.
 
-if [ -z "${COB4J_REAL_JAVAC}" ]; then
-  echo "$0: COB4J_REAL_JAVAC is not set" >&2
+case "${COB4J_REAL_JAVAC}" in
+"" | */jvm-wrapper/javac)
+  echo "$0: COB4J_REAL_JAVAC does not point at a real javac" >&2
   exit 127
-fi
+  ;;
+esac
 
 exec "${COB4J_REAL_JAVAC}" -J-XX:-UsePerfData "$@"

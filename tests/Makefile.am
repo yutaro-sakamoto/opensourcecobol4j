@@ -376,6 +376,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	embed_db_info.sh \
 	jvm-wrapper/java \
 	jvm-wrapper/javac \
+	jvm-wrapper/javap \
 	jvm-wrapper/jar
 
 DISTCLEANFILES = atconfig
