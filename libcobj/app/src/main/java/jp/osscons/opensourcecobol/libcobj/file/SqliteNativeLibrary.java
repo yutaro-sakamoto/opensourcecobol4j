@@ -28,6 +28,8 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteJDBCLoader;
 import org.sqlite.util.OSInfo;
 
@@ -53,6 +55,11 @@ public final class SqliteNativeLibrary {
     private static final String LIB_PATH_PROPERTY = "org.sqlite.lib.path";
     private static final String LIB_NAME_PROPERTY = "org.sqlite.lib.name";
 
+    private static final Logger logger = LoggerFactory.getLogger(SqliteNativeLibrary.class);
+
+    /** 準備処理を直列化するためのロック。クラスの内部ロックを外部に晒さないよう専用のオブジェクトを使う。 */
+    private static final Object LOCK = new Object();
+
     private static boolean prepared = false;
 
     private SqliteNativeLibrary() {}
@@ -63,40 +70,48 @@ public final class SqliteNativeLibrary {
      * <p>SQLiteへの最初の接続より前に呼び出す必要がある。2回目以降の呼び出しは何もしない。 利用者が{@code
      * org.sqlite.lib.path}を明示的に指定している場合は、その指定を尊重して何もしない。
      */
-    public static synchronized void prepare() {
-        if (prepared) {
-            return;
-        }
-        prepared = true;
+    public static void prepare() {
+        // 準備が終わるまでロックを保持する。先に接続へ進んだスレッドが、
+        // まだ設定されていないシステムプロパティを読んでしまうことを防ぐ。
+        synchronized (LOCK) {
+            if (prepared) {
+                return;
+            }
+            prepared = true;
 
-        if (System.getProperty(LIB_PATH_PROPERTY) != null) {
-            return;
-        }
-
-        try {
-            // sqlite-jdbcが自身のネイティブライブラリを探すときと同じ名前とjar内の配置を使う
-            String libraryName = System.mapLibraryName("sqlitejdbc");
-            String nativeFolder = OSInfo.getNativeLibFolderPathForCurrentOS();
-            String resource = "/org/sqlite/native/" + nativeFolder + "/" + libraryName;
-
-            Path directory =
-                    cacheDirectory(
-                            SQLiteJDBCLoader.getVersion() + "-" + nativeFolder.replace('/', '-'));
-            if (directory == null) {
+            if (System.getProperty(LIB_PATH_PROPERTY) != null) {
                 return;
             }
 
-            Path library = directory.resolve(libraryName);
-            if (!Files.isRegularFile(library)) {
-                extract(resource, directory, library);
-            }
+            try {
+                // sqlite-jdbcが自身のネイティブライブラリを探すときと同じ名前とjar内の配置を使う
+                String libraryName = System.mapLibraryName("sqlitejdbc");
+                String nativeFolder = OSInfo.getNativeLibFolderPathForCurrentOS();
+                String resource = "/org/sqlite/native/" + nativeFolder + "/" + libraryName;
 
-            if (Files.isRegularFile(library)) {
-                System.setProperty(LIB_PATH_PROPERTY, directory.toString());
-                System.setProperty(LIB_NAME_PROPERTY, libraryName);
+                Path directory =
+                        cacheDirectory(
+                                SQLiteJDBCLoader.getVersion()
+                                        + "-"
+                                        + nativeFolder.replace('/', '-'));
+                if (directory == null) {
+                    return;
+                }
+
+                Path library = directory.resolve(libraryName);
+                if (!Files.isRegularFile(library)) {
+                    extract(resource, directory, library, libraryName);
+                }
+
+                if (Files.isRegularFile(library)) {
+                    System.setProperty(LIB_PATH_PROPERTY, directory.toString());
+                    System.setProperty(LIB_NAME_PROPERTY, libraryName);
+                }
+            } catch (Exception e) {
+                // 準備できなければsqlite-jdbc自身の展開に任せるので、実行には支障がない。
+                // 既定では出力されないdebugレベルにとどめ、調べたいときだけ表示できるようにする。
+                logger.debug("Failed to prepare the shared sqlite-jdbc native library", e);
             }
-        } catch (Exception e) {
-            // 準備できなければsqlite-jdbc自身の展開に任せる
         }
     }
 
@@ -150,13 +165,14 @@ public final class SqliteNativeLibrary {
      * <p>いったん一時的な名前で書き出してから最終的な名前へ移動する。中途半端な内容のファイルが読み込まれることはなく、
      * 複数のプロセスが同時に展開しても、移動が成功した1つが残るだけで済む。
      */
-    private static void extract(String resource, Path directory, Path library) throws IOException {
+    private static void extract(String resource, Path directory, Path library, String libraryName)
+            throws IOException {
         try (InputStream input = SqliteNativeLibrary.class.getResourceAsStream(resource)) {
             if (input == null) {
                 // jar内の配置が想定と違う。sqlite-jdbc自身の展開に任せる
                 return;
             }
-            Path work = Files.createTempFile(directory, library.getFileName().toString(), ".tmp");
+            Path work = Files.createTempFile(directory, libraryName, ".tmp");
             try {
                 Files.copy(input, work, StandardCopyOption.REPLACE_EXISTING);
                 Files.move(work, library, StandardCopyOption.ATOMIC_MOVE);
