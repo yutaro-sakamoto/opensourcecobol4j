@@ -20,11 +20,14 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
@@ -45,9 +48,14 @@ import org.sqlite.util.OSInfo;
  * lib}というエラーとスタックトレースを標準エラー出力へ書き出す。
  *
  * <p>そこでSQLiteへ最初に接続する前に、ネイティブライブラリをバージョンごとに1つだけ決まった場所へ展開し、その場所を{@code
- * org.sqlite.lib.path}と{@code org.sqlite.lib.name}でsqlite-jdbcに指示する。
- * こうするとsqlite-jdbc自身は展開も削除も行わなくなり、共有一時ディレクトリに削除対象のファイルが増えないため、競合そのものが起こらない。
+ * org.sqlite.lib.path}と{@code org.sqlite.lib.name}でsqlite-jdbcに指示する。 こうするとsqlite-jdbc自身は共有一時ディレクトリへ展開しなくなるので、
+ * 新たな残骸が増えない。残骸が無ければ削除するものも無く、競合は起こらない。
  * 展開したファイルはバージョンが同じ限り再利用するので、実行のたびに一時ファイルが増えることもない。
+ *
+ * <p>ただし、後始末そのものを止められるわけではない点に注意が必要である。sqlite-jdbcは{@code
+ * org.sqlite.lib.path}を見るより前に共有一時ディレクトリの走査を行うため、そこに残骸があれば、
+ * このクラスを使っていても削除しに行き、競合すればエラーを出力する。 残骸を作るのはsqlite-jdbcを使う他のアプリケーションや、この修正より前のlibcobjである。
+ * それらが無くなり、走査の対象が空になった時点で出力も止まる。
  *
  * <p>準備に失敗した場合は何も設定しない。その場合sqlite-jdbcは従来どおり自身でライブラリを展開するため、動作に支障はない。
  */
@@ -63,11 +71,21 @@ public final class SqliteNativeLibrary {
     /**
      * ネイティブライブラリのファイル名をsqlite-jdbcに伝えるためのシステムプロパティ。
      *
-     * <p>これを指定しない場合、sqlite-jdbcはmacOSでのみ{@code .dylib}を{@code
-     * .jnilib}に読み替える。jarに入っているのは{@code .dylib}なので、読み替えられると見つからなくなる。
-     * 名前も明示するのはそのためである。
+     * <p>指定しなくても、sqlite-jdbcは{@code System.mapLibraryName}で同じ名前を組み立てるため、
+     * 現在の依存バージョンでは省略しても動く。それでも明示するのは、名前の決め方が将来変わったときに、
+     * こちらが置いたファイルと探しに行く名前が食い違うのを防ぐためである。
      */
     private static final String LIB_NAME_PROPERTY = "org.sqlite.lib.name";
+
+    /**
+     * sqlite-jdbcがネイティブライブラリの置き場所を決めるときに参照するシステムプロパティ。
+     *
+     * <p>sqlite-jdbcはこの指定があればそちらを、無ければ{@code java.io.tmpdir}を使う。
+     * こちらも同じ順序で場所を決める必要がある。{@code /tmp}が{@code
+     * noexec}であるなどの理由でこのプロパティが指定されている場合に、 {@code
+     * java.io.tmpdir}へ置いてしまうと、そこから読み込めずにsqlite-jdbcがエラーを出力することになる。
+     */
+    private static final String SQLITE_TMPDIR_PROPERTY = "org.sqlite.tmpdir";
 
     private static final Logger logger = LoggerFactory.getLogger(SqliteNativeLibrary.class);
 
@@ -82,7 +100,7 @@ public final class SqliteNativeLibrary {
      * sqlite-jdbcのネイティブライブラリを共有の場所へ展開し、その場所をシステムプロパティでsqlite-jdbcに指示する。
      *
      * <p>SQLiteへの最初の接続より前に呼び出す必要がある。2回目以降の呼び出しは何もしない。 利用者が{@code
-     * org.sqlite.lib.path}を明示的に指定している場合は、その指定を尊重して何もしない。
+     * org.sqlite.lib.path}または{@code org.sqlite.lib.name}を明示的に指定している場合は、その指定を尊重して何もしない。
      */
     public static void prepare() {
         // 準備が終わるまでロックを保持する。先に接続へ進んだスレッドが、
@@ -95,8 +113,11 @@ public final class SqliteNativeLibrary {
             // 接続のたびに繰り返す意味がない。
             prepared = true;
 
-            // 利用者が置き場所を明示している場合は、その指定を尊重してこのクラスは何もしない。
-            if (System.getProperty(LIB_PATH_PROPERTY) != null) {
+            // 利用者がライブラリの場所か名前を明示している場合は、その指定を尊重して何もしない。
+            // 名前も見るのは、手順4で両方を設定するためである。片方だけ指定している利用者の設定を、
+            // もう片方を上書きすることで壊してしまわないようにする。
+            if (System.getProperty(LIB_PATH_PROPERTY) != null
+                    || System.getProperty(LIB_NAME_PROPERTY) != null) {
                 return;
             }
 
@@ -139,9 +160,18 @@ public final class SqliteNativeLibrary {
                 // ------------------------------------------------------------
 
                 Path library = directory.resolve(libraryName);
+
+                // jarの中のライブラリの大きさ。取り出したファイルが壊れていないかの確認に使う。
+                long expectedSize = resourceSize(resource);
+
                 // 過去の実行、または今まさに動いている別のプロセスが、すでに置いてくれていることがある。
                 // その場合は取り出す必要がない。バージョンごとに1つあれば足りるので使い回す。
-                if (!Files.isRegularFile(library)) {
+                //
+                // ただし「ある」だけでは足りず、中身が揃っていることまで確かめる。決まった場所に置いて
+                // 使い回す以上、一度でも壊れたファイルが残ると、以降このマシンの全プロセスが
+                // 読み込みに失敗し続けることになるためである。書き出しの途中で電源が落ちるなどして、
+                // 長さの足りないファイルが残ることがありうる。
+                if (!isComplete(library, expectedSize)) {
                     extract(resource, directory, library, libraryName);
                 }
 
@@ -150,15 +180,19 @@ public final class SqliteNativeLibrary {
                 // ------------------------------------------------------------
 
                 // 手順3で取り出せなかった場合(jar内の配置が想定と違うなど)は、ここでファイルが無いままになる。
-                // 存在を確かめてから設定するのは、存在しない場所を指してしまうと、sqlite-jdbcが
-                // そこを見て諦めるだけになり、かえって読み込みに失敗しかねないため。
+                // 揃っていることを確かめてから設定するのは、読み込めないファイルを指してしまうと、
+                // sqlite-jdbcがそれを読もうとして失敗し、エラーを出力することになるため。
+                // 何も設定しなければ、sqlite-jdbcは自身で展開する従来の動作に戻るだけで済む。
                 //
                 // なお、ここで設定するのはこのプロセスのシステムプロパティであって、
                 // 後続のプロセスに引き継がれるものではない。後続のプロセスが得をするのは、
                 // 手順3で取り出したファイルが残っていて、取り出しを省けるという点である。
-                if (Files.isRegularFile(library)) {
+                if (isComplete(library, expectedSize)) {
                     System.setProperty(LIB_PATH_PROPERTY, directory.toString());
                     System.setProperty(LIB_NAME_PROPERTY, libraryName);
+                } else {
+                    logger.debug(
+                            "The shared sqlite-jdbc native library is not usable: {}", library);
                 }
             } catch (Exception e) {
                 // 準備できなければsqlite-jdbc自身の展開に任せるので、実行には支障がない。
@@ -180,20 +214,21 @@ public final class SqliteNativeLibrary {
      * @return 使えるディレクトリ。用意できなければ{@code null}
      */
     private static Path cacheDirectory(String tag) throws IOException {
-        Path directory =
-                Paths.get(System.getProperty("java.io.tmpdir"))
-                        .resolve("opensourcecobol4j-sqlitejdbc-" + tag);
+        // 置き場所の決め方はsqlite-jdbcに合わせる。sqlite-jdbcはorg.sqlite.tmpdirがあればそちらを、
+        // 無ければjava.io.tmpdirを使う。ここで食い違うと、読み込めない場所へ置くことになりかねない。
+        String base =
+                System.getProperty(SQLITE_TMPDIR_PROPERTY, System.getProperty("java.io.tmpdir"));
+        Path directory = Paths.get(base).resolve("opensourcecobol4j-sqlitejdbc-" + tag);
+
         // 許可属性の考え方はOSによって異なる。POSIXの許可属性を扱えるかどうかで処理を分ける。
         // Windowsの一時ディレクトリは利用者ごとに分かれているため、この確認は行わない。
         boolean posix = directory.getFileSystem().supportedFileAttributeViews().contains("posix");
 
         // --- すでにある場合: 素性を確かめてから使う ---
-        if (Files.exists(directory)) {
-            // 同じ名前でディレクトリ以外のものが置かれている。細工されている可能性があるので使わない。
-            if (!Files.isDirectory(directory)) {
-                return null;
-            }
-            return !posix || isOwnedAndPrivate(directory) ? directory : null;
+        // シンボリックリンクをたどらずに確認する。たどってしまうと、他の利用者がこの名前で
+        // 自分のディレクトリへのリンクを置いておくだけで、以降の確認をすべて通してしまう。
+        if (Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) {
+            return isUsableDirectory(directory, posix) ? directory : null;
         }
 
         // --- 無い場合: 作る ---
@@ -211,23 +246,86 @@ public final class SqliteNativeLibrary {
         } catch (FileAlreadyExistsException e) {
             // 存在の確認と作成の間に、別のプロセスが先に作った。
             // 作ったのが同じ利用者とは限らないので、すでにある場合と同じように素性を確かめる。
-            return !posix || isOwnedAndPrivate(directory) ? directory : null;
+            return isUsableDirectory(directory, posix) ? directory : null;
         }
         return directory;
     }
 
     /**
-     * ディレクトリが自分の所有で、かつ他人が書き込めない状態かどうかを確かめる。
+     * すでにある置き場所を、そのまま使ってよいかどうか確かめる。
      *
-     * <p>所有者が自分であることと、グループとその他に書き込み権限が無いことの両方を求める。 どちらか一方でも欠けると、中のファイルを別の利用者に差し替えられる余地が残る。
+     * <p>POSIX環境では、ディレクトリであること、所有者が自分であること、グループとその他に書き込み権限が無いことを求める。
+     * どれか1つでも欠けると、中のファイルを別の利用者に差し替えられる余地が残る。
+     * シンボリックリンクをたどらないので、リンクが置かれていた場合はディレクトリではないとみなして拒否する。
+     *
+     * <p>使えないと判断した場合はdebugレベルで記録する。 呼び出し元はこの場合何も設定せず、sqlite-jdbc本来の動作に任せることになるが、
+     * その判断が黙って行われると、並列実行時の出力が減らない理由が分からなくなるためである。
      */
-    private static boolean isOwnedAndPrivate(Path directory) throws IOException {
-        if (!Files.getOwner(directory).getName().equals(System.getProperty("user.name"))) {
+    private static boolean isUsableDirectory(Path directory, boolean posix) throws IOException {
+        if (!posix) {
+            if (Files.isDirectory(directory, LinkOption.NOFOLLOW_LINKS)) {
+                return true;
+            }
+            logger.debug("Not a directory: {}", directory);
             return false;
         }
-        Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(directory);
-        return !permissions.contains(PosixFilePermission.GROUP_WRITE)
-                && !permissions.contains(PosixFilePermission.OTHERS_WRITE);
+
+        PosixFileAttributes attributes =
+                Files.readAttributes(
+                        directory, PosixFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
+        if (!attributes.isDirectory()) {
+            logger.debug("Not a directory: {}", directory);
+            return false;
+        }
+        // 所有者の照合は名前で行う。利用者名を持たない環境(コンテナで数値のuidだけを指定した場合など)では
+        // 一致せず、共有を諦めることになる。動作に支障はないが、その場合はこのログで分かるようにしておく。
+        if (!attributes.owner().getName().equals(System.getProperty("user.name"))) {
+            logger.debug("Not owned by the current user: {}", directory);
+            return false;
+        }
+        Set<PosixFilePermission> permissions = attributes.permissions();
+        if (permissions.contains(PosixFilePermission.GROUP_WRITE)
+                || permissions.contains(PosixFilePermission.OTHERS_WRITE)) {
+            logger.debug("Writable by others: {}", directory);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 取り出し済みのファイルが、jarの中のライブラリと同じ大きさで揃っているかどうかを確かめる。
+     *
+     * <p>jarの中の大きさが分からなかった場合({@code expectedSize}が負)は、存在することだけを確かめる。
+     *
+     * @param library 確かめる対象のファイル
+     * @param expectedSize jarの中のライブラリの大きさ。分からない場合は負の値
+     */
+    private static boolean isComplete(Path library, long expectedSize) {
+        try {
+            if (!Files.isRegularFile(library)) {
+                return false;
+            }
+            return expectedSize < 0 || Files.size(library) == expectedSize;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * jarの中のネイティブライブラリの大きさを返す。分からない場合は負の値を返す。
+     *
+     * <p>中身を読まずにjarの持つ情報から大きさだけを得る。
+     */
+    private static long resourceSize(String resource) {
+        URL url = SqliteNativeLibrary.class.getResource(resource);
+        if (url == null) {
+            return -1;
+        }
+        try {
+            return url.openConnection().getContentLengthLong();
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     /**
@@ -271,8 +369,14 @@ public final class SqliteNativeLibrary {
                 // ATOMIC_MOVEを指定して、他のプロセスから見て「無い」か「完全にある」かのどちらかにする
                 Files.move(work, library, StandardCopyOption.ATOMIC_MOVE);
             } catch (IOException | UnsupportedOperationException e) {
-                // 移動に失敗する主な理由は、別のプロセスが一足先に同じファイルを置き終えていること。
-                // 内容は同じなので、そちらを使えばよく、ここでは書きかけを片付けるだけでよい。
+                // POSIXでは、移動先にすでにファイルがあっても置き換えられるので、
+                // 別のプロセスと同時に取り出しただけならここには来ない。
+                // ここに来るのは、書き込む余地が無い、権限が足りない、
+                // Windowsで移動先のファイルが読み込み中で置き換えられない、といった場合である。
+                //
+                // いずれの場合も、何も設定せずsqlite-jdbc本来の動作に任せれば実行はできる。
+                // ただ原因が分からないままになるのは避けたいので、書きかけを片付けた上で記録しておく。
+                logger.debug("Failed to place the shared sqlite-jdbc native library", e);
                 Files.deleteIfExists(work);
             }
         }
