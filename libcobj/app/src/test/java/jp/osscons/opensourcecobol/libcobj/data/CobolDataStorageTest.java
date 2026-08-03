@@ -98,8 +98,25 @@ class CobolDataStorageTest {
     void memcpyStringEncodesWithShiftJis() {
         byte[] data = filledArray(4);
         CobolDataStorage storage = new CobolDataStorage(data, 1);
-        storage.memcpy("AB", 2);
-        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 'A', (byte) 'B', (byte) 0xFF}, data);
+        storage.memcpy("あ", 2);
+        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 0x82, (byte) 0xA0, (byte) 0xFF}, data);
+    }
+
+    /** memcpy(byte[], int, int)のoffsetはコピー元、memcpy(int, byte[], int)のoffsetはコピー先を指す。 */
+    @Test
+    void memcpyByteArrayTrailingOffsetIsSourceOffset() {
+        byte[] data = filledArray(5);
+        CobolDataStorage storage = new CobolDataStorage(data, 1);
+        storage.memcpy(new byte[] {1, 2, 3, 4}, 2, 2);
+        assertArrayEquals(new byte[] {(byte) 0xFF, 3, 4, (byte) 0xFF, (byte) 0xFF}, data);
+    }
+
+    @Test
+    void memcpyByteArrayCopiesWholeArray() {
+        byte[] data = filledArray(5);
+        CobolDataStorage storage = new CobolDataStorage(data, 2);
+        storage.memcpy(new byte[] {1, 2, 3});
+        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 0xFF, 1, 2, 3}, data);
     }
 
     @Test

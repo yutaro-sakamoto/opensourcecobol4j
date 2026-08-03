@@ -332,7 +332,7 @@ public class CobolDataStorage {
      * C言語のmemcpyに相当するメソッド
      *
      * @param buf コピー元のデータ
-     * @param offset コピー先のthis.indexからの相対位置
+     * @param offset コピー元bufの先頭からの相対位置
      * @param size コピーするバイト数
      */
     public void memcpy(byte[] buf, int offset, int size) {
