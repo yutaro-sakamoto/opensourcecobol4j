@@ -1028,11 +1028,14 @@ void cb_validate_field(struct cb_field *f) {
   }
 
   /* setup parameters */
-  if (f->storage == CB_STORAGE_LOCAL || f->storage == CB_STORAGE_LINKAGE ||
-      f->flag_item_based) {
-    f->flag_local = 1;
-  }
+  /* LOCAL-STORAGEの項目はflag_localを立てない。
+   * flag_localは「データの格納先アドレスが実行時に決まる」ことを表し、
+   * 生成されるJavaコードではCobolDataStorageを参照の度に設定し直す必要がある
+   * ことを意味する。LOCAL-STORAGEの項目はWORKING-STORAGEの項目と同様に
+   * 格納先が固定されたJavaのメンバ変数として生成し、プログラムに入る度に
+   * VALUE句の値で初期化することで呼び出し毎の初期化を実現している。 */
   if (f->storage == CB_STORAGE_LINKAGE || f->flag_item_based) {
+    f->flag_local = 1;
     f->flag_base = 1;
   }
   setup_parameters(f);
