@@ -28,9 +28,10 @@ import org.slf4j.LoggerFactory;
  * {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
  *
  * <p>本クラスは将来の DB 実装（Db2/Oracle など）から継承される拡張点であり、{@code protected}
- * フック群と {@link DbSpec}/{@link SqlErrorMapping} ネストクラスは「拡張点としての契約」として扱う。
- * カーソルのフックは素の値（カーソル名・クエリ・解決済みパラメータ）を受け取り、カーソル登録簿の
- * 簿記レコード（{@link Cursor}）は基底クラス内部に閉じる（SPI には露出しない）。
+ * フック群と、その契約に現れる型 {@link DbSpec}/{@link SqlErrorMapping}（同一パッケージのトップレベル
+ * クラス）は「拡張点としての契約」として扱う。カーソルのフックは素の値（カーソル名・クエリ・
+ * 解決済みパラメータ）を受け取り、カーソル登録簿の簿記レコード（{@link Cursor}）は基底クラス内部に
+ * 閉じる（SPI には露出しない）。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterface {
@@ -1209,7 +1210,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         if (message == null) {
             message = "";
         }
-        SqlCA.setError(sqlca, mapping.ecpgCode, sqlState, message);
+        SqlCA.setError(sqlca, mapping.sqlCode, sqlState, message);
     }
 
     // -------------------------------------------------------
@@ -1306,131 +1307,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     }
 
     // -------------------------------------------------------
-    // 接続パラメータ・カーソル状態（DB 非依存）
+    // カーソル状態（DB 非依存）
     // -------------------------------------------------------
-
-    /**
-     * {@link #mapSqlException(SQLException)} の戻り値。DB の生エラーを、COBOL 側が見る
-     * ECPG 正規コード（SQLCODE）と正規化済み SQLSTATE の組へ変換した結果を保持する。
-     */
-    public static final class SqlErrorMapping {
-        /** ECPG 正規エラーコード（SQLCODE に書かれる）。 */
-        final int ecpgCode;
-
-        /** 正規化済み SQLSTATE（5 桁、SQLSTATE に書かれる）。{@code null} のとき共通側で空白を補う。 */
-        final String sqlState;
-
-        /**
-         * ECPG 正規コードと正規化済み SQLSTATE の組を生成する。
-         *
-         * @param ecpgCode ECPG 正規エラーコード（SQLCODE）
-         * @param sqlState 正規化済み SQLSTATE（5 桁、{@code null} 可）
-         */
-        public SqlErrorMapping(int ecpgCode, String sqlState) {
-            this.ecpgCode = ecpgCode;
-            this.sqlState = sqlState;
-        }
-
-        /**
-         * ECPG 正規エラーコード（SQLCODE）を返す。
-         *
-         * @return ECPG 正規エラーコード
-         */
-        public int getEcpgCode() {
-            return ecpgCode;
-        }
-
-        /**
-         * 正規化済み SQLSTATE を返す。
-         *
-         * @return 正規化済み SQLSTATE（5 桁）。未設定なら {@code null}
-         */
-        public String getSqlState() {
-            return sqlState;
-        }
-    }
-
-    /**
-     * {@link #buildJdbcUrl(DbSpec)} の入力。接続文字列 {@code dbname@host:port} のパース・
-     * 環境変数フォールバック・末尾空白除去まで適用済みの、DB 非依存な接続情報。
-     */
-    protected static final class DbSpec {
-
-        /** 各フィールドを {@link #buildSpec(String, String, String)} が設定する空の接続情報を生成する。 */
-        DbSpec() {}
-
-        /** ホスト名（既定 "localhost"）。 */
-        String host;
-
-        /** ポート（":port" 形式、未指定なら空文字）。 */
-        String port;
-
-        /** データベース名。 */
-        String dbname;
-
-        /** 接続ユーザー名。 */
-        String user;
-
-        /** 接続パスワード。 */
-        String passwd;
-
-        /** 文字コード（OCDB_DB_CHAR、既定 UTF-8）。 */
-        String charset;
-
-        /**
-         * ホスト名を返す。
-         *
-         * @return ホスト名（既定 "localhost"）
-         */
-        public String getHost() {
-            return host;
-        }
-
-        /**
-         * ポートを返す。
-         *
-         * @return ":port" 形式のポート。未指定なら空文字
-         */
-        public String getPort() {
-            return port;
-        }
-
-        /**
-         * データベース名を返す。
-         *
-         * @return データベース名
-         */
-        public String getDbname() {
-            return dbname;
-        }
-
-        /**
-         * 接続ユーザー名を返す。
-         *
-         * @return 接続ユーザー名
-         */
-        public String getUser() {
-            return user;
-        }
-
-        /**
-         * 接続パスワードを返す。
-         *
-         * @return 接続パスワード
-         */
-        public String getPasswd() {
-            return passwd;
-        }
-
-        /**
-         * 文字コードを返す。
-         *
-         * @return 文字コード（OCDB_DB_CHAR、既定 UTF-8）
-         */
-        public String getCharset() {
-            return charset;
-        }
-    }
 
     /**
      * カーソル登録簿の最小簿記レコード（旧 {@code SqlCursor} の状態部）。基底クラスが DB 共通の

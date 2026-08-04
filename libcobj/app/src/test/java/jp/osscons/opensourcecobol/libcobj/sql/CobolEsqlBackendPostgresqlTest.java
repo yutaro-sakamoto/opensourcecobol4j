@@ -26,7 +26,7 @@ class CobolEsqlBackendPostgresqlTest {
     }
 
     private int codeOf(String sqlState) {
-        return pg.mapSqlException(new SQLException("msg", sqlState)).ecpgCode;
+        return pg.mapSqlException(new SQLException("msg", sqlState)).sqlCode;
     }
 
     // ---------- sqlStateToCode（旧 SqlCATest から移植。SQLException 経由で検証）----------
@@ -137,9 +137,8 @@ class CobolEsqlBackendPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testMapSqlException_CarriesSqlState() {
-        AbstractCobolEsqlBackend.SqlErrorMapping m =
-                pg.mapSqlException(new SQLException("dup", "23505"));
-        assertEquals(SqlCA.ECPG_DUPLICATE_KEY, m.ecpgCode, "code mapped from 23505");
+        SqlErrorMapping m = pg.mapSqlException(new SQLException("dup", "23505"));
+        assertEquals(SqlCA.ECPG_DUPLICATE_KEY, m.sqlCode, "code mapped from 23505");
         // PostgreSQL のネイティブ SQLSTATE はそのまま正規化値として採用される。
         assertEquals("23505", m.sqlState, "SQLSTATE carried through unchanged");
     }
@@ -147,9 +146,8 @@ class CobolEsqlBackendPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testMapSqlException_NullSqlState() {
-        AbstractCobolEsqlBackend.SqlErrorMapping m =
-                pg.mapSqlException(new SQLException("err", (String) null));
-        assertEquals(SqlCA.ECPG_UNKNOWN_ERROR, m.ecpgCode, "null state -> ECPG_UNKNOWN_ERROR");
+        SqlErrorMapping m = pg.mapSqlException(new SQLException("err", (String) null));
+        assertEquals(SqlCA.ECPG_UNKNOWN_ERROR, m.sqlCode, "null state -> ECPG_UNKNOWN_ERROR");
         assertNull(m.sqlState, "null SQLSTATE carried through as null (common flow fills spaces)");
     }
 
@@ -256,8 +254,7 @@ class CobolEsqlBackendPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testBuildSpec_StripsTrailingSpaces() {
-        AbstractCobolEsqlBackend.DbSpec spec =
-                pg.buildSpecForTest("user  ", "pass  ", "mydb@myhost  ");
+        DbSpec spec = pg.buildSpecForTest("user  ", "pass  ", "mydb@myhost  ");
         assertEquals("user", spec.user, "trailing spaces stripped from user");
         assertEquals("pass", spec.passwd, "trailing spaces stripped from passwd");
         assertEquals("mydb", spec.dbname, "trailing spaces stripped from dbname");
