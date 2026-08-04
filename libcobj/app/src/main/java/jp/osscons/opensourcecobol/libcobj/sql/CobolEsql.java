@@ -43,17 +43,14 @@ public final class CobolEsql {
      */
     private static synchronized CobolEsqlBackendInterface backend() {
         if (backend == null && backendResolutionError == null) {
+            String dbType =
+                    dbTypeOverrideForTest != null
+                            ? dbTypeOverrideForTest
+                            : System.getenv("OCDB_DB_TYPE");
             try {
-                String dbType =
-                        dbTypeOverrideForTest != null
-                                ? dbTypeOverrideForTest
-                                : System.getenv("OCDB_DB_TYPE");
                 backend = CobolEsqlBackendFactory.resolve(dbType);
-            } catch (ClassNotFoundException | RuntimeException e) {
-                backendResolutionError =
-                        (e.getMessage() == null || e.getMessage().isEmpty())
-                                ? "Unsupported OCDB_DB_TYPE"
-                                : e.getMessage();
+            } catch (RuntimeException e) {
+                backendResolutionError = "Unsupported OCDB_DB_TYPE: " + dbType;
             }
         }
         return backend;

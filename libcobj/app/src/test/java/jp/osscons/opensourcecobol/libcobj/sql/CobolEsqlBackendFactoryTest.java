@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.ByteBuffer;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,37 +29,37 @@ class CobolEsqlBackendFactoryTest {
     }
 
     @Test
-    void testResolve_Null_DefaultsToPostgresql() throws ClassNotFoundException {
+    void testResolve_Null_DefaultsToPostgresql() {
         assertInstanceOf(
                 CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve((String) null));
     }
 
     @Test
-    void testResolve_Empty_DefaultsToPostgresql() throws ClassNotFoundException {
+    void testResolve_Empty_DefaultsToPostgresql() {
         assertInstanceOf(CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve(""));
     }
 
     @Test
-    void testResolve_Postgresql() throws ClassNotFoundException {
+    void testResolve_Postgresql() {
         assertInstanceOf(
                 CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgresql"));
     }
 
     @Test
-    void testResolve_PostgresAlias() throws ClassNotFoundException {
+    void testResolve_PostgresAlias() {
         assertInstanceOf(
                 CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
     }
 
     @Test
-    void testResolve_CaseInsensitive() throws ClassNotFoundException {
+    void testResolve_CaseInsensitive() {
         assertInstanceOf(
                 CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));
     }
 
     @Test
     void testResolve_Unsupported_Throws() {
-        assertThrows(ClassNotFoundException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
+        assertThrows(CobolRuntimeException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
     }
 
     @Test

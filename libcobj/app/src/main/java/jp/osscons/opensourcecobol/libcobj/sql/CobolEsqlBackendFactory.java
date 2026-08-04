@@ -3,6 +3,7 @@ package jp.osscons.opensourcecobol.libcobj.sql;
 import java.util.Locale;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,9 +28,9 @@ final class CobolEsqlBackendFactory {
      * 環境変数 {@code OCDB_DB_TYPE} からバックエンドを解決する。
      *
      * @return 解決された DB バックエンド
-     * @throws ClassNotFoundException {@code OCDB_DB_TYPE} に対応する実装クラスが無い/生成できない場合
+     * @throws CobolRuntimeException {@code OCDB_DB_TYPE} に対応する実装クラスが無い/生成できない場合
      */
-    static CobolEsqlBackendInterface resolve() throws ClassNotFoundException {
+    static CobolEsqlBackendInterface resolve() {
         return resolve(System.getenv("OCDB_DB_TYPE"));
     }
 
@@ -42,9 +43,9 @@ final class CobolEsqlBackendFactory {
      *
      * @param t DB 種別文字列（{@code OCDB_DB_TYPE} の値）
      * @return 解決された DB バックエンド
-     * @throws ClassNotFoundException {@code t} に対応する登録済み実装が無い/生成できない場合
+     * @throws CobolRuntimeException {@code t} に対応する登録済み実装が無い/生成できない場合
      */
-    static CobolEsqlBackendInterface resolve(String t) throws ClassNotFoundException {
+    static CobolEsqlBackendInterface resolve(String t) {
         String type = (t == null || t.isEmpty()) ? "postgresql" : t.toLowerCase(Locale.ROOT);
         if ("postgres".equals(type)) {
             type = "postgresql"; // 後方互換エイリアス
@@ -58,9 +59,15 @@ final class CobolEsqlBackendFactory {
             }
         } catch (ServiceConfigurationError e) { // 登録ファイル不正・実装の生成失敗
             LOG.error("Failed to load ESQL backend providers (OCDB_DB_TYPE: {})", t, e);
-            throw new ClassNotFoundException("Unsupported OCDB_DB_TYPE: " + t, e);
+            CobolRuntimeException failure =
+                    new CobolRuntimeException(
+                            CobolRuntimeException.COBOL_FATAL_ERROR,
+                            "Unsupported OCDB_DB_TYPE: " + t);
+            failure.initCause(e);
+            throw failure;
         }
         LOG.error("Unsupported OCDB_DB_TYPE: {}", t);
-        throw new ClassNotFoundException("Unsupported OCDB_DB_TYPE: " + t);
+        throw new CobolRuntimeException(
+                CobolRuntimeException.COBOL_FATAL_ERROR, "Unsupported OCDB_DB_TYPE: " + t);
     }
 }
