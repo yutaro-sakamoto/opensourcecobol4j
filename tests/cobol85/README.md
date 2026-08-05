@@ -2,8 +2,6 @@
 
 **NOTE** It is expected that WARNING messages appear when running the test.
 
-**NOTE** The language interpreter "perl" is required to run these tests.
-
 **NOTE** This test can take a long time depending on your hardware.
 
 The final command of the the test is a diff between expected results and actual results.
