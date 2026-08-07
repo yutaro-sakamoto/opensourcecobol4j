@@ -52,7 +52,7 @@ jobs:
         if: inputs.os == 'almalinux:9'
         run: |
           dnf -y update
-          dnf install -y gcc make perl
+          dnf install -y gcc make
 
       - name: Install opensource COBOL 4J
         run: |
