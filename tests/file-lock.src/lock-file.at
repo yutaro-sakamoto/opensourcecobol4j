@@ -166,7 +166,7 @@ function run_test() {
     OPEN_MODE_2=$3
     EXPECTED_EXIT_CODE=$4
 
-    rm -f *.dat
+    rm -f *.dat *.dat-wal *.dat-shm
 
     TEST_ID="$(echo "${OPEN_MODE_1}_${OPEN_MODE_2}" | sed 's/-/_/g')"
 
@@ -367,7 +367,7 @@ set -e
 COMPILER="${COBJ}"
 RUNNER="java"
 
-rm -f file.dat shared1.dat shared2.dat
+rm -f file.dat file.dat-wal file.dat-shm shared1.dat shared2.dat
 
 function compile_all() {
     for ORGANIZATION in "sequential" "line sequential" "relative"; do
@@ -405,7 +405,7 @@ function run_test() {
     PROGRAM1_LOG="${PROGRAM_ID_1}.log"
     PROGRAM2_LOG="${PROGRAM_ID_2}.log"
 
-    rm -f file.dat shared1.dat shared2.dat
+    rm -f file.dat file.dat-wal file.dat-shm shared1.dat shared2.dat
 
     cat prog1-template.cbl |
     sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_1}/g" \

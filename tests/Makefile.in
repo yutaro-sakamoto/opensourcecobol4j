@@ -885,6 +885,7 @@ misc_DEPENDENCIES = \
 	misc.src/version-string-in-java.at \
 	misc.src/comp3-compute.at \
 	misc.src/index-file-status.at \
+	misc.src/delete-indexed-file.at \
 	misc.src/comp-n.at \
 	misc.src/fd-external.at \
 	misc.src/compile-multiple-files.at \
