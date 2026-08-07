@@ -56,7 +56,7 @@
 005600 PROCEDURE DIVISION.                                              OBIC14.2
 005700 SECT-IC218-0001 SECTION.                                         OBIC14.2
 005800 CALL-IC219.                                                      OBIC14.2
-005900     MOVE 0 TO SORT-LINK.                                         OBIC14.2
+005900     MOVE 0 TO NO-SUCH-DATA-ITEM.                                 OBIC14.2
 006000     CALL "OBIC2A" USING SORT-LINK.                               OBIC14.2
 006100 CALL-FAIL.                                                       OBIC14.2
 006200*                                                                 OBIC14.2
