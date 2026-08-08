@@ -475,6 +475,7 @@ jp.osscons.opensourcecobol.libcobj.ui.CobolResultSetException: The result type i
 AT_CLEANUP
 
 AT_SETUP([Japanese])
+AT_SKIP_IF([test -n "$IS_UTF8_BUILD"])
 
 AT_DATA([b.cbl], [
        identification division.

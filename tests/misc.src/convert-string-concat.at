@@ -1,4 +1,5 @@
 AT_SETUP([convert '&' concatenated strings to Java])
+AT_SKIP_IF([test -n "$IS_UTF8_BUILD"])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION   DIVISION.	
