@@ -59,12 +59,9 @@ extern struct cb_exception {
 #define CB_EXCEPTION_ENABLE(id) cb_exception_table[id].enable
 
 #undef CB_FLAG
-#undef CB_FLAG_ON
 #define CB_FLAG(var, name, doc) extern int var;
-#define CB_FLAG_ON(var, name, doc) extern int var;
 #include "flag.def"
 #undef CB_FLAG
-#undef CB_FLAG_ON
 
 #undef CB_WARNDEF
 #define CB_WARNDEF(var, name, wall, doc) extern int var;

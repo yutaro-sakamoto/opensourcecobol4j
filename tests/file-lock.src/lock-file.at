@@ -364,8 +364,6 @@ AT_DATA([run.sh], [
 
 set -e
 
-# COBJ carries compiler options besides the program name, so COMPILER has to
-# be used unquoted.
 COMPILER="${COBJ}"
 RUNNER="java"
 
@@ -388,7 +386,7 @@ function compile_all() {
                 sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_2}/g" \
                 > "${PROGRAM2_FILE}"
 
-                ${COMPILER} "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
+                "${COMPILER}" "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
             done
         done
     done
@@ -416,7 +414,7 @@ function run_test() {
     sed "s/@@id@@/${ID}/g; s/@@file_organization@@/${ORGANIZATION}/g; s/@@open_mode@@/${OPEN_MODE_2}/g" \
     > "${PROGRAM2_FILE}"
 
-    ${COMPILER} "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
+    "${COMPILER}" "${PROGRAM1_FILE}" "${PROGRAM2_FILE}"
 
     ${RUNNER} "${PROGRAM_ID_1}"&
     PID1=$!

@@ -10,9 +10,7 @@ AT_DATA([prog.cbl], [
            GOBACK.
 ])
 
-dnl COBJ_PLAIN is the compiler without the -fno-diagnostics-show-caret that
-dnl the rest of the testsuite relies on.
-AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:7: Error: 'UNDEFINED-ITEM' undefined
     5 |        WORKING-STORAGE             SECTION.
     6 |        PROCEDURE                   DIVISION.
@@ -34,7 +32,7 @@ AT_DATA([prog.cbl], [
            GOBACK.
 ])
 
-AT_CHECK([${COBJ_PLAIN} -fno-diagnostics-show-caret -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fno-diagnostics-show-caret -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:7: Error: 'UNDEFINED-ITEM' undefined
 ])
 
@@ -54,7 +52,7 @@ AT_DATA([prog.cbl], [
            GOBACK.
 ])
 
-AT_CHECK([${COBJ_PLAIN} -fno-diagnostics-show-line-numbers -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fno-diagnostics-show-line-numbers -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:7: Error: 'UNDEFINED-ITEM' undefined
           WORKING-STORAGE             SECTION.
           PROCEDURE                   DIVISION.
@@ -77,7 +75,7 @@ AT_DATA([prog.cbl], [
            GOBACK.
 ])
 
-AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:6: Error: 'UNDEFINED-ITEM' undefined
     4 |       *XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..
     5 |        PROCEDURE                   DIVISION.
@@ -102,7 +100,7 @@ do
 done > prog.cbl
 ])
 
-AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:4: Error: 'UNDEFINED-ITEM' undefined
     2 |        PROGRAM-ID.                 prog.                                SEQ00010
     3 |        PROCEDURE                   DIVISION.                            SEQ00010
@@ -125,7 +123,7 @@ AT_DATA([prog.cbl], [
 ])
 
 dnl Both diagnostics point at line 7, so the context is displayed only once.
-AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
+AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:7: Error: 'UNDEF-A' undefined
     5 |        WORKING-STORAGE             SECTION.
     6 |        PROCEDURE                   DIVISION.
@@ -149,7 +147,7 @@ AT_DATA([prog.cbl], [
            GOBACK.
 ])
 
-AT_CHECK([${COBJ_PLAIN} -fsyntax-only -Wall prog.cbl], [0], [],
+AT_CHECK([${COBJ} -fsyntax-only -Wall prog.cbl], [0], [],
 [prog.cbl:8: Warning: Alphanumeric value is expected
     6 |        01 X PIC X(5).
     7 |        PROCEDURE                   DIVISION.

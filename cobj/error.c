@@ -131,12 +131,15 @@ static void print_source_context(const int line) {
       }
       buffer[char_pos] = 0;
       if (cb_diagnostics_show_line_numbers) {
-        fprintf(stderr, "%5d %c %s%s\n", line_pos, line == line_pos ? '>' : '|',
-                buffer, truncated ? ".." : "");
+        fprintf(stderr, "%5d %c", line_pos, line == line_pos ? '>' : '|');
       } else {
-        fprintf(stderr, " %c %s%s\n", line == line_pos ? '>' : ' ', buffer,
-                truncated ? ".." : "");
+        fprintf(stderr, " %c", line == line_pos ? '>' : ' ');
       }
+      /* an empty source line must not leave trailing whitespace behind */
+      if (char_pos > 0 || truncated) {
+        fprintf(stderr, " %s%s", buffer, truncated ? ".." : "");
+      }
+      fputc('\n', stderr);
     }
     if (c == EOF) {
       break;
