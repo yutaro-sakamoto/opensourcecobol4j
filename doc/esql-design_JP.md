@@ -198,7 +198,11 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 
 各スイートは `make <name>` で生成され、`./<name>` でローカル実行できます (PostgreSQL コンテナが必要)。CI からは `.github/workflows/test-esql.yml` 経由で実行されます (`esql-utf8` のみ、`--enable-utf8` 付きでコンフィグアしたコンパイラを必要とするため `.github/workflows/test-esql-utf8.yml` で実行されます)。
 
-Windows 版でも `.github/workflows/windows-test-esql.yml` により、スイートごとに 1 ジョブで同じテストを実行します。こちらは PostgreSQL コンテナを使えないため、ランナーイメージに同梱された PostgreSQL を `initdb --encoding=UTF8 --no-locale` で初期化し、ポート 55432 で起動します。`esql-sqlca.src/connect-disconnect.at` が `localhost:5432` への接続失敗を期待しているため、5432 は空けておく必要があるからです。Windows ビルドは Shift_JIS 専用のため `esql-utf8` は対象外です。
+Windows 版でも `.github/workflows/windows-test-esql.yml` により、スイートごとに 1 ジョブで同じテストを実行します。Windows ビルドは Shift_JIS 専用のため `esql-utf8` は対象外です。
+
+Windows では PostgreSQL コンテナを使えないため、[`win/start-test-postgresql.ps1`](../win/start-test-postgresql.ps1) を実行します。このスクリプトはランナーイメージ同梱の PostgreSQL を `initdb --encoding=UTF8 --no-locale` で初期化し、ポート 55432 で起動します。開発者自身の Windows マシンでも同じ手順で使え、既存のクラスタがあればそれを再利用します。`-Stop` で停止できます。`--no-locale` と既定以外のポートが必要な理由は、スクリプト冒頭のコメントに書いてあります。
+
+テストプログラムに埋め込む接続情報は `.github/workflows/db-settings/` から取ります。Windows のジョブは `embed_db_info_windows.sh` を `tests/embed_db_info.sh` に上書きコピーします。この値は `win/start-test-postgresql.ps1` の既定値と一致させる必要があります。同じディレクトリにある `embed_db_info_postgresql_*.sh` はコンテナ用の同等物ですが、Linux のワークフローからは使えません。これらのジョブは `make dist` の tar ボールから実行され `actions/checkout` を行わず、tar ボールに `.github/` が含まれないためで、代わりに同じ内容をワークフロー内で直接書き出しています。
 
 各テストグループは、スイート名と `.at` ファイル名から作ったテーブル名・制約名を使います。そのため 1 つのスイート内のグループが同じデータベースを共有でき、各スイートを `-j4` で並列実行できます。
 

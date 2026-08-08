@@ -16,8 +16,7 @@ jobs:
 
     env:
       CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
-      # Not 5432; see the "Start PostgreSQL" step for why.
-      PG_PORT: "55432"
+      PG_LOG: "postgresql.log"
 
     steps:
     - uses: actions/checkout@v7
@@ -53,62 +52,7 @@ jobs:
 
     - name: Start PostgreSQL
       shell: pwsh
-      run: |
-        $ErrorActionPreference = 'Stop'
-        # Report a failing initdb/pg_ctl/createdb through the checks below,
-        # which print the server log, rather than as a bare PowerShell error.
-        $PSNativeCommandUseErrorActionPreference = $false
-
-        # The runner image ships PostgreSQL, but its service is stopped and its
-        # cluster is initialised for the Windows ANSI code page.  The ESQL tests
-        # store Japanese text, so a private UTF-8 cluster is initialised here
-        # instead of reusing that one.  --no-locale is required: initdb refuses
-        # UTF8 combined with the image's default locale (English_United
-        # States.1252), because that locale needs WIN1252.
-        #
-        # The C collation --no-locale gives the cluster differs from the
-        # en_US.utf8 of the postgres:15 container the Linux workflows use.  The
-        # two orderings agree on everything the suites sort today (numeric
-        # columns, and in esql-cobol-data.src/varying.at values that are strict
-        # prefixes of each other), but a new ORDER BY over text could tell them
-        # apart.  lc_messages=C also keeps the PostgreSQL error texts the tests
-        # match in English.
-        #
-        # The cluster deliberately does not listen on 5432:
-        # esql-sqlca.src/connect-disconnect.at connects to a database named
-        # "invalid" with no host part, which libcobj turns into
-        # localhost:5432, and it expects that to be refused (SQLSTATE 08001).
-        # On Linux that holds because PostgreSQL runs in a separate service
-        # container; here the server is on the same machine, so it has to stay
-        # off the default port or the connection would reach it and fail
-        # authentication (SQLSTATE 28000) instead.
-        $pgBin = $env:PGBIN
-        if (-not $pgBin -or -not (Test-Path $pgBin)) {
-          $pgRoot = Get-ChildItem 'C:\Program Files\PostgreSQL' -Directory |
-            Where-Object { $_.Name -match '^\d+$' } |
-            Sort-Object { [int]$_.Name } -Descending |
-            Select-Object -First 1
-          if (-not $pgRoot) { throw 'No PostgreSQL installation found on the runner' }
-          $pgBin = Join-Path $pgRoot.FullName 'bin'
-        }
-        $pgData = Join-Path $env:RUNNER_TEMP 'pgdata'
-        $pgLog = Join-Path $env:RUNNER_TEMP 'postgresql.log'
-        "PG_LOG=$pgLog" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-        & "$pgBin\initdb.exe" -D $pgData -U main_user --auth=trust --encoding=UTF8 --no-locale
-        if ($LASTEXITCODE -ne 0) { throw "initdb failed with exit code $LASTEXITCODE" }
-
-        & "$pgBin\pg_ctl.exe" -D $pgData -l $pgLog -o "-p $env:PG_PORT" -w start
-        if ($LASTEXITCODE -ne 0) {
-          if (Test-Path $pgLog) { Get-Content $pgLog }
-          throw "pg_ctl start failed with exit code $LASTEXITCODE"
-        }
-
-        & "$pgBin\createdb.exe" -h localhost -p $env:PG_PORT -U main_user testdb
-        if ($LASTEXITCODE -ne 0) {
-          if (Test-Path $pgLog) { Get-Content $pgLog }
-          throw "createdb failed with exit code $LASTEXITCODE"
-        }
+      run: ./win/start-test-postgresql.ps1 -LogFile "$env:RUNNER_TEMP/$env:PG_LOG"
 
     - name: Set up test environment
       shell: bash
@@ -122,26 +66,9 @@ jobs:
         sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
         sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
 
-        # ${EMBED_DB_INFO} substitutes the connection parameters into every
-        # COBOL source before it is compiled.  The Linux workflows write the
-        # same script; only the host and the port differ.
-        cat > embed_db_info.sh << DBCONF
-        DB_NAME=testdb
-        DB_HOST=localhost
-        DB_PORT=${PG_PORT}
-        DB_USER=main_user
-        DB_PASSWORD=password
-        DBCONF
-        cat >> embed_db_info.sh << 'DBEOF'
-        TEMP_FILE=$(mktemp)
-        cat $1 |
-        sed -e "s/<|DB_NAME|>/${DB_NAME}/g" |
-        sed -e "s/<|DB_HOST|>/${DB_HOST}/g" |
-        sed -e "s/<|DB_PORT|>/${DB_PORT}/g" |
-        sed -e "s/<|DB_USER|>/${DB_USER}/g" |
-        sed -e "s/<|DB_PASSWORD|>/${DB_PASSWORD}/g" > ${TEMP_FILE}
-        mv ${TEMP_FILE} $1
-        DBEOF
+        # ${EMBED_DB_INFO} substitutes these connection settings into every
+        # COBOL source before it is compiled.
+        cp ../.github/workflows/db-settings/embed_db_info_windows.sh embed_db_info.sh
 
     - name: Run tests ${{ inputs.test-name }}
       shell: bash
@@ -162,7 +89,8 @@ jobs:
       if: failure()
       shell: pwsh
       run: |
-        if ($env:PG_LOG -and (Test-Path $env:PG_LOG)) { Get-Content $env:PG_LOG }
+        $log = "$env:RUNNER_TEMP/$env:PG_LOG"
+        if (Test-Path $log) { Get-Content $log }
 
     - name: Upload log files if tests fail
       if: failure()
