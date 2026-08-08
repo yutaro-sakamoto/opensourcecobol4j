@@ -683,7 +683,14 @@ size_t utf8_calc_sjis_size(const unsigned char *p, int len) {
   size_t name_size = 0;
   while (p < ub) {
     char_size = COB_U8BYTE_1(*p);
-    if (char_size == 1) {
+    if (char_size < 1 || char_size > ub - p) {
+      /* Not a UTF-8 lead byte, or a sequence cut short by the end of the
+         buffer.  This happens for instance when a Shift_JIS source is given
+         to a UTF-8 build.  Consume a single byte so that the scan always
+         advances, otherwise the loop would never terminate. */
+      name_size += 1;
+      p++;
+    } else if (char_size == 1) {
       name_size += 1;
       p++;
     } else if (char_size == 3 && utf8_hankaku_kana(p)) {
@@ -714,12 +721,17 @@ int utf8_hankaku_kana(const unsigned char *p) {
 
 int utf8_calc_sjis_column(const unsigned char *p, int column) {
   const unsigned char *start = p;
+  const unsigned char *ub = p + strlen((const char *)p);
   int char_size = 0;
   int i = 0;
 
-  while (i < column && *p != '\0') {
+  while (i < column && p < ub) {
     char_size = COB_U8BYTE_1(*p);
-    if (char_size == 1) {
+    if (char_size < 1 || char_size > ub - p) {
+      /* See utf8_calc_sjis_size: never let an invalid byte stall the scan. */
+      i++;
+      p++;
+    } else if (char_size == 1) {
       i++;
       p++;
     } else if (char_size == 3 && utf8_hankaku_kana(p)) {
