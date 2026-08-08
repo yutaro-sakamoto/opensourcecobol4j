@@ -565,18 +565,6 @@ static void joutput_string_write(const unsigned char *s, int size,
     }
     joutput("\"");
 
-#ifdef I18N_UTF8
-    for (i = 0; i < size; i++) {
-      int c = s[i];
-      if (c == '\"' || c == '\\') {
-        joutput("\\%c", c);
-      } else if (c == '\n') {
-        joutput("\\n");
-      } else {
-        joutput("%c", c);
-      }
-    }
-#else
     int output_multibyte = 0;
     int sum_sgmt_size = 0;
     int sgmt_index = 0;
@@ -603,10 +591,14 @@ static void joutput_string_write(const unsigned char *s, int size,
           sgmt_index++;
         }
       }
+#ifndef I18N_UTF8
+      /* A Shift_JIS trail byte can be '"' or '\\', so escaping has to be
+         suppressed while one is being emitted.  UTF-8 trail bytes are always
+         >= 0x80, so the flag stays off on a UTF-8 build. */
       output_multibyte = !output_multibyte &&
                          ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
-    }
 #endif
+    }
     if (tmp_sgmt_sizes) {
       joutput("\"");
       joutput_newline();

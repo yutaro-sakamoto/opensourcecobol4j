@@ -683,7 +683,9 @@ cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.src/compare-national.at \
 	cobol_utf8.src/file-handler-japanese.at \
 	cobol_utf8.src/japanese-char-section-var.at \
-	cobol_utf8.src/java-interface.at
+	cobol_utf8.src/java-interface.at \
+	cobol_utf8.src/convert-string-concat.at \
+	cobol_utf8.src/fd-external.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \

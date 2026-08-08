@@ -68,6 +68,7 @@ AT_CHECK([java prog], [0],
 AT_CLEANUP
 
 AT_SETUP([FD EXTERNAL nihongo])
+AT_SKIP_IF([test -n "$IS_UTF8_BUILD"])
 
 AT_DATA([prog1.cbl], [
        IDENTIFICATION DIVISION.
