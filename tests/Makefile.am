@@ -372,6 +372,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(data_rep_DEPENDENCIES) \
 	$(i18n_utf8_DEPENDENCIES) \
 	$(i18n_sjis_DEPENDENCIES) \
+	$(cobol_utf8_DEPENDENCIES) \
 	$(jp_compat_DEPENDENCIES) \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \

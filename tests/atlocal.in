@@ -60,10 +60,14 @@ export COBJ COBJ_IDX PATHSEP
 # its COBOL sources to be encoded in UTF-8 instead of Shift_JIS.  Test groups
 # whose source is written in Shift_JIS skip themselves on such a build; their
 # UTF-8 counterparts live in cobol_utf8.src.
-IS_UTF8_BUILD=""
-if test "x@COB_M4_FLAGS@" = "x-DM4.I18N_UTF8"; then
+case " @COB_M4_FLAGS@ " in
+*" -DM4.I18N_UTF8 "*)
   IS_UTF8_BUILD="1"
-fi
+  ;;
+*)
+  IS_UTF8_BUILD=""
+  ;;
+esac
 export IS_UTF8_BUILD
 
 TEMPLATE="${abs_srcdir}/data-rep.src"
