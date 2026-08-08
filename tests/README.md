@@ -21,20 +21,30 @@ For example, execute ./command-line-options in order to run command-line-options
 ## ESQL tests
 
 The ESQL suites -- `esql-basic`, `esql-cobol-data`, `esql-misc`, `esql-sql-data`,
-`esql-sqlca` and `esql-utf8` -- additionally need a PostgreSQL server, and
-`embed_db_info.sh` in this directory has to name it. `.github/workflows/db-settings/`
-holds one copy of that script per environment; copy the matching one over
-`embed_db_info.sh` before running a suite.
+`esql-sqlca` and `esql-utf8` -- additionally need a PostgreSQL server.
+`embed_db_info.sh` in this directory is what tells the test programs where to
+find it. The copy checked in here points at `localhost:5432`, which is right for
+a PostgreSQL running on the same machine; edit it if yours is somewhere else.
+
+`.github/workflows/db-settings/` holds the copies CI uses instead.
+`embed_db_info_postgresql_15.sh` and `embed_db_info_postgresql_9.6.sh` name
+GitHub Actions service containers, so they resolve nowhere but CI and are not
+worth copying locally. `embed_db_info_windows.sh` is the one for the cluster
+`win/start-test-postgresql.ps1` starts, and that script also reads its own
+defaults out of it, so the two cannot disagree about the port.
 
 On Windows, `win/start-test-postgresql.ps1` brings up a cluster to test against.
 It initialises one on first use and reuses it afterwards, and `-Stop` shuts it
-down. Pair it with `embed_db_info_windows.sh`:
+down. From this directory, in Git Bash:
 
 ```
-powershell -File ..\win\start-test-postgresql.ps1
+powershell -File ../win/start-test-postgresql.ps1
 cp ../.github/workflows/db-settings/embed_db_info_windows.sh embed_db_info.sh
 ./esql-basic
 ```
+
+That `cp` overwrites a tracked file; `git checkout embed_db_info.sh` puts the
+default back.
 
 `esql-utf8` needs a compiler configured with `--enable-utf8`, so it does not run
 against the Shift_JIS Windows build.

@@ -33,9 +33,10 @@
     a cluster that holds anything you care about: it is a test fixture.
 
 .PARAMETER Port
-    Port the server listens on.  Must match DB_PORT in
-    .github/workflows/db-settings/embed_db_info_windows.sh, which is what tells
-    the test programs where to connect.
+    Port the server listens on.  Defaults to DB_PORT in
+    .github/workflows/db-settings/embed_db_info_windows.sh, which is the file
+    that tells the test programs where to connect, so the two cannot drift
+    apart.  Overriding this means editing that file to match.
 
 .PARAMETER DataDir
     Cluster directory.  Defaults to a directory under RUNNER_TEMP (on GitHub
@@ -45,14 +46,16 @@
     Server log.  Defaults to a file next to the cluster directory.
 
 .PARAMETER Database
-    Database created for the tests.  Must match DB_NAME in embed_db_info_windows.sh.
+    Database created for the tests.  Defaults to DB_NAME in
+    embed_db_info_windows.sh.
 
 .PARAMETER User
-    Role that owns the cluster.  Must match DB_USER in embed_db_info_windows.sh.
+    Role that owns the cluster.  Defaults to DB_USER in
+    embed_db_info_windows.sh.
 
 .PARAMETER PgBin
-    PostgreSQL bin directory.  Defaults to PGBIN, then to the newest numbered
-    directory under C:\Program Files\PostgreSQL.
+    PostgreSQL bin directory.  Must contain pg_ctl.exe.  Defaults to PGBIN,
+    then to the newest numbered directory under C:\Program Files\PostgreSQL.
 
 .PARAMETER Stop
     Stop a cluster this script started instead of starting one.  The cluster
@@ -69,11 +72,11 @@
 #>
 [CmdletBinding()]
 param(
-    [int]    $Port = 55432,
+    [int]    $Port = 0,
     [string] $DataDir,
     [string] $LogFile,
-    [string] $Database = 'testdb',
-    [string] $User = 'main_user',
+    [string] $Database,
+    [string] $User,
     [string] $PgBin,
     [switch] $Stop
 )
@@ -88,10 +91,17 @@ $PSNativeCommandUseErrorActionPreference = $false
 function Resolve-PgBin {
     param([string] $Requested)
 
-    foreach ($candidate in @($Requested, $env:PGBIN)) {
-        if ($candidate -and (Test-Path (Join-Path $candidate 'pg_ctl.exe'))) {
-            return $candidate
+    # An explicit -PgBin is an instruction, not a guess: a typo in it has to be
+    # reported rather than quietly answered with some other installation.
+    if ($Requested) {
+        if (Test-Path (Join-Path $Requested 'pg_ctl.exe')) {
+            return $Requested
         }
+        throw "-PgBin '$Requested' does not contain pg_ctl.exe."
+    }
+
+    if ($env:PGBIN -and (Test-Path (Join-Path $env:PGBIN 'pg_ctl.exe'))) {
+        return $env:PGBIN
     }
 
     $root = 'C:\Program Files\PostgreSQL'
@@ -136,6 +146,22 @@ function Invoke-PgTool {
     }
 }
 
+# The connection settings live in one place, the file the CI job copies over
+# tests/embed_db_info.sh, so that the server this script starts and the programs
+# the suites compile cannot end up disagreeing about the port.
+$settings = @{ DB_PORT = '55432'; DB_NAME = 'testdb'; DB_USER = 'main_user' }
+$settingsFile = Join-Path $PSScriptRoot '..\.github\workflows\db-settings\embed_db_info_windows.sh'
+if (Test-Path $settingsFile) {
+    foreach ($line in Get-Content $settingsFile) {
+        if ($line -match '^\s*(DB_PORT|DB_NAME|DB_USER)=(\S+)\s*$') {
+            $settings[$Matches[1]] = $Matches[2]
+        }
+    }
+}
+if (-not $Port)     { $Port     = [int] $settings['DB_PORT'] }
+if (-not $Database) { $Database = $settings['DB_NAME'] }
+if (-not $User)     { $User     = $settings['DB_USER'] }
+
 $script:pgBinDir = Resolve-PgBin -Requested $PgBin
 
 if (-not $DataDir -or -not $LogFile) {
@@ -166,7 +192,9 @@ if ($Stop) {
     } else {
         Write-Host "No running cluster in $DataDir; nothing to stop."
     }
-    return
+    # pg_ctl status left 3 behind for "not running", which is not this
+    # script's result.
+    exit 0
 }
 
 Write-Host "Using PostgreSQL from $script:pgBinDir"
@@ -180,6 +208,21 @@ if ($clusterExists) {
 }
 
 if ($isRunning) {
+    # pg_ctl status says the postmaster is up but not what it is listening on.
+    # Line 4 of postmaster.pid is its port; without this check a cluster left
+    # running on another port would look reusable and then refuse every
+    # connection.
+    $pidFile = Join-Path $DataDir 'postmaster.pid'
+    if (Test-Path $pidFile) {
+        $pidLines = @(Get-Content $pidFile)
+        if ($pidLines.Count -ge 4) {
+            $runningPort = $pidLines[3].Trim()
+            if ($runningPort -and $runningPort -ne "$Port") {
+                throw ("The cluster in $DataDir is already running on port $runningPort, not $Port. " +
+                       "Stop it with -Stop, or pass -Port $runningPort.")
+            }
+        }
+    }
     Write-Host "The cluster is already running; not starting it again."
 } else {
     Write-Host "Starting the server on port $Port (log: $LogFile)"
@@ -213,3 +256,5 @@ Write-Host "  database $Database"
 Write-Host "  user     $User"
 Write-Host 'Copy .github/workflows/db-settings/embed_db_info_windows.sh over'
 Write-Host 'tests/embed_db_info.sh if these differ from what is in it.'
+
+exit 0
