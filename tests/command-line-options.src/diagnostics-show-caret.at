@@ -79,10 +79,35 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:6: Error: 'UNDEFINED-ITEM' undefined
-    4 |       *XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..
+    4 |       *XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..
     5 |        PROCEDURE                   DIVISION.
     6 >            DISPLAY UNDEFINED-ITEM.
     7 |            GOBACK.
+])
+
+AT_CLEANUP
+
+AT_SETUP([source context keeps a whole 80 column record])
+
+dnl A COBOL record is 80 columns wide, so nothing of it is cut off and the
+dnl truncation marker is not displayed.
+AT_CHECK([
+for line in "       IDENTIFICATION              DIVISION." \
+            "       PROGRAM-ID.                 prog." \
+            "       PROCEDURE                   DIVISION." \
+            "           DISPLAY UNDEFINED-ITEM." \
+            "           GOBACK."
+do
+  printf '%-72s%s\n' "$line" "SEQ00010"
+done > prog.cbl
+])
+
+AT_CHECK([${COBJ_PLAIN} -fsyntax-only prog.cbl], [1], [],
+[prog.cbl:4: Error: 'UNDEFINED-ITEM' undefined
+    2 |        PROGRAM-ID.                 prog.                                SEQ00010
+    3 |        PROCEDURE                   DIVISION.                            SEQ00010
+    4 >            DISPLAY UNDEFINED-ITEM.                                      SEQ00010
+    5 |            GOBACK.                                                      SEQ00010
 ])
 
 AT_CLEANUP

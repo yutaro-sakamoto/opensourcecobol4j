@@ -34,15 +34,49 @@
 
 /* Number of source lines displayed before and after the offending line */
 #define CARET_CONTEXT_LINES 2
-/* Width of a displayed source context line, prefix included */
+/*
+ * Number of source columns displayed for a single line, the line number
+ * prefix excluded.  A COBOL record is 80 columns wide, so a fixed format
+ * source line is never cut.
+ */
 #define CARET_MAX_COLS 80
-/* Width of the "%5d %c " prefix used when line numbers are displayed */
-#define CARET_LINENO_PREFIX 7
-/* Width of the " > " prefix used when line numbers are suppressed */
-#define CARET_PLAIN_PREFIX 3
 
 static char *errnamebuff = NULL;
 static char *errmsgbuff = NULL;
+
+/* Source file the context is currently read from, and the line the stream is
+   positioned at.  The file is kept open so that a run of diagnostics does not
+   read the source from the beginning over and over again. */
+static FILE *caret_fd = NULL;
+static char caret_file[COB_NORMAL_BUFF] = "";
+static int caret_file_line = 0;
+
+/*
+ * Return the length of the longest prefix of 'buffer' that is not longer than
+ * 'len' bytes and does not end in the middle of a multibyte character.
+ */
+static int mb_prefix_length(const char *buffer, const int len) {
+  int pos = 0;
+
+  while (pos < len) {
+    const unsigned char c = (unsigned char)buffer[pos];
+    int size;
+#ifdef I18N_UTF8
+    size = COB_U8BYTE_1(c);
+    if (size < 1) {
+      /* not a valid lead byte, display it as it is */
+      size = 1;
+    }
+#else  /*!I18N_UTF8*/
+    size = ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) ? 2 : 1;
+#endif /*I18N_UTF8*/
+    if (pos + size > len) {
+      break;
+    }
+    pos += size;
+  }
+  return pos;
+}
 
 /*
  * Display the source lines surrounding the location of a diagnostic,
@@ -53,25 +87,28 @@ static char *errmsgbuff = NULL;
  * before COPY ... REPLACING and friends have been applied.  There is no caret
  * for the offending column since only the line number is tracked.
  */
-static void print_source_context(FILE *fd, const int line) {
+static void print_source_context(const int line) {
   const int line_start =
       line > CARET_CONTEXT_LINES ? line - CARET_CONTEXT_LINES : 1;
   const int line_end = line + CARET_CONTEXT_LINES;
-  const int max_pos =
-      CARET_MAX_COLS - (cb_diagnostics_show_line_numbers ? CARET_LINENO_PREFIX
-                                                         : CARET_PLAIN_PREFIX);
   char buffer[CARET_MAX_COLS + 1];
-  int line_pos;
-  int c = 0;
 
-  for (line_pos = 1; line_pos <= line_end && c != EOF; ++line_pos) {
+  if (caret_file_line > line_start) {
+    rewind(caret_fd);
+    caret_file_line = 1;
+  }
+
+  while (caret_file_line <= line_end) {
+    const int line_pos = caret_file_line;
     int char_pos = 0;
     int truncated = 0;
+    int c;
 
-    while ((c = fgetc(fd)) != EOF && c != '\n') {
-      if (char_pos < max_pos) {
+    while ((c = fgetc(caret_fd)) != EOF && c != '\n') {
+      if (char_pos < CARET_MAX_COLS) {
         buffer[char_pos++] = (char)c;
-      } else {
+      } else if (c != ' ' && c != '\t' && c != '\r') {
+        /* padding beyond the displayed columns is not worth a marker */
         truncated = 1;
       }
     }
@@ -79,22 +116,30 @@ static void print_source_context(FILE *fd, const int line) {
       /* no more source to display */
       break;
     }
-    if (line_pos < line_start) {
-      continue;
+    caret_file_line++;
+
+    if (line_pos >= line_start) {
+      if (char_pos == CARET_MAX_COLS) {
+        /* never cut a multibyte character in half */
+        char_pos = mb_prefix_length(buffer, char_pos);
+      }
+      /* drop trailing whitespace */
+      while (char_pos > 0 &&
+             (buffer[char_pos - 1] == ' ' || buffer[char_pos - 1] == '\t' ||
+              buffer[char_pos - 1] == '\r')) {
+        char_pos--;
+      }
+      buffer[char_pos] = 0;
+      if (cb_diagnostics_show_line_numbers) {
+        fprintf(stderr, "%5d %c %s%s\n", line_pos, line == line_pos ? '>' : '|',
+                buffer, truncated ? ".." : "");
+      } else {
+        fprintf(stderr, " %c %s%s\n", line == line_pos ? '>' : ' ', buffer,
+                truncated ? ".." : "");
+      }
     }
-    /* drop trailing whitespace */
-    while (char_pos > 0 &&
-           (buffer[char_pos - 1] == ' ' || buffer[char_pos - 1] == '\t' ||
-            buffer[char_pos - 1] == '\r')) {
-      char_pos--;
-    }
-    buffer[char_pos] = 0;
-    if (cb_diagnostics_show_line_numbers) {
-      fprintf(stderr, "%5d %c %s%s\n", line_pos, line == line_pos ? '>' : '|',
-              buffer, truncated ? ".." : "");
-    } else {
-      fprintf(stderr, " %c %s%s\n", line == line_pos ? '>' : ' ', buffer,
-              truncated ? ".." : "");
+    if (c == EOF) {
+      break;
     }
   }
 }
@@ -107,7 +152,6 @@ static void print_source_context(FILE *fd, const int line) {
 static void print_error_source_context(const char *file, const int line) {
   static char last_caret_file[COB_NORMAL_BUFF] = "";
   static int last_caret_line = 0;
-  FILE *fd;
 
   if (!cb_diagnostics_show_caret || !file || line <= 0) {
     return;
@@ -115,15 +159,23 @@ static void print_error_source_context(const char *file, const int line) {
   if (last_caret_line == line && !strcmp(last_caret_file, file)) {
     return;
   }
+
+  if (!caret_fd || strcmp(caret_file, file)) {
+    if (caret_fd) {
+      fclose(caret_fd);
+    }
+    caret_fd = fopen(file, "r");
+    if (!caret_fd) {
+      caret_file[0] = 0;
+      return;
+    }
+    snprintf(caret_file, sizeof(caret_file), "%s", file);
+    caret_file_line = 1;
+  }
+
   snprintf(last_caret_file, sizeof(last_caret_file), "%s", file);
   last_caret_line = line;
-
-  fd = fopen(file, "r");
-  if (!fd) {
-    return;
-  }
-  print_source_context(fd, line);
-  fclose(fd);
+  print_source_context(line);
 }
 
 static void print_error(char *file, int line, const char *prefix,
