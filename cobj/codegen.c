@@ -535,29 +535,6 @@ static enum cb_string_category get_string_category(const unsigned char *s,
   return category;
 }
 
-/* Break the Java string literal in two when byte I ends one of the segments
-   an '&' concatenated COBOL literal was written in.  SUM_SGMT_SIZE and
-   SGMT_INDEX record how much of TMP_SGMT_SIZES has been consumed so far. */
-static void joutput_string_segment_break(int i, int size,
-                                         const size_t *tmp_sgmt_sizes,
-                                         size_t *sum_sgmt_size,
-                                         int *sgmt_index) {
-  if (!tmp_sgmt_sizes || i >= size - 1) {
-    return;
-  }
-  size_t segment_end_position =
-      *sum_sgmt_size + tmp_sgmt_sizes[*sgmt_index] - 1;
-  if ((size_t)i != segment_end_position) {
-    return;
-  }
-  joutput("\" + ");
-  joutput_newline();
-  joutput_prefix();
-  joutput("\"");
-  *sum_sgmt_size += tmp_sgmt_sizes[*sgmt_index];
-  ++*sgmt_index;
-}
-
 static void joutput_string_write(const unsigned char *s, int size,
                                  enum cb_string_category category,
                                  const size_t *tmp_sgmt_sizes) {
@@ -588,11 +565,7 @@ static void joutput_string_write(const unsigned char *s, int size,
     }
     joutput("\"");
 
-    size_t sum_sgmt_size = 0;
-    int sgmt_index = 0;
 #ifdef I18N_UTF8
-    /* A UTF-8 trail byte is always >= 0x80, so it can never be mistaken for a
-       character that has to be escaped. */
     for (i = 0; i < size; i++) {
       int c = s[i];
       if (c == '\"' || c == '\\') {
@@ -602,13 +575,11 @@ static void joutput_string_write(const unsigned char *s, int size,
       } else {
         joutput("%c", c);
       }
-      joutput_string_segment_break(i, size, tmp_sgmt_sizes, &sum_sgmt_size,
-                                   &sgmt_index);
     }
 #else
-    /* A Shift_JIS trail byte can be '"' or '\\', so escaping has to be
-       suppressed while one is being emitted. */
     int output_multibyte = 0;
+    int sum_sgmt_size = 0;
+    int sgmt_index = 0;
     for (i = 0; i < size; i++) {
       int c = s[i];
       if (!output_multibyte && (c == '\"' || c == '\\')) {
@@ -618,8 +589,20 @@ static void joutput_string_write(const unsigned char *s, int size,
       } else {
         joutput("%c", c);
       }
-      joutput_string_segment_break(i, size, tmp_sgmt_sizes, &sum_sgmt_size,
-                                   &sgmt_index);
+
+      // insert line breaks between segments concatenated with '&'
+      if (tmp_sgmt_sizes && i < size - 1) {
+        size_t segment_end_position =
+            sum_sgmt_size + tmp_sgmt_sizes[sgmt_index] - 1;
+        if (i == segment_end_position) {
+          joutput("\" + ");
+          joutput_newline();
+          joutput_prefix();
+          joutput("\"");
+          sum_sgmt_size += tmp_sgmt_sizes[sgmt_index];
+          sgmt_index++;
+        }
+      }
       output_multibyte = !output_multibyte &&
                          ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
     }
