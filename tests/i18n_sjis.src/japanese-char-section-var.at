@@ -1,5 +1,4 @@
 AT_SETUP([japanese word section variable])
-AT_SKIP_IF([test -n "$IS_UTF8_BUILD"])
 
 AT_DATA([prog.cbl], [       IDENTIFICATION              DIVISION.
        PROGRAM-ID.                 prog.

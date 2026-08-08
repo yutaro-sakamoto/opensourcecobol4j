@@ -1,5 +1,4 @@
 AT_SETUP([file-handler-japanese])
-AT_SKIP_IF([test -n "$IS_UTF8_BUILD"])
 
 # This test verifies that Issue 539 is fixed.
 
