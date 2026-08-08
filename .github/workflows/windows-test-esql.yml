@@ -16,6 +16,8 @@ jobs:
 
     env:
       CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
+      # Not 5432; see the "Start PostgreSQL" step for why.
+      PG_PORT: "55432"
 
     steps:
     - uses: actions/checkout@v7
@@ -63,6 +65,15 @@ jobs:
         # sort by numeric columns, so the resulting C collation is fine, and
         # lc_messages=C keeps the PostgreSQL error texts the tests match in
         # English.
+        #
+        # The cluster deliberately does not listen on 5432:
+        # esql-sqlca.src/connect-disconnect.at connects to a database named
+        # "invalid" with no host part, which libcobj turns into
+        # localhost:5432, and it expects that to be refused (SQLSTATE 08001).
+        # On Linux that holds because PostgreSQL runs in a separate service
+        # container; here the server is on the same machine, so it has to stay
+        # off the default port or the connection would reach it and fail
+        # authentication (SQLSTATE 28000) instead.
         $pgBin = $env:PGBIN
         if (-not $pgBin -or -not (Test-Path $pgBin)) {
           $pgRoot = Get-ChildItem 'C:\Program Files\PostgreSQL' -Directory |
@@ -79,13 +90,13 @@ jobs:
         & "$pgBin\initdb.exe" -D $pgData -U main_user --auth=trust --encoding=UTF8 --no-locale
         if ($LASTEXITCODE -ne 0) { throw "initdb failed with exit code $LASTEXITCODE" }
 
-        & "$pgBin\pg_ctl.exe" -D $pgData -l $pgLog -o '-p 5432' -w start
+        & "$pgBin\pg_ctl.exe" -D $pgData -l $pgLog -o "-p $env:PG_PORT" -w start
         if ($LASTEXITCODE -ne 0) {
           if (Test-Path $pgLog) { Get-Content $pgLog }
           throw "pg_ctl start failed with exit code $LASTEXITCODE"
         }
 
-        & "$pgBin\createdb.exe" -h localhost -p 5432 -U main_user testdb
+        & "$pgBin\createdb.exe" -h localhost -p $env:PG_PORT -U main_user testdb
         if ($LASTEXITCODE -ne 0) {
           if (Test-Path $pgLog) { Get-Content $pgLog }
           throw "createdb failed with exit code $LASTEXITCODE"
@@ -105,13 +116,15 @@ jobs:
 
         # ${EMBED_DB_INFO} substitutes the connection parameters into every
         # COBOL source before it is compiled.  The Linux workflows write the
-        # same script from the same template.
-        cat > embed_db_info.sh << 'DBEOF'
+        # same script; only the host and the port differ.
+        cat > embed_db_info.sh << DBCONF
         DB_NAME=testdb
         DB_HOST=localhost
-        DB_PORT=5432
+        DB_PORT=${PG_PORT}
         DB_USER=main_user
         DB_PASSWORD=password
+        DBCONF
+        cat >> embed_db_info.sh << 'DBEOF'
         TEMP_FILE=$(mktemp)
         cat $1 |
         sed -e "s/<|DB_NAME|>/${DB_NAME}/g" |

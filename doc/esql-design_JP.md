@@ -198,7 +198,7 @@ PostgreSQL コンテナを使う autotest スイートを以下のディレク�
 
 各スイートは `make <name>` で生成され、`./<name>` でローカル実行できます (PostgreSQL コンテナが必要)。CI からは `.github/workflows/test-esql.yml` 経由で実行されます (`esql-utf8` のみ、`--enable-utf8` 付きでコンフィグアしたコンパイラを必要とするため `.github/workflows/test-esql-utf8.yml` で実行されます)。
 
-Windows 版でも `.github/workflows/windows-test-esql.yml` により、スイートごとに 1 ジョブで同じテストを実行します。こちらは PostgreSQL コンテナを使えないため、ランナーイメージに同梱された PostgreSQL を `initdb --encoding=UTF8 --no-locale` で初期化して使います。Windows ビルドは Shift_JIS 専用のため `esql-utf8` は対象外です。
+Windows 版でも `.github/workflows/windows-test-esql.yml` により、スイートごとに 1 ジョブで同じテストを実行します。こちらは PostgreSQL コンテナを使えないため、ランナーイメージに同梱された PostgreSQL を `initdb --encoding=UTF8 --no-locale` で初期化し、ポート 55432 で起動します。`esql-sqlca.src/connect-disconnect.at` が `localhost:5432` への接続失敗を期待しているため、5432 は空けておく必要があるからです。Windows ビルドは Shift_JIS 専用のため `esql-utf8` は対象外です。
 
 各テストグループは、スイート名と `.at` ファイル名から作ったテーブル名・制約名を使います。そのため 1 つのスイート内のグループが同じデータベースを共有でき、各スイートを `-j4` で並列実行できます。
 
