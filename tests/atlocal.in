@@ -49,11 +49,17 @@ esac
 
 CONF_JP_COMPAT="-conf=${abs_top_builddir}/config/jp-compat.conf"
 CONF_LIMIT_TEST="-conf=${abs_top_builddir}/config/boundary-limit.conf"
-COBJ="${abs_top_builddir}/cobj/cobj"
+COBJ_PLAIN="${abs_top_builddir}/cobj/cobj"
+# The testsuite compares diagnostics byte for byte, so the source context that
+# -fdiagnostics-show-caret adds by default is suppressed for every invocation.
+# The feature itself is checked by
+# command-line-options.src/diagnostics-show-caret.at, which uses COBJ_PLAIN to
+# exercise the default settings.
+COBJ="${COBJ_PLAIN} -fno-diagnostics-show-caret"
 COBJ_IDX="${abs_top_builddir}/libcobj/bin/cobj-idx-test"
 RUN_MODULE="java"
 PATHSEP=":"
-export COBJ COBJ_IDX PATHSEP
+export COBJ COBJ_PLAIN COBJ_IDX PATHSEP
 #COBCRUN="${abs_top_builddir}/bin/cobcrun"
 
 TEMPLATE="${abs_srcdir}/data-rep.src"

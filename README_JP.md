@@ -164,6 +164,27 @@ java [PROGRAM-ID]
 > cobj file3.cbl
 > ```
 
+### エラー・警告メッセージ
+
+`cobj`はエラーや警告を報告する際、該当箇所の周辺のソースコードもあわせて表示します。
+該当行の行番号の直後には`>`が表示されます。
+
+```
+prog.cbl:7: Error: 'UNDEFINED-ITEM' undefined
+    5 |        WORKING-STORAGE             SECTION.
+    6 |        PROCEDURE                   DIVISION.
+    7 >            DISPLAY UNDEFINED-ITEM.
+    8 |            GOBACK.
+```
+
+表示されるソースコードは元のソースファイルから直接読み込まれるため、
+`COPY ... REPLACING`などの指令が適用される前の、記述したとおりの内容が表示されます。
+
+| オプション | 説明 |
+| --- | --- |
+| `-fno-diagnostics-show-caret` | 周辺のソースコードを表示せず、メッセージのみを表示します。 |
+| `-fno-diagnostics-show-line-numbers` | 周辺のソースコードを行番号なしで表示します。 |
+
 ## Embedded SQL (ESQL)
 
 opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポートしており、COBOLプログラムからホスト変数を使用してSQL文を直接実行できます。

@@ -130,9 +130,12 @@ struct cb_exception cb_exception_table[] = {
 #undef COB_EXCEPTION
 
 #undef CB_FLAG
+#undef CB_FLAG_ON
 #define CB_FLAG(var, name, doc) int var = 0;
+#define CB_FLAG_ON(var, name, doc) int var = 1;
 #include "flag.def"
 #undef CB_FLAG
+#undef CB_FLAG_ON
 
 #undef CB_WARNDEF
 #define CB_WARNDEF(var, name, wall, doc) int var = 0;
@@ -322,10 +325,13 @@ static const struct option long_options[] = {
     {"fdefaultbyte", required_argument, NULL, OPTION_ID_DEFAULT_BYTE},
     {"lock-mode-automatic", no_argument, NULL, OPTION_ID_LOCK_MODE_AUTOMATIC},
 #undef CB_FLAG
+#undef CB_FLAG_ON
 #define CB_FLAG(var, name, doc)                                                \
   {"f" name, no_argument, &var, 1}, {"fno-" name, no_argument, &var, 0},
+#define CB_FLAG_ON(var, name, doc) CB_FLAG(var, name, doc)
 #include "flag.def"
 #undef CB_FLAG
+#undef CB_FLAG_ON
     {"Wall", no_argument, NULL, 'W'},
     {"W", no_argument, NULL, 'Z'},
 #undef CB_WARNDEF
@@ -941,11 +947,14 @@ static void cobc_print_usage(void) {
   putchar('\n');
 
 #undef CB_FLAG
+#undef CB_FLAG_ON
 #define CB_FLAG(var, name, doc)                                                \
   if (strcmp(name, "static-call"))                                             \
     printf("  -f%-19s %s\n", name, gettext(doc));
+#define CB_FLAG_ON(var, name, doc) CB_FLAG(var, name, doc)
 #include "flag-help.def"
 #undef CB_FLAG
+#undef CB_FLAG_ON
 }
 
 static void cobc_options_error(void) {

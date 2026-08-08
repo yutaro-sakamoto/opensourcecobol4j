@@ -174,6 +174,27 @@ java [PROGRAM-ID]
 > cobj file3.cbl
 > ```
 
+### Diagnostics
+
+When `cobj` reports an error or a warning, it also prints the source lines
+around the reported location, marking the offending line with `>`.
+
+```
+prog.cbl:7: Error: 'UNDEFINED-ITEM' undefined
+    5 |        WORKING-STORAGE             SECTION.
+    6 |        PROCEDURE                   DIVISION.
+    7 >            DISPLAY UNDEFINED-ITEM.
+    8 |            GOBACK.
+```
+
+The source text is read from the original source file, so it is shown as it was
+written, before `COPY ... REPLACING` and similar directives are applied.
+
+| Option | Description |
+| --- | --- |
+| `-fno-diagnostics-show-caret` | Do not print the source context, only the diagnostic message. |
+| `-fno-diagnostics-show-line-numbers` | Print the source context without the leading line numbers. |
+
 ## Embedded SQL (ESQL)
 
 opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing COBOL programs to execute SQL statements directly using host variables.
