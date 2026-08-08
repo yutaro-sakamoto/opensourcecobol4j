@@ -55,16 +55,24 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Stop'
+        # Report a failing initdb/pg_ctl/createdb through the checks below,
+        # which print the server log, rather than as a bare PowerShell error.
+        $PSNativeCommandUseErrorActionPreference = $false
 
         # The runner image ships PostgreSQL, but its service is stopped and its
         # cluster is initialised for the Windows ANSI code page.  The ESQL tests
         # store Japanese text, so a private UTF-8 cluster is initialised here
         # instead of reusing that one.  --no-locale is required: initdb refuses
         # UTF8 combined with the image's default locale (English_United
-        # States.1252), because that locale needs WIN1252.  The suites only ever
-        # sort by numeric columns, so the resulting C collation is fine, and
-        # lc_messages=C keeps the PostgreSQL error texts the tests match in
-        # English.
+        # States.1252), because that locale needs WIN1252.
+        #
+        # The C collation --no-locale gives the cluster differs from the
+        # en_US.utf8 of the postgres:15 container the Linux workflows use.  The
+        # two orderings agree on everything the suites sort today (numeric
+        # columns, and in esql-cobol-data.src/varying.at values that are strict
+        # prefixes of each other), but a new ORDER BY over text could tell them
+        # apart.  lc_messages=C also keeps the PostgreSQL error texts the tests
+        # match in English.
         #
         # The cluster deliberately does not listen on 5432:
         # esql-sqlca.src/connect-disconnect.at connects to a database named
