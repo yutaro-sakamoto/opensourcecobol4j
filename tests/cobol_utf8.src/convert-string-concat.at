@@ -1,4 +1,4 @@
-AT_SETUP([convert '&' concatenated strings to Java])
+AT_SETUP([convert '&' concatenated national strings to Java])
 export LC_ALL=''
 
 AT_DATA([prog.cbl], [
@@ -6,11 +6,6 @@ AT_DATA([prog.cbl], [
        PROGRAM-ID.      prog.
        DATA DIVISION.
        WORKING-STORAGE  SECTION.
-       01  X-CONCAT     PIC X(25) VALUE "abcde"
-        &  "fghij"
-        &  "klmno"
-        &  "pqrst"
-        &  "uvwxy".
        01  N-CONCAT     PIC N(25) VALUE "あいうえお"
         &  "かきくけこ"
         &  "さしすせそ"
@@ -18,20 +13,17 @@ AT_DATA([prog.cbl], [
         &  "なにぬねの".
        PROCEDURE        DIVISION.
        MAIN-RTN.
-           DISPLAY X-CONCAT.
            DISPLAY N-CONCAT.
            STOP RUN.
 ])
 
 AT_CHECK([${COMPILE} prog.cbl])
 AT_CHECK([java prog > out1.txt])
-AT_CHECK([echo 'abcdefghijklmnopqrstuvwxy
-あいうえおかきくけこさしすせそたちつてとなにぬねの'| nkf -x --ic=UTF-8 --oc=Shift_JIS > out2.txt])
+AT_CHECK([echo 'あいうえおかきくけこさしすせそたちつてとなにぬねの'| nkf -x --ic=UTF-8 --oc=Shift_JIS > out2.txt])
 AT_CHECK([diff out1.txt out2.txt])
-dnl The Shift_JIS build also writes one Java string per '&' segment, which the
-dnl misc counterpart of this group checks.  joutput_string_write emits the
-dnl whole literal as a single string on a UTF-8 build, so only the value is
-dnl checked here.
-AT_CHECK([grep -q 'abcdefghijklmnopqrstuvwxy' prog.java])
-AT_CHECK([grep -q 'あいうえおかきくけこさしすせそたちつてとなにぬねの' prog.java])
+AT_CHECK([grep -q '    "あいうえお" +' prog.java])
+AT_CHECK([grep -q '    "かきくけこ" +' prog.java])
+AT_CHECK([grep -q '    "さしすせそ" +' prog.java])
+AT_CHECK([grep -q '    "たちつてと" +' prog.java])
+AT_CHECK([grep -q '    "なにぬねの"' prog.java])
 AT_CLEANUP

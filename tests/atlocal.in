@@ -56,20 +56,6 @@ PATHSEP=":"
 export COBJ COBJ_IDX PATHSEP
 #COBCRUN="${abs_top_builddir}/bin/cobcrun"
 
-# Set when the compiler was built with --enable-utf8, i.e. when it expects
-# its COBOL sources to be encoded in UTF-8 instead of Shift_JIS.  Test groups
-# whose source is written in Shift_JIS skip themselves on such a build; their
-# UTF-8 counterparts live in cobol_utf8.src.
-case " @COB_M4_FLAGS@ " in
-*" -DM4.I18N_UTF8 "*)
-  IS_UTF8_BUILD="1"
-  ;;
-*)
-  IS_UTF8_BUILD=""
-  ;;
-esac
-export IS_UTF8_BUILD
-
 TEMPLATE="${abs_srcdir}/data-rep.src"
 
 FLAGS="-std=cobol2002 -debug -Wall ${COBOL_FLAGS}"
