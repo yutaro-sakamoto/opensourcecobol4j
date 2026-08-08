@@ -484,9 +484,11 @@ static void free_string_literal_list() {
     struct string_literal_cache *next = l->next;
     free(l->string_value);
     free(l->var_name);
+    free(l->segment_sizes);
     free(l);
     l = next;
   }
+  string_literal_list = NULL;
 }
 
 static enum cb_string_category get_string_category(const unsigned char *s,
