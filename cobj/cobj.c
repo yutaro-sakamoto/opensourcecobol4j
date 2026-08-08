@@ -963,6 +963,11 @@ static int process_command_line(const int argc, char *argv[]) {
   /* Enable default I/O exceptions */
   CB_EXCEPTION_ENABLE(COB_EC_I_O) = 1;
 
+  /* flag.def turns every flag off, so the flags that are on unless the
+     matching -fno- option is given are enabled here */
+  cb_diagnostics_show_caret = 1;
+  cb_diagnostics_show_line_numbers = 1;
+
   /* Translate command line arguments from WIN to UNIX style */
   argnum = 1;
   while (++argnum <= argc) {

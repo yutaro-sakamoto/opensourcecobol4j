@@ -32,8 +32,154 @@
 
 #define max_names 5
 
+/* Number of source lines displayed before and after the offending line */
+#define CARET_CONTEXT_LINES 2
+/*
+ * Number of source columns displayed for a single line, the line number
+ * prefix excluded.  A COBOL record is 80 columns wide, so a fixed format
+ * source line is never cut.
+ */
+#define CARET_MAX_COLS 80
+
 static char *errnamebuff = NULL;
 static char *errmsgbuff = NULL;
+
+/* Source file the context is currently read from, and the line the stream is
+   positioned at.  The file is kept open so that a run of diagnostics does not
+   read the source from the beginning over and over again. */
+static FILE *caret_fd = NULL;
+static char caret_file[COB_NORMAL_BUFF] = "";
+static int caret_file_line = 0;
+
+/*
+ * Return the length of the longest prefix of 'buffer' that is not longer than
+ * 'len' bytes and does not end in the middle of a multibyte character.
+ */
+static int mb_prefix_length(const char *buffer, const int len) {
+  int pos = 0;
+
+  while (pos < len) {
+    const unsigned char c = (unsigned char)buffer[pos];
+    int size;
+#ifdef I18N_UTF8
+    size = COB_U8BYTE_1(c);
+    if (size < 1) {
+      /* not a valid lead byte, display it as it is */
+      size = 1;
+    }
+#else  /*!I18N_UTF8*/
+    size = ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) ? 2 : 1;
+#endif /*I18N_UTF8*/
+    if (pos + size > len) {
+      break;
+    }
+    pos += size;
+  }
+  return pos;
+}
+
+/*
+ * Display the source lines surrounding the location of a diagnostic,
+ * marking the offending line with '>'.  Only used when
+ * cb_diagnostics_show_caret is set.
+ *
+ * The source file is read directly, so the text shown is the original one,
+ * before COPY ... REPLACING and friends have been applied.  There is no caret
+ * for the offending column since only the line number is tracked.
+ */
+static void print_source_context(const int line) {
+  const int line_start =
+      line > CARET_CONTEXT_LINES ? line - CARET_CONTEXT_LINES : 1;
+  const int line_end = line + CARET_CONTEXT_LINES;
+  char buffer[CARET_MAX_COLS + 1];
+
+  if (caret_file_line > line_start) {
+    rewind(caret_fd);
+    caret_file_line = 1;
+  }
+
+  while (caret_file_line <= line_end) {
+    const int line_pos = caret_file_line;
+    int char_pos = 0;
+    int truncated = 0;
+    int c;
+
+    while ((c = fgetc(caret_fd)) != EOF && c != '\n') {
+      if (char_pos < CARET_MAX_COLS) {
+        buffer[char_pos++] = (char)c;
+      } else if (c != ' ' && c != '\t' && c != '\r') {
+        /* padding beyond the displayed columns is not worth a marker */
+        truncated = 1;
+      }
+    }
+    if (c == EOF && char_pos == 0) {
+      /* no more source to display */
+      break;
+    }
+    caret_file_line++;
+
+    if (line_pos >= line_start) {
+      if (char_pos == CARET_MAX_COLS) {
+        /* never cut a multibyte character in half */
+        char_pos = mb_prefix_length(buffer, char_pos);
+      }
+      /* drop trailing whitespace */
+      while (char_pos > 0 &&
+             (buffer[char_pos - 1] == ' ' || buffer[char_pos - 1] == '\t' ||
+              buffer[char_pos - 1] == '\r')) {
+        char_pos--;
+      }
+      buffer[char_pos] = 0;
+      if (cb_diagnostics_show_line_numbers) {
+        fprintf(stderr, "%5d %c", line_pos, line == line_pos ? '>' : '|');
+      } else {
+        fprintf(stderr, " %c", line == line_pos ? '>' : ' ');
+      }
+      /* an empty source line must not leave trailing whitespace behind */
+      if (char_pos > 0 || truncated) {
+        fprintf(stderr, " %s%s", buffer, truncated ? ".." : "");
+      }
+      fputc('\n', stderr);
+    }
+    if (c == EOF) {
+      break;
+    }
+  }
+}
+
+/*
+ * Print the source context of the diagnostic just written for file:line.
+ * Consecutive diagnostics pointing at the same location share a single
+ * context display.
+ */
+static void print_error_source_context(const char *file, const int line) {
+  static char last_caret_file[COB_NORMAL_BUFF] = "";
+  static int last_caret_line = 0;
+
+  if (!cb_diagnostics_show_caret || !file || line <= 0) {
+    return;
+  }
+  if (last_caret_line == line && !strcmp(last_caret_file, file)) {
+    return;
+  }
+
+  if (!caret_fd || strcmp(caret_file, file)) {
+    if (caret_fd) {
+      fclose(caret_fd);
+    }
+    caret_fd = fopen(file, "r");
+    if (!caret_fd) {
+      caret_file[0] = 0;
+      return;
+    }
+    snprintf(caret_file, sizeof(caret_file), "%s", file);
+    caret_file_line = 1;
+  }
+
+  snprintf(last_caret_file, sizeof(last_caret_file), "%s", file);
+  last_caret_line = line;
+  print_source_context(line);
+}
 
 static void print_error(char *file, int line, const char *prefix,
                         const char *fmt, va_list ap) {
@@ -138,6 +284,8 @@ static void print_error(char *file, int line, const char *prefix,
       free(p_bfree[cnt]);
     }
   }
+
+  print_error_source_context(file, line);
 }
 
 char *check_filler_name(char *name) {
