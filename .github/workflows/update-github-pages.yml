@@ -31,15 +31,15 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Build Javadoc
         working-directory: libcobj
@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           # Upload entire repository
-          path: 'github-pages'
+          path: "github-pages"
 
       - name: Deploy to GitHub Pages
         id: deployment

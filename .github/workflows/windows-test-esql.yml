@@ -5,108 +5,108 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
 
     env:
       CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Download test scripts
-      uses: actions/download-artifact@v8
-      with:
-        name: windows-test-scripts
-        path: tests/
+      - name: Download test scripts
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-test-scripts
+          path: tests/
 
-    - name: Download libcobj.jar
-      uses: actions/download-artifact@v8
-      with:
-        name: libcobj.jar
-        path: libcobj/app/build/libs/
+      - name: Download libcobj.jar
+        uses: actions/download-artifact@v8
+        with:
+          name: libcobj.jar
+          path: libcobj/app/build/libs/
 
-    - name: Download cobj.exe
-      uses: actions/download-artifact@v8
-      with:
-        name: cobj.exe
-        path: win/x64/Release/
+      - name: Download cobj.exe
+        uses: actions/download-artifact@v8
+        with:
+          name: cobj.exe
+          path: win/x64/Release/
 
-    - name: Install Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin'
-        java-version: '11'
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "11"
 
-    - name: Install opensource COBOL 4J
-      run: |
-        cd win
-        ./make-install.ps1
+      - name: Install opensource COBOL 4J
+        run: |
+          cd win
+          ./make-install.ps1
 
-    - name: Start PostgreSQL
-      shell: pwsh
-      run: |
-        $pgDir = (Get-ChildItem "C:\Program Files\PostgreSQL" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
-        $pgBin = "$pgDir\bin"
-        $pgData = "$env:RUNNER_TEMP\pgdata"
-        & "$pgBin\initdb.exe" -D "$pgData" -U main_user --auth=trust --encoding=UTF8
-        & "$pgBin\pg_ctl.exe" start -D "$pgData" -l "$env:RUNNER_TEMP\pglog.txt" -w
-        & "$pgBin\createdb.exe" -U main_user testdb
-        echo "$pgBin" >> $env:GITHUB_PATH
+      - name: Start PostgreSQL
+        shell: pwsh
+        run: |
+          $pgDir = (Get-ChildItem "C:\Program Files\PostgreSQL" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+          $pgBin = "$pgDir\bin"
+          $pgData = "$env:RUNNER_TEMP\pgdata"
+          & "$pgBin\initdb.exe" -D "$pgData" -U main_user --auth=trust --encoding=UTF8
+          & "$pgBin\pg_ctl.exe" start -D "$pgData" -l "$env:RUNNER_TEMP\pglog.txt" -w
+          & "$pgBin\createdb.exe" -U main_user testdb
+          echo "$pgBin" >> $env:GITHUB_PATH
 
-    - name: Set up test environment
-      shell: bash
-      run: |
-        cd tests
-        cp atlocal-win.env atlocal
-        WORKSPACE=$(cd .. && pwd)
-        sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
-        sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
-        sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
+      - name: Set up test environment
+        shell: bash
+        run: |
+          cd tests
+          cp atlocal-win.env atlocal
+          WORKSPACE=$(cd .. && pwd)
+          sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
+          sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
+          sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
 
-        cat > embed_db_info.sh << 'DBEOF'
-        DB_NAME=testdb
-        DB_HOST=localhost
-        DB_PORT=5432
-        DB_USER=main_user
-        DB_PASSWORD=password
-        TEMP_FILE=$(mktemp)
-        cat $1 |
-        sed -e "s/<|DB_NAME|>/${DB_NAME}/g" |
-        sed -e "s/<|DB_HOST|>/${DB_HOST}/g" |
-        sed -e "s/<|DB_PORT|>/${DB_PORT}/g" |
-        sed -e "s/<|DB_USER|>/${DB_USER}/g" |
-        sed -e "s/<|DB_PASSWORD|>/${DB_PASSWORD}/g" > ${TEMP_FILE}
-        mv ${TEMP_FILE} $1
-        DBEOF
+          cat > embed_db_info.sh << 'DBEOF'
+          DB_NAME=testdb
+          DB_HOST=localhost
+          DB_PORT=5432
+          DB_USER=main_user
+          DB_PASSWORD=password
+          TEMP_FILE=$(mktemp)
+          cat $1 |
+          sed -e "s/<|DB_NAME|>/${DB_NAME}/g" |
+          sed -e "s/<|DB_HOST|>/${DB_HOST}/g" |
+          sed -e "s/<|DB_PORT|>/${DB_PORT}/g" |
+          sed -e "s/<|DB_USER|>/${DB_USER}/g" |
+          sed -e "s/<|DB_PASSWORD|>/${DB_PASSWORD}/g" > ${TEMP_FILE}
+          mv ${TEMP_FILE} $1
+          DBEOF
 
-        # Create diff wrapper that strips trailing CR
-        mkdir -p /tmp/diff-wrapper
-        printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
-        chmod +x /tmp/diff-wrapper/diff
+          # Create diff wrapper that strips trailing CR
+          mkdir -p /tmp/diff-wrapper
+          printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
+          chmod +x /tmp/diff-wrapper/diff
 
-    - name: Run ESQL tests
-      shell: bash
-      run: |
-        export PATH="/tmp/diff-wrapper:$PATH"
-        cd tests
-        ./esql-basic -j4
-        ./esql-sqlca -j4
-        ./esql-cobol-data -j4
-        ./esql-misc -j4
-        ./esql-sql-data -j4
-        ./esql-utf8 -j4
+      - name: Run ESQL tests
+        shell: bash
+        run: |
+          export PATH="/tmp/diff-wrapper:$PATH"
+          cd tests
+          ./esql-basic -j4
+          ./esql-sqlca -j4
+          ./esql-cobol-data -j4
+          ./esql-misc -j4
+          ./esql-sql-data -j4
+          ./esql-utf8 -j4
 
-    - name: Upload log files if tests fail
-      if: failure()
-      uses: actions/upload-artifact@v7
-      with:
-        name: windows-esql-test-log
-        path: |
-          tests/esql-basic.dir/
-          tests/esql-sqlca.dir/
-          tests/esql-cobol-data.dir/
-          tests/esql-misc.dir/
-          tests/esql-sql-data.dir/
-          tests/esql-utf8.dir/
+      - name: Upload log files if tests fail
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-esql-test-log
+          path: |
+            tests/esql-basic.dir/
+            tests/esql-sqlca.dir/
+            tests/esql-cobol-data.dir/
+            tests/esql-misc.dir/
+            tests/esql-sql-data.dir/
+            tests/esql-utf8.dir/

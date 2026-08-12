@@ -22,7 +22,7 @@ env:
 
 jobs:
   test-other:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: ${{ inputs.os }}
     steps:
@@ -35,8 +35,8 @@ jobs:
 
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: "temurin"
+          java-version: "11"
 
       - name: Install dependencies on Ubuntu 26.04
         if: inputs.os == 'ubuntu:26.04'
@@ -60,7 +60,7 @@ jobs:
           tar zxf opensourcecobol4j.tar.gz
           mv opensourcecobol4j/* .
           make install
-      
+
       - name: Run tests ${{ inputs.test-name }}
         working-directory: tests/
         run: |

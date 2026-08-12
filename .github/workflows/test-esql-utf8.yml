@@ -15,7 +15,7 @@ env:
 
 jobs:
   test-esql-utf8:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: ${{ inputs.os }}
 
@@ -28,7 +28,7 @@ jobs:
           POSTGRES_PASSWORD: password
           POSTGRES_USER: main_user
           POSTGRES_DB: testdb
-          POSTGRES_HOST_AUTH_METHOD: 'trust'
+          POSTGRES_HOST_AUTH_METHOD: "trust"
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -45,8 +45,8 @@ jobs:
 
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: "temurin"
+          java-version: "11"
 
       - name: Install dependencies on Ubuntu 26.04
         if: inputs.os == 'ubuntu:26.04'

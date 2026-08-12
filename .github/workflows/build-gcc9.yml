@@ -8,12 +8,12 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps: 
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Install dependencies on Ubuntu
         run: |
@@ -22,7 +22,7 @@ jobs:
 
       - name: Checkout opensource COBOL 4J
         uses: actions/checkout@v7
-      
+
       - name: Install opensource COBOL 4J
         run: |
           ./configure --prefix=/usr/ CC=gcc-9
