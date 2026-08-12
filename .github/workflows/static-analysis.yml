@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   static_analysis:
-    runs-on: ubuntu-22.04
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: almalinux:9
     steps:

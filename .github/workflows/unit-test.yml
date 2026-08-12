@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   unit-test:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout opensource COBOL 4J
         uses: actions/checkout@v7

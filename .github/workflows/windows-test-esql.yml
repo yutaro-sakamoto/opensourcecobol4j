@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
 
     env:
       CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
