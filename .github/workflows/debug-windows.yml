@@ -1,0 +1,52 @@
+name: debug windows image
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Visual Studio instances
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+          Test-Path $vswhere
+          if (Test-Path $vswhere) {
+            & $vswhere -products * -all -prerelease -format json
+            Write-Host "--- packages of each instance ---"
+            & $vswhere -products * -all -prerelease -property installationPath
+          }
+
+      - name: Visual Studio directories
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio" -ErrorAction SilentlyContinue | Select-Object Name
+          Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host "--- MSBuild dirs ---"
+          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Microsoft" -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host "--- Windows Kits ---"
+          Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Select-Object Name
+
+      - name: Tooling
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          (Get-Command msbuild -ErrorAction SilentlyContinue).Source
+          (Get-Command choco -ErrorAction SilentlyContinue).Source
+          choco --version
+          (Get-Command nuget -ErrorAction SilentlyContinue).Source
+          (Get-Command cl -ErrorAction SilentlyContinue).Source
+          [System.Environment]::OSVersion.VersionString
+
+      - name: VS installer presence
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\Installer" -ErrorAction SilentlyContinue | Select-Object Name
