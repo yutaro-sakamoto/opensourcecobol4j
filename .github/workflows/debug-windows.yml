@@ -8,45 +8,41 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  vctools:
     runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - name: Visual Studio instances
-        continue-on-error: true
+      - name: Install the MSVC build tools
         shell: pwsh
         run: |
-          $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-          Test-Path $vswhere
-          if (Test-Path $vswhere) {
-            & $vswhere -products * -all -prerelease -format json
-            Write-Host "--- packages of each instance ---"
-            & $vswhere -products * -all -prerelease -property installationPath
-          }
+          $sw = [System.Diagnostics.Stopwatch]::StartNew()
+          choco install -y --no-progress visualstudio2022buildtools
+          choco install -y --no-progress visualstudio2022-workload-vctools `
+            --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621"
+          Write-Host "elapsed: $($sw.Elapsed)"
 
-      - name: Visual Studio directories
+      - name: Show what got installed
         continue-on-error: true
         shell: pwsh
         run: |
-          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio" -ErrorAction SilentlyContinue | Select-Object Name
-          Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -ErrorAction SilentlyContinue | Select-Object Name
-          Write-Host "--- MSBuild dirs ---"
-          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Microsoft" -ErrorAction SilentlyContinue | Select-Object Name
-          Write-Host "--- Windows Kits ---"
+          & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -products * -all -property installationPath
           Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Select-Object Name
 
-      - name: Tooling
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          (Get-Command msbuild -ErrorAction SilentlyContinue).Source
-          (Get-Command choco -ErrorAction SilentlyContinue).Source
-          choco --version
-          (Get-Command nuget -ErrorAction SilentlyContinue).Source
-          (Get-Command cl -ErrorAction SilentlyContinue).Source
-          [System.Environment]::OSVersion.VersionString
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3.0.0
 
-      - name: VS installer presence
-        continue-on-error: true
+      - name: MSBuild version
         shell: pwsh
-        run: |
-          Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio\Installer" -ErrorAction SilentlyContinue | Select-Object Name
+        run: msbuild -version
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Restore NuGet packages
+        run: nuget restore ./win/
+
+      - name: Build cobj.exe
+        run: msbuild /p:Configuration=Release /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
+
+      - name: Show the built binary
+        shell: pwsh
+        run: Get-ChildItem win/x64/Release/cobj.exe
