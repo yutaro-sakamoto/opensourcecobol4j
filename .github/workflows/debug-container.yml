@@ -1,0 +1,79 @@
+name: debug container workspace
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  probe-default:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ubuntu:26.04
+    steps:
+      - name: Probe the workspace mount
+        continue-on-error: true
+        run: |
+          set -x
+          id
+          which tar || true
+          tar --version | head -1
+          cat /proc/mounts
+          stat -f /__w || true
+          ls -ld /__w /__w/opensourcecobol4j || true
+          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
+          touch /__w/probe-file || echo "touch failed: $?"
+          mkdir -p /tmp/probe-dir && echo "tmp mkdir ok"
+
+  probe-seccomp-unconfined:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ubuntu:26.04
+      options: --security-opt seccomp=unconfined
+    steps:
+      - name: Probe the workspace mount
+        continue-on-error: true
+        run: |
+          set -x
+          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
+          touch /__w/probe-file || echo "touch failed: $?"
+
+      - name: Checkout opensource COBOL 4J
+        continue-on-error: true
+        uses: actions/checkout@v7
+
+  probe-privileged:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ubuntu:26.04
+      options: --privileged
+    steps:
+      - name: Probe the workspace mount
+        continue-on-error: true
+        run: |
+          set -x
+          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
+          touch /__w/probe-file || echo "touch failed: $?"
+
+      - name: Checkout opensource COBOL 4J
+        continue-on-error: true
+        uses: actions/checkout@v7
+
+  probe-old-image:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ubuntu:24.04
+    steps:
+      - name: Probe the workspace mount
+        continue-on-error: true
+        run: |
+          set -x
+          tar --version | head -1
+          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
+          touch /__w/probe-file || echo "touch failed: $?"
+
+      - name: Checkout opensource COBOL 4J
+        continue-on-error: true
+        uses: actions/checkout@v7
