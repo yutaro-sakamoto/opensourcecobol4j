@@ -97,3 +97,33 @@ prog.cob:9: Error: '€–Ú2' undefined
 ])
 
 AT_CLEANUP
+
+AT_SETUP([source context of a one line source])
+
+dnl The source has nothing to show before or after the offending line.
+AT_DATA([prog.cob], [IDENTIFICATION DIVISION. PROGRAM-ID. prog. PROCEDURE DIVISION. DISPLAY UNDEF-A. GOBACK.
+])
+
+AT_CHECK([${COMPILE} -free prog.cob], [1], [],
+[prog.cob:1: Error: 'UNDEF-A' undefined
+    1 > IDENTIFICATION DIVISION. PROGRAM-ID. prog. PROCEDURE DIVISION. DISPLAY UNDEF-A. GOBACK.
+])
+
+AT_CLEANUP
+
+AT_SETUP([source context of an error on the first line])
+
+dnl The context starts at the offending line, there is nothing before it.
+AT_DATA([prog.cob], [IDENTIFICATION DIVISION. PROGRAM-ID. prog. PROCEDURE DIVISION. DISPLAY UNDEF-A.
+DISPLAY "OK".
+GOBACK.
+])
+
+AT_CHECK([${COMPILE} -free prog.cob], [1], [],
+[prog.cob:1: Error: 'UNDEF-A' undefined
+    1 > IDENTIFICATION DIVISION. PROGRAM-ID. prog. PROCEDURE DIVISION. DISPLAY UNDEF-A.
+    2 | DISPLAY "OK".
+    3 | GOBACK.
+])
+
+AT_CLEANUP
