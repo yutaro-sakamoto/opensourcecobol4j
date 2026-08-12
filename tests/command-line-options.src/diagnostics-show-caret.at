@@ -64,7 +64,7 @@ AT_CHECK([${COBJ} --help | grep '\-fdiagnostics-show-line-numbers' > /dev/null],
 
 AT_CLEANUP
 
-AT_SETUP([source context of a long source line is truncated])
+AT_SETUP([a long source line is displayed in full])
 
 AT_DATA([prog.cbl], [
        IDENTIFICATION              DIVISION.
@@ -77,7 +77,7 @@ AT_DATA([prog.cbl], [
 
 AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 [prog.cbl:6: Error: 'UNDEFINED-ITEM' undefined
-    4 |       *XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX..
+    4 |       *XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     5 |        PROCEDURE                   DIVISION.
     6 >            DISPLAY UNDEFINED-ITEM.
     7 |            GOBACK.
@@ -85,10 +85,10 @@ AT_CHECK([${COBJ} -fsyntax-only prog.cbl], [1], [],
 
 AT_CLEANUP
 
-AT_SETUP([source context keeps a whole 80 column record])
+AT_SETUP([source context of a record with a sequence number])
 
-dnl A COBOL record is 80 columns wide, so nothing of it is cut off and the
-dnl truncation marker is not displayed.
+dnl The trailing whitespace of a source line is dropped, the sequence number
+dnl in the columns 73 to 80 is not.
 AT_CHECK([
 for line in "       IDENTIFICATION              DIVISION." \
             "       PROGRAM-ID.                 prog." \

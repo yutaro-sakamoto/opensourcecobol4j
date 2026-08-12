@@ -34,48 +34,63 @@
 
 /* Number of source lines displayed before and after the offending line */
 #define CARET_CONTEXT_LINES 2
-/*
- * Number of source columns displayed for a single line, the line number
- * prefix excluded.  A COBOL record is 80 columns wide, so a fixed format
- * source line is never cut.
- */
-#define CARET_MAX_COLS 80
+/* Line numbers are printed in a field of at least this width */
+#define CARET_LINENO_WIDTH 5
 
 static char *errnamebuff = NULL;
 static char *errmsgbuff = NULL;
 
-/* Source file the context is currently read from, and the line the stream is
-   positioned at.  The file is kept open so that a run of diagnostics does not
-   read the source from the beginning over and over again. */
+/* Source file the context is currently read from, the line the stream is
+   positioned at, and the buffer one source line is read into.  The file is
+   kept open so that a run of diagnostics does not read the source from the
+   beginning over and over again. */
 static FILE *caret_fd = NULL;
 static char caret_file[COB_NORMAL_BUFF] = "";
 static int caret_file_line = 0;
+static char *caret_line = NULL;
+static size_t caret_line_size = 0;
+
+/* Width of the field the line numbers of a source context are printed in */
+static int line_number_width(int line) {
+  int width = 1;
+
+  while (line >= 10) {
+    line /= 10;
+    width++;
+  }
+  return width > CARET_LINENO_WIDTH ? width : CARET_LINENO_WIDTH;
+}
 
 /*
- * Return the length of the longest prefix of 'buffer' that is not longer than
- * 'len' bytes and does not end in the middle of a multibyte character.
+ * Read the next line of the source file into caret_line, dropping the
+ * trailing whitespace so that no diagnostic ends in a blank.  The buffer
+ * grows as needed, so a line is never cut.  Returns 0 at the end of the file.
  */
-static int mb_prefix_length(const char *buffer, const int len) {
-  int pos = 0;
+static int read_source_line(void) {
+  size_t len = 0;
+  int c;
 
-  while (pos < len) {
-    const unsigned char c = (unsigned char)buffer[pos];
-    int size;
-#ifdef I18N_UTF8
-    size = COB_U8BYTE_1(c);
-    if (size < 1) {
-      /* not a valid lead byte, display it as it is */
-      size = 1;
-    }
-#else  /*!I18N_UTF8*/
-    size = ((c >= 0x81 && c <= 0x9f) || (c >= 0xe0 && c <= 0xfc)) ? 2 : 1;
-#endif /*I18N_UTF8*/
-    if (pos + size > len) {
-      break;
-    }
-    pos += size;
+  if (!caret_line) {
+    caret_line_size = COB_MINI_BUFF;
+    caret_line = cobc_malloc(caret_line_size);
   }
-  return pos;
+  while ((c = fgetc(caret_fd)) != EOF && c != '\n') {
+    if (len + 1 >= caret_line_size) {
+      caret_line_size *= 2;
+      caret_line = cobc_realloc(caret_line, caret_line_size);
+    }
+    caret_line[len++] = (char)c;
+  }
+  if (c == EOF && len == 0) {
+    return 0;
+  }
+  while (len > 0 &&
+         (caret_line[len - 1] == ' ' || caret_line[len - 1] == '\t' ||
+          caret_line[len - 1] == '\r')) {
+    len--;
+  }
+  caret_line[len] = 0;
+  return 1;
 }
 
 /*
@@ -91,7 +106,7 @@ static void print_source_context(const int line) {
   const int line_start =
       line > CARET_CONTEXT_LINES ? line - CARET_CONTEXT_LINES : 1;
   const int line_end = line + CARET_CONTEXT_LINES;
-  char buffer[CARET_MAX_COLS + 1];
+  const int width = line_number_width(line_end);
 
   if (caret_file_line > line_start) {
     rewind(caret_fd);
@@ -100,50 +115,26 @@ static void print_source_context(const int line) {
 
   while (caret_file_line <= line_end) {
     const int line_pos = caret_file_line;
-    int char_pos = 0;
-    int truncated = 0;
-    int c;
 
-    while ((c = fgetc(caret_fd)) != EOF && c != '\n') {
-      if (char_pos < CARET_MAX_COLS) {
-        buffer[char_pos++] = (char)c;
-      } else if (c != ' ' && c != '\t' && c != '\r') {
-        /* padding beyond the displayed columns is not worth a marker */
-        truncated = 1;
-      }
-    }
-    if (c == EOF && char_pos == 0) {
+    if (!read_source_line()) {
       /* no more source to display */
       break;
     }
     caret_file_line++;
+    if (line_pos < line_start) {
+      continue;
+    }
 
-    if (line_pos >= line_start) {
-      if (char_pos == CARET_MAX_COLS) {
-        /* never cut a multibyte character in half */
-        char_pos = mb_prefix_length(buffer, char_pos);
-      }
-      /* drop trailing whitespace */
-      while (char_pos > 0 &&
-             (buffer[char_pos - 1] == ' ' || buffer[char_pos - 1] == '\t' ||
-              buffer[char_pos - 1] == '\r')) {
-        char_pos--;
-      }
-      buffer[char_pos] = 0;
-      if (cb_diagnostics_show_line_numbers) {
-        fprintf(stderr, "%5d %c", line_pos, line == line_pos ? '>' : '|');
-      } else {
-        fprintf(stderr, " %c", line == line_pos ? '>' : ' ');
-      }
-      /* an empty source line must not leave trailing whitespace behind */
-      if (char_pos > 0 || truncated) {
-        fprintf(stderr, " %s%s", buffer, truncated ? ".." : "");
-      }
-      fputc('\n', stderr);
+    if (cb_diagnostics_show_line_numbers) {
+      fprintf(stderr, "%*d %c", width, line_pos, line == line_pos ? '>' : '|');
+    } else {
+      fprintf(stderr, " %c", line == line_pos ? '>' : ' ');
     }
-    if (c == EOF) {
-      break;
+    /* an empty source line must not leave trailing whitespace behind */
+    if (caret_line[0]) {
+      fprintf(stderr, " %s", caret_line);
     }
+    fputc('\n', stderr);
   }
 }
 
