@@ -8,71 +8,90 @@ permissions:
   contents: read
 
 jobs:
-  probe-default:
+  strace-tar:
     runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    strategy:
+      fail-fast: false
+      matrix:
+        attempt: [1, 2, 3]
     container:
       image: ubuntu:26.04
     steps:
-      - name: Probe the workspace mount
+      - name: Host and container info
         continue-on-error: true
         run: |
-          set -x
-          id
-          which tar || true
+          uname -a
+          cat /proc/version
+          grep -i seccomp /proc/self/status || true
+          cat /etc/os-release | head -2
+
+      - name: Install strace
+        continue-on-error: true
+        run: |
+          apt-get update -y >/dev/null 2>&1
+          apt-get install -y strace tar >/dev/null 2>&1
           tar --version | head -1
-          cat /proc/mounts
-          stat -f /__w || true
-          ls -ld /__w /__w/opensourcecobol4j || true
-          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
-          touch /__w/probe-file || echo "touch failed: $?"
-          mkdir -p /tmp/probe-dir && echo "tmp mkdir ok"
 
-  probe-seccomp-unconfined:
-    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
-    container:
-      image: ubuntu:26.04
-      options: --security-opt seccomp=unconfined
-    steps:
-      - name: Probe the workspace mount
+      - name: Plain file operations in /__w
         continue-on-error: true
         run: |
           set -x
-          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
-          touch /__w/probe-file || echo "touch failed: $?"
+          mkdir -p /__w/plain/dir
+          touch /__w/plain/file
+          ln -s file /__w/plain/symlink
+          ls -l /__w/plain
+
+      - name: Extract a tarball into /__w under strace
+        continue-on-error: true
+        run: |
+          set -x
+          mkdir -p /tmp/src/subdir
+          echo hello > /tmp/src/subdir/file.txt
+          ln -s file.txt /tmp/src/subdir/link.txt
+          tar czf /tmp/src.tgz -C /tmp/src .
+          mkdir -p /__w/untar
+          strace -f -o /tmp/strace.log tar xz --warning=no-unknown-keyword --overwrite -C /__w/untar -f /tmp/src.tgz \
+            || echo "TAR FAILED: $?"
+          echo "--- syscalls returning ENOSYS ---"
+          grep -n "ENOSYS" /tmp/strace.log | head -30 || echo "no ENOSYS in strace"
+
+      - name: Extract the same tarball into /tmp for comparison
+        continue-on-error: true
+        run: |
+          set -x
+          mkdir -p /tmp/untar
+          tar xz --overwrite -C /tmp/untar -f /tmp/src.tgz || echo "TAR IN TMP FAILED: $?"
+
+  checkout-with-git:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ubuntu:26.04
+    steps:
+      - name: Install git before checkout
+        run: |
+          apt-get update -y
+          apt-get install -y git
 
       - name: Checkout opensource COBOL 4J
         continue-on-error: true
         uses: actions/checkout@v7
 
-  probe-privileged:
-    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
-    container:
-      image: ubuntu:26.04
-      options: --privileged
-    steps:
-      - name: Probe the workspace mount
+      - name: Show the checkout result
         continue-on-error: true
         run: |
-          set -x
-          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
-          touch /__w/probe-file || echo "touch failed: $?"
+          ls -l | head
+          uname -a
 
-      - name: Checkout opensource COBOL 4J
-        continue-on-error: true
-        uses: actions/checkout@v7
-
-  probe-old-image:
+  old-image:
     runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: ubuntu:24.04
     steps:
-      - name: Probe the workspace mount
+      - name: Show info
         continue-on-error: true
         run: |
-          set -x
+          uname -a
           tar --version | head -1
-          mkdir -p /__w/probe-dir || echo "mkdir failed: $?"
-          touch /__w/probe-file || echo "touch failed: $?"
 
       - name: Checkout opensource COBOL 4J
         continue-on-error: true
