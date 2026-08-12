@@ -20,6 +20,19 @@ jobs:
     container:
       image: ${{ inputs.os }}
     steps:
+      # The CodeBuild runner host runs kernel 4.14, but tar in Ubuntu 26.04 uses
+      # openat2(2) and fchmodat2(2), which that kernel does not provide, so every
+      # extraction fails with ENOSYS. Replace it with the Ubuntu 24.04 build,
+      # which actions/setup-java, actions/checkout and `tar zxf` then can use.
+      - name: Install a tar that runs on the runner kernel
+        if: inputs.os == 'ubuntu:26.04'
+        run: |
+          echo 'deb http://archive.ubuntu.com/ubuntu noble main' > /etc/apt/sources.list.d/noble.list
+          printf 'Package: *\nPin: release n=noble\nPin-Priority: 100\n' > /etc/apt/preferences.d/noble
+          apt-get update -y
+          apt-get install -y --allow-downgrades "tar=$(apt-cache madison tar | awk '/noble/ {print $3; exit}')"
+          apt-mark hold tar
+
       - uses: actions/setup-java@v5
         if: inputs.os == 'ubuntu:26.04'
         with:
