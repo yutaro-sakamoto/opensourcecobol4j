@@ -8,91 +8,79 @@ permissions:
   contents: read
 
 jobs:
-  strace-tar:
+  downgraded-tar-on-2604:
     runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
-    strategy:
-      fail-fast: false
-      matrix:
-        attempt: [1, 2, 3]
     container:
       image: ubuntu:26.04
     steps:
-      - name: Host and container info
-        continue-on-error: true
+      - name: Install a kernel-4.14-compatible tar from noble
         run: |
-          uname -a
-          cat /proc/version
-          grep -i seccomp /proc/self/status || true
-          cat /etc/os-release | head -2
-
-      - name: Install strace
-        continue-on-error: true
-        run: |
-          apt-get update -y >/dev/null 2>&1
-          apt-get install -y strace tar >/dev/null 2>&1
+          echo 'deb http://archive.ubuntu.com/ubuntu noble main' > /etc/apt/sources.list.d/noble.list
+          apt-get update -y
+          apt-cache madison tar
+          VER=$(apt-cache madison tar | grep noble | head -1 | awk '{print $3}')
+          echo "installing tar=$VER"
+          apt-get install -y --allow-downgrades "tar=$VER"
           tar --version | head -1
 
-      - name: Plain file operations in /__w
-        continue-on-error: true
-        run: |
-          set -x
-          mkdir -p /__w/plain/dir
-          touch /__w/plain/file
-          ln -s file /__w/plain/symlink
-          ls -l /__w/plain
-
-      - name: Extract a tarball into /__w under strace
-        continue-on-error: true
-        run: |
-          set -x
-          mkdir -p /tmp/src/subdir
-          echo hello > /tmp/src/subdir/file.txt
-          ln -s file.txt /tmp/src/subdir/link.txt
-          tar czf /tmp/src.tgz -C /tmp/src .
-          mkdir -p /__w/untar
-          strace -f -o /tmp/strace.log tar xz --warning=no-unknown-keyword --overwrite -C /__w/untar -f /tmp/src.tgz \
-            || echo "TAR FAILED: $?"
-          echo "--- syscalls returning ENOSYS ---"
-          grep -n "ENOSYS" /tmp/strace.log | head -30 || echo "no ENOSYS in strace"
-
-      - name: Extract the same tarball into /tmp for comparison
-        continue-on-error: true
-        run: |
-          set -x
-          mkdir -p /tmp/untar
-          tar xz --overwrite -C /tmp/untar -f /tmp/src.tgz || echo "TAR IN TMP FAILED: $?"
-
-  checkout-with-git:
-    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
-    container:
-      image: ubuntu:26.04
-    steps:
-      - name: Install git before checkout
-        run: |
-          apt-get update -y
-          apt-get install -y git
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Checkout opensource COBOL 4J
-        continue-on-error: true
         uses: actions/checkout@v7
 
-      - name: Show the checkout result
-        continue-on-error: true
-        run: |
-          ls -l | head
-          uname -a
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
 
-  old-image:
+      - name: Show results
+        run: |
+          uname -a
+          java -version
+          ls -l | head
+
+  image-2404:
     runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: ubuntu:24.04
     steps:
-      - name: Show info
-        continue-on-error: true
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+
+      - name: Show results
+        run: |
+          uname -a
+          java -version
+          ls -l | head
+
+  almalinux9:
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: almalinux:9
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Show results
         run: |
           uname -a
           tar --version | head -1
-
-      - name: Checkout opensource COBOL 4J
-        continue-on-error: true
-        uses: actions/checkout@v7
+          ls -l | head
