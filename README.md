@@ -189,6 +189,7 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [The specification of locking for INDEXED files in opensource COBOL 4J](./doc/specification-locking-indexed-file.md)
 * [Environment Variables Reference](./doc/environment_variables.md)
+* [Measuring the Effect of the INDEXED File Journal Mode](./doc/indexed-file-benchmark.md)
 
 ## Development Progress
 

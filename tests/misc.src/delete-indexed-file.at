@@ -1,0 +1,102 @@
+AT_SETUP([DELETE FILE on an INDEXED file])
+
+# An INDEXED file is backed by SQLite, which in WAL mode keeps two auxiliary
+# files (-wal and -shm) next to the main one. A clean CLOSE removes them, so
+# they are only present at DELETE FILE time when an earlier process died
+# without closing the file. DELETE FILE has to remove them in that case too,
+# otherwise deleting an INDEXED file leaves debris behind and the file is no
+# longer a single file on disk.
+
+# maker.cbl writes a record and then terminates without closing the file, which
+# leaves the -wal and -shm files in place.
+AT_DATA([maker.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 maker.
+       ENVIRONMENT                 DIVISION.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+       SELECT IDX-FILE ASSIGN      "IDXDELETE"
+           ORGANIZATION IS         INDEXED
+           ACCESS MODE  IS         RANDOM
+           RECORD KEY   IS         IDX-KEY
+           FILE STATUS  IS         IDX-STATUS.
+       DATA                        DIVISION.
+       FILE SECTION.
+       FD  IDX-FILE.
+       01  IDX-REC.
+           03  IDX-KEY             PIC  X(05).
+           03  IDX-VAL             PIC  X(10).
+       WORKING-STORAGE             SECTION.
+       01  IDX-STATUS              PIC  99.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           OPEN OUTPUT IDX-FILE.
+           MOVE "K0001" TO IDX-KEY.
+           MOVE "first"     TO IDX-VAL.
+           WRITE IDX-REC.
+           DISPLAY "write:  " IDX-STATUS.
+           CALL "force_exit".
+])
+
+# remover.cbl deletes the file without ever opening it.
+AT_DATA([remover.cbl], [
+       IDENTIFICATION              DIVISION.
+       PROGRAM-ID.                 remover.
+       ENVIRONMENT                 DIVISION.
+       INPUT-OUTPUT                SECTION.
+       FILE-CONTROL.
+       SELECT IDX-FILE ASSIGN      "IDXDELETE"
+           ORGANIZATION IS         INDEXED
+           ACCESS MODE  IS         RANDOM
+           RECORD KEY   IS         IDX-KEY
+           FILE STATUS  IS         IDX-STATUS.
+       DATA                        DIVISION.
+       FILE SECTION.
+       FD  IDX-FILE.
+       01  IDX-REC.
+           03  IDX-KEY             PIC  X(05).
+           03  IDX-VAL             PIC  X(10).
+       WORKING-STORAGE             SECTION.
+       01  IDX-STATUS              PIC  99.
+       PROCEDURE                   DIVISION.
+       MAIN-RTN.
+           DELETE FILE IDX-FILE.
+           DISPLAY "delete: " IDX-STATUS.
+           STOP RUN.
+])
+
+AT_DATA([force_exit.java], [
+import jp.osscons.opensourcecobol.libcobj.call.*;
+import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
+
+public class force_exit implements CobolRunnable {
+  public int run(CobolDataStorage... argStorages) {
+    System.exit(0);
+    return 0;
+  }
+
+  public void cancel() {}
+
+  public boolean isActive() {
+    return false;
+  }
+}
+])
+
+AT_CHECK([${COBJ} maker.cbl remover.cbl])
+AT_CHECK([javac force_exit.java])
+
+AT_CHECK([java maker], [0],
+[write:  00
+])
+
+AT_CHECK([java remover], [0],
+[delete: 00
+])
+
+# The main file and both SQLite auxiliary files must be gone.
+AT_CHECK([test ! -f IDXDELETE])
+AT_CHECK([test ! -f IDXDELETE-wal])
+AT_CHECK([test ! -f IDXDELETE-shm])
+
+AT_CLEANUP

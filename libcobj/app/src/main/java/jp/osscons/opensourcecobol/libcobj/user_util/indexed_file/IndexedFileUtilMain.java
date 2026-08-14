@@ -26,6 +26,7 @@ import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFileFactory;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFileKey;
 import jp.osscons.opensourcecobol.libcobj.file.CobolIndexedFile;
+import jp.osscons.opensourcecobol.libcobj.file.IndexedJournalConfig;
 import jp.osscons.opensourcecobol.libcobj.file.SqliteNativeLibrary;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -41,6 +42,9 @@ import org.sqlite.SQLiteConfig;
  */
 class IndexedFileUtilMain {
     private static final String version = jp.osscons.opensourcecobol.libcobj.Const.version;
+
+    /** 他プロセスのトランザクションの終了を待つ時間(ミリ秒)。 */
+    private static final int BUSY_TIMEOUT_MILLIS = 5000;
 
     /**
      * cobj-idxコマンドのエントリポイント。<br>
@@ -409,13 +413,9 @@ class IndexedFileUtilMain {
             return ErrorLib.errorInvalidIndexedFile(indexedFilePath);
         }
 
-        SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(true);
         StringBuilder sb = new StringBuilder();
 
-        try (Connection conn =
-                        DriverManager.getConnection(
-                                "jdbc:sqlite:" + indexedFilePath, config.toProperties());
+        try (Connection conn = openMetadataConnection(indexedFilePath);
                 Statement stmt = conn.createStatement(); ) {
             // Retrieve the record size
             ResultSet rs =
@@ -473,7 +473,7 @@ class IndexedFileUtilMain {
      * @throws Exception インデックスファイルへの接続に失敗した場合
      */
     private static void migrateIndexedFile(String indexedFilePath) throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + indexedFilePath);
+        try (Connection conn = openReadWriteConnection(indexedFilePath);
                 Statement st = conn.createStatement()) {
             String createTableSql =
                     "CREATE TABLE IF NOT EXISTS file_lock (locked_by text primary key,process_id"
@@ -523,7 +523,7 @@ class IndexedFileUtilMain {
      * @throws Exception インデックスファイルへの接続に失敗した場合
      */
     private static void unlockIndexedFile(String indexedFilePath) throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + indexedFilePath);
+        try (Connection conn = openReadWriteConnection(indexedFilePath);
                 Statement st = conn.createStatement()) {
             st.executeUpdate("DELETE FROM file_lock");
             st.executeUpdate(
@@ -572,9 +572,33 @@ class IndexedFileUtilMain {
         cobolIndexedFile.setCommitOnModification(false);
         cobolIndexedFile.open(CobolFile.COB_OPEN_EXTEND, 0, null);
         if (CobolRuntimeException.code != 0) {
+            CobolModule.pop();
             return ErrorLib.errorIO();
         }
 
+        // The indexed file has to be closed on every path from here on. Leaving the connection
+        // open would keep the file_lock row of this process in the file, and in WAL mode it
+        // would also leave the -wal/-shm files behind.
+        try {
+            return loadRecords(cobolIndexedFile, deleteBeforeLoading, userDataFormat, filePath);
+        } finally {
+            cobolIndexedFile.close(0, null);
+            CobolModule.pop();
+        }
+    }
+
+    /**
+     * 入力ソースから読み込んだレコードを、既に{@code OPEN}済みのインデックスファイルへ書き込む。
+     *
+     * <p>ここでのエラーはすべて呼び出し元の{@code finally}で確実にクローズされる。文ごとのコミットは抑制されているため、
+     * エラー時は{@link CobolIndexedFile#rollbackJdbcTransaction()}で保留中の更新を破棄する。そうしないと後続の{@code
+     * close}がそれらをコミットしてしまい、中途半端にロードされた状態になる。
+     */
+    private static int loadRecords(
+            CobolIndexedFile cobolIndexedFile,
+            boolean deleteBeforeLoading,
+            UserDataFormat userDataFormat,
+            Optional<String> filePath) {
         if (deleteBeforeLoading) {
             cobolIndexedFile.deleteAllRecords();
         }
@@ -607,12 +631,13 @@ class IndexedFileUtilMain {
         reader.close();
 
         if (loadResult == LoadResult.LoadResultDataSizeMismatch) {
+            cobolIndexedFile.rollbackJdbcTransaction();
             return ErrorLib.errorDataSizeMismatch(cobolIndexedFile.record.getSize());
         } else if (loadResult == LoadResult.LoadResultOther) {
+            cobolIndexedFile.rollbackJdbcTransaction();
             return ErrorLib.errorDuplicateKeys();
         } else {
             cobolIndexedFile.commitJdbcTransaction();
-            cobolIndexedFile.close(0, null);
             return 0;
         }
     }
@@ -652,9 +677,24 @@ class IndexedFileUtilMain {
         CobolRuntimeException.code = 0;
         cobolFile.open(CobolFile.COB_OPEN_INPUT, 0, null);
         if (CobolRuntimeException.code != 0) {
+            CobolModule.pop();
             return ErrorLib.errorIO();
         }
 
+        // The indexed file has to be closed on every path from here on, otherwise the file_lock
+        // row of this process stays in the file and, in WAL mode, the -wal/-shm files are left
+        // behind as well.
+        try {
+            return unloadRecords(cobolFile, userDataFormat, filePath);
+        } finally {
+            cobolFile.close(CobolFile.COB_CLOSE_NORMAL, null);
+            CobolModule.pop();
+        }
+    }
+
+    /** 既に{@code OPEN}済みのインデックスファイルから全レコードを読み出し、出力先へ書き出す。 */
+    private static int unloadRecords(
+            CobolFile cobolFile, UserDataFormat userDataFormat, Optional<String> filePath) {
         // Read records from the indexed file and write them to stdout or a file
         boolean isIndexedFileEmpty = true;
         try (OutputStream stream = getOutputStream(filePath)) {
@@ -682,9 +722,6 @@ class IndexedFileUtilMain {
             return ErrorLib.errorIO();
         }
 
-        cobolFile.close(CobolFile.COB_CLOSE_NORMAL, null);
-
-        CobolModule.pop();
         return 0;
     }
 
@@ -697,13 +734,113 @@ class IndexedFileUtilMain {
         }
     }
 
-    private static Optional<CobolFile> createCobolFileFromIndexedFilePath(String indexedFilePath) {
+    /**
+     * インデックスファイルを更新するための接続を開き、設定されたジャーナルモードを適用する。
+     *
+     * <p>{@code migrate}や{@code
+     * unlock}が古い形式のファイルを開いた場合、ここで{@link IndexedJournalConfig}の設定に従ってWALモードへ(あるいはWALから)変換される。
+     *
+     * @param indexedFilePath インデックスファイルのパス
+     * @return 読み書き可能な接続
+     * @throws SQLException 接続またはジャーナルモードの適用に失敗した場合
+     */
+    private static Connection openReadWriteConnection(String indexedFilePath) throws SQLException {
         SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(true);
+        config.setReadOnly(false);
+        config.setBusyTimeout(BUSY_TIMEOUT_MILLIS);
+        Connection conn =
+                DriverManager.getConnection(
+                        "jdbc:sqlite:" + indexedFilePath, config.toProperties());
+        // The connection is still in auto-commit mode here, which PRAGMA journal_mode requires.
+        IndexedJournalConfig.applyTo(conn);
+        return conn;
+    }
 
-        try (Connection conn =
-                        DriverManager.getConnection(
-                                "jdbc:sqlite:" + indexedFilePath, config.toProperties());
+    /**
+     * インデックスファイルのメタデータを読み出すための接続を開く。この接続では{@code SELECT}しか実行しない。
+     *
+     * <p>書き込み可能な場合は読み書きモードで開く。WALモードのデータベースを読み取り専用({@code
+     * SQLITE_OPEN_READONLY})で開くと、SQLiteが作成したWALインデックス({@code -shm})と{@code
+     * -wal}をクローズ時に削除できず、{@code cobj-idx info}を実行しただけでファイルが残ってしまうためである。
+     *
+     * <p>書き込めない場合は読み取り専用で開く。それも失敗する場合(WALモードのデータベースは{@code
+     * -shm}を作成するためディレクトリへの書き込み権限を必要とし、権限がないと{@code
+     * SQLITE_READONLY_DIRECTORY}になる)は、{@code -wal}が存在せず復元すべき内容がないことを確認したうえで{@code
+     * immutable=1}で開き直す。
+     *
+     * @param indexedFilePath インデックスファイルのパス
+     * @return メタデータ読み出し用の接続
+     * @throws SQLException いずれの方法でも接続できなかった場合
+     */
+    private static Connection openMetadataConnection(String indexedFilePath) throws SQLException {
+        try {
+            return openAndProbe("jdbc:sqlite:" + indexedFilePath, false);
+        } catch (SQLException readWriteFailure) {
+            try {
+                return openAndProbe("jdbc:sqlite:" + indexedFilePath, true);
+            } catch (SQLException readOnlyFailure) {
+                if (new File(indexedFilePath + "-wal").exists()) {
+                    // A write-ahead log is present and has to be taken into account, so falling
+                    // back to an immutable connection would silently read stale data.
+                    throw readOnlyFailure;
+                }
+                return openAndProbe(
+                        "jdbc:sqlite:file:" + toFileUriPath(indexedFilePath) + "?immutable=1",
+                        true);
+            }
+        }
+    }
+
+    /**
+     * 接続を開き、実際に文を1つ実行して使用可能なことを確かめる。
+     *
+     * <p>sqlite-jdbcの{@code
+     * getConnection}は遅延して開くため、たとえば書き込み権限のないディレクトリにあるWALモードのデータベースは、接続時ではなく最初の文の実行時に{@code
+     * SQLITE_READONLY_DIRECTORY}で失敗する。ここで実際に文を実行しておかないと、呼び出し側のフォールバックが機能しない。
+     *
+     * @param url JDBC URL
+     * @param readOnly 読み取り専用で開く場合は{@code true}
+     * @return 使用可能な接続
+     * @throws SQLException 接続できないか、文を実行できない場合
+     */
+    private static Connection openAndProbe(String url, boolean readOnly) throws SQLException {
+        SQLiteConfig config = new SQLiteConfig();
+        config.setReadOnly(readOnly);
+        Connection conn = DriverManager.getConnection(url, config.toProperties());
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("select 1");
+        } catch (SQLException e) {
+            try {
+                conn.close();
+            } catch (SQLException ignored) {
+                // 使えない接続を閉じられなくても、報告すべきは元の失敗のほうである。
+            }
+            throw e;
+        }
+        return conn;
+    }
+
+    /**
+     * ファイルパスを{@code file:} URIのパス部分に変換する。
+     *
+     * <p>{@code immutable=1}を指定するにはURI形式で開く必要があるが、{@code ?}や{@code
+     * #}を含むパスはそのまま連結するとクエリ部分と解釈されてしまう。Windowsの絶対パスも{@code
+     * ///}で始める必要がある。
+     *
+     * @param path ファイルパス
+     * @return {@code file:}に続けて使えるパス文字列
+     */
+    private static String toFileUriPath(String path) {
+        String normalized = path.replace(File.separatorChar, '/');
+        // Windowsの絶対パス(C:/...)はfile:///C:/...の形にする必要がある。
+        if (normalized.length() >= 2 && normalized.charAt(1) == ':') {
+            normalized = "//" + normalized;
+        }
+        return normalized.replace("?", "%3f").replace("#", "%23");
+    }
+
+    private static Optional<CobolFile> createCobolFileFromIndexedFilePath(String indexedFilePath) {
+        try (Connection conn = openMetadataConnection(indexedFilePath);
                 Statement stmt = conn.createStatement(); ) {
 
             ResultSet rs =
@@ -752,9 +889,6 @@ class IndexedFileUtilMain {
      */
     private static Optional<CobolFile> createCobolFile(
             String indexedFilePath, Integer recordSize, List<CobolFileKeyInfo> keyInfoList) {
-        SQLiteConfig config = new SQLiteConfig();
-        config.setReadOnly(true);
-
         // Create a record field
         AbstractCobolField recordField = createIndexedRecordField(recordSize);
         CobolDataStorage recordDataStorage = recordField.getDataStorage();

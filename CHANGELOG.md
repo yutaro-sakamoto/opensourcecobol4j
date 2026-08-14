@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### New Features
+
+- INDEXED files now use the SQLite WAL (write-ahead logging) journal mode by default, which
+  roughly triples the throughput of `WRITE` / `REWRITE` / `DELETE`.
+  - The new environment variable `COB_INDEXED_JOURNAL_MODE` selects the journal mode. `WAL` is the
+    default; `DELETE` restores the behavior of 2.0.0 and earlier, which is required on network
+    filesystems such as NFS.
+  - The mode is applied on every OPEN, so changing the variable converts existing files in both
+    directions.
+  - In WAL mode a transaction that reads and then writes can fail with `SQLITE_BUSY_SNAPSHOT`,
+    which SQLite's `busy_timeout` does not retry. The runtime now rolls back and retries such a
+    conflict instead of reporting a permanent I/O error.
+  - see doc/environment_variables.md or doc/environment_variables_JP.md
+
+### Fixed
+
+- `DELETE FILE` on an INDEXED file now also removes the SQLite `-wal`, `-shm` and `-journal`
+  auxiliary files left behind by a process that terminated without closing the file. Previously the
+  deleted file left debris in the directory.
+- `cobj-idx load` and `cobj-idx unload` no longer leave the INDEXED file open when they fail, so the
+  file lock held by the process is released on every path.
+- `cobj-idx info` no longer leaves the SQLite auxiliary files behind, and now works on an INDEXED
+  file in a read-only directory.
+- Opening an INDEXED file created by an older version (file status 92) no longer leaks the database
+  connection.
+
+### Documentation
+
+- Added a reproducible benchmark for comparing the INDEXED file journal modes.
+  - see doc/indexed-file-benchmark.md or doc/indexed-file-benchmark_JP.md
+- Documented the journal mode and the SQLite auxiliary files in the INDEXED file locking
+  specification.
+  - see doc/specification-locking-indexed-file.md or doc/specification-locking-indexed-file_JP.md
+
 ## [2.0.0] - 2026-06-26
 
 ### New Features
