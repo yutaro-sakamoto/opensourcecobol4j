@@ -93,7 +93,7 @@ jobs:
           - "file-lock3"
           - "file-lock4"
           - "file-lock5"
-          #- "misc"
+          - "misc"
         os: ["ubuntu:26.04"]
     uses: ./.github/workflows/test-other.yml
     with:
