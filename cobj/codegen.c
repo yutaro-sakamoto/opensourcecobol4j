@@ -536,10 +536,11 @@ static enum cb_string_category get_string_category(const unsigned char *s,
   return category;
 }
 
-/* Break the Java string literal in two when byte I ends one of the segments
-   an '&' concatenated COBOL literal was written in.  SUM_SGMT_SIZE and
-   SGMT_INDEX record how much of TMP_SGMT_SIZES has been consumed so far. */
-static void joutput_string_segment_break(int i, int size,
+/* Break the Java string literal being defined in two when byte I ends one of
+   the segments an '&' concatenated COBOL literal was written in.
+   SUM_SGMT_SIZE and SGMT_INDEX record how much of TMP_SGMT_SIZES has been
+   consumed so far. */
+static void joutput_string_literal_break(int i, int size,
                                          const size_t *tmp_sgmt_sizes,
                                          size_t tmp_sgmt_count,
                                          size_t *sum_sgmt_size,
@@ -560,10 +561,14 @@ static void joutput_string_segment_break(int i, int size,
   ++*sgmt_index;
 }
 
-static void joutput_string_write(const unsigned char *s, int size,
-                                 enum cb_string_category category,
-                                 const size_t *tmp_sgmt_sizes,
-                                 size_t tmp_sgmt_count) {
+/* Write the body of one entry of the "String literals" block, i.e. the value
+   the constant is initialised with.  Called once per cached literal from
+   joutput_all_string_literals(); everywhere else a literal appears as a
+   reference to that constant, see joutput_string_ref(). */
+static void joutput_string_literal_definition(const unsigned char *s, int size,
+                                              enum cb_string_category category,
+                                              const size_t *tmp_sgmt_sizes,
+                                              size_t tmp_sgmt_count) {
   int i;
 
 #ifdef I18N_UTF8
@@ -605,7 +610,7 @@ static void joutput_string_write(const unsigned char *s, int size,
       } else {
         joutput("%c", c);
       }
-      joutput_string_segment_break(i, size, tmp_sgmt_sizes, tmp_sgmt_count,
+      joutput_string_literal_break(i, size, tmp_sgmt_sizes, tmp_sgmt_count,
                                    &sum_sgmt_size, &sgmt_index);
     }
 #else
@@ -621,7 +626,7 @@ static void joutput_string_write(const unsigned char *s, int size,
       } else {
         joutput("%c", c);
       }
-      joutput_string_segment_break(i, size, tmp_sgmt_sizes, tmp_sgmt_count,
+      joutput_string_literal_break(i, size, tmp_sgmt_sizes, tmp_sgmt_count,
                                    &sum_sgmt_size, &sgmt_index);
       output_multibyte = !output_multibyte &&
                          ((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xef));
@@ -654,9 +659,14 @@ static void joutput_string_write(const unsigned char *s, int size,
   }
 }
 
-static void joutput_string_segments(const unsigned char *s, int size,
-                                    const size_t *segment_sizes,
-                                    size_t segment_count) {
+/* Emit a reference to the constant holding this literal, caching the literal
+   so that joutput_all_string_literals() can define it later.  What lands in
+   the output here is the constant's name, not the string itself.
+   SEGMENT_SIZES describes how the literal was split with '&' and travels with
+   it into the definition. */
+static void joutput_string_ref_segmented(const unsigned char *s, int size,
+                                         const size_t *segment_sizes,
+                                         size_t segment_count) {
   int i;
   struct string_literal_cache *new_literal_cache =
       malloc(sizeof(struct string_literal_cache));
@@ -706,9 +716,9 @@ static void joutput_string_segments(const unsigned char *s, int size,
   joutput("%s", new_literal_cache->var_name);
 }
 
-/* Emit a literal that was not written as an '&' concatenation. */
-static void joutput_string(const unsigned char *s, int size) {
-  joutput_string_segments(s, size, NULL, 0);
+/* As above, for a literal that was not written as an '&' concatenation. */
+static void joutput_string_ref(const unsigned char *s, int size) {
+  joutput_string_ref_segmented(s, size, NULL, 0);
 }
 
 static void joutput_all_string_literals() {
@@ -731,8 +741,8 @@ static void joutput_all_string_literals() {
     joutput_prefix();
     joutput("public static final %s %s = ", data_type, l->var_name);
     param_wrap_string_flag = l->param_wrap_string_flag;
-    joutput_string_write(l->string_value, l->size, l->category,
-                         l->segment_sizes, l->segment_count);
+    joutput_string_literal_definition(l->string_value, l->size, l->category,
+                                      l->segment_sizes, l->segment_count);
     joutput(";\n");
     l = l->next;
   }
@@ -983,8 +993,8 @@ static void joutput_data(cb_tree x) {
                               : "");
 
     } else {
-      joutput_string_segments(l->data, (int)l->size, l->segment_sizes,
-                              l->segment_count);
+      joutput_string_ref_segmented(l->data, (int)l->size, l->segment_sizes,
+                                   l->segment_count);
     }
     break;
   case CB_TAG_REFERENCE:
@@ -1563,7 +1573,7 @@ static void joutput_param(cb_tree x, int id) {
     joutput_integer(x);
     break;
   case CB_TAG_STRING:
-    joutput_string(CB_STRING(x)->data, (int)CB_STRING(x)->size);
+    joutput_string_ref(CB_STRING(x)->data, (int)CB_STRING(x)->size);
     break;
   case CB_TAG_LOCALE_NAME:
     joutput_param(CB_LOCALE_NAME(x)->list, id);
@@ -2273,7 +2283,7 @@ static void joutput_initialize_literal(cb_tree x, struct cb_field *f,
     joutput_prefix();
     joutput_data(x);
     joutput(".memcpy (");
-    joutput_string(l->data, f->size);
+    joutput_string_ref(l->data, f->size);
     joutput(", %d);\n", f->size);
     return;
   }
@@ -2285,7 +2295,7 @@ static void joutput_initialize_literal(cb_tree x, struct cb_field *f,
   joutput_prefix();
   joutput_data(x);
   joutput(".memcpy(i0 * %u, ", (unsigned int)l->size);
-  joutput_string(l->data, l->size);
+  joutput_string_ref(l->data, l->size);
   joutput(", %u);\n", (unsigned int)l->size);
   joutput_indent("}");
 
@@ -2294,7 +2304,7 @@ static void joutput_initialize_literal(cb_tree x, struct cb_field *f,
     joutput_prefix();
     joutput_data(x);
     joutput(".memcpy(%u, ", (unsigned int)(i * l->size));
-    joutput_string(l->data, n);
+    joutput_string_ref(l->data, n);
     joutput(", %u);\n", (unsigned int)n);
   }
 }
@@ -2494,8 +2504,8 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
             if (n > 2) {
               joutput_data(x);
               joutput(".memcpy(");
-              joutput_string_segments((ucharptr)buff, f->size - n,
-                                      l->segment_sizes, l->segment_count);
+              joutput_string_ref_segmented((ucharptr)buff, f->size - n,
+                                           l->segment_sizes, l->segment_count);
               joutput(", %d);\n", f->size - n);
               joutput_prefix();
               joutput_data(x);
@@ -2507,13 +2517,13 @@ static void joutput_initialize_one(struct cb_initialize *p, cb_tree x) {
           joutput_data(x);
 #if I18N_UTF8
           joutput(".setByByteArrayAndPaddingSpaces (");
-          joutput_string_segments(l->data, l->size, l->segment_sizes,
-                                  l->segment_count);
+          joutput_string_ref_segmented(l->data, l->size, l->segment_sizes,
+                                       l->segment_count);
           joutput(", %d);\n", f->size);
 #else
           joutput(".setBytes (");
-          joutput_string_segments((ucharptr)buff, f->size, l->segment_sizes,
-                                  l->segment_count);
+          joutput_string_ref_segmented((ucharptr)buff, f->size,
+                                       l->segment_sizes, l->segment_count);
           joutput(", %d);\n", f->size);
 #endif
         }
