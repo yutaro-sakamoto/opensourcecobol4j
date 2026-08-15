@@ -375,14 +375,18 @@ public class CobolUtil {
                     int year = Integer.parseInt(m.group(1));
                     int month = Integer.parseInt(m.group(2));
                     int dayOfMonth = Integer.parseInt(m.group(3));
-                    // 0年はISO暦では紀元前1年にあたり、ACCEPT FROM DATEの書式(年号内の年)と
-                    // FUNCTION CURRENT-DATE(暦年)とで異なる値になるため、月日と同様に無効として扱う。
+                    // 範囲外の月日はGnuCOBOL 3.2(OSSC patch)と同様に無効として扱う。
+                    // opensource COBOL 1.5はmktimeに任せており、2026/13/01を2027/01/01として
+                    // 受け入れる一方、mktimeの戻り値が負になるエポック前の日付をすべて拒否する。
+                    // 後者は再現しないため、範囲チェックのある3.2側に揃えている。
+                    // また0年はISO暦では紀元前1年にあたり、ACCEPT FROM DATEの書式(年号内の年)と
+                    // FUNCTION CURRENT-DATE(暦年)とで異なる値になるため、同様に無効とする。
                     if (year < 1 || month < 1 || month > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
                         System.err.println("Warning: COB_DATE format invalid, ignored.");
                         break date_time_block;
                     }
-                    // opensource COBOL(C)のmktimeと同様に、存在しない日付は翌月に繰り越す。
-                    // (例: 2026/02/30は2026/03/02として扱われる)
+                    // 範囲内であれば、その月に存在しない日はmktimeと同様に翌月へ繰り越す。
+                    // (例: 2026/02/30は2026/03/02として扱われる。うるう年の判定はLocalDateに任せる)
                     cobLocalTm =
                             LocalDate.of(year, month, 1).plusDays(dayOfMonth - 1).atStartOfDay();
                 }

@@ -462,8 +462,11 @@ public class CobolIntrinsic {
                 CobolFieldFactory.makeCobolField(21, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
 
-        // opensource COBOL(C)と同様に、COB_DATEで置き換えるのは日付だけであり、
-        // 時刻もオフセットも実行時のシステムクロックに由来する。
+        // COB_DATEで置き換えるのは日付だけであり、時刻もオフセットも実行時のシステムクロックに由来する。
+        // これはGnuCOBOL 3.2(OSSC patch)と同じ挙動である。opensource COBOL 1.5は
+        // COB_DATEの日付に対するmktimeのtm_gmtoffをそのまま使うため、COB_DATE指定時に限り
+        // オフセットが異なりうる(TZ=America/New_York, COB_DATE=2026/01/15を夏に実行すると
+        // 1.5は-0500、こちらは-0400)。
         OffsetDateTime now = CobolUtil.localtime();
         int offsetInMinutes = now.getOffset().getTotalSeconds() / 60;
         char offsetSign = offsetInMinutes < 0 ? '-' : '+';
