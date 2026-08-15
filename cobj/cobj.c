@@ -1562,10 +1562,10 @@ static struct filename *process_filename(const char *filename) {
     fn->translate = strdup(output_name);
   } else if (save_csrc || save_temps ||
              cb_compile_level == CB_LEVEL_TRANSLATE) {
-    fn->translate = cobc_malloc(strlen(basename) + 5);
-    sprintf(fn->translate, "%s.c", basename);
+    fn->translate = cobc_malloc(strlen(basename) + 8);
+    sprintf(fn->translate, "%s.java", basename);
   } else {
-    fn->translate = cobc_temp_name(".c");
+    fn->translate = cobc_temp_name(".java");
   }
 
   /* Set storage filename */
