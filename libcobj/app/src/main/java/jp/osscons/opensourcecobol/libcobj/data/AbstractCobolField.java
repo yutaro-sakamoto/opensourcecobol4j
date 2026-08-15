@@ -320,6 +320,21 @@ public abstract class AbstractCobolField {
      * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
      */
     public int addInt(int n) throws CobolStopRunException {
+        return this.addIntWithOpt(n, 0);
+    }
+
+    /**
+     * 保持する数値データに指定された値を加算する. 桁あふれが発生した場合は結果をPICTUREの桁数で切り捨てる
+     *
+     * @param n thisの保持する数値データに加算する数値
+     * @return 基本的に0が返される
+     * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
+     */
+    public int addIntTrunc(int n) throws CobolStopRunException {
+        return this.addIntWithOpt(n, CobolDecimal.COB_STORE_TRUNC_ON_OVERFLOW);
+    }
+
+    private int addIntWithOpt(int n, int opt) throws CobolStopRunException {
         if (n == 0) {
             return 0;
         }
@@ -332,7 +347,7 @@ public abstract class AbstractCobolField {
             d2.setScale(d1.getScale());
         }
         d1.setValue(d1.getValue().add(d2.getValue()));
-        return d1.getField(this, 0);
+        return d1.getField(this, opt);
     }
 
     /**
@@ -344,6 +359,16 @@ public abstract class AbstractCobolField {
     public abstract int addPackedInt(int n);
 
     /**
+     * thisの保持するパック10進数(COMP-3)形式の数値データから指定された整数値を減算する
+     *
+     * @param n thisの保持する数値データから減算する整数値
+     * @return 基本的に0が返される
+     */
+    public int subPackedInt(int n) {
+        return this.addPackedInt(-n);
+    }
+
+    /**
      * thisの保持する数値データに指定された値を減算する
      *
      * @param n thisの保持する数値データから減算する数値
@@ -352,6 +377,17 @@ public abstract class AbstractCobolField {
      */
     public int subInt(int n) throws CobolStopRunException {
         return n == 0 ? 0 : this.addInt(-n);
+    }
+
+    /**
+     * thisの保持する数値データから指定された値を減算する. 桁あふれが発生した場合は結果をPICTUREの桁数で切り捨てる
+     *
+     * @param n thisの保持する数値データから減算する数値
+     * @return 基本的に0が返される
+     * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
+     */
+    public int subIntTrunc(int n) throws CobolStopRunException {
+        return n == 0 ? 0 : this.addIntTrunc(-n);
     }
 
     /**

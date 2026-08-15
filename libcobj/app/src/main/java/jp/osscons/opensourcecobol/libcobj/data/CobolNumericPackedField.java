@@ -703,12 +703,13 @@ public class CobolNumericPackedField extends AbstractCobolField {
 
         if (sign != 0) {
             p = this.getSize() - 1;
-            byte x = data.getByte(p);
             if (origdigs == zeroes) {
-                data.setByte(p, (byte) ((x & 0xF0) | 0x0C));
+                data.setByte(p, (byte) ((data.getByte(p) & 0xF0) | 0x0C));
             } else if (subtr != 0 && carry != 0) {
                 complementPacked();
                 sign = -sign;
+                // complementPackedがdata[p]の上位ニブルを書き換えるため,補数を取った後に読み直す
+                byte x = data.getByte(p);
                 if (sign < 0) {
                     data.setByte(p, (byte) ((x & 0xF0) | 0x0D));
                 } else {
