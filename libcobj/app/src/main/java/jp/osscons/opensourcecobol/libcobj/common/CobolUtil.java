@@ -20,7 +20,6 @@ package jp.osscons.opensourcecobol.libcobj.common;
 
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.util.Calendar;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,9 +76,6 @@ public class CobolUtil {
 
     /** プログラム終了時にエラーが発生したことを示すフラグ。 */
     public static boolean cobErrorOnExitFlag = false;
-
-    /** 現在日時を取得するためのCalendarインスタンス。 */
-    public static Calendar cal;
 
     /** 順編成ファイルの入出力バッファサイズ(レコード数)のデフォルト値。 */
     private static final int DEFAULT_FILE_SEQ_BUFFER_SIZE = 10;
@@ -366,7 +362,6 @@ public class CobolUtil {
             }
         }
 
-        cal = Calendar.getInstance();
         String s = CobolUtil.getEnv("COB_DATE");
         if (s != null) {
             Pattern p = Pattern.compile("([0-9]{4})/([0-9]{2})/([0-9]{2})");
@@ -379,9 +374,6 @@ public class CobolUtil {
                     int year = Integer.parseInt(m.group(1));
                     int month = Integer.parseInt(m.group(2));
                     int dayOfMonth = Integer.parseInt(m.group(3));
-                    cal.set(Calendar.YEAR, year);
-                    cal.set(Calendar.MONTH, month - 1);
-                    cal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
                     LocalDateTime tm;
                     try {
                         tm = LocalDateTime.of(year, month, dayOfMonth, 0, 0);
@@ -429,20 +421,16 @@ public class CobolUtil {
     // libcob/common.cとcob_localtime
     /**
      * 現在のローカル日時を取得する。<br>
-     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、その日付に現在の時刻(時・分・秒)を<br>
-     * 反映した日時を返す。指定がない場合はシステムの現在日時を返す。
+     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、その日付に現在の時刻を<br>
+     * 反映した日時を返す。指定がない場合はシステムの現在日時を返す。<br>
+     * 呼び出しのたびに時刻を取得し直すため、同一プロセス内でも呼び出しごとに新しい時刻が得られる。
      *
      * @return 取得したローカル日時
      */
     public static LocalDateTime localtime() {
         LocalDateTime rt = LocalDateTime.now();
         if (CobolUtil.cobLocalTm != null) {
-            CobolUtil.cobLocalTm =
-                    CobolUtil.cobLocalTm
-                            .withHour(rt.getHour())
-                            .withMinute(rt.getMinute())
-                            .withSecond(rt.getSecond());
-            rt = CobolUtil.cobLocalTm;
+            rt = LocalDateTime.of(CobolUtil.cobLocalTm.toLocalDate(), rt.toLocalTime());
         }
         return rt;
     }
