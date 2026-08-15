@@ -18,7 +18,7 @@
  */
 package jp.osscons.opensourcecobol.libcobj.common;
 
-import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -374,13 +374,14 @@ public class CobolUtil {
                     int year = Integer.parseInt(m.group(1));
                     int month = Integer.parseInt(m.group(2));
                     int dayOfMonth = Integer.parseInt(m.group(3));
-                    LocalDateTime tm;
-                    try {
-                        tm = LocalDateTime.of(year, month, dayOfMonth, 0, 0);
-                    } catch (DateTimeException e) {
+                    if (month < 1 || month > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
+                        System.err.println("Warning: COB_DATE format invalid, ignored.");
                         break date_time_block;
                     }
-                    cobLocalTm = tm;
+                    // opensource COBOL(C)のmktimeと同様に、存在しない日付は翌月に繰り越す。
+                    // (例: 2026/02/30は2026/03/02として扱われる)
+                    cobLocalTm =
+                            LocalDate.of(year, month, 1).plusDays(dayOfMonth - 1).atStartOfDay();
                 }
             } else {
                 System.err.println("Warning: COB_DATE format invalid, ignored.");
