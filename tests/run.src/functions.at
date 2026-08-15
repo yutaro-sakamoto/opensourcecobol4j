@@ -353,6 +353,46 @@ AT_CHECK([java prog], [0],
 
 AT_CLEANUP
 
+AT_SETUP([FUNCTION DATE-TO-YYYYMMDD/DAY-TO-YYYYDDD omitted year])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 WS-DATE.
+         03 WS-YEAR     PIC 9(4).
+         03 FILLER      PIC 9(4).
+       PROCEDURE        DIVISION.
+           ACCEPT WS-DATE FROM DATE YYYYMMDD
+           END-ACCEPT.
+           IF FUNCTION DATE-TO-YYYYMMDD ( 981002 ) =
+              FUNCTION DATE-TO-YYYYMMDD ( 981002, 50, WS-YEAR )
+              DISPLAY "DATE OK"
+              END-DISPLAY
+           ELSE
+              DISPLAY "DATE NG"
+              END-DISPLAY
+           END-IF.
+           IF FUNCTION DAY-TO-YYYYDDD ( 95005 ) =
+              FUNCTION DAY-TO-YYYYDDD ( 95005, 50, WS-YEAR )
+              DISPLAY "DAY OK"
+              END-DISPLAY
+           ELSE
+              DISPLAY "DAY NG"
+              END-DISPLAY
+           END-IF.
+           STOP RUN.
+])
+
+AT_CHECK([${COMPILE} prog.cob])
+AT_CHECK([java prog], [0],
+[DATE OK
+DAY OK
+])
+
+AT_CLEANUP
+
 AT_SETUP([FUNCTION E])
 
 AT_DATA([prog.cob], [
