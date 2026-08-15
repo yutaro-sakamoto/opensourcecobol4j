@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -462,11 +462,10 @@ public class CobolIntrinsic {
                 CobolFieldFactory.makeCobolField(21, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
 
-        // opensource COBOL(C)と同様に、COB_DATEで置き換えるのは日付だけである。
-        // オフセットは置き換え前の実時刻に対する値を使うため、時計の読み取りは1回で済ませる。
-        ZonedDateTime systemNow = ZonedDateTime.now();
-        LocalDateTime now = CobolUtil.applyJobDate(systemNow.toLocalDateTime());
-        int offsetInMinutes = systemNow.getOffset().getTotalSeconds() / 60;
+        // opensource COBOL(C)と同様に、COB_DATEで置き換えるのは日付だけであり、
+        // 時刻もオフセットも実行時のシステムクロックに由来する。
+        OffsetDateTime now = CobolUtil.localtime();
+        int offsetInMinutes = now.getOffset().getTotalSeconds() / 60;
         char offsetSign = offsetInMinutes < 0 ? '-' : '+';
         int absOffsetInMinutes = Math.abs(offsetInMinutes);
 
@@ -2140,7 +2139,7 @@ public class CobolIntrinsic {
         int interval;
         int xqtyear;
         int maxyear;
-        LocalDateTime timeptr;
+        OffsetDateTime timeptr;
 
         CobolFieldAttribute attr =
                 new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 8, 0, 0, null);
@@ -2205,7 +2204,7 @@ public class CobolIntrinsic {
         int interval;
         int xqtyear;
         int maxyear;
-        LocalDateTime timeptr;
+        OffsetDateTime timeptr;
 
         CobolFieldAttribute attr =
                 new CobolFieldAttribute(CobolFieldAttribute.COB_TYPE_NUMERIC_BINARY, 8, 0, 0, null);

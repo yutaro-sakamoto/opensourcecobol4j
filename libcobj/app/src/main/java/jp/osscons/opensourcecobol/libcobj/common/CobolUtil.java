@@ -20,6 +20,7 @@ package jp.osscons.opensourcecobol.libcobj.common;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -423,30 +424,20 @@ public class CobolUtil {
 
     // libcob/common.cとcob_localtime
     /**
-     * 現在のローカル日時を取得する。<br>
-     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、その日付に現在の時刻を<br>
-     * 反映した日時を返す。指定がない場合はシステムの現在日時を返す。<br>
-     * 呼び出しのたびに時刻を取得し直すため、同一プロセス内でも呼び出しごとに新しい時刻が得られる。
+     * 現在のローカル日時をグリニッジ標準時からのオフセット付きで取得する。<br>
+     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、日付部分だけをその値で<br>
+     * 置き換える。時刻とオフセットは常にシステムクロックから取得するため、同一プロセス内でも<br>
+     * 呼び出しのたびに新しい時刻が得られる。
      *
      * @return 取得したローカル日時
      */
-    public static LocalDateTime localtime() {
-        return applyJobDate(LocalDateTime.now());
-    }
-
-    /**
-     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合に、引数の日付部分だけを<br>
-     * その固定日付で置き換えて返す。指定がない場合は引数をそのまま返す。<br>
-     * 時刻部分は置き換えないため、COB_DATEで固定されるのは日付だけである。
-     *
-     * @param dateTime 置き換え対象の日時(通常はシステムの現在日時)
-     * @return COB_DATEを反映した日時
-     */
-    public static LocalDateTime applyJobDate(LocalDateTime dateTime) {
+    static OffsetDateTime localtime() {
+        OffsetDateTime now = OffsetDateTime.now();
         if (CobolUtil.cobLocalTm == null) {
-            return dateTime;
+            return now;
         }
-        return LocalDateTime.of(CobolUtil.cobLocalTm.toLocalDate(), dateTime.toLocalTime());
+        return OffsetDateTime.of(
+                CobolUtil.cobLocalTm.toLocalDate(), now.toLocalTime(), now.getOffset());
     }
 
     // libcob/cob_verbose_outputの実装
