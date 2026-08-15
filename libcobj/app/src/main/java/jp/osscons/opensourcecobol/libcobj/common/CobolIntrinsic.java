@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -462,12 +462,14 @@ public class CobolIntrinsic {
         makeFieldEntry(field);
 
         LocalDateTime now = CobolUtil.localtime();
-        int offsetInMinutes = ZonedDateTime.now().getOffset().getTotalSeconds() / 60;
+        int offsetInMinutes =
+                ZoneId.systemDefault().getRules().getOffset(now).getTotalSeconds() / 60;
         char offsetSign = offsetInMinutes < 0 ? '-' : '+';
         int absOffsetInMinutes = Math.abs(offsetInMinutes);
 
         String dateString =
                 String.format(
+                        Locale.ROOT,
                         "%04d%02d%02d%02d%02d%02d%02d%c%02d%02d",
                         now.getYear(),
                         now.getMonthValue(),
