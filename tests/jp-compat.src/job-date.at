@@ -139,6 +139,24 @@ AT_CHECK([${COMPILE_JP_COMPAT} prog.cob])
 AT_CHECK([COB_DATE=2026/02/30 java prog], [0], [20260302
 20260302
 ])
+AT_CHECK([COB_DATE=2026/04/31 java prog], [0], [20260501
+20260501
+])
+
+dnl February 29 exists only in a leap year. The Gregorian rule is left to
+dnl the date library, so a century that is not a leap year is handled too.
+AT_CHECK([COB_DATE=2024/02/29 java prog], [0], [20240229
+20240229
+])
+AT_CHECK([COB_DATE=2026/02/29 java prog], [0], [20260301
+20260301
+])
+AT_CHECK([COB_DATE=2000/02/29 java prog], [0], [20000229
+20000229
+])
+AT_CHECK([COB_DATE=2100/02/29 java prog], [0], [21000301
+21000301
+])
 
 AT_CLEANUP
 
@@ -242,11 +260,66 @@ AT_DATA([prog.cob],[
 ])
 
 AT_CHECK([${COMPILE_JP_COMPAT} prog.cob])
+AT_CHECK([date +%Y%m%d > out2.txt])
+
+dnl A month or a day outside its range is rejected, not carried over.
 AT_CHECK([COB_DATE=2026/13/01 java prog > out1.txt], [0], [],
 [Warning: COB_DATE format invalid, ignored.
 ])
-AT_CHECK([date +%Y%m%d > out2.txt])
 AT_CHECK([diff out1.txt out2.txt], [0])
+
+AT_CHECK([COB_DATE=2026/99/99 java prog > out1.txt], [0], [],
+[Warning: COB_DATE format invalid, ignored.
+])
+AT_CHECK([diff out1.txt out2.txt], [0])
+
+AT_CHECK([COB_DATE=2026/00/00 java prog > out1.txt], [0], [],
+[Warning: COB_DATE format invalid, ignored.
+])
+AT_CHECK([diff out1.txt out2.txt], [0])
+
+AT_CHECK([COB_DATE=2026/12/00 java prog > out1.txt], [0], [],
+[Warning: COB_DATE format invalid, ignored.
+])
+AT_CHECK([diff out1.txt out2.txt], [0])
+
+dnl Year 0 is 1 BCE in the ISO calendar, which no COBOL program means.
+AT_CHECK([COB_DATE=0000/01/01 java prog > out1.txt], [0], [],
+[Warning: COB_DATE format invalid, ignored.
+])
+AT_CHECK([diff out1.txt out2.txt], [0])
+
+AT_CLEANUP
+
+AT_SETUP([COB_DATE FUNC. CURRENT-DATE GMT offset])
+
+dnl COB_DATE fixes the date only. The GMT offset keeps coming from the clock,
+dnl so it stays at the offset in effect now, not the one of the fixed date.
+dnl (Asia/Tokyo was at +0918 in 1880 and at +1000 in the summer of 1948.)
+dnl Java reads the TZ environment variable on Unix only.
+AT_SKIP_IF([test -n "$IS_WINDOWS"])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01  CURR-DATE.
+         03  FILLER    PIC X(16).
+         03  CURR-GMT  PIC X(5).
+       PROCEDURE        DIVISION.
+           MOVE FUNCTION CURRENT-DATE TO CURR-DATE.
+           DISPLAY CURR-GMT.
+           GOBACK.
+])
+
+AT_CHECK([${COMPILE_JP_COMPAT} prog.cob])
+AT_CHECK([TZ=Asia/Tokyo java prog], [0], [+0900
+])
+AT_CHECK([TZ=Asia/Tokyo COB_DATE=1880/01/01 java prog], [0], [+0900
+])
+AT_CHECK([TZ=Asia/Tokyo COB_DATE=1948/06/01 java prog], [0], [+0900
+])
 
 AT_CLEANUP
 

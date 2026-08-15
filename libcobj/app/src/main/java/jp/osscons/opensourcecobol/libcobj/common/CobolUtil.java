@@ -374,7 +374,9 @@ public class CobolUtil {
                     int year = Integer.parseInt(m.group(1));
                     int month = Integer.parseInt(m.group(2));
                     int dayOfMonth = Integer.parseInt(m.group(3));
-                    if (month < 1 || month > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
+                    // 0年はISO暦では紀元前1年にあたり、ACCEPT FROM DATEの書式(年号内の年)と
+                    // FUNCTION CURRENT-DATE(暦年)とで異なる値になるため、月日と同様に無効として扱う。
+                    if (year < 1 || month < 1 || month > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
                         System.err.println("Warning: COB_DATE format invalid, ignored.");
                         break date_time_block;
                     }
@@ -429,11 +431,22 @@ public class CobolUtil {
      * @return 取得したローカル日時
      */
     public static LocalDateTime localtime() {
-        LocalDateTime rt = LocalDateTime.now();
-        if (CobolUtil.cobLocalTm != null) {
-            rt = LocalDateTime.of(CobolUtil.cobLocalTm.toLocalDate(), rt.toLocalTime());
+        return applyJobDate(LocalDateTime.now());
+    }
+
+    /**
+     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合に、引数の日付部分だけを<br>
+     * その固定日付で置き換えて返す。指定がない場合は引数をそのまま返す。<br>
+     * 時刻部分は置き換えないため、COB_DATEで固定されるのは日付だけである。
+     *
+     * @param dateTime 置き換え対象の日時(通常はシステムの現在日時)
+     * @return COB_DATEを反映した日時
+     */
+    public static LocalDateTime applyJobDate(LocalDateTime dateTime) {
+        if (CobolUtil.cobLocalTm == null) {
+            return dateTime;
         }
-        return rt;
+        return LocalDateTime.of(CobolUtil.cobLocalTm.toLocalDate(), dateTime.toLocalTime());
     }
 
     // libcob/cob_verbose_outputの実装

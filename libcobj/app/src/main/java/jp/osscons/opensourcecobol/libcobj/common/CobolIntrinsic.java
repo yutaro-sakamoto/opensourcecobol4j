@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -448,7 +448,8 @@ public class CobolIntrinsic {
      * COBOLの組み込み関数FUNCTION CURRENT-DATEに対応する。<br>
      * 現在の日付と時刻を「YYYYMMDDHHMMSSccsHHMM」形式の21文字の文字列として返す。<br>
      * ここでccは1/100秒、sHHMMはグリニッジ標準時からのオフセット(符号+時+分)を表す。<br>
-     * 環境変数COB_DATEで固定日付が指定されている場合は、日付部分にその値が反映される。
+     * 環境変数COB_DATEで固定日付が指定されている場合は、日付部分にその値が反映される。<br>
+     * 時刻とオフセットは常に実行時のシステムクロックから取得する。
      *
      * @param offset 結果に対する部分参照の開始位置(1始まり)。0以下の場合は部分参照を行わない
      * @param length 結果に対する部分参照の長さ
@@ -461,9 +462,11 @@ public class CobolIntrinsic {
                 CobolFieldFactory.makeCobolField(21, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
 
-        LocalDateTime now = CobolUtil.localtime();
-        int offsetInMinutes =
-                ZoneId.systemDefault().getRules().getOffset(now).getTotalSeconds() / 60;
+        // opensource COBOL(C)と同様に、COB_DATEで置き換えるのは日付だけである。
+        // オフセットは置き換え前の実時刻に対する値を使うため、時計の読み取りは1回で済ませる。
+        ZonedDateTime systemNow = ZonedDateTime.now();
+        LocalDateTime now = CobolUtil.applyJobDate(systemNow.toLocalDateTime());
+        int offsetInMinutes = systemNow.getOffset().getTotalSeconds() / 60;
         char offsetSign = offsetInMinutes < 0 ? '-' : '+';
         int absOffsetInMinutes = Math.abs(offsetInMinutes);
 
