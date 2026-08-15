@@ -320,7 +320,7 @@ public abstract class AbstractCobolField {
      * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
      */
     public int addInt(int n) throws CobolStopRunException {
-        return this.addIntWithOpt(n, 0);
+        return this.addLongWithOpt(n, 0);
     }
 
     /**
@@ -331,10 +331,10 @@ public abstract class AbstractCobolField {
      * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
      */
     public int addIntTrunc(int n) throws CobolStopRunException {
-        return this.addIntWithOpt(n, CobolDecimal.COB_STORE_TRUNC_ON_OVERFLOW);
+        return this.addLongWithOpt(n, CobolDecimal.COB_STORE_TRUNC_ON_OVERFLOW);
     }
 
-    private int addIntWithOpt(int n, int opt) throws CobolStopRunException {
+    private int addLongWithOpt(long n, int opt) throws CobolStopRunException {
         if (n == 0) {
             return 0;
         }
@@ -364,7 +364,11 @@ public abstract class AbstractCobolField {
      * @param n thisの保持する数値データから減算する整数値
      * @return 基本的に0が返される
      */
-    public int subPackedInt(int n) {
+    public int subPackedInt(int n) throws CobolStopRunException {
+        if (n == Integer.MIN_VALUE) {
+            // -n がintに収まらないため汎用パスで処理する
+            return this.subIntTrunc(n);
+        }
         return this.addPackedInt(-n);
     }
 
@@ -376,7 +380,7 @@ public abstract class AbstractCobolField {
      * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
      */
     public int subInt(int n) throws CobolStopRunException {
-        return n == 0 ? 0 : this.addInt(-n);
+        return this.addLongWithOpt(-(long) n, 0);
     }
 
     /**
@@ -387,7 +391,7 @@ public abstract class AbstractCobolField {
      * @throws CobolStopRunException 実行を停止する状況が発生した場合にスローされる
      */
     public int subIntTrunc(int n) throws CobolStopRunException {
-        return n == 0 ? 0 : this.addIntTrunc(-n);
+        return this.addLongWithOpt(-(long) n, CobolDecimal.COB_STORE_TRUNC_ON_OVERFLOW);
     }
 
     /**

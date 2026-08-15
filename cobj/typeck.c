@@ -2606,6 +2606,32 @@ static int optim_operand_digits(cb_tree n) {
 }
 
 /*
+ * 第2オペランドの値が, 常にPICTUREの桁数に収まっているかどうかを判定する.
+ * DISPLAY/COMP-3項目は桁数を超える値を保持できないが, 2進項目(特にCOMP-5)は
+ * 保持できるため, その場合に汎用パスが行う桁数への切り捨てを再現できない.
+ */
+static int optim_operand_fits_digits_p(cb_tree n) {
+  cb_tree x = n;
+
+  if (CB_REFERENCE_P(x)) {
+    x = cb_ref(x);
+  }
+  if (CB_LITERAL_P(x)) {
+    return 1;
+  }
+  if (CB_FIELD_P(x)) {
+    switch (CB_FIELD(x)->usage) {
+    case CB_USAGE_DISPLAY:
+    case CB_USAGE_PACKED:
+      return 1;
+    default:
+      return 0;
+    }
+  }
+  return 0;
+}
+
+/*
  * 格納オプションがCOB_STORE_TRUNC_ON_OVERFLOW(binary-truncate有効時の既定)
  * のときに,
  * 高速パスが汎用パス(CobolDecimal経由)と同じ結果になるかどうかを判定する.
@@ -2636,8 +2662,10 @@ static int optim_trunc_target_p(cb_tree v, cb_tree n) {
        オペランドの桁数が格納先を超える場合は汎用パスに任せる */
     return f->pic->digits < 10 && digits <= f->pic->digits;
   case CB_USAGE_DISPLAY:
-    /* addInt/subInt は汎用パスが短絡する先と同じ実装 */
-    return digits <= 9;
+    /* addInt/subInt は汎用パスであるCobolNumericField.addが短絡する先と
+       同じ実装だが, 汎用パスがオペランドをgetInt()でPICTUREの桁数に
+       切り捨てるのに対し, 高速パスは格納されている値をそのまま渡す */
+    return digits <= 9 && optim_operand_fits_digits_p(n);
   default:
     return 0;
   }
