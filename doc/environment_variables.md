@@ -17,6 +17,7 @@ Fixes the date returned at runtime.
 - **Format**: `YYYY/MM/DD`
 - **Example**: `COB_DATE=2024/01/15`
 - **Purpose**: Fixes the date returned by built-in functions such as `CURRENT-DATE`. Useful for testing and reproducible execution.
+- **Note**: Only the date is fixed. The time of day and the GMT offset returned by `FUNCTION CURRENT-DATE` are read from the system clock on every evaluation, so they keep advancing while the program runs.
 
 **Sample Program**
 
