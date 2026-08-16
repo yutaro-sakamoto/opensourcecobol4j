@@ -2134,7 +2134,6 @@ public class CobolIntrinsic {
         AbstractCobolField field =
                 CobolFieldFactory.makeCobolField(4, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
-        CobolRuntimeException.setException(0);
         year = fields[0].getInt();
         mmdd = year % 10000;
         year /= 10000;
@@ -2200,7 +2199,6 @@ public class CobolIntrinsic {
         AbstractCobolField field =
                 CobolFieldFactory.makeCobolField(4, (CobolDataStorage) null, attr);
         makeFieldEntry(field);
-        CobolRuntimeException.setException(0);
         year = fields[0].getInt();
         days = year % 1000;
         year /= 1000;
