@@ -224,6 +224,9 @@ public class CobolIndexedFile extends CobolFile {
      * load}のような一括ローダは、速度のためにレコードごとのコミットを抑制するため{@code false}に設定し、最後に{@link
      * #commitJdbcTransaction()}で一度だけコミットする。
      *
+     * <p>なお{@code OPEN OUTPUT}されたファイルはこのフラグと無関係に常にコミットを遅延し、{@code
+     * CLOSE}時に一括コミットする（{@link #writeDeferred}参照）。そのためOUTPUTモードではこのフラグは参照されない。
+     *
      * @param commitOnModification 更新のたびにコミットする場合は{@code true}、コミットを遅延させる場合は{@code false}
      */
     public void setCommitOnModification(boolean commitOnModification) {
@@ -591,6 +594,7 @@ public class CobolIndexedFile extends CobolFile {
         this.closeCursor();
 
         previousLockedRecordKey = null;
+        this.deferCommitsInOutputMode = false;
 
         try {
             try (Statement statement = p.connection.createStatement()) {
@@ -612,9 +616,16 @@ public class CobolIndexedFile extends CobolFile {
                     unlockRecordsStatement.executeUpdate();
                 }
             }
+            // このコミットはロック解放に加えて、OUTPUTモードで遅延された
+            // WRITE群（writeDeferred参照）をまとめて永続化する役割も持つ
             p.connection.commit();
             p.connection.close();
         } catch (SQLException e) {
+            try {
+                p.connection.close();
+            } catch (SQLException closeEx) {
+                // 下のCOB_STATUS_30_PERMANENT_ERRORで報告する
+            }
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         this.fetchKeyIndex = -1;
@@ -1188,10 +1199,22 @@ public class CobolIndexedFile extends CobolFile {
             if (ret == COB_STATUS_00_SUCCESS) {
                 p.connection.releaseSavepoint(savepoint);
             } else {
+                // ROLLBACK TO SAVEPOINTはセーブポイント自体を解放しないため、
+                // 失敗WRITEのたびにセーブポイントが蓄積しないよう明示的に解放する
                 p.connection.rollback(savepoint);
+                p.connection.releaseSavepoint(savepoint);
             }
         } catch (SQLException e) {
-            return ret == COB_STATUS_00_SUCCESS ? COB_STATUS_30_PERMANENT_ERROR : ret;
+            // セーブポイントの後始末に失敗すると、報告済みステータスと矛盾する
+            // 中途半端な変更（副キーのない孤児レコード等）がトランザクションに残り、
+            // CLOSE時のコミットで永続化されてしまう。それを防ぐためバッファ全体を
+            // 破棄して永続エラーを返す
+            try {
+                p.connection.rollback();
+            } catch (SQLException rollbackEx) {
+                // 続行不能。下のCOB_STATUS_30_PERMANENT_ERRORで報告する
+            }
+            return COB_STATUS_30_PERMANENT_ERROR;
         }
         return ret;
     }
