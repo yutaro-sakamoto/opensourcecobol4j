@@ -23,6 +23,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.Optional;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
@@ -44,7 +45,10 @@ import org.sqlite.SQLiteErrorCode;
  * READ PREVIOUS}）は{@link IndexedCursor}でエミュレートする。
  *
  * <p>すべてのSQLは明示的なトランザクション内で実行され（{@code setAutoCommit(false)}、{@code
- * TRANSACTION_SERIALIZABLE}）、各文は成功時にコミット、失敗時にロールバックする。
+ * TRANSACTION_SERIALIZABLE}）、各文は成功時にコミット、失敗時にロールバックする。ただし{@code OPEN
+ * OUTPUT}されたファイルは例外で、ファイル全体が排他ロックされ他プロセスから読まれることがないため、{@code
+ * WRITE}ごとのコミットを行わず、{@code CLOSE}時（{@link #close_}）に一括でコミットする。この間の{@code
+ * WRITE}失敗はセーブポイントにより当該{@code WRITE}の変更だけを取り消す。
  */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
@@ -52,6 +56,7 @@ public class CobolIndexedFile extends CobolFile {
     private boolean indexedFirstRead = true;
     private boolean callStart = false;
     private boolean commitOnModification = true;
+    private boolean deferCommitsInOutputMode = false;
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
@@ -260,6 +265,9 @@ public class CobolIndexedFile extends CobolFile {
             // Acquire a file lock
             boolean succeedToFileLock = this.acquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
+                // OUTPUTモードではファイル全体を排他しWRITEしか実行されないため、
+                // WRITEごとのコミットを抑制してCLOSE時に一括コミットする
+                this.deferCommitsInOutputMode = (mode == COB_OPEN_OUTPUT);
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
                 }
@@ -1123,7 +1131,9 @@ public class CobolIndexedFile extends CobolFile {
             if (p.last_key.memcmp(keyBytes, keyBytes.length) > 0) {
                 try {
                     unlockPreviousRecord();
-                    p.connection.commit();
+                    if (!this.deferCommitsInOutputMode) {
+                        p.connection.commit();
+                    }
                 } catch (SQLException e) {
                     return COB_STATUS_30_PERMANENT_ERROR;
                 }
@@ -1133,6 +1143,10 @@ public class CobolIndexedFile extends CobolFile {
 
         byte[] keyBytes = p.key;
         p.last_key.memcpy(keyBytes, keyBytes.length);
+
+        if (this.deferCommitsInOutputMode) {
+            return this.writeDeferred(opt);
+        }
 
         int ret = indexed_write_internal(false, opt);
         if (ret == COB_STATUS_00_SUCCESS) {
@@ -1152,6 +1166,32 @@ public class CobolIndexedFile extends CobolFile {
             } catch (SQLException rollbackEx) {
                 return ret;
             }
+        }
+        return ret;
+    }
+
+    /**
+     * OUTPUTモード（遅延コミット中）のWRITE。トランザクション全体をロールバックすると
+     * バッファ済みの成功したWRITEまで巻き戻ってしまうため、セーブポイントで
+     * このWRITEの変更だけを取り消せるようにする。コミットはCLOSE時まで行わない。
+     */
+    private int writeDeferred(int opt) {
+        IndexedFile p = this.filei;
+        Savepoint savepoint;
+        try {
+            savepoint = p.connection.setSavepoint();
+        } catch (SQLException e) {
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
+        int ret = indexed_write_internal(false, opt);
+        try {
+            if (ret == COB_STATUS_00_SUCCESS) {
+                p.connection.releaseSavepoint(savepoint);
+            } else {
+                p.connection.rollback(savepoint);
+            }
+        } catch (SQLException e) {
+            return ret == COB_STATUS_00_SUCCESS ? COB_STATUS_30_PERMANENT_ERROR : ret;
         }
         return ret;
     }
