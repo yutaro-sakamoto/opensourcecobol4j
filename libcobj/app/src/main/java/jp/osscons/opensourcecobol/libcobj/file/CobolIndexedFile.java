@@ -624,7 +624,7 @@ public class CobolIndexedFile extends CobolFile {
             try {
                 p.connection.close();
             } catch (SQLException closeEx) {
-                // 下のCOB_STATUS_30_PERMANENT_ERRORで報告する
+                System.err.println("Failed to close the database connection");
             }
             return COB_STATUS_30_PERMANENT_ERROR;
         }
@@ -1212,7 +1212,7 @@ public class CobolIndexedFile extends CobolFile {
             try {
                 p.connection.rollback();
             } catch (SQLException rollbackEx) {
-                // 続行不能。下のCOB_STATUS_30_PERMANENT_ERRORで報告する
+                System.err.println("Failed to rollback a transaction");
             }
             return COB_STATUS_30_PERMANENT_ERROR;
         }
