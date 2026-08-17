@@ -1838,8 +1838,17 @@ public class CobolFile {
             return;
         }
         for (CobolFile l : file_cache) {
-            l.unlock_();
+            l.commit_();
         }
+    }
+
+    /**
+     * COBOLの{@code COMMIT}文によるファイルごとの処理。デフォルトでは{@link #unlock_}と同じ。
+     * 書き込みを遅延しているファイル実装（INDEXEDファイルのOUTPUTモード等）は、
+     * このメソッドをオーバーライドして遅延分を永続化する。
+     */
+    protected void commit_() {
+        this.unlock_();
     }
 
     /** TODO: 準備中 */
@@ -1853,7 +1862,11 @@ public class CobolFile {
     }
 
     /// libcob/fileio.cのcob_exit_fileioの実装 TODO 一部だけ実装したため残りを実装する
-    /** TODO: 準備中 */
+    /**
+     * プログラム終了時に、開いたままのファイルを警告を出力した上で暗黙的にクローズする。
+     * これによりバッファリングされた書き込み（順編成ファイルの書き込みバッファや、
+     * INDEXEDファイルのOUTPUTモードで遅延されたコミット）がフラッシュされる。
+     */
     public static void exitFileIO() {
         for (CobolFile f : file_cache) {
             if (f.open_mode != COB_OPEN_CLOSED && f.open_mode != COB_OPEN_LOCKED) {
@@ -1862,6 +1875,11 @@ public class CobolFile {
                         String.format(
                                 "WARNING - Implicit CLOSE of %s (\"%s\") %c",
                                 f.select_name, filename, '\n'));
+                try {
+                    f.close(COB_CLOSE_NORMAL, null);
+                } catch (RuntimeException e) {
+                    System.err.println("Failed to close " + f.select_name);
+                }
             }
         }
     }

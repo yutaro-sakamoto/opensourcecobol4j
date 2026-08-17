@@ -356,22 +356,10 @@ public class CobolUtil {
      */
     private static int commitIntervalFromEnv(String envVariableName, int defaultValue) {
         String s = CobolUtil.getEnv(envVariableName);
-        if (s == null) {
-            return defaultValue;
-        }
-        if ("INF".equalsIgnoreCase(s.trim())) {
+        if (s != null && "INF".equalsIgnoreCase(s.trim())) {
             return Integer.MAX_VALUE;
         }
-        int interval;
-        try {
-            interval = Integer.parseInt(s.trim());
-        } catch (NumberFormatException e) {
-            interval = -1;
-        }
-        if (interval < 0) {
-            System.err.println("Warning: " + envVariableName + " format invalid, ignored.");
-            return defaultValue;
-        }
+        int interval = bufferSizeFromEnv(envVariableName, defaultValue);
         return interval == 0 ? 1 : interval;
     }
 

@@ -601,7 +601,6 @@ public class CobolIndexedFile extends CobolFile {
         this.closeCursor();
 
         previousLockedRecordKey = null;
-        this.deferCommitsInOutputMode = false;
 
         try {
             try (Statement statement = p.connection.createStatement()) {
@@ -626,13 +625,12 @@ public class CobolIndexedFile extends CobolFile {
             // このコミットはロック解放に加えて、OUTPUTモードで遅延された
             // WRITE群（writeDeferred参照）をまとめて永続化する役割も持つ
             p.connection.commit();
+            this.deferCommitsInOutputMode = false;
+            this.uncommittedWriteCount = 0;
             p.connection.close();
         } catch (SQLException e) {
-            try {
-                p.connection.close();
-            } catch (SQLException closeEx) {
-                System.err.println("Failed to close the database connection");
-            }
+            // 接続はあえて閉じない。コミット失敗時に接続を閉じると遅延中の
+            // トランザクションが破棄され、CLOSEの再試行も不可能になるため
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         this.fetchKeyIndex = -1;
@@ -1207,11 +1205,6 @@ public class CobolIndexedFile extends CobolFile {
         try {
             if (ret == COB_STATUS_00_SUCCESS) {
                 p.connection.releaseSavepoint(savepoint);
-                ++this.uncommittedWriteCount;
-                if (this.uncommittedWriteCount >= this.outputCommitInterval) {
-                    p.connection.commit();
-                    this.uncommittedWriteCount = 0;
-                }
             } else {
                 // ROLLBACK TO SAVEPOINTはセーブポイント自体を解放しないため、
                 // 失敗WRITEのたびにセーブポイントが蓄積しないよう明示的に解放する
@@ -1221,16 +1214,49 @@ public class CobolIndexedFile extends CobolFile {
         } catch (SQLException e) {
             // セーブポイントの後始末に失敗すると、報告済みステータスと矛盾する
             // 中途半端な変更（副キーのない孤児レコード等）がトランザクションに残り、
-            // CLOSE時のコミットで永続化されてしまう。それを防ぐためバッファ全体を
+            // 後のコミットで永続化されてしまう。それを防ぐためバッファ全体を
             // 破棄して永続エラーを返す
             try {
                 p.connection.rollback();
             } catch (SQLException rollbackEx) {
                 System.err.println("Failed to rollback a transaction");
             }
+            this.uncommittedWriteCount = 0;
             return COB_STATUS_30_PERMANENT_ERROR;
         }
+        if (ret == COB_STATUS_00_SUCCESS) {
+            ++this.uncommittedWriteCount;
+            if (this.uncommittedWriteCount >= this.outputCommitInterval) {
+                try {
+                    p.connection.commit();
+                    this.uncommittedWriteCount = 0;
+                } catch (SQLException e) {
+                    // コミットに失敗してもトランザクション自体は無傷なので、
+                    // バッファは破棄せずエラーだけ報告する。カウンタを維持する
+                    // ことで、次に成功したWRITEかCLOSEでコミットを再試行する
+                    return COB_STATUS_30_PERMANENT_ERROR;
+                }
+            }
+        }
         return ret;
+    }
+
+    /**
+     * COBOLの{@code COMMIT}文の処理。OUTPUTモードで遅延中のWRITEがあれば永続化する。
+     * ロック解放は未実装のため{@link #unlock_}に委ねる（現状は警告を出すだけ）。
+     */
+    @Override
+    protected void commit_() {
+        IndexedFile p = this.filei;
+        if (this.deferCommitsInOutputMode && this.uncommittedWriteCount > 0) {
+            try {
+                p.connection.commit();
+                this.uncommittedWriteCount = 0;
+            } catch (SQLException e) {
+                System.err.println("Failed to commit a transaction");
+            }
+        }
+        this.unlock_();
     }
 
     /** Equivalent to check_alt_keys in libcob/fileio.c */
