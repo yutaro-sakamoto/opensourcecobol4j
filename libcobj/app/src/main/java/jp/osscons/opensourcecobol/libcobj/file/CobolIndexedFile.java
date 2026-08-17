@@ -1098,14 +1098,26 @@ public class CobolIndexedFile extends CobolFile {
 
             p.key = DBT_SET(this.keys[i].getField());
             try {
-                if (!isDuplicateColumn(i) && keyExistsInTable(p, i, p.key)) {
+                // WRITE経路(rewrite=false)ではcheck_alt_keysがユニーク副キーを
+                // 検査済みでありこのチェックは冗長。REWRITE経路では必要だが、
+                // OUTPUTモードでREWRITEは起きないため遅延コミット中は省略する
+                if (!this.deferCommitsInOutputMode
+                        && !isDuplicateColumn(i)
+                        && keyExistsInTable(p, i, p.key)) {
                     return returnWith(p, closeCursor, 0, COB_STATUS_22_KEY_EXISTS);
                 }
 
                 PreparedStatement insertStatement;
                 if (isDuplicateColumn(i)) {
                     int dupNo;
-                    if (dupNumbers == null || dupNumbers[i] < 0 || i != this.fetchKeyIndex) {
+                    if (this.deferCommitsInOutputMode) {
+                        // OUTPUTモードでは空のテーブルに排他で書いているので、
+                        // dupNoはメモリ上のカウンタで採番できる(SELECT max不要)。
+                        // 失敗したWRITEの巻き戻しで欠番が生じ得るが、dupNoは
+                        // 重複キーの並び順を保つための単調な番号なので問題ない
+                        dupNo = p.last_dupno[i];
+                        p.last_dupno[i] = dupNo + 1;
+                    } else if (dupNumbers == null || dupNumbers[i] < 0 || i != this.fetchKeyIndex) {
                         dupNo = getNextKeyDupNo(p.connection, i, p.key);
                     } else {
                         dupNo = dupNumbers[i];
@@ -1147,13 +1159,15 @@ public class CobolIndexedFile extends CobolFile {
         } else if (this.access_mode == COB_ACCESS_SEQUENTIAL) {
             byte[] keyBytes = p.key;
             if (p.last_key.memcmp(keyBytes, keyBytes.length) > 0) {
-                try {
-                    unlockPreviousRecord();
-                    if (!this.deferCommitsInOutputMode) {
+                // OUTPUTモード(遅延コミット中)ではレコードロックは存在せず、
+                // コミットすべき変更もないため後始末は不要
+                if (!this.deferCommitsInOutputMode) {
+                    try {
+                        unlockPreviousRecord();
                         p.connection.commit();
+                    } catch (SQLException e) {
+                        return COB_STATUS_30_PERMANENT_ERROR;
                     }
-                } catch (SQLException e) {
-                    return COB_STATUS_30_PERMANENT_ERROR;
                 }
                 return COB_STATUS_21_KEY_INVALID;
             }
