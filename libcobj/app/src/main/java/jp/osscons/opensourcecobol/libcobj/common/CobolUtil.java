@@ -90,6 +90,15 @@ public class CobolUtil {
     /** 順編成ファイルからの読み込みバッファサイズ(環境変数COB_FILE_SEQ_READ_BUFFER_SIZEで設定)。 */
     public static int fileSeqReadBufferSize = DEFAULT_FILE_SEQ_BUFFER_SIZE;
 
+    /** INDEXEDファイルをOUTPUTモードで書き込むときのコミット間隔(レコード数)のデフォルト値。 */
+    private static final int DEFAULT_FILE_IDX_COMMIT_INTERVAL = 10000;
+
+    /**
+     * INDEXEDファイルをOUTPUTモードで書き込むときのコミット間隔(レコード数。環境変数COB_FILE_IDX_COMMIT_INTERVALで設定)。
+     * {@code Integer.MAX_VALUE}は「途中コミットせずCLOSE時のみコミット」(環境変数に{@code INF}を指定)を意味する。
+     */
+    public static int fileIdxCommitInterval = DEFAULT_FILE_IDX_COMMIT_INTERVAL;
+
     /** DISPLAY/ACCEPT文によるデータ出力時のエンコーディング */
     public static CobolEncoding terminalEncoding = CobolEncoding.SHIFT_JIS;
 
@@ -336,6 +345,37 @@ public class CobolUtil {
     }
 
     /**
+     * 環境変数からコミット間隔(レコード数)を読み取る。<br>
+     * {@code INF}(大文字小文字不問)は「途中コミットしない」を意味し{@code Integer.MAX_VALUE}を返す。<br>
+     * {@code 0}は「毎回コミット」として{@code 1}に正規化する。<br>
+     * 環境変数が設定されていない場合や、0以上の整数として解釈できない場合はデフォルト値を返す。
+     *
+     * @param envVariableName 環境変数名
+     * @param defaultValue 環境変数が指定されていない場合に使用する値
+     * @return コミット間隔(レコード数)
+     */
+    private static int commitIntervalFromEnv(String envVariableName, int defaultValue) {
+        String s = CobolUtil.getEnv(envVariableName);
+        if (s == null) {
+            return defaultValue;
+        }
+        if ("INF".equalsIgnoreCase(s.trim())) {
+            return Integer.MAX_VALUE;
+        }
+        int interval;
+        try {
+            interval = Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            interval = -1;
+        }
+        if (interval < 0) {
+            System.err.println("Warning: " + envVariableName + " format invalid, ignored.");
+            return defaultValue;
+        }
+        return interval == 0 ? 1 : interval;
+    }
+
+    /**
      * COBOLランタイムを初期化する。<br>
      * 未初期化の場合は、コマンドライン引数の保存、各サブシステム(INSPECT/ファイルI/O/組み込み関数)の初期化、<br>
      * およびCOB_SWITCH_1〜COB_SWITCH_8環境変数によるスイッチ設定を行う。<br>
@@ -414,6 +454,9 @@ public class CobolUtil {
                 bufferSizeFromEnv("COB_FILE_SEQ_WRITE_BUFFER_SIZE", DEFAULT_FILE_SEQ_BUFFER_SIZE);
         CobolUtil.fileSeqReadBufferSize =
                 bufferSizeFromEnv("COB_FILE_SEQ_READ_BUFFER_SIZE", DEFAULT_FILE_SEQ_BUFFER_SIZE);
+        CobolUtil.fileIdxCommitInterval =
+                commitIntervalFromEnv(
+                        "COB_FILE_IDX_COMMIT_INTERVAL", DEFAULT_FILE_IDX_COMMIT_INTERVAL);
 
         s = System.getenv("COB_TERMINAL_ENCODING");
         CobolUtil.terminalEncoding = CobolEncoding.SHIFT_JIS;

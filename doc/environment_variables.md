@@ -466,6 +466,16 @@ Specifies the read buffer size for sequential files.
 
 The value is the number of records read at once; the buffer size in bytes is this value multiplied by the maximum record length, capped at 64MB per opened file. It is therefore a rough guide rather than an exact record count, because a line sequential record also carries a line terminator and a variable length sequential record carries a 4 byte record length. `0` disables buffering, and records are read one by one. A value that is not an integer >= 0 is reported on standard error and the default is used instead. The buffer is used when a `SEQUENTIAL` or `LINE SEQUENTIAL` file is opened with `INPUT`, except for a file under `/dev/`, which is read unbuffered so that reading ahead does not consume input meant for `ACCEPT` or for another process sharing the same file descriptor. Increasing the value reduces the number of system calls and speeds up `READ`, at the cost of more memory per opened file.
 
+#### COB_FILE_IDX_COMMIT_INTERVAL
+
+Specifies how often WRITEs to an indexed file opened with `OUTPUT` are committed.
+
+- **Value**: Integer >= 0 or `INF` (default: 10000)
+- **Example**: `COB_FILE_IDX_COMMIT_INTERVAL=100000`
+- **Purpose**: Adjusts write performance of indexed files.
+
+An indexed file opened with `OUTPUT` is locked exclusively and only `WRITE` statements run until `CLOSE`, so the backing SQLite transaction does not need to be committed after every `WRITE`. Instead, a commit is issued each time this number of `WRITE` statements has succeeded, and the remaining records are committed at `CLOSE`. `INF` (case-insensitive) disables intermediate commits entirely, so everything is committed once at `CLOSE`. `0` is treated as `1`, which commits after every `WRITE`. A value that is neither an integer >= 0 nor `INF` is reported on standard error and the default is used instead. Larger values (or `INF`) speed up `WRITE` by reducing the number of fsyncs, but if the process exits without `CLOSE`, up to this number of already-written records is lost. Files opened with `INPUT`, `I-O` or `EXTEND` are not affected. Duplicate-key detection (file status 21/22) is not affected either; it still happens on every `WRITE`.
+
 #### COB_IO_ASSUME_REWRITE
 
 Controls whether READ is required before REWRITE.

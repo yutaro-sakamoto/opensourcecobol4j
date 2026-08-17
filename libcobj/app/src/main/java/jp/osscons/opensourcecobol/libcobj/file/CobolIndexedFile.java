@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.Optional;
+import jp.osscons.opensourcecobol.libcobj.common.CobolUtil;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 import org.sqlite.SQLiteConfig;
@@ -47,8 +48,9 @@ import org.sqlite.SQLiteErrorCode;
  * <p>すべてのSQLは明示的なトランザクション内で実行され（{@code setAutoCommit(false)}、{@code
  * TRANSACTION_SERIALIZABLE}）、各文は成功時にコミット、失敗時にロールバックする。ただし{@code OPEN
  * OUTPUT}されたファイルは例外で、ファイル全体が排他ロックされ他プロセスから読まれることがないため、{@code
- * WRITE}ごとのコミットを行わず、{@code CLOSE}時（{@link #close_}）に一括でコミットする。この間の{@code
- * WRITE}失敗はセーブポイントにより当該{@code WRITE}の変更だけを取り消す。
+ * WRITE}ごとのコミットを行わず、環境変数{@code COB_FILE_IDX_COMMIT_INTERVAL}で指定したレコード数の{@code
+ * WRITE}が成功するごとと、{@code CLOSE}時（{@link #close_}）にコミットする（{@code
+ * INF}指定時はCLOSE時のみ）。この間の{@code WRITE}失敗はセーブポイントにより当該{@code WRITE}の変更だけを取り消す。
  */
 public class CobolIndexedFile extends CobolFile {
     private Optional<IndexedCursor> cursor;
@@ -57,6 +59,8 @@ public class CobolIndexedFile extends CobolFile {
     private boolean callStart = false;
     private boolean commitOnModification = true;
     private boolean deferCommitsInOutputMode = false;
+    private int outputCommitInterval = Integer.MAX_VALUE;
+    private int uncommittedWriteCount = 0;
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
@@ -269,8 +273,11 @@ public class CobolIndexedFile extends CobolFile {
             boolean succeedToFileLock = this.acquireFileLock(filename, mode, fileExists);
             if (succeedToFileLock) {
                 // OUTPUTモードではファイル全体を排他しWRITEしか実行されないため、
-                // WRITEごとのコミットを抑制してCLOSE時に一括コミットする
+                // WRITEごとのコミットを抑制し、環境変数COB_FILE_IDX_COMMIT_INTERVALで
+                // 指定したレコード数ごととCLOSE時にコミットする
                 this.deferCommitsInOutputMode = (mode == COB_OPEN_OUTPUT);
+                this.outputCommitInterval = CobolUtil.fileIdxCommitInterval;
+                this.uncommittedWriteCount = 0;
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
                 }
@@ -1184,7 +1191,9 @@ public class CobolIndexedFile extends CobolFile {
     /**
      * OUTPUTモード（遅延コミット中）のWRITE。トランザクション全体をロールバックすると
      * バッファ済みの成功したWRITEまで巻き戻ってしまうため、セーブポイントで
-     * このWRITEの変更だけを取り消せるようにする。コミットはCLOSE時まで行わない。
+     * このWRITEの変更だけを取り消せるようにする。コミットは環境変数{@code
+     * COB_FILE_IDX_COMMIT_INTERVAL}で指定したレコード数の成功したWRITEがたまるごとに行い（{@code
+     * INF}指定時は行わず）、残りはCLOSE時にまとめてコミットする。
      */
     private int writeDeferred(int opt) {
         IndexedFile p = this.filei;
@@ -1198,6 +1207,11 @@ public class CobolIndexedFile extends CobolFile {
         try {
             if (ret == COB_STATUS_00_SUCCESS) {
                 p.connection.releaseSavepoint(savepoint);
+                ++this.uncommittedWriteCount;
+                if (this.uncommittedWriteCount >= this.outputCommitInterval) {
+                    p.connection.commit();
+                    this.uncommittedWriteCount = 0;
+                }
             } else {
                 // ROLLBACK TO SAVEPOINTはセーブポイント自体を解放しないため、
                 // 失敗WRITEのたびにセーブポイントが蓄積しないよう明示的に解放する
