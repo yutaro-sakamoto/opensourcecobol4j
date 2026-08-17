@@ -629,6 +629,7 @@ public class CobolIndexedFile extends CobolFile {
             p.connection.commit();
             this.deferCommitsInOutputMode = false;
             this.uncommittedWriteCount = 0;
+            this.closeDeferredInsertStatements();
             p.connection.close();
         } catch (SQLException e) {
             // 接続はあえて閉じない。コミット失敗時に接続を閉じると遅延中の
@@ -1072,21 +1073,23 @@ public class CobolIndexedFile extends CobolFile {
             p.key = DBT_SET(this.keys[0].getField());
         }
 
-        if (keyExistsInTable(p, 0, p.key)) {
+        // OUTPUTモードのSEQUENTIALでは、write_が直前キーとの比較で主キーの
+        // 順序違反(21)と重複(22)を判定済みのため、SELECTによる存在チェックは不要
+        if (!(this.deferCommitsInOutputMode && this.access_mode == COB_ACCESS_SEQUENTIAL)
+                && keyExistsInTable(p, 0, p.key)) {
             return COB_STATUS_22_KEY_EXISTS;
         }
 
         // insert into the primary table
         p.data = DBT_SET(this.record);
-        try (PreparedStatement insertStatement =
-                p.connection.prepareStatement(
-                        String.format(
-                                "insert into %s (key, value, locked_by, process_id, locked_at) "
-                                        + "values (?, ?, null, null, null)",
-                                getTableName(0)))) {
+        try {
+            PreparedStatement insertStatement = this.insertStatementFor(0);
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
+            if (!this.deferCommitsInOutputMode) {
+                insertStatement.close();
+            }
         } catch (SQLException e) {
             return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
         }
@@ -1107,7 +1110,9 @@ public class CobolIndexedFile extends CobolFile {
                     return returnWith(p, closeCursor, 0, COB_STATUS_22_KEY_EXISTS);
                 }
 
-                PreparedStatement insertStatement;
+                PreparedStatement insertStatement = this.insertStatementFor(i);
+                insertStatement.setBytes(1, p.key);
+                insertStatement.setBytes(2, p.data);
                 if (isDuplicateColumn(i)) {
                     int dupNo;
                     if (this.deferCommitsInOutputMode) {
@@ -1122,22 +1127,12 @@ public class CobolIndexedFile extends CobolFile {
                     } else {
                         dupNo = dupNumbers[i];
                     }
-                    insertStatement =
-                            p.connection.prepareStatement(
-                                    String.format(
-                                            "insert into %s values (?, ?, ?)", getTableName(i)));
-                    insertStatement.setBytes(1, p.key);
-                    insertStatement.setBytes(2, p.data);
                     insertStatement.setInt(3, dupNo);
-                } else {
-                    insertStatement =
-                            p.connection.prepareStatement(
-                                    String.format("insert into %s values (?, ?)", getTableName(i)));
-                    insertStatement.setBytes(1, p.key);
-                    insertStatement.setBytes(2, p.data);
                 }
                 insertStatement.execute();
-                insertStatement.close();
+                if (!this.deferCommitsInOutputMode) {
+                    insertStatement.close();
+                }
             } catch (SQLException e) {
                 return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
             }
@@ -1146,6 +1141,62 @@ public class CobolIndexedFile extends CobolFile {
         this.updateWhileReading = true;
 
         return returnWith(p, closeCursor, 0, COB_STATUS_00_SUCCESS);
+    }
+
+    /** {@code index}番目のキーのテーブルへレコードを挿入するSQL文を返す。 */
+    private String insertSql(int index) {
+        if (index == 0) {
+            return String.format(
+                    "insert into %s (key, value, locked_by, process_id, locked_at) "
+                            + "values (?, ?, null, null, null)",
+                    getTableName(0));
+        }
+        if (isDuplicateColumn(index)) {
+            return String.format("insert into %s values (?, ?, ?)", getTableName(index));
+        }
+        return String.format("insert into %s values (?, ?)", getTableName(index));
+    }
+
+    /**
+     * {@code index}番目のキーのテーブルへのINSERT用PreparedStatementを返す。
+     *
+     * <p>OUTPUTモード(遅延コミット中)はWRITEのたびに同じSQLを解析し直す無駄を省くため、
+     * オープン中はテーブルごとに1つのPreparedStatementを生成して使い回す(呼び出し側は
+     * closeしてはならない。{@link #closeDeferredInsertStatements}がCLOSE時に解放する)。
+     * それ以外のモードでは従来通り毎回生成し、呼び出し側がcloseする。
+     */
+    private PreparedStatement insertStatementFor(int index) throws SQLException {
+        IndexedFile p = this.filei;
+        if (!this.deferCommitsInOutputMode) {
+            return p.connection.prepareStatement(insertSql(index));
+        }
+        if (p.deferredInsertStatements == null) {
+            p.deferredInsertStatements = new PreparedStatement[this.nkeys];
+        }
+        PreparedStatement statement = p.deferredInsertStatements[index];
+        if (statement == null) {
+            statement = p.connection.prepareStatement(insertSql(index));
+            p.deferredInsertStatements[index] = statement;
+        }
+        return statement;
+    }
+
+    /** OUTPUTモードのWRITE用にキャッシュしたINSERT文を解放する。 */
+    private void closeDeferredInsertStatements() {
+        IndexedFile p = this.filei;
+        if (p.deferredInsertStatements == null) {
+            return;
+        }
+        for (PreparedStatement statement : p.deferredInsertStatements) {
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+                    System.err.println("Failed to close a prepared statement");
+                }
+            }
+        }
+        p.deferredInsertStatements = null;
     }
 
     @Override
@@ -1158,7 +1209,8 @@ public class CobolIndexedFile extends CobolFile {
 
         } else if (this.access_mode == COB_ACCESS_SEQUENTIAL) {
             byte[] keyBytes = p.key;
-            if (p.last_key.memcmp(keyBytes, keyBytes.length) > 0) {
+            int comparison = p.last_key.memcmp(keyBytes, keyBytes.length);
+            if (comparison > 0) {
                 // OUTPUTモード(遅延コミット中)ではレコードロックは存在せず、
                 // コミットすべき変更もないため後始末は不要
                 if (!this.deferCommitsInOutputMode) {
@@ -1170,6 +1222,12 @@ public class CobolIndexedFile extends CobolFile {
                     }
                 }
                 return COB_STATUS_21_KEY_INVALID;
+            }
+            // OUTPUTモードのSEQUENTIALでは、テーブルの内容は自分が昇順で書いた
+            // レコードだけなので、主キーの重複は「直前のキーと等しい」場合に限られる。
+            // ここで判定することでindexed_write_internal側のSELECTを省略できる
+            if (comparison == 0 && this.deferCommitsInOutputMode) {
+                return COB_STATUS_22_KEY_EXISTS;
             }
         }
 
@@ -1204,13 +1262,20 @@ public class CobolIndexedFile extends CobolFile {
 
     /**
      * OUTPUTモード（遅延コミット中）のWRITE。トランザクション全体をロールバックすると
-     * バッファ済みの成功したWRITEまで巻き戻ってしまうため、セーブポイントで
-     * このWRITEの変更だけを取り消せるようにする。コミットは環境変数{@code
+     * バッファ済みの成功したWRITEまで巻き戻ってしまうため、副キーを持つファイルでは
+     * セーブポイントでこのWRITEの変更だけを取り消せるようにする（副キーがなければ
+     * WRITEの変更は単一のINSERTだけで部分的な変更が残る失敗は存在しないため、
+     * セーブポイント自体を省略する）。コミットは環境変数{@code
      * COB_FILE_IDX_COMMIT_INTERVAL}で指定したレコード数の成功したWRITEがたまるごとに行い（{@code
      * INF}指定時は行わず）、残りはCLOSE時にまとめてコミットする。
      */
     private int writeDeferred(int opt) {
         IndexedFile p = this.filei;
+
+        if (this.nkeys == 1) {
+            return this.commitAtIntervals(indexed_write_internal(false, opt));
+        }
+
         Savepoint savepoint;
         try {
             savepoint = p.connection.setSavepoint();
@@ -1240,6 +1305,19 @@ public class CobolIndexedFile extends CobolFile {
             this.uncommittedWriteCount = 0;
             return COB_STATUS_30_PERMANENT_ERROR;
         }
+        return this.commitAtIntervals(ret);
+    }
+
+    /**
+     * 遅延コミット中のWRITEの結果を受け取り、成功したWRITEが{@code
+     * COB_FILE_IDX_COMMIT_INTERVAL}で指定した件数たまっていればコミットする。
+     *
+     * @param ret 直前の{@code indexed_write_internal}の結果
+     * @return WRITEのファイルステータス。途中コミットに失敗した場合は{@code
+     *     COB_STATUS_30_PERMANENT_ERROR}
+     */
+    private int commitAtIntervals(int ret) {
+        IndexedFile p = this.filei;
         // INF指定時は途中コミットの判定自体を行わない（カウンタも進めない）
         if (ret == COB_STATUS_00_SUCCESS && !this.outputCommitIntervalIsInf) {
             ++this.uncommittedWriteCount;
