@@ -1847,7 +1847,7 @@ public class CobolFile {
      * 書き込みを遅延しているファイル実装（INDEXEDファイルのOUTPUTモード等）は、
      * このメソッドをオーバーライドして遅延分を永続化する。
      */
-    protected void commit_() {
+    void commit_() {
         this.unlock_();
     }
 

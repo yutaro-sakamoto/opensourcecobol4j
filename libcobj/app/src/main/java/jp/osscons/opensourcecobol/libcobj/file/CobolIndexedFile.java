@@ -59,7 +59,8 @@ public class CobolIndexedFile extends CobolFile {
     private boolean callStart = false;
     private boolean commitOnModification = true;
     private boolean deferCommitsInOutputMode = false;
-    private int outputCommitInterval = Integer.MAX_VALUE;
+    private boolean outputCommitIntervalIsInf = true;
+    private int outputCommitInterval = 0;
     private int uncommittedWriteCount = 0;
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
@@ -276,7 +277,8 @@ public class CobolIndexedFile extends CobolFile {
                 // WRITEごとのコミットを抑制し、環境変数COB_FILE_IDX_COMMIT_INTERVALで
                 // 指定したレコード数ごととCLOSE時にコミットする
                 this.deferCommitsInOutputMode = (mode == COB_OPEN_OUTPUT);
-                this.outputCommitInterval = CobolUtil.fileIdxCommitInterval;
+                this.outputCommitIntervalIsInf = CobolUtil.isFileIdxCommitIntervalInf();
+                this.outputCommitInterval = CobolUtil.getFileIdxCommitInterval();
                 this.uncommittedWriteCount = 0;
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
@@ -1224,7 +1226,8 @@ public class CobolIndexedFile extends CobolFile {
             this.uncommittedWriteCount = 0;
             return COB_STATUS_30_PERMANENT_ERROR;
         }
-        if (ret == COB_STATUS_00_SUCCESS) {
+        // INF指定時は途中コミットの判定自体を行わない（カウンタも進めない）
+        if (ret == COB_STATUS_00_SUCCESS && !this.outputCommitIntervalIsInf) {
             ++this.uncommittedWriteCount;
             if (this.uncommittedWriteCount >= this.outputCommitInterval) {
                 try {
@@ -1242,19 +1245,20 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * COBOLの{@code COMMIT}文の処理。OUTPUTモードで遅延中のWRITEがあれば永続化する。
+     * COBOLの{@code COMMIT}文の処理。接続が有効な限り、遅延中のWRITEの有無や
+     * オープンモードによらず現在のトランザクションを無条件にコミットする。
      * ロック解放は未実装のため{@link #unlock_}に委ねる（現状は警告を出すだけ）。
      */
     @Override
-    protected void commit_() {
+    void commit_() {
         IndexedFile p = this.filei;
-        if (this.deferCommitsInOutputMode && this.uncommittedWriteCount > 0) {
-            try {
+        try {
+            if (p != null && p.connection != null && !p.connection.isClosed()) {
                 p.connection.commit();
                 this.uncommittedWriteCount = 0;
-            } catch (SQLException e) {
-                System.err.println("Failed to commit a transaction");
             }
+        } catch (SQLException e) {
+            System.err.println("Failed to commit a transaction");
         }
         this.unlock_();
     }

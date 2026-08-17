@@ -310,3 +310,74 @@ AT_CHECK([${RUN_MODULE} reader], [0], [COUNT 00007
 ])
 
 AT_CLEANUP
+
+AT_SETUP([COMMIT statement while writing an indexed OUTPUT file])
+
+# The COMMIT statement must commit the WRITEs deferred so far (even
+# with INF, which never commits in between on its own), and writing
+# must continue normally afterwards.
+
+AT_DATA([prog.cbl],
+[       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IDX-FILE ASSIGN TO "./IDX-FILE"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS SEQUENTIAL
+               RECORD KEY IS IDX-KEY
+               FILE STATUS IS FS.
+       DATA DIVISION.
+       FILE SECTION.
+       FD IDX-FILE.
+       01 IDX-REC.
+          03 IDX-KEY PIC 9(5).
+          03 IDX-DATA PIC X(5).
+       WORKING-STORAGE SECTION.
+       01 FS PIC XX.
+       01 I PIC 9(5).
+       01 CNT PIC 9(5) VALUE 0.
+       01 EOF-FLAG PIC X VALUE "N".
+       PROCEDURE DIVISION.
+           OPEN OUTPUT IDX-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 3
+               MOVE I TO IDX-KEY
+               MOVE "DATA" TO IDX-DATA
+               WRITE IDX-REC
+               IF FS NOT = "00"
+                   DISPLAY "WRITE1 I=" I " FS=" FS
+               END-IF
+           END-PERFORM.
+           COMMIT.
+           PERFORM VARYING I FROM 4 BY 1 UNTIL I > 6
+               MOVE I TO IDX-KEY
+               MOVE "DATA" TO IDX-DATA
+               WRITE IDX-REC
+               IF FS NOT = "00"
+                   DISPLAY "WRITE2 I=" I " FS=" FS
+               END-IF
+           END-PERFORM.
+           CLOSE IDX-FILE.
+           DISPLAY "CLOSE " FS.
+           OPEN INPUT IDX-FILE.
+           PERFORM UNTIL EOF-FLAG = "Y"
+               READ IDX-FILE NEXT RECORD
+                   AT END MOVE "Y" TO EOF-FLAG
+                   NOT AT END ADD 1 TO CNT
+               END-READ
+           END-PERFORM.
+           CLOSE IDX-FILE.
+           DISPLAY "COUNT " CNT.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+
+AT_CHECK([COB_FILE_IDX_COMMIT_INTERVAL=INF ${RUN_MODULE} prog], [0],
+[CLOSE 00
+COUNT 00006
+], [Unlocking INDEXED file is not implemented
+])
+
+AT_CLEANUP
