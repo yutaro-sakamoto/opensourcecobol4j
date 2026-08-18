@@ -1852,22 +1852,30 @@ public class CobolFile {
     }
 
     /**
-     * COBOLの{@code ROLLBACK}文の処理。参照実装(opensource COBOL 1.xのcob_ex_rollback)と同様に、
-     * オープン中の全ファイルのレコードロックを解放するだけで、書き込み済みのレコードを
-     * 取り消すことはしない（参照実装ではWRITEの時点でレコードが永続化されており、
-     * {@code ROLLBACK}文にレコードを取り消す意味論がないため）。
+     * COBOLの{@code ROLLBACK}文の処理。オープン中の全ファイルに対して{@link #rollback_}を実行する。
      *
-     * <p>したがってINDEXEDファイルのOUTPUTモードで遅延中のWRITEも取り消さず、CLOSE時に
-     * コミットされる。{@link CobolIndexedFile#unlock_}はレコードロックを保持し得る
-     * I-Oモード以外では何もしないため、この文が遅延中のWRITEを確定させることもない。
+     * <p>参照実装(opensource COBOL 1.xとGnuCOBOL 3.xのcob_rollback)は
+     * {@code COMMIT}文と同じくレコードロックの解放しか行わない。書き込みが常にその場で
+     * 永続化される実装では取り消せる変更が存在しないためである。本実装もそれに倣うが、
+     * INDEXEDファイルのOUTPUTモードのように実際に未コミットの書き込みを保持している場合は、
+     * {@link CobolIndexedFile#rollback_}がそれを取り消す。
      */
     public static void rollback() {
         if (invokeFun(COB_IO_ROLLBACK, null, null, null, null, null, null, null) != 0) {
             return;
         }
         for (CobolFile l : file_cache) {
-            l.unlock_();
+            l.rollback_();
         }
+    }
+
+    /**
+     * COBOLの{@code ROLLBACK}文によるファイルごとの処理。デフォルトでは{@link #unlock_}と同じ。
+     * 書き込みを遅延しているファイル実装（INDEXEDファイルのOUTPUTモード等）は、
+     * このメソッドをオーバーライドして遅延分を取り消す。
+     */
+    void rollback_() {
+        this.unlock_();
     }
 
     /// libcob/fileio.cのcob_exit_fileioの実装 TODO 一部だけ実装したため残りを実装する

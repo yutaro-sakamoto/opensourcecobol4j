@@ -470,11 +470,13 @@ The value is the number of records read at once; the buffer size in bytes is thi
 
 Specifies how often WRITEs to an indexed file opened with `OUTPUT` are committed.
 
-- **Value**: Integer >= 0 or `INF` (default: 10000)
+- **Value**: Integer >= 0 or `INF` (default: `INF`)
 - **Example**: `COB_FILE_IDX_COMMIT_INTERVAL=100000`
-- **Purpose**: Adjusts write performance of indexed files.
+- **Purpose**: Bounds how many records a crash can lose while writing an indexed file.
 
-An indexed file opened with `OUTPUT` is locked exclusively and only `WRITE` statements run until `CLOSE`, so the backing SQLite transaction does not need to be committed after every `WRITE`. Instead, a commit is issued each time this number of `WRITE` statements has succeeded, and the remaining records are committed at `CLOSE`. `INF` (case-insensitive) disables intermediate commits entirely, so everything is committed once at `CLOSE`. `0` is treated as `1`, which commits after every `WRITE`. A value that is neither an integer >= 0 nor `INF` is reported on standard error and the default is used instead. Larger values (or `INF`) speed up `WRITE` by reducing the number of fsyncs, but if the process is killed or crashes before `CLOSE`, up to this number of already-written records is lost. A program that reaches `STOP RUN` without `CLOSE` is not affected: files left open are implicitly closed (with a warning), which commits the remaining records. The `COMMIT` statement also commits the records written so far. Files opened with `INPUT`, `I-O` or `EXTEND` are not affected. Duplicate-key detection (file status 21/22) is not affected either; it still happens on every `WRITE`.
+An indexed file opened with `OUTPUT` is locked exclusively and only `WRITE` statements run until `CLOSE`, so the backing SQLite transaction does not need to be committed after every `WRITE`. By default (`INF`, case-insensitive) no intermediate commit is issued at all: the records become durable when the program executes a `COMMIT` statement and when the file is closed, which is what the COBOL `COMMIT` statement is for. Setting an integer makes the runtime commit on its own each time that many `WRITE` statements have succeeded, which bounds the loss if the process is killed or crashes before `CLOSE` at that number of records, at the cost of one fsync per interval. `0` is treated as `1`, which commits after every `WRITE`. A value that is neither an integer >= 0 nor `INF` is reported on standard error and the default is used instead.
+
+A program that reaches `STOP RUN` without `CLOSE` does not lose records: files left open are implicitly closed (with a warning), which commits them. A `ROLLBACK` statement discards the records written since the last commit. Files opened with `INPUT`, `I-O` or `EXTEND` are not affected. Duplicate-key detection (file status 21/22) is not affected either; it still happens on every `WRITE`.
 
 #### COB_IO_ASSUME_REWRITE
 

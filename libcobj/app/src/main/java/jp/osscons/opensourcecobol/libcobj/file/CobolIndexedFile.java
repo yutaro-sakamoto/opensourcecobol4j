@@ -1067,6 +1067,33 @@ public class CobolIndexedFile extends CobolFile {
         return returnCode;
     }
 
+    /**
+     * SQLの実行時例外をCOBOLのファイルステータスへ変換する。
+     *
+     * <p>参照実装に合わせた対応付けとする。ディスクフルはGnuCOBOLが{@code ENOSPC}に対して返す
+     * {@code 34}(境界違反)、一意制約違反はopensource COBOL
+     * 1.xが書き込み失敗に対して返す{@code 22}(キーが既に存在)、ロック競合は{@code
+     * 51}(レコードロック)、その他のI/Oエラーは{@code 30}(永続エラー)とする。
+     *
+     * @param e 発生した例外
+     * @return 対応するファイルステータス
+     */
+    private static int sqlExceptionToStatus(SQLException e) {
+        // sqlite-jdbcは拡張エラーコード(下位8ビットが基本コード)を返すことがある
+        int code = e.getErrorCode() & 0xFF;
+        if (code == SQLiteErrorCode.SQLITE_FULL.code) {
+            return COB_STATUS_34_BOUNDARY_VIOLATION;
+        }
+        if (code == SQLiteErrorCode.SQLITE_BUSY.code
+                || code == SQLiteErrorCode.SQLITE_LOCKED.code) {
+            return COB_STATUS_51_RECORD_LOCKED;
+        }
+        if (code == SQLiteErrorCode.SQLITE_CONSTRAINT.code) {
+            return COB_STATUS_22_KEY_EXISTS;
+        }
+        return COB_STATUS_30_PERMANENT_ERROR;
+    }
+
     private int indexed_write_internal(boolean rewrite, int opt) {
         return this.indexed_write_internal(rewrite, null, opt);
     }
@@ -1101,7 +1128,7 @@ public class CobolIndexedFile extends CobolFile {
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
         } catch (SQLException e) {
-            return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
+            return returnWith(p, closeCursor, 0, sqlExceptionToStatus(e));
         }
 
         p.data = p.key;
@@ -1139,7 +1166,7 @@ public class CobolIndexedFile extends CobolFile {
                 }
                 insertStatement.execute();
             } catch (SQLException e) {
-                return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
+                return returnWith(p, closeCursor, 0, sqlExceptionToStatus(e));
             }
         }
 
@@ -1333,8 +1360,11 @@ public class CobolIndexedFile extends CobolFile {
      * @return 引数をそのまま返す
      */
     private int noteWriteFailure(int ret) {
-        // OUTPUTモードではレコードロックが存在しないため、この状態コードはSQLエラーを意味する
-        if (ret == COB_STATUS_51_RECORD_LOCKED) {
+        // キーの論理エラー(21/22)はSQLを実行する前に検出しており、DBには触れていない。
+        // それ以外の失敗はSQLエラーであり、トランザクションごと巻き戻された可能性がある
+        if (ret != COB_STATUS_00_SUCCESS
+                && ret != COB_STATUS_21_KEY_INVALID
+                && ret != COB_STATUS_22_KEY_EXISTS) {
             this.deferredWritesMayBeLost = true;
         }
         return ret;
@@ -1344,14 +1374,15 @@ public class CobolIndexedFile extends CobolFile {
      * 遅延コミット中のWRITEの結果を受け取り、成功したWRITEが{@code
      * COB_FILE_IDX_COMMIT_INTERVAL}で指定した件数たまっていればコミットする。
      *
-     * <p>途中コミットに失敗してもトランザクションは無傷でレコードは書き込まれたままなので、
-     * WRITE自体のステータスをそのまま返す。カウンタを維持することで次に成功したWRITEか
-     * CLOSEでコミットを再試行し、最終的に失敗すればCLOSEが永続エラーを報告する。ここで
-     * {@code COB_STATUS_30_PERMANENT_ERROR}を返すと、実際には書き込まれているレコードが
-     * 失敗したとプログラムに誤解させてしまう。
+     * <p>コミットに失敗した場合は、そのコミットを引き起こしたWRITE文でエラーを報告する。
+     * 順編成ファイルの書き込みバッファも、バッファのフラッシュに失敗するとそれを引き起こした
+     * WRITE文が{@code 30}を返す({@link CobolSequentialFile})ので、それに倣う。
+     * トランザクション自体は無傷でレコードは書き込まれたままなので、カウンタを維持して
+     * 次に成功したWRITEかCLOSEでコミットを再試行する。
      *
      * @param ret 直前の{@code indexed_write_internal}の結果
-     * @return WRITEのファイルステータス
+     * @return WRITEのファイルステータス。途中コミットに失敗した場合はその原因に応じた
+     *     エラーステータス
      */
     private int commitAtIntervals(int ret) {
         IndexedFile p = this.filei;
@@ -1363,7 +1394,7 @@ public class CobolIndexedFile extends CobolFile {
                     p.connection.commit();
                     this.uncommittedWriteCount = 0;
                 } catch (SQLException e) {
-                    System.err.println("Failed to commit a transaction");
+                    return sqlExceptionToStatus(e);
                 }
             }
         }
@@ -1375,6 +1406,37 @@ public class CobolIndexedFile extends CobolFile {
      * オープンモードによらず現在のトランザクションを無条件にコミットし、
      * その後{@link #unlock_}でこのプロセスが保持するレコードロックを解放する。
      */
+    /**
+     * COBOLの{@code ROLLBACK}文の処理。
+     *
+     * <p>OUTPUTモード(遅延コミット中)では、まだコミットしていないWRITEを実際に取り消す。
+     * このモードではファイル全体を自プロセスが排他しており、他プロセスが観測できる状態は
+     * オープン時のコミット時点のままなので、取り消しても整合性は保たれる。取り消し後は
+     * 順序チェックの基準となる直前キーも消し、同じキーから書き直せるようにする。
+     *
+     * <p>それ以外のモードでは、参照実装(opensource COBOL 1.xとGnuCOBOL 3.xのcob_rollback。
+     * どちらもロック解放しか行わない)と同じくレコードロックの解放だけを行う。これらのモードでは
+     * 各WRITE/REWRITE/DELETEがその場でコミットされており、取り消せる変更が存在しない。
+     */
+    @Override
+    void rollback_() {
+        IndexedFile p = this.filei;
+        if (this.deferCommitsInOutputMode) {
+            try {
+                if (p != null && p.connection != null && !p.connection.isClosed()) {
+                    p.connection.rollback();
+                    this.uncommittedWriteCount = 0;
+                    // プログラムが意図して破棄したので、CLOSEでエラーを報告する必要はない
+                    this.deferredWritesMayBeLost = false;
+                    p.last_key = null;
+                }
+            } catch (SQLException e) {
+                System.err.println("Failed to rollback a transaction");
+            }
+        }
+        this.unlock_();
+    }
+
     @Override
     void commit_() {
         IndexedFile p = this.filei;
