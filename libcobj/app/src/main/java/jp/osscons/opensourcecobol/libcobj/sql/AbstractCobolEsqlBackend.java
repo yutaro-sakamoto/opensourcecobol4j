@@ -72,15 +72,14 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     // マルチスレッド対応が必要になった場合は、ConcurrentHashMap 化と defaultConnId 更新を含む
     // 同期、または public API 全体の直列化を別途検討する (stmtCache の ConcurrentHashMap 化も
     // 同前提下の保守的な保護であり、これら全体を同期する意味ではない)。
-    private final Map<String, Connection> connections = new HashMap<>();
-    private final Map<String, Cursor> cursors = new HashMap<>();
-    private final Map<String, String[]> prepared = new HashMap<>();
-    private String defaultConnId;
+    final Map<String, Connection> connections = new HashMap<>();
+    final Map<String, Cursor> cursors = new HashMap<>();
+    final Map<String, String[]> prepared = new HashMap<>();
+    String defaultConnId;
 
     // PreparedStatement キャッシュ（DB 非依存）
     // backend は singleton 共有のため、ConcurrentHashMap で保護する。
-    private final Map<Connection, Map<String, PreparedStatement>> stmtCache =
-            new ConcurrentHashMap<>();
+    final Map<Connection, Map<String, PreparedStatement>> stmtCache = new ConcurrentHashMap<>();
 
     // -------------------------------------------------------
     // DB 依存フック（接続先 DB ごとに実装する）
@@ -315,7 +314,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * 接続文字列・環境変数フォールバック・末尾空白除去を DB 非依存に処理し、{@link DbSpec} を生成する。
      * URL の組み立てだけを {@link #buildJdbcUrl(DbSpec)} フックへ委ねる。
      */
-    private DbSpec buildSpec(String user, String passwd, String dbname) {
+    DbSpec buildSpec(String user, String passwd, String dbname) {
         // 末尾の空白を除去する (COBOL のパディング)
         if (user != null) {
             user = stripTrailingSpaces(user);
@@ -1110,62 +1109,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         // バックエンドへ「全カーソル無効化」を通知する。本クラスが更新するのは {@link Cursor} の
         // 状態だけなので、カーソルに紐づく JDBC 資源や内部状態を持つ実装は、このフックで解放する。
         onCursorsInvalidated();
-    }
-
-    // -------------------------------------------------------
-    // テスト支援（package-private。本番の処理からは呼ばれない）
-    // -------------------------------------------------------
-
-    /** テスト用: カーソルを直接登録する。 */
-    final void addCursor(String name, Cursor cursor) {
-        cursors.put(name, cursor);
-    }
-
-    /** テスト用: 登録済みカーソルを取得する。 */
-    final Cursor getCursor(String name) {
-        return cursors.get(name);
-    }
-
-    /** テスト用: prepared statement を直接登録する。 */
-    final void addPrepared(String name, String query, int nParams) {
-        prepared.put(name, new String[] {query, String.valueOf(nParams)});
-    }
-
-    /** テスト用: 登録済み prepared statement（[query, nParams]）を取得する。 */
-    final String[] getPrepared(String name) {
-        return prepared.get(name);
-    }
-
-    /**
-     * テスト用: 接続文字列のパース・env フォールバック結果（{@link DbSpec}）を返す。
-     *
-     * <p>別 jar のバックエンド実装が {@link #buildJdbcUrl(DbSpec)} を DB 接続なしで検証できるよう public
-     * にしている（呼び出し側は戻り値を {@code buildJdbcUrl} へ直接渡す想定で、{@code DbSpec} 型を名前で
-     * 参照する必要はない）。
-     *
-     * @param user ユーザ名（{@code null} なら env フォールバック）
-     * @param passwd パスワード（{@code null} なら env フォールバック）
-     * @param dbname 接続文字列 {@code dbname@host:port}（{@code null} なら env フォールバック）
-     * @return パース済みの接続情報
-     */
-    public final DbSpec buildSpecForTest(String user, String passwd, String dbname) {
-        return buildSpec(user, passwd, dbname);
-    }
-
-    /** テスト用: 登録済みの全 JDBC 接続を閉じ、接続・カーソル・prepared と文キャッシュを空にする。 */
-    final void closeAllConnectionsForTest() {
-        for (Connection c : connections.values()) {
-            try {
-                if (c != null && !c.isClosed()) {
-                    c.close();
-                }
-            } catch (SQLException ignored) {
-                // テスト後始末のエラーは無視する
-            }
-        }
-        connections.clear();
-        defaultConnId = null;
-        stmtCache.clear();
     }
 
     // -------------------------------------------------------

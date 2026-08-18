@@ -203,7 +203,7 @@ class CobolEsqlBackendPostgresqlTest {
     // ---------- buildJdbcUrl / 接続文字列パース（旧 SqlConnectionTest から移植）----------
 
     private String url(String dbSpecString) {
-        return pg.buildJdbcUrl(pg.buildSpecForTest(null, null, dbSpecString));
+        return pg.buildJdbcUrl(pg.buildSpec(null, null, dbSpecString));
     }
 
     @Test
@@ -254,7 +254,7 @@ class CobolEsqlBackendPostgresqlTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testBuildSpec_StripsTrailingSpaces() {
-        DbSpec spec = pg.buildSpecForTest("user  ", "pass  ", "mydb@myhost  ");
+        DbSpec spec = pg.buildSpec("user  ", "pass  ", "mydb@myhost  ");
         assertEquals("user", spec.user, "trailing spaces stripped from user");
         assertEquals("pass", spec.passwd, "trailing spaces stripped from passwd");
         assertEquals("mydb", spec.dbname, "trailing spaces stripped from dbname");

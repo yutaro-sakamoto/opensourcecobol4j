@@ -29,10 +29,10 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
      * のは PostgreSQL 側の都合なので、基底クラスが持つカーソルの状態とは別に本クラスで持つ。
      * JDBC 資源は含まないため、破棄はメモリ上の状態を捨てるだけでよい。
      */
-    private final Map<String, PgCursorState> cursorStates = new HashMap<>();
+    final Map<String, PgCursorState> cursorStates = new HashMap<>();
 
     /** 1 カーソルぶんの先読み（バルクフェッチ）状態。OPEN のたびに空の状態へ置き換える。 */
-    private static final class PgCursorState {
+    static final class PgCursorState {
 
         /** 先読みバッファ。各要素は 1 行ぶんの列値配列で、SQL NULL の列は null。 */
         List<byte[][]> fetchBuffer = new ArrayList<>();
@@ -55,12 +55,6 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     /** 指定カーソルの先読み状態を返す（未登録なら空の状態を割り当てる）。 */
     private PgCursorState state(String cursorName) {
         return cursorStates.computeIfAbsent(cursorName, k -> new PgCursorState());
-    }
-
-    /** テスト用: 指定カーソルの overFetch フラグ（先読みが結果末尾に達したか）を返す。 */
-    boolean overFetchForTest(String cursorName) {
-        PgCursorState st = cursorStates.get(cursorName);
-        return st != null && st.overFetch;
     }
 
     @Override

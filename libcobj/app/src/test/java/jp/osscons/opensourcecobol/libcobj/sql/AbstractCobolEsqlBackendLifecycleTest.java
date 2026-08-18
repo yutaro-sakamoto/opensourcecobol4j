@@ -221,7 +221,7 @@ class AbstractCobolEsqlBackendLifecycleTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor(name, "SELECT 1", 0);
         cursor.isOpened = true;
-        backend.addCursor(name, cursor);
+        backend.cursors.put(name, cursor);
     }
 
     private int sqlCode() {
@@ -240,7 +240,7 @@ class AbstractCobolEsqlBackendLifecycleTest {
         backend.commit(sqlca);
         assertEquals(0, sqlCode(), "commit should succeed");
         assertEquals(1, count("onCursorsInvalidated"), "COMMIT should notify invalidation once");
-        assertFalse(backend.getCursor("c1").isOpened, "cursor should be closed after COMMIT");
+        assertFalse(backend.cursors.get("c1").isOpened, "cursor should be closed after COMMIT");
     }
 
     @Test
@@ -266,7 +266,7 @@ class AbstractCobolEsqlBackendLifecycleTest {
                 Arrays.asList("commitTransaction", "onCursorsInvalidated", "connectionClose"),
                 events,
                 "DISCONNECT should notify invalidation after commit and before connection close");
-        assertFalse(backend.getCursor("c1").isOpened, "cursor should be closed after DISCONNECT");
+        assertFalse(backend.cursors.get("c1").isOpened, "cursor should be closed after DISCONNECT");
     }
 
     @Test

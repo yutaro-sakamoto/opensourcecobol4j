@@ -16,7 +16,7 @@ public final class CobolEsql {
     private CobolEsql() {}
 
     /** 環境変数から 1 度だけ解決する backend（遅延初期化）。 */
-    private static CobolEsqlBackendInterface backend;
+    static CobolEsqlBackendInterface backend;
 
     /**
      * backend を遅延初期化して返す。{@code OCDB_DB_TYPE} の解決はプロセスで 1 回だけ行う。
@@ -34,18 +34,6 @@ public final class CobolEsql {
             backend = CobolEsqlBackendFactory.resolve();
         }
         return backend;
-    }
-
-    // --- テスト支援（package-private。生成コードからは呼ばれない）---
-
-    /** テスト用: 解決済み backend を破棄し、次回呼び出しで再解決させる。 */
-    static synchronized void resetBackend() {
-        backend = null;
-    }
-
-    /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。 */
-    static CobolEsqlBackendInterface backendForTest() {
-        return backend();
     }
 
     // -------------------------------------------------------

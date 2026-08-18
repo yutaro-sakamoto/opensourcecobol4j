@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
@@ -47,7 +48,8 @@ class CobolEsqlTest {
     @BeforeEach
     void setUp() {
         sqlca = new CobolDataStorage(136);
-        CobolEsql.resetBackend();
+        // 環境変数からの解決を経ずに backend を据える（このテストは PostgreSQL 実装を対象にする）。
+        CobolEsql.backend = new CobolEsqlBackendPostgresql();
         // 先読み件数を既定 (1) に戻す（テスト間で N をリークさせない）。
         BulkFetchConfig.setFetchRecords(1);
     }
@@ -55,14 +57,30 @@ class CobolEsqlTest {
     @AfterEach
     void tearDown() {
         BulkFetchConfig.setFetchRecords(1);
-        // 登録済みの全接続を閉じる（Testcontainers 接続のリーク防止）。
-        backend().closeAllConnectionsForTest();
-        CobolEsql.resetBackend();
+        closeRegisteredConnections();
+        CobolEsql.backend = null;
     }
 
-    /** 現在 CobolEsql が委譲している backend を取得する（テスト用の状態検証・初期化に使う）。 */
+    /** このテストが据えた backend を返す（内部状態の作り込みと検証に使う）。 */
     private AbstractCobolEsqlBackend backend() {
-        return (AbstractCobolEsqlBackend) CobolEsql.backendForTest();
+        return (AbstractCobolEsqlBackend) CobolEsql.backend;
+    }
+
+    /** 登録済みの全接続を閉じて登録簿を空にする（Testcontainers 接続のリーク防止）。 */
+    private void closeRegisteredConnections() {
+        AbstractCobolEsqlBackend b = backend();
+        for (Connection c : b.connections.values()) {
+            try {
+                if (c != null && !c.isClosed()) {
+                    c.close();
+                }
+            } catch (SQLException ignored) {
+                // 後始末のエラーは無視する
+            }
+        }
+        b.connections.clear();
+        b.defaultConnId = null;
+        b.stmtCache.clear();
     }
 
     private void connectToPostgres() throws Exception {
@@ -527,7 +545,7 @@ class CobolEsqlTest {
     void testDeclareCursor_Success() {
         CobolEsql.declareCursor(sqlca, "c1", "SELECT * FROM t");
         assertEquals(0, getSqlCode(), "Declare cursor should succeed");
-        assertNotNull(backend().getCursor("c1"), "Cursor should be registered");
+        assertNotNull(backend().cursors.get("c1"), "Cursor should be registered");
     }
 
     @Test
@@ -565,7 +583,7 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = true;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.declareCursor(sqlca, "c1", "SELECT 2");
         assertEquals(
                 SqlCA.ECPG_WARNING_PORTAL_EXISTS,
@@ -579,10 +597,11 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.declareCursor(sqlca, "c1", "SELECT 2");
         assertEquals(0, getSqlCode(), "Re-declaring closed cursor should succeed");
-        assertEquals("SELECT 2", backend().getCursor("c1").query, "Cursor query should be updated");
+        assertEquals(
+                "SELECT 2", backend().cursors.get("c1").query, "Cursor query should be updated");
     }
 
     @Test
@@ -622,7 +641,7 @@ class CobolEsqlTest {
         // Open
         CobolEsql.openCursor(sqlca, "myc");
         assertEquals(0, getSqlCode(), "Open cursor should succeed");
-        assertTrue(backend().getCursor("myc").isOpened, "Cursor should be opened");
+        assertTrue(backend().cursors.get("myc").isOpened, "Cursor should be opened");
 
         // Fetch first row
         byte[] data1 = new byte[20];
@@ -648,7 +667,7 @@ class CobolEsqlTest {
         // Close
         CobolEsql.closeCursor(sqlca, "myc");
         assertEquals(0, getSqlCode(), "Close cursor should succeed");
-        assertFalse(backend().getCursor("myc").isOpened, "Cursor should be closed");
+        assertFalse(backend().cursors.get("myc").isOpened, "Cursor should be closed");
 
         try (Statement stmt = realConn.createStatement()) {
             stmt.execute("DROP TABLE cur_test");
@@ -680,7 +699,7 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.fetchCursor(sqlca, "c1");
         assertEquals(
                 SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
@@ -713,7 +732,7 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.closeCursor(sqlca, "c1");
         // 登録済みだが未 OPEN のカーソルの CLOSE は成功扱い (Open-COBOL-ESQL-4J に合わせる)。
         assertEquals(
@@ -732,7 +751,7 @@ class CobolEsqlTest {
         AbstractCobolField param = makeNumericField(4, "0001".getBytes());
         CobolEsql.declareCursorWithParams(sqlca, "c1", "SELECT * FROM t WHERE id=?", param);
         assertEquals(0, getSqlCode(), "DeclareCursorWithParams should succeed");
-        AbstractCobolEsqlBackend.Cursor c = backend().getCursor("c1");
+        AbstractCobolEsqlBackend.Cursor c = backend().cursors.get("c1");
         assertNotNull(c, "Cursor should be registered");
         assertEquals(1, c.nParams, "Cursor should have 1 param");
     }
@@ -778,7 +797,7 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = true;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.declareCursorWithParams(sqlca, "c1", "SELECT 2");
         assertEquals(
                 SqlCA.ECPG_WARNING_PORTAL_EXISTS,
@@ -791,7 +810,7 @@ class CobolEsqlTest {
     void testDeclareCursorWithParams_NullParams() {
         CobolEsql.declareCursorWithParams(sqlca, "c1", "SELECT 1", (AbstractCobolField[]) null);
         assertEquals(0, getSqlCode(), "DeclareCursorWithParams with null params should succeed");
-        assertEquals(0, backend().getCursor("c1").nParams, "Cursor should have 0 params");
+        assertEquals(0, backend().cursors.get("c1").nParams, "Cursor should have 0 params");
     }
 
     // ============================================================
@@ -849,7 +868,7 @@ class CobolEsqlTest {
         AbstractCobolEsqlBackend.Cursor cursor =
                 new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0);
         cursor.isOpened = false;
-        backend().addCursor("c1", cursor);
+        backend().cursors.put("c1", cursor);
         CobolEsql.fetchCursorOccurs(sqlca, "c1", 10, 5);
         assertEquals(
                 SqlCA.ECPG_WARNING_UNKNOWN_PORTAL,
@@ -967,7 +986,7 @@ class CobolEsqlTest {
         CobolEsql.fetchCursor(sqlca, "wof", makeAlphaField(20, new byte[20]));
         assertEquals(0, getSqlCode(), "first fetch should succeed");
         assertTrue(
-                ((CobolEsqlBackendPostgresql) backend()).overFetchForTest("wof"),
+                ((CobolEsqlBackendPostgresql) backend()).cursorStates.get("wof").overFetch,
                 "prefetch returned fewer rows than requested -> overFetch=true");
 
         CobolEsql.execWhereCurrentOf(
@@ -1014,7 +1033,7 @@ class CobolEsqlTest {
         CobolEsql.fetchCursor(sqlca, "web", makeAlphaField(20, new byte[20]));
         assertEquals(0, getSqlCode(), "first fetch should succeed");
         assertFalse(
-                ((CobolEsqlBackendPostgresql) backend()).overFetchForTest("web"),
+                ((CobolEsqlBackendPostgresql) backend()).cursorStates.get("web").overFetch,
                 "exact-count prefetch -> overFetch=false (cursor on last row, not past end)");
 
         CobolEsql.execWhereCurrentOf(
@@ -1079,11 +1098,11 @@ class CobolEsqlTest {
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testCommit_Success() throws Exception {
         registerRealConnection();
-        backend().addCursor("c1", new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0));
-        backend().getCursor("c1").isOpened = true;
+        backend().cursors.put("c1", new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0));
+        backend().cursors.get("c1").isOpened = true;
         CobolEsql.commit(sqlca);
         assertEquals(0, getSqlCode(), "Commit should succeed");
-        assertFalse(backend().getCursor("c1").isOpened, "Cursor should be closed after commit");
+        assertFalse(backend().cursors.get("c1").isOpened, "Cursor should be closed after commit");
     }
 
     @Test
@@ -1170,7 +1189,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmt1", field);
         assertEquals(0, getSqlCode(), "Prepare should succeed");
-        String[] prepared = backend().getPrepared("stmt1");
+        String[] prepared = backend().prepared.get("stmt1");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertEquals("SELECT * FROM t", prepared[0], "Prepared query should match");
         assertEquals("0", prepared[1], "Prepared param count should be 0");
@@ -1183,7 +1202,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmt2", field);
         assertEquals(0, getSqlCode(), "Prepare with host vars should succeed");
-        String[] prepared = backend().getPrepared("stmt2");
+        String[] prepared = backend().prepared.get("stmt2");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(prepared[0].contains("?"), "Host vars should be replaced with ?");
         assertEquals("2", prepared[1], "Prepared param count should be 2");
@@ -1197,7 +1216,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmt_op", field);
         assertEquals(0, getSqlCode(), "Prepare should succeed");
-        String[] prepared = backend().getPrepared("stmt_op");
+        String[] prepared = backend().prepared.get("stmt_op");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertEquals("SELECT ?+? FROM t", prepared[0], "演算子は名前に飲み込まれず保持される");
         assertEquals("2", prepared[1], "Prepared param count should be 2");
@@ -1211,7 +1230,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmt_nl", field);
         assertEquals(0, getSqlCode(), "Prepare should succeed");
-        String[] prepared = backend().getPrepared("stmt_nl");
+        String[] prepared = backend().prepared.get("stmt_nl");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertEquals(
                 "DELETE FROM t WHERE id=?\nAND k=?", prepared[0], "改行直後の 'AND' は名前に飲み込まれず保持される");
@@ -1236,7 +1255,7 @@ class CobolEsqlTest {
             stmt.execute("INSERT INTO prep_test VALUES (1)");
         }
 
-        backend().addPrepared("stmt1", "SELECT 1", 0);
+        backend().prepared.put("stmt1", new String[] {"SELECT 1", "0"});
         CobolEsql.executePrepared(sqlca, "stmt1");
         assertEquals(0, getSqlCode(), "ExecutePrepared should succeed");
 
@@ -1254,7 +1273,7 @@ class CobolEsqlTest {
             stmt.execute("CREATE TABLE prep_test (id INTEGER)");
         }
 
-        backend().addPrepared("stmt1", "INSERT INTO prep_test VALUES (?)", 1);
+        backend().prepared.put("stmt1", new String[] {"INSERT INTO prep_test VALUES (?)", "1"});
         CobolEsql.executePrepared(sqlca, "stmt1", makeNumericField(4, "0042".getBytes()));
         assertEquals(0, getSqlCode(), "ExecutePrepared with params should succeed");
 
@@ -1528,7 +1547,7 @@ class CobolEsqlTest {
                 CobolFieldFactory.makeCobolField(data.length, new CobolDataStorage(data), attr);
         CobolEsql.prepare(sqlca, "stmt3", field);
         assertEquals(0, getSqlCode(), "Prepare with VARYING host variable should succeed");
-        String[] prepared = backend().getPrepared("stmt3");
+        String[] prepared = backend().prepared.get("stmt3");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertEquals(
                 "SELECT * FROM t",
@@ -1556,7 +1575,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmt4", field);
         assertEquals(0, getSqlCode(), "Prepare with host var in parens should succeed");
-        String[] prepared = backend().getPrepared("stmt4");
+        String[] prepared = backend().prepared.get("stmt4");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(prepared[0].contains("?"), "Host var should be replaced with ?");
         assertTrue(prepared[0].contains(")"), "Parenthesis should be preserved");
@@ -1569,7 +1588,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmtCast", field);
         assertEquals(0, getSqlCode(), "Prepare with :: cast should succeed");
-        String[] prepared = backend().getPrepared("stmtCast");
+        String[] prepared = backend().prepared.get("stmtCast");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(prepared[0].contains("col::text"), ":: cast operator should be preserved");
         assertTrue(prepared[0].contains("?::integer"), ":id should become ? and ::integer kept");
@@ -1583,7 +1602,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmtLit", field);
         assertEquals(0, getSqlCode(), "Prepare with string literal should succeed");
-        String[] prepared = backend().getPrepared("stmtLit");
+        String[] prepared = backend().prepared.get("stmtLit");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(
                 prepared[0].contains("'x:y'"), "Colon inside a string literal should be preserved");
@@ -1597,7 +1616,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmtDq", field);
         assertEquals(0, getSqlCode(), "Prepare with quoted identifier should succeed");
-        String[] prepared = backend().getPrepared("stmtDq");
+        String[] prepared = backend().prepared.get("stmtDq");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(
                 prepared[0].contains("\"co:l\""),
@@ -1612,7 +1631,7 @@ class CobolEsqlTest {
         AbstractCobolField field = makeAlphaField(data.length, data);
         CobolEsql.prepare(sqlca, "stmtEsc", field);
         assertEquals(0, getSqlCode(), "Prepare with escaped quote should succeed");
-        String[] prepared = backend().getPrepared("stmtEsc");
+        String[] prepared = backend().prepared.get("stmtEsc");
         assertNotNull(prepared, "Prepared statement should be registered");
         assertTrue(
                 prepared[0].contains("'it''s :x'"),
@@ -1627,8 +1646,8 @@ class CobolEsqlTest {
     @Test
     void testExecWithParams_CommitQuery() throws Exception {
         registerRealConnection();
-        backend().addCursor("c1", new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0));
-        backend().getCursor("c1").isOpened = true;
+        backend().cursors.put("c1", new AbstractCobolEsqlBackend.Cursor("c1", "SELECT 1", 0));
+        backend().cursors.get("c1").isOpened = true;
         CobolEsql.execWithParams(sqlca, "COMMIT");
         // Accept both success (0) and "no transaction" warning (-604)
         assertTrue(

@@ -6,6 +6,8 @@ import com.github.valfirst.slf4jtest.LoggingEvent;
 import com.github.valfirst.slf4jtest.TestLogger;
 import com.github.valfirst.slf4jtest.TestLoggerFactory;
 import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
@@ -39,7 +41,8 @@ class CobolEsqlLoggingTest {
     @BeforeEach
     void setUp() {
         sqlca = new CobolDataStorage(136);
-        CobolEsql.resetBackend();
+        // 環境変数からの解決を経ずに backend を据える（このテストは PostgreSQL 実装を対象にする）。
+        CobolEsql.backend = new CobolEsqlBackendPostgresql();
         cobolSqlLogger = TestLoggerFactory.getTestLogger(CobolEsql.class);
         connLogger = TestLoggerFactory.getTestLogger(AbstractCobolEsqlBackend.class);
         TestLoggerFactory.clear();
@@ -47,9 +50,26 @@ class CobolEsqlLoggingTest {
 
     @AfterEach
     void tearDown() {
-        ((AbstractCobolEsqlBackend) CobolEsql.backendForTest()).closeAllConnectionsForTest();
-        CobolEsql.resetBackend();
+        closeRegisteredConnections();
+        CobolEsql.backend = null;
         TestLoggerFactory.clear();
+    }
+
+    /** 登録済みの全接続を閉じて登録内容を空にする（Testcontainers 接続のリーク防止）。 */
+    private void closeRegisteredConnections() {
+        AbstractCobolEsqlBackend b = (AbstractCobolEsqlBackend) CobolEsql.backend;
+        for (Connection c : b.connections.values()) {
+            try {
+                if (c != null && !c.isClosed()) {
+                    c.close();
+                }
+            } catch (SQLException ignored) {
+                // 後始末のエラーは無視する
+            }
+        }
+        b.connections.clear();
+        b.defaultConnId = null;
+        b.stmtCache.clear();
     }
 
     private static AbstractCobolField makeAlphaField(int size, byte[] data) {
