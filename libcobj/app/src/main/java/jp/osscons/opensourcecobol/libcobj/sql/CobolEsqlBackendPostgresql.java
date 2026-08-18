@@ -81,27 +81,20 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     protected void configureConnection(Connection c) throws SQLException {
         // PostgreSQL は autoCommit(true) のまま明示 BEGIN で TX を管理する（移行前の挙動）。
         c.setAutoCommit(true);
-        beginTransaction(c);
-    }
-
-    @Override
-    protected void beginTransaction(Connection c) throws SQLException {
-        if (c != null && !c.isClosed()) {
-            LOG.debug("BEGIN (postgresql)");
-            try (Statement stmt = c.createStatement()) {
-                stmt.execute("BEGIN");
-            }
-        }
+        begin(c);
     }
 
     @Override
     protected void commitTransaction(Connection c) throws SQLException {
-        // PostgreSQL は autoCommit(true) + 明示 BEGIN/COMMIT で TX を管理するため、COMMIT を発行する。
-        // 再 BEGIN は基底側（doCommit）/切断フローが beginTransaction で制御する。
+        // autoCommit(true) のまま明示 BEGIN / COMMIT でトランザクションを管理するため、COMMIT に
+        // 続けて次の BEGIN を発行する。BEGIN を欠くと以降の SQL が 1 文ごとに確定してしまい、
+        // COBOL プログラムが次に COMMIT / ROLLBACK を書くまで確定を保留する、という埋め込み SQL の
+        // 前提が崩れる（後から ROLLBACK しても戻せなくなる）。
         LOG.debug("COMMIT (postgresql)");
         try (Statement stmt = c.createStatement()) {
             stmt.execute("COMMIT");
         }
+        begin(c);
     }
 
     @Override
@@ -109,6 +102,17 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         LOG.debug("ROLLBACK (postgresql)");
         try (Statement stmt = c.createStatement()) {
             stmt.execute("ROLLBACK");
+        }
+        begin(c);
+    }
+
+    /** 明示 {@code BEGIN} を発行して新しいトランザクションを開始する（PostgreSQL 固有の流儀）。 */
+    private void begin(Connection c) throws SQLException {
+        if (c != null && !c.isClosed()) {
+            LOG.debug("BEGIN (postgresql)");
+            try (Statement stmt = c.createStatement()) {
+                stmt.execute("BEGIN");
+            }
         }
     }
 

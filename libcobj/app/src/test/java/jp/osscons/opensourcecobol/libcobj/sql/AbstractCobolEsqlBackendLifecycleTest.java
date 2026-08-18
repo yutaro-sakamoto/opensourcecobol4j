@@ -55,11 +55,6 @@ class AbstractCobolEsqlBackendLifecycleTest {
         }
 
         @Override
-        protected void beginTransaction(Connection c) {
-            events.add("beginTransaction");
-        }
-
-        @Override
         protected void commitTransaction(Connection c) {
             events.add("commitTransaction");
         }

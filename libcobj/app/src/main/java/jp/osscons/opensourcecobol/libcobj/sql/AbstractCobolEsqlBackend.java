@@ -112,23 +112,17 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected abstract void configureConnection(Connection c) throws SQLException;
 
     /**
-     * 新しいトランザクションを開始する（DB 流儀を内包）。明示的な {@code BEGIN} を発行する DB は
-     * ここで発行し、最初の文で暗黙にトランザクションが始まる DB（JDBC の {@code autoCommit=false}
-     * など）では no-op でよい。
+     * 現在のトランザクションを commit し、以降の SQL が新しいトランザクションで実行される状態にする。
+     * 埋め込み SQL では、COBOL プログラムが {@code COMMIT} / {@code ROLLBACK} を書くまで更新は確定
+     * しない。つまり COMMIT した直後から次のトランザクションが始まっている必要があり、その状態を
+     * 作るところまでが本フックの責務になる。実現手段は DB の流儀に委ねる。例: PostgreSQL は
+     * {@code autoCommit(true)} のまま {@code COMMIT} と次の {@code BEGIN} を発行し、
+     * {@code autoCommit=false} 流儀の DB は {@code c.commit()} だけでよい（次のトランザクションは
+     * 最初の SQL で暗黙に始まる）。
      *
-     * @param c JDBC 接続
-     * @throws SQLException データベースアクセスエラー
-     */
-    protected abstract void beginTransaction(Connection c) throws SQLException;
-
-    /**
-     * 現在のトランザクションを commit する（再 BEGIN は含まない、確定のみ）。コミットの発行手段だけを
-     * DB 実装へ委ねる。例: PostgreSQL は {@code stmt.execute("COMMIT")}、JDBC の
-     * {@code autoCommit=false} 流儀の DB は {@code c.commit()}。
-     *
-     * <p>「commit して新しいトランザクションを継続する」公開操作（{@link #commit(CobolDataStorage)}）と、
+     * <p>「commit してトランザクションを継続する」公開操作（{@link #commit(CobolDataStorage)}）と、
      * 「commit して接続を閉じる」操作（{@link #disconnect(CobolDataStorage)}）の双方が本フックを再利用する。
-     * 再 BEGIN の要否は呼び出し側が {@link #beginTransaction(Connection)} で制御する。
+     * 後者では直後に接続を閉じるため、開始された新しいトランザクションは空のまま破棄される。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
@@ -136,9 +130,10 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected abstract void commitTransaction(Connection c) throws SQLException;
 
     /**
-     * 現在のトランザクションを rollback する（再 BEGIN は含まない、ロールバックのみ）。発行手段だけを
-     * DB 実装へ委ねる。例: PostgreSQL は {@code stmt.execute("ROLLBACK")}、JDBC の
-     * {@code autoCommit=false} 流儀の DB は {@code c.rollback()}。
+     * 現在のトランザクションを rollback し、以降の SQL が新しいトランザクションで実行される状態に
+     * する。{@link #commitTransaction(Connection)} と対になるフックで、担当する範囲も同じ。
+     * 例: PostgreSQL は {@code ROLLBACK} と次の {@code BEGIN} を発行し、{@code autoCommit=false}
+     * 流儀の DB は {@code c.rollback()} だけでよい。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
@@ -291,7 +286,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 return;
             }
             LOG.debug("DISCONNECT (id={})", id);
-            // 切断前に commit する（再 BEGIN はしない）。発行手段は DB 実装の commitTransaction に委ねる。
+            // 切断前に commit する。発行手段は DB 実装の commitTransaction に委ねる（明示 BEGIN 流儀の
+            // DB では次のトランザクションが開始されるが、直後にクローズするため空のまま破棄される）。
             try {
                 commitTransaction(conn);
             } catch (SQLException ignored) {
@@ -1031,22 +1027,6 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     // トランザクション
     // -------------------------------------------------------
 
-    /**
-     * commit して新しいトランザクションを継続する（確定 + 再 BEGIN）。{@link #commit(CobolDataStorage)}
-     * の公開操作で使う。確定手段は {@link #commitTransaction(Connection)}、再開は
-     * {@link #beginTransaction(Connection)} に委ねる（暗黙 BEGIN の DB では後者が no-op）。
-     */
-    private void doCommit(Connection c) throws SQLException {
-        commitTransaction(c);
-        beginTransaction(c);
-    }
-
-    /** rollback して新しいトランザクションを継続する（ロールバック + 再 BEGIN）。 */
-    private void doRollback(Connection c) throws SQLException {
-        rollbackTransaction(c);
-        beginTransaction(c);
-    }
-
     @Override
     public final void commit(CobolDataStorage sqlca) {
         try {
@@ -1055,7 +1035,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
-            doCommit(conn);
+            commitTransaction(conn);
             SqlCA.setSuccess(sqlca);
             clearCursors();
         } catch (SQLException e) {
@@ -1071,7 +1051,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
                 return;
             }
-            doRollback(conn);
+            rollbackTransaction(conn);
             SqlCA.setSuccess(sqlca);
             clearCursors();
         } catch (SQLException e) {
