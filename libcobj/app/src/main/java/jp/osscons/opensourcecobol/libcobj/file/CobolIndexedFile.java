@@ -62,6 +62,7 @@ public class CobolIndexedFile extends CobolFile {
     private boolean outputCommitIntervalIsInf = true;
     private int outputCommitInterval = 0;
     private int uncommittedWriteCount = 0;
+    private boolean deferredWritesMayBeLost = false;
     private int fetchKeyIndex = -1;
     private byte[] previousLockedRecordKey = null;
 
@@ -280,6 +281,7 @@ public class CobolIndexedFile extends CobolFile {
                 this.outputCommitIntervalIsInf = CobolUtil.isFileIdxCommitIntervalInf();
                 this.outputCommitInterval = CobolUtil.getFileIdxCommitInterval();
                 this.uncommittedWriteCount = 0;
+                this.deferredWritesMayBeLost = false;
                 if (mode == COB_OPEN_OUTPUT) {
                     this.deleteAllTablesExceptForFileLockTable();
                 }
@@ -627,16 +629,27 @@ public class CobolIndexedFile extends CobolFile {
             // このコミットはロック解放に加えて、OUTPUTモードで遅延された
             // WRITE群（writeDeferred参照）をまとめて永続化する役割も持つ
             p.connection.commit();
-            this.deferCommitsInOutputMode = false;
-            this.uncommittedWriteCount = 0;
             this.closeCachedInsertStatements();
             p.connection.close();
+            // 状態のリセットはクローズが成功してから行う。先に行うと、クローズに
+            // 失敗して(CobolFile.closeがopen_modeを維持するため)後続のWRITEが
+            // 実行できてしまったときに、遅延コミットではない経路へ落ちて
+            // 閉じた接続を使ってしまう
+            this.deferCommitsInOutputMode = false;
+            this.uncommittedWriteCount = 0;
         } catch (SQLException e) {
             // 接続はあえて閉じない。コミット失敗時に接続を閉じると遅延中の
             // トランザクションが破棄され、CLOSEの再試行も不可能になるため
             return COB_STATUS_30_PERMANENT_ERROR;
         }
         this.fetchKeyIndex = -1;
+        if (this.deferredWritesMayBeLost) {
+            // 遅延中のWRITEがトランザクションごと失われている。ここで成功を返すと
+            // 「WRITEが1件失敗しただけでファイルは完全」と誤解されてしまうため、
+            // CLOSEでも永続エラーを報告する
+            this.deferredWritesMayBeLost = false;
+            return COB_STATUS_30_PERMANENT_ERROR;
+        }
         return COB_STATUS_00_SUCCESS;
     }
 
@@ -1271,7 +1284,8 @@ public class CobolIndexedFile extends CobolFile {
         IndexedFile p = this.filei;
 
         if (this.nkeys == 1) {
-            return this.commitAtIntervals(indexed_write_internal(false, opt));
+            return this.commitAtIntervals(
+                    this.noteWriteFailure(indexed_write_internal(false, opt)));
         }
 
         Savepoint savepoint;
@@ -1301,18 +1315,43 @@ public class CobolIndexedFile extends CobolFile {
                 System.err.println("Failed to rollback a transaction");
             }
             this.uncommittedWriteCount = 0;
+            this.deferredWritesMayBeLost = true;
             return COB_STATUS_30_PERMANENT_ERROR;
         }
-        return this.commitAtIntervals(ret);
+        return this.commitAtIntervals(this.noteWriteFailure(ret));
+    }
+
+    /**
+     * 遅延コミット中のWRITEがSQLエラーで失敗したことを記録する。
+     *
+     * <p>SQLiteはディスクフル({@code SQLITE_FULL})やI/Oエラーなどの場合、失敗した文だけでなく
+     * トランザクション全体を自動的にロールバックすることがある。その場合、直前のコミット以降に
+     * バッファされていたレコードはすべて失われるが、プログラムから見えるのは当該WRITEの
+     * エラーだけである。ここで記録しておき、{@link #close_}が成功を返さないようにする。
+     *
+     * @param ret {@code indexed_write_internal}の結果
+     * @return 引数をそのまま返す
+     */
+    private int noteWriteFailure(int ret) {
+        // OUTPUTモードではレコードロックが存在しないため、この状態コードはSQLエラーを意味する
+        if (ret == COB_STATUS_51_RECORD_LOCKED) {
+            this.deferredWritesMayBeLost = true;
+        }
+        return ret;
     }
 
     /**
      * 遅延コミット中のWRITEの結果を受け取り、成功したWRITEが{@code
      * COB_FILE_IDX_COMMIT_INTERVAL}で指定した件数たまっていればコミットする。
      *
+     * <p>途中コミットに失敗してもトランザクションは無傷でレコードは書き込まれたままなので、
+     * WRITE自体のステータスをそのまま返す。カウンタを維持することで次に成功したWRITEか
+     * CLOSEでコミットを再試行し、最終的に失敗すればCLOSEが永続エラーを報告する。ここで
+     * {@code COB_STATUS_30_PERMANENT_ERROR}を返すと、実際には書き込まれているレコードが
+     * 失敗したとプログラムに誤解させてしまう。
+     *
      * @param ret 直前の{@code indexed_write_internal}の結果
-     * @return WRITEのファイルステータス。途中コミットに失敗した場合は{@code
-     *     COB_STATUS_30_PERMANENT_ERROR}
+     * @return WRITEのファイルステータス
      */
     private int commitAtIntervals(int ret) {
         IndexedFile p = this.filei;
@@ -1324,10 +1363,7 @@ public class CobolIndexedFile extends CobolFile {
                     p.connection.commit();
                     this.uncommittedWriteCount = 0;
                 } catch (SQLException e) {
-                    // コミットに失敗してもトランザクション自体は無傷なので、
-                    // バッファは破棄せずエラーだけ報告する。カウンタを維持する
-                    // ことで、次に成功したWRITEかCLOSEでコミットを再試行する
-                    return COB_STATUS_30_PERMANENT_ERROR;
+                    System.err.println("Failed to commit a transaction");
                 }
             }
         }
@@ -1598,6 +1634,11 @@ public class CobolIndexedFile extends CobolFile {
      * <p>レコードロックを保持し得るのはI-Oモードだけなので、それ以外のモードでは何もしない
      * （遅延コミット中のOUTPUTモードでここでコミットすると、未確定のWRITEまで
      * 確定させてしまう副作用もあるため、早期returnはその防止も兼ねる）。
+     *
+     * <p>ロック解放を他プロセスから見えるようにするにはコミットが必要だが、これが
+     * {@code ROLLBACK}文の意味論と衝突することはない。I-Oモードでは各WRITE/REWRITE/DELETEが
+     * その場でコミットされており未確定のユーザデータが存在しないため、ここでのコミットは
+     * ロック解放のUPDATEを確定させるだけである。
      */
     @Override
     public void unlock_() {

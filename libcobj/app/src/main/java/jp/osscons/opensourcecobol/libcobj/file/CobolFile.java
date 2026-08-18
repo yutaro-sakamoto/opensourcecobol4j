@@ -1851,7 +1851,16 @@ public class CobolFile {
         this.unlock_();
     }
 
-    /** TODO: 準備中 */
+    /**
+     * COBOLの{@code ROLLBACK}文の処理。参照実装(opensource COBOL 1.xのcob_ex_rollback)と同様に、
+     * オープン中の全ファイルのレコードロックを解放するだけで、書き込み済みのレコードを
+     * 取り消すことはしない（参照実装ではWRITEの時点でレコードが永続化されており、
+     * {@code ROLLBACK}文にレコードを取り消す意味論がないため）。
+     *
+     * <p>したがってINDEXEDファイルのOUTPUTモードで遅延中のWRITEも取り消さず、CLOSE時に
+     * コミットされる。{@link CobolIndexedFile#unlock_}はレコードロックを保持し得る
+     * I-Oモード以外では何もしないため、この文が遅延中のWRITEを確定させることもない。
+     */
     public static void rollback() {
         if (invokeFun(COB_IO_ROLLBACK, null, null, null, null, null, null, null) != 0) {
             return;
@@ -1877,6 +1886,20 @@ public class CobolFile {
                                 f.select_name, filename, '\n'));
                 try {
                     f.close(COB_CLOSE_NORMAL, null);
+                    if (f.file_status[0] != '0' || f.file_status[1] != '0') {
+                        // 暗黙のクローズが失敗すると、遅延されていた書き込みが
+                        // 永続化されないままプログラムが正常終了してしまう。
+                        // 呼び出し元にステータスを返す先がないため警告を出力する
+                        System.err.print(
+                                String.format(
+                                        "WARNING - Implicit CLOSE of %s (\"%s\") failed with file"
+                                                + " status %c%c%c",
+                                        f.select_name,
+                                        filename,
+                                        (char) f.file_status[0],
+                                        (char) f.file_status[1],
+                                        '\n'));
+                    }
                 } catch (RuntimeException e) {
                     System.err.println("Failed to close " + f.select_name);
                 }
