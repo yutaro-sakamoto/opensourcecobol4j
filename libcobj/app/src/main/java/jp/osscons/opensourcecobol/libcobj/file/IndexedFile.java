@@ -58,9 +58,8 @@ class IndexedFile {
     int[] last_dupno;
 
     /**
-     * WRITEしか実行されないモード（OUTPUT/EXTEND）のWRITEで使い回す、テーブルごとの
-     * INSERT用PreparedStatement。最初に使うときに生成され、CLOSE時に解放される。
-     * それ以外のモードでは{@code null}のまま。
+     * WRITE/REWRITEで使い回す、テーブルごとのINSERT用PreparedStatement。
+     * 最初に使うときに生成され、CLOSE時に解放される。
      */
     PreparedStatement[] cachedInsertStatements;
 

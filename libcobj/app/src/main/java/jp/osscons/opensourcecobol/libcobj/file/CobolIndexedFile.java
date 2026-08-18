@@ -1087,9 +1087,6 @@ public class CobolIndexedFile extends CobolFile {
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
-            if (!this.reuseInsertStatements()) {
-                insertStatement.close();
-            }
         } catch (SQLException e) {
             return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
         }
@@ -1128,9 +1125,6 @@ public class CobolIndexedFile extends CobolFile {
                     insertStatement.setInt(3, dupNo);
                 }
                 insertStatement.execute();
-                if (!this.reuseInsertStatements()) {
-                    insertStatement.close();
-                }
             } catch (SQLException e) {
                 return returnWith(p, closeCursor, 0, COB_STATUS_51_RECORD_LOCKED);
             }
@@ -1156,30 +1150,17 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
-     * WRITE用のINSERT文をオープン中キャッシュして使い回すかどうかを返す。
-     *
-     * <p>WRITEしか実行されないOUTPUT/EXTENDモードが対象。PreparedStatementは
-     * 接続内で完結するため、EXTENDのように他プロセスと共有され得るモードでも安全。
-     * I-OモードはREWRITE経路と挿入文を共有しており、従来通り毎回生成する。
-     */
-    private boolean reuseInsertStatements() {
-        return this.deferCommitsInOutputMode || this.open_mode == COB_OPEN_EXTEND;
-    }
-
-    /**
      * {@code index}番目のキーのテーブルへのINSERT用PreparedStatementを返す。
      *
-     * <p>{@link #reuseInsertStatements}が真のモードでは、WRITEのたびに同じSQLを
-     * 解析し直す無駄を省くため、オープン中はテーブルごとに1つのPreparedStatementを
-     * 生成して使い回す(呼び出し側はcloseしてはならない。{@link
-     * #closeCachedInsertStatements}がCLOSE時に解放する)。
-     * それ以外のモードでは従来通り毎回生成し、呼び出し側がcloseする。
+     * <p>テーブルのスキーマはオープン成功時点で確定しオープン中に変わることはないため、
+     * INSERT文のたびに同じSQLを解析し直す無駄を省き、オープン中はテーブルごとに1つの
+     * PreparedStatementを生成して使い回す(WRITE/REWRITEのすべてのモードで共通。
+     * PreparedStatementは接続内で完結するため、ファイルを他プロセスと共有していても、
+     * コミットやロールバックをまたいでも安全)。呼び出し側はcloseしてはならない。
+     * {@link #closeCachedInsertStatements}がCLOSE時に解放する。
      */
     private PreparedStatement insertStatementFor(int index) throws SQLException {
         IndexedFile p = this.filei;
-        if (!this.reuseInsertStatements()) {
-            return p.connection.prepareStatement(insertSql(index));
-        }
         if (p.cachedInsertStatements == null) {
             p.cachedInsertStatements = new PreparedStatement[this.nkeys];
         }
