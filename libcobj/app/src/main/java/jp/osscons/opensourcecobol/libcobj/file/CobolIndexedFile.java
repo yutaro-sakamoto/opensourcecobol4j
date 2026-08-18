@@ -629,7 +629,7 @@ public class CobolIndexedFile extends CobolFile {
             p.connection.commit();
             this.deferCommitsInOutputMode = false;
             this.uncommittedWriteCount = 0;
-            this.closeDeferredInsertStatements();
+            this.closeCachedInsertStatements();
             p.connection.close();
         } catch (SQLException e) {
             // 接続はあえて閉じない。コミット失敗時に接続を閉じると遅延中の
@@ -1087,7 +1087,7 @@ public class CobolIndexedFile extends CobolFile {
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
-            if (!this.deferCommitsInOutputMode) {
+            if (!this.reuseInsertStatements()) {
                 insertStatement.close();
             }
         } catch (SQLException e) {
@@ -1101,12 +1101,10 @@ public class CobolIndexedFile extends CobolFile {
 
             p.key = DBT_SET(this.keys[i].getField());
             try {
-                // WRITE経路(rewrite=false)ではcheck_alt_keysがユニーク副キーを
-                // 検査済みでありこのチェックは冗長。REWRITE経路では必要だが、
-                // OUTPUTモードでREWRITEは起きないため遅延コミット中は省略する
-                if (!this.deferCommitsInOutputMode
-                        && !isDuplicateColumn(i)
-                        && keyExistsInTable(p, i, p.key)) {
+                // WRITE経路(rewrite=false)では、挿入前にcheck_alt_keysがすべての
+                // ユニーク副キーを検査済みでありこのチェックは冗長。check_alt_keysを
+                // 通らないREWRITE経路でのみ実行する
+                if (rewrite && !isDuplicateColumn(i) && keyExistsInTable(p, i, p.key)) {
                     return returnWith(p, closeCursor, 0, COB_STATUS_22_KEY_EXISTS);
                 }
 
@@ -1130,7 +1128,7 @@ public class CobolIndexedFile extends CobolFile {
                     insertStatement.setInt(3, dupNo);
                 }
                 insertStatement.execute();
-                if (!this.deferCommitsInOutputMode) {
+                if (!this.reuseInsertStatements()) {
                     insertStatement.close();
                 }
             } catch (SQLException e) {
@@ -1158,36 +1156,48 @@ public class CobolIndexedFile extends CobolFile {
     }
 
     /**
+     * WRITE用のINSERT文をオープン中キャッシュして使い回すかどうかを返す。
+     *
+     * <p>WRITEしか実行されないOUTPUT/EXTENDモードが対象。PreparedStatementは
+     * 接続内で完結するため、EXTENDのように他プロセスと共有され得るモードでも安全。
+     * I-OモードはREWRITE経路と挿入文を共有しており、従来通り毎回生成する。
+     */
+    private boolean reuseInsertStatements() {
+        return this.deferCommitsInOutputMode || this.open_mode == COB_OPEN_EXTEND;
+    }
+
+    /**
      * {@code index}番目のキーのテーブルへのINSERT用PreparedStatementを返す。
      *
-     * <p>OUTPUTモード(遅延コミット中)はWRITEのたびに同じSQLを解析し直す無駄を省くため、
-     * オープン中はテーブルごとに1つのPreparedStatementを生成して使い回す(呼び出し側は
-     * closeしてはならない。{@link #closeDeferredInsertStatements}がCLOSE時に解放する)。
+     * <p>{@link #reuseInsertStatements}が真のモードでは、WRITEのたびに同じSQLを
+     * 解析し直す無駄を省くため、オープン中はテーブルごとに1つのPreparedStatementを
+     * 生成して使い回す(呼び出し側はcloseしてはならない。{@link
+     * #closeCachedInsertStatements}がCLOSE時に解放する)。
      * それ以外のモードでは従来通り毎回生成し、呼び出し側がcloseする。
      */
     private PreparedStatement insertStatementFor(int index) throws SQLException {
         IndexedFile p = this.filei;
-        if (!this.deferCommitsInOutputMode) {
+        if (!this.reuseInsertStatements()) {
             return p.connection.prepareStatement(insertSql(index));
         }
-        if (p.deferredInsertStatements == null) {
-            p.deferredInsertStatements = new PreparedStatement[this.nkeys];
+        if (p.cachedInsertStatements == null) {
+            p.cachedInsertStatements = new PreparedStatement[this.nkeys];
         }
-        PreparedStatement statement = p.deferredInsertStatements[index];
+        PreparedStatement statement = p.cachedInsertStatements[index];
         if (statement == null) {
             statement = p.connection.prepareStatement(insertSql(index));
-            p.deferredInsertStatements[index] = statement;
+            p.cachedInsertStatements[index] = statement;
         }
         return statement;
     }
 
-    /** OUTPUTモードのWRITE用にキャッシュしたINSERT文を解放する。 */
-    private void closeDeferredInsertStatements() {
+    /** WRITE用にキャッシュしたINSERT文を解放する。 */
+    private void closeCachedInsertStatements() {
         IndexedFile p = this.filei;
-        if (p.deferredInsertStatements == null) {
+        if (p.cachedInsertStatements == null) {
             return;
         }
-        for (PreparedStatement statement : p.deferredInsertStatements) {
+        for (PreparedStatement statement : p.cachedInsertStatements) {
             if (statement != null) {
                 try {
                     statement.close();
@@ -1196,7 +1206,7 @@ public class CobolIndexedFile extends CobolFile {
                 }
             }
         }
-        p.deferredInsertStatements = null;
+        p.cachedInsertStatements = null;
     }
 
     @Override
@@ -1211,9 +1221,9 @@ public class CobolIndexedFile extends CobolFile {
             byte[] keyBytes = p.key;
             int comparison = p.last_key.memcmp(keyBytes, keyBytes.length);
             if (comparison > 0) {
-                // OUTPUTモード(遅延コミット中)ではレコードロックは存在せず、
-                // コミットすべき変更もないため後始末は不要
-                if (!this.deferCommitsInOutputMode) {
+                // OUTPUT/EXTENDモードではREADが実行できずレコードロックは
+                // 存在しない。コミットすべき未確定の変更もないため後始末は不要
+                if (!this.deferCommitsInOutputMode && this.open_mode != COB_OPEN_EXTEND) {
                     try {
                         unlockPreviousRecord();
                         p.connection.commit();
@@ -1239,9 +1249,14 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         int ret = indexed_write_internal(false, opt);
+        // EXTENDモードではREADが実行できずレコードロックは存在しないため、
+        // ロック解放処理は不要
+        boolean mayHoldRecordLock = this.open_mode != COB_OPEN_EXTEND;
         if (ret == COB_STATUS_00_SUCCESS) {
             try {
-                unlockPreviousRecord();
+                if (mayHoldRecordLock) {
+                    unlockPreviousRecord();
+                }
                 if (this.commitOnModification) {
                     p.connection.commit();
                 }
@@ -1251,8 +1266,10 @@ public class CobolIndexedFile extends CobolFile {
         } else {
             try {
                 p.connection.rollback();
-                unlockPreviousRecord();
-                p.connection.commit();
+                if (mayHoldRecordLock) {
+                    unlockPreviousRecord();
+                    p.connection.commit();
+                }
             } catch (SQLException rollbackEx) {
                 return ret;
             }

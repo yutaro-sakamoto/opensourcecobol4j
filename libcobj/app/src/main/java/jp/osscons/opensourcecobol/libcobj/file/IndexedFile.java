@@ -58,10 +58,11 @@ class IndexedFile {
     int[] last_dupno;
 
     /**
-     * OUTPUTモード（遅延コミット中）のWRITEで使い回す、テーブルごとのINSERT用PreparedStatement。
-     * 最初に使うときに生成され、CLOSE時に解放される。それ以外のモードでは{@code null}のまま。
+     * WRITEしか実行されないモード（OUTPUT/EXTEND）のWRITEで使い回す、テーブルごとの
+     * INSERT用PreparedStatement。最初に使うときに生成され、CLOSE時に解放される。
+     * それ以外のモードでは{@code null}のまま。
      */
-    PreparedStatement[] deferredInsertStatements;
+    PreparedStatement[] cachedInsertStatements;
 
     /** REWRITE用のキーごとの状態として予約されているが、オープン時に確保されるのみで、現在の実装では代わりにローカル配列で重複番号を受け渡しており、実際には使用されていない。 */
     int[] rewrite_sec_key;
