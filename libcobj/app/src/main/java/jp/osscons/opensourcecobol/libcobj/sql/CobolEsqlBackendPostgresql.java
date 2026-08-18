@@ -16,7 +16,7 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 /**
  * PostgreSQL 向けの {@link CobolEsqlBackendInterface} 実装。{@link AbstractCobolEsqlBackend} の DB 依存フックを
  * PostgreSQL の流儀（明示 BEGIN によるトランザクション管理、サーバカーソル + {@code FETCH FORWARD}
- * 先読み、SQLSTATE ベースのエラー変換）で実装する。挙動は移行前の {@code CobolEsql} と一致させている。
+ * による先読み、SQLSTATE をそのまま使うエラー変換）で実装する。
  *
  * <p>{@link java.util.ServiceLoader} 経由で発見されるため public であり、
  * {@code META-INF/services/jp.osscons.opensourcecobol.libcobj.sql.CobolEsqlBackendInterface} に
@@ -25,9 +25,9 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     /**
-     * カーソル名 → PostgreSQL 固有のカーソル状態（先読みバッファ）。サーバカーソル + {@code FETCH
-     * FORWARD} 先読み方式は PostgreSQL 実装の内部事情のため、基底の登録簿ではなく本クラスが持つ。
-     * 生きた JDBC 資源は含まないため、破棄はメモリ解放のみ（close 漏れの概念はない）。
+     * カーソル名 → 先読みバッファ。サーバカーソルから {@code FETCH FORWARD} でまとめて取ってくる
+     * のは PostgreSQL 側の都合なので、基底クラスが持つカーソルの状態表とは別に本クラスで持つ。
+     * JDBC 資源は含まないため、破棄はメモリ上の状態を捨てるだけでよい。
      */
     private final Map<String, PgCursorState> cursorStates = new HashMap<>();
 
@@ -292,10 +292,10 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     protected SqlErrorMapping mapSqlException(SQLException e) {
-        // 生エラー → (ECPG コード, 正規化 SQLSTATE)。エラー変換は backend 実装に閉じ込め、別クラスへは
-        // 切り出さない。PostgreSQL のネイティブ SQLSTATE は ECPG が前提とする語彙そのものなので、
-        // SQLSTATE はそのまま採用する（将来の Db2/Oracle 実装はここでネイティブ値を ECPG 語彙へ
-        // 正規化する）。整数コードと SQLSTATE を 1 箇所で一貫して決める。
+        // 生エラー → (ECPG コード, 正規化 SQLSTATE)。PostgreSQL が返す SQLSTATE は ECPG が前提と
+        // する値そのものなので、そのまま採用する。別の DB を追加する場合は、その DB の SQLSTATE を
+        // ECPG の値へ読み替える処理がここに入る。エラー変換は各バックエンドに閉じ込め、整数コードと
+        // SQLSTATE を 1 箇所で決める。
         String sqlState = e.getSQLState();
         return new SqlErrorMapping(sqlStateToCode(sqlState), sqlState);
     }

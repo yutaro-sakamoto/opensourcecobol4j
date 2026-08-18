@@ -18,20 +18,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link CobolEsqlBackendInterface} の共通処理（DB 非依存）を実装し、DB 依存部分を {@code protected abstract}
- * フックとして切り出した抽象基底クラス（Template Method）。
+ * 埋め込み SQL の接続先 DB ごとの実装を行うための抽象クラス。{@link CobolEsqlBackendInterface} の
+ * うち DB によらない処理を本クラスで実装し、DB ごとに書き分けが要る部分だけを
+ * {@code protected abstract} フックに切り出している（Template Method）。MySQL など別の DB に
+ * 対応するときは、本クラスを継承してフックを実装する。
  *
- * <p>旧 {@code SqlState}（接続/カーソル/prepared のグローバル registry）の状態を本クラスの
- * インスタンスフィールドへ集約し、旧 {@code SqlConnection}/{@code SqlCursor} の振る舞いを
- * DB 依存フックへ移している。SQLCA 構造体の byte エンコードは DB 非依存の COBOL ABI のため
- * {@link SqlCA} の static ヘルパを共有し、{@code 生エラー → (ECPG コード, 正規化 SQLSTATE)} 変換のみ
+ * <p>SQLCA 構造体の byte エンコードは DB によらない COBOL 側の取り決めなので {@link SqlCA} の
+ * static ヘルパを共有し、{@code 生エラー → (ECPG コード, 正規化 SQLSTATE)} の変換だけを
  * {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
  *
- * <p>本クラスは将来の DB 実装（Db2/Oracle など）から継承される拡張点であり、{@code protected}
- * フック群と、その契約に現れる型 {@link DbSpec}/{@link SqlErrorMapping}（同一パッケージのトップレベル
- * クラス）は「拡張点としての契約」として扱う。カーソルのフックは素の値（カーソル名・クエリ・
- * 解決済みパラメータ）を受け取り、カーソル登録簿の簿記レコード（{@link Cursor}）は基底クラス内部に
- * 閉じる（SPI には露出しない）。
+ * <p>サブクラスから見える範囲は {@code protected} フック群と、その引数・戻り値に現れる型
+ * {@link DbSpec}/{@link SqlErrorMapping}（同一パッケージのトップレベルクラス）に限る。
+ * カーソルについては役割を分けており、本クラスはカーソル名から {@link Cursor}（DECLARE 済みか、
+ * OPEN 済みか、どのクエリに紐づくか）を引く表を持ち、DECLARE/OPEN/FETCH/CLOSE が正しい順序で
+ * 呼ばれたかを判定する。フックへ渡すのはカーソル名・クエリ・解決済みパラメータという素の値だけで、
+ * {@link Cursor} そのものは渡さない。{@code ResultSet} などの JDBC 資源や、先読みのような DB 固有の
+ * 仕組みはサブクラス側が持つ。
  */
 @SuppressWarnings("PMD.GuardLogStatement")
 public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterface {
@@ -54,7 +56,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     /** COBOL 固定長フィールドのバイト表現に用いる文字コード（接続パラメータの取り出し用）。 */
     private static final Charset SHIFT_JIS = Charset.forName("SHIFT-JIS");
 
-    /** 単一接続モデルで用いるデフォルト接続の識別子（旧 SqlConnection と同じ値）。 */
+    /** デフォルト接続に付ける識別子。CONNECT では接続 ID を指定しないため、固定名を用いる。 */
     private static final String DEFAULT_CONN_ID = "OCDB_DEFAULT_DBNAME";
 
     /**
@@ -64,10 +66,9 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      */
     protected static final byte[] EMPTY_RESULT = new byte[0];
 
-    // === 旧 SqlState：グローバル registry → バックエンドのインスタンス状態へ ===
-    // スレッドモデル: 生成 COBOL ランタイムは単一プロセス・単一スレッド実行を前提とする
-    // (旧 SqlState もグローバル static registry だった)。このため接続/カーソル/prepared の
-    // registry と defaultConnId は同期せず素の HashMap/フィールドのまま扱う。
+    // スレッドモデル: 生成 COBOL ランタイムは単一プロセス・単一スレッド実行を前提とする。
+    // このため接続/カーソル/prepared の registry と defaultConnId は同期せず素の
+    // HashMap/フィールドのまま扱う。
     // マルチスレッド対応が必要になった場合は、ConcurrentHashMap 化と defaultConnId 更新を含む
     // 同期、または public API 全体の直列化を別途検討する (stmtCache の ConcurrentHashMap 化も
     // 同前提下の保守的な保護であり、現時点で全レジストリの同期を意味するものではない)。
@@ -76,13 +77,13 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     private final Map<String, String[]> prepared = new HashMap<>();
     private String defaultConnId;
 
-    // === 旧 CobolEsql：PreparedStatement キャッシュ（DB 非依存）===
+    // PreparedStatement キャッシュ（DB 非依存）
     // backend は singleton 共有のため、ConcurrentHashMap で保護する。
     private final Map<Connection, Map<String, PreparedStatement>> stmtCache =
             new ConcurrentHashMap<>();
 
     // -------------------------------------------------------
-    // DB 依存フック（PostgreSQL/Db2/Oracle で差し替え）
+    // DB 依存フック（接続先 DB ごとに実装する）
     // -------------------------------------------------------
 
     /**
@@ -344,7 +345,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
 
         DbSpec spec = new DbSpec();
         if (dbname == null || dbname.isEmpty()) {
-            // 旧 buildJdbcUrl の null/空ケース: jdbc:postgresql://localhost:5432/ 相当。
+            // dbname が空のときの既定値。ホストは localhost、ポートは 5432 とし、DB 名は空にする。
             spec.host = "localhost";
             spec.port = ":5432";
             spec.dbname = dbname == null ? "" : dbname;
@@ -797,7 +798,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 LOG.debug("OPEN CURSOR {}", cursorName);
             }
             // OPEN ... USING のパラメータを最優先し、なければ DECLARE 時に保存したパラメータへ
-            // フォールバックする（DB 非依存の共通意味論。各バックエンドでの再実装を防ぐ）。
+            // フォールバックする。この選び方は DB によらないので、ここで解決してからフックへ渡す
+            // （各バックエンドで同じ処理を書かせない）。
             AbstractCobolField[] effectiveParams;
             if (params != null && params.length > 0) {
                 effectiveParams = params;
@@ -1060,7 +1062,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     }
 
     // -------------------------------------------------------
-    // registry（旧 SqlState のインスタンス化）
+    // registry（接続・カーソル・prepared statement の登録簿）
     // -------------------------------------------------------
 
     /** 接続を登録する。最初に登録された接続がデフォルトになる。 */
@@ -1083,7 +1085,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         }
     }
 
-    /** 現在のデフォルト接続の識別子を返す（旧 SqlState.getDefaultConnection の選択規則）。 */
+    /** 現在のデフォルト接続の識別子を返す。それが未登録なら、登録済み接続の先頭を代わりに使う。 */
     private String currentConnectionId() {
         if (defaultConnId != null && connections.containsKey(defaultConnId)) {
             return defaultConnId;
@@ -1105,8 +1107,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         for (Cursor cursor : cursors.values()) {
             cursor.isOpened = false;
         }
-        // バックエンドへ「全カーソル無効化」を通知する。カーソルに紐づく生きた資源・内部状態を
-        // 持つ実装はこのフックで解放する（基底は簿記のみを行う）。
+        // バックエンドへ「全カーソル無効化」を通知する。本クラスが更新するのは上の状態表だけなので、
+        // カーソルに紐づく JDBC 資源や内部状態を持つ実装は、このフックで解放する。
         onCursorsInvalidated();
     }
 
@@ -1291,10 +1293,11 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     // -------------------------------------------------------
 
     /**
-     * カーソル登録簿の最小簿記レコード（旧 {@code SqlCursor} の状態部）。基底クラスが DB 共通の
-     * エラー意味論（未 DECLARE の検出、OPEN 済み再 DECLARE 拒否、未 OPEN CLOSE の成功扱いなど）に
-     * 使う内部状態であり、<strong>SPI（{@code protected} フック契約）には露出しない</strong>。
-     * バックエンド実装はフックが受け取る素の値（カーソル名・クエリ・パラメータ）だけを見る。
+     * 1 カーソルぶんの状態。DECLARE 済みか、OPEN 済みか、どのクエリとパラメータに紐づくかを持つ。
+     * DB によらず同じ判定（未 DECLARE のカーソルを使ったらエラー、OPEN 済みのカーソルを再 DECLARE
+     * したらエラー、OPEN していないカーソルの CLOSE は成功扱い）を本クラスで行うための内部状態で、
+     * <strong>サブクラスには渡さない</strong>。バックエンド実装が受け取るのはフックの引数
+     * （カーソル名・クエリ・パラメータ）だけ。
      */
     static final class Cursor {
 
