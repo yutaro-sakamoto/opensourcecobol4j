@@ -563,7 +563,6 @@ AT_CHECK([${COBJ} prog.cbl])
 AT_CHECK([COB_FILE_IDX_COMMIT_INTERVAL=INF ${RUN_MODULE} prog], [0],
 [CLOSE 00
 COUNT 00006
-], [Unlocking INDEXED file is not implemented
 ])
 
 AT_CLEANUP

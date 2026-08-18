@@ -1336,8 +1336,8 @@ public class CobolIndexedFile extends CobolFile {
 
     /**
      * COBOLの{@code COMMIT}文の処理。接続が有効な限り、遅延中のWRITEの有無や
-     * オープンモードによらず現在のトランザクションを無条件にコミットする。
-     * ロック解放は未実装のため{@link #unlock_}に委ねる（現状は警告を出すだけ）。
+     * オープンモードによらず現在のトランザクションを無条件にコミットし、
+     * その後{@link #unlock_}でこのプロセスが保持するレコードロックを解放する。
      */
     @Override
     void commit_() {
@@ -1585,9 +1585,47 @@ public class CobolIndexedFile extends CobolFile {
         return ret;
     }
 
+    /**
+     * このプロセスが保持しているレコードロックをすべて解放する。COBOLの{@code UNLOCK}文、
+     * および{@code COMMIT}/{@code ROLLBACK}文（{@link CobolFile#commit}/{@link
+     * CobolFile#rollback}）から呼ばれる。
+     *
+     * <p>参照実装(opensource COBOL 1.xのcob_file_unlock)と同様にレコードロックを解放する。
+     * ただしC版と異なりファイルロック（{@code file_lock}テーブルの行）は解放しない。
+     * この行はオープン中であることの登録を兼ねており、CLOSE前に消すと他プロセスの{@code OPEN
+     * OUTPUT}がテーブルを作り直せてしまうためである。
+     *
+     * <p>レコードロックを保持し得るのはI-Oモードだけなので、それ以外のモードでは何もしない
+     * （遅延コミット中のOUTPUTモードでここでコミットすると、未確定のWRITEまで
+     * 確定させてしまう副作用もあるため、早期returnはその防止も兼ねる）。
+     */
     @Override
     public void unlock_() {
-        System.err.println("Unlocking INDEXED file is not implemented");
+        if (this.open_mode != COB_OPEN_I_O) {
+            return;
+        }
+        IndexedFile p = this.filei;
+        if (p == null || p.connection == null) {
+            return;
+        }
+        String unlockSql =
+                String.format(
+                        "update %s set locked_by = null, process_id = null, locked_at = null"
+                                + " where locked_by = ?",
+                        getTableName(0));
+        try {
+            if (p.connection.isClosed()) {
+                return;
+            }
+            try (PreparedStatement statement = p.connection.prepareStatement(unlockSql)) {
+                statement.setString(1, getProcessUuid());
+                statement.executeUpdate();
+            }
+            p.connection.commit();
+            previousLockedRecordKey = null;
+        } catch (SQLException e) {
+            System.err.println("Failed to unlock records of an INDEXED file");
+        }
     }
 
     /**
