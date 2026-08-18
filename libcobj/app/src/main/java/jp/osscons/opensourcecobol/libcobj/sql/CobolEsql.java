@@ -20,14 +20,6 @@ public final class CobolEsql {
     private static CobolEsqlBackendInterface backend;
 
     /**
-     * backend の解決に失敗した原因メッセージ。解決失敗（例: {@code OCDB_DB_TYPE} が未対応）を
-     * 例外として生成 COBOL ランタイムへ伝播させると、Java の try/catch を持たないランタイムが
-     * スタックトレースで異常終了する。これを避けるため失敗を 1 度だけ評価して記憶し、以後は
-     * 例外を投げずに SQLCA へエラーを報告する。null は「まだ失敗していない」を表す。
-     */
-    private static String backendResolutionError;
-
-    /**
      * テスト用: {@code OCDB_DB_TYPE} の値を上書きする seam（env に依存せず解決経路を駆動する）。
      * {@code null} のとき環境変数を使う（本番動作）。
      */
@@ -37,60 +29,44 @@ public final class CobolEsql {
      * backend を遅延初期化して返す。{@code OCDB_DB_TYPE} の解決はプロセスで 1 回だけ行う。
      * アクセスを synchronized で直列化し、初回同時アクセス時も生成は 1 回に保たれる。
      *
-     * <p>解決に失敗した場合は例外を投げず、原因を {@link #backendResolutionError} に記憶して
-     * {@code null} を返す（以後の呼び出しで再解決・再 throw しない）。呼び出し側は {@code null} を
-     * 「設定不正により使用不能」とみなし、SQLCA へエラーを報告する。
+     * <p>{@code OCDB_DB_TYPE} に対応する実装が無いのは設定の誤りであり、SQL のエラーとして
+     * 報告すると接続失敗などと区別がつかない。解決に失敗した場合は
+     * {@link CobolEsqlBackendFactory#resolve(String)} の例外をそのまま伝播させ、実行を打ち切る。
+     *
+     * @throws jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException
+     *     {@code OCDB_DB_TYPE} に対応する実装が無い/生成できない場合
      */
     private static synchronized CobolEsqlBackendInterface backend() {
-        if (backend == null && backendResolutionError == null) {
+        if (backend == null) {
             String dbType =
                     dbTypeOverrideForTest != null
                             ? dbTypeOverrideForTest
                             : System.getenv("OCDB_DB_TYPE");
-            try {
-                backend = CobolEsqlBackendFactory.resolve(dbType);
-            } catch (RuntimeException e) {
-                backendResolutionError = "Unsupported OCDB_DB_TYPE: " + dbType;
-            }
+            backend = CobolEsqlBackendFactory.resolve(dbType);
         }
         return backend;
     }
 
-    /**
-     * backend を返す。解決失敗時は接続なし（{@code ECPG_NO_CONN}/{@code 08003}）を SQLCA に報告して
-     * {@code null} を返す。CONNECT 以外の全エントリポイントの共通ガード。
-     */
-    private static CobolEsqlBackendInterface backendOrNoConn(CobolDataStorage sqlca) {
-        CobolEsqlBackendInterface b = backend();
-        if (b == null) {
-            SqlCA.setError(sqlca, SqlCA.ECPG_NO_CONN, "08003", "No connection");
-        }
-        return b;
-    }
-
     // --- テスト支援（package-private。本番 API には露出しない）---
 
-    /** テスト用: 解決済み backend・解決失敗状態・型上書きを破棄し、次回呼び出しで再解決させる。 */
+    /** テスト用: 解決済み backend と型上書きを破棄し、次回呼び出しで再解決させる。 */
     static synchronized void resetBackend() {
         backend = null;
-        backendResolutionError = null;
         dbTypeOverrideForTest = null;
     }
 
-    /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。解決失敗時は {@code null}。 */
+    /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。 */
     static CobolEsqlBackendInterface backendForTest() {
         return backend();
     }
 
     /**
      * テスト用: {@code OCDB_DB_TYPE} の値を上書きして次回の backend 解決を駆動する（env 非依存）。
-     * 未対応の値（例 {@code "mysql"}）を渡すと、実際の解決失敗経路（{@link #backend()} の catch）を
-     * 通して設定不正時の挙動を検証できる。{@link #resetBackend()} で解除する。
+     * {@link #resetBackend()} で解除する。
      */
     static synchronized void setDbTypeForTest(String dbType) {
         dbTypeOverrideForTest = dbType;
         backend = null;
-        backendResolutionError = null;
     }
 
     // -------------------------------------------------------
@@ -109,13 +85,7 @@ public final class CobolEsql {
             AbstractCobolField user,
             AbstractCobolField passwd,
             AbstractCobolField dbname) {
-        CobolEsqlBackendInterface b = backend();
-        if (b == null) {
-            // OCDB_DB_TYPE 不正などの設定エラーは接続失敗として報告する。
-            SqlCA.setError(sqlca, SqlCA.ECPG_CONNECT, "08001", backendResolutionError);
-            return;
-        }
-        b.connect(sqlca, user, passwd, dbname);
+        backend().connect(sqlca, user, passwd, dbname);
     }
 
     /**
@@ -124,10 +94,7 @@ public final class CobolEsql {
      * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void disconnect(CobolDataStorage sqlca) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.disconnect(sqlca);
-        }
+        backend().disconnect(sqlca);
     }
 
     // -------------------------------------------------------
@@ -140,10 +107,7 @@ public final class CobolEsql {
      * @param query SQL クエリ文字列
      */
     public static void exec(CobolDataStorage sqlca, String query) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.exec(sqlca, query);
-        }
+        backend().exec(sqlca, query);
     }
 
     // -------------------------------------------------------
@@ -158,10 +122,7 @@ public final class CobolEsql {
      */
     public static void execWithParams(
             CobolDataStorage sqlca, String query, AbstractCobolField... params) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.execWithParams(sqlca, query, params);
-        }
+        backend().execWithParams(sqlca, query, params);
     }
 
     // -------------------------------------------------------
@@ -175,10 +136,7 @@ public final class CobolEsql {
      * @param cursorName 位置付け対象の（修飾済み）カーソル名
      */
     public static void execWhereCurrentOf(CobolDataStorage sqlca, String query, String cursorName) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.execWhereCurrentOf(sqlca, query, cursorName);
-        }
+        backend().execWhereCurrentOf(sqlca, query, cursorName);
     }
 
     /**
@@ -191,10 +149,7 @@ public final class CobolEsql {
      */
     public static void execWithParamsWhereCurrentOf(
             CobolDataStorage sqlca, String query, String cursorName, AbstractCobolField... params) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.execWithParamsWhereCurrentOf(sqlca, query, cursorName, params);
-        }
+        backend().execWithParamsWhereCurrentOf(sqlca, query, cursorName, params);
     }
 
     // -------------------------------------------------------
@@ -213,10 +168,7 @@ public final class CobolEsql {
             String query,
             AbstractCobolField[] inputParams,
             AbstractCobolField[] resultParams) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.selectInto(sqlca, query, inputParams, resultParams);
-        }
+        backend().selectInto(sqlca, query, inputParams, resultParams);
     }
 
     /**
@@ -236,10 +188,7 @@ public final class CobolEsql {
             String query,
             AbstractCobolField[] inputParams,
             AbstractCobolField[] resultParams) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.selectIntoOccurs(sqlca, occursSize, occursMax, query, inputParams, resultParams);
-        }
+        backend().selectIntoOccurs(sqlca, occursSize, occursMax, query, inputParams, resultParams);
     }
 
     // -------------------------------------------------------
@@ -253,10 +202,7 @@ public final class CobolEsql {
      * @param query カーソル用の SQL クエリ
      */
     public static void declareCursor(CobolDataStorage sqlca, String cursorName, String query) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.declareCursor(sqlca, cursorName, query);
-        }
+        backend().declareCursor(sqlca, cursorName, query);
     }
 
     /**
@@ -269,10 +215,7 @@ public final class CobolEsql {
      */
     public static void declareCursorWithParams(
             CobolDataStorage sqlca, String cursorName, String query, AbstractCobolField... params) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.declareCursorWithParams(sqlca, cursorName, query, params);
-        }
+        backend().declareCursorWithParams(sqlca, cursorName, query, params);
     }
 
     /**
@@ -282,10 +225,7 @@ public final class CobolEsql {
      * @param cursorName オープンするカーソル名
      */
     public static void openCursor(CobolDataStorage sqlca, String cursorName) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.openCursor(sqlca, cursorName);
-        }
+        backend().openCursor(sqlca, cursorName);
     }
 
     /**
@@ -297,10 +237,7 @@ public final class CobolEsql {
      */
     public static void openCursorWithParams(
             CobolDataStorage sqlca, String cursorName, AbstractCobolField... params) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.openCursorWithParams(sqlca, cursorName, params);
-        }
+        backend().openCursorWithParams(sqlca, cursorName, params);
     }
 
     /**
@@ -312,10 +249,7 @@ public final class CobolEsql {
      */
     public static void fetchCursor(
             CobolDataStorage sqlca, String cursorName, AbstractCobolField... resultParams) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.fetchCursor(sqlca, cursorName, resultParams);
-        }
+        backend().fetchCursor(sqlca, cursorName, resultParams);
     }
 
     /**
@@ -333,10 +267,7 @@ public final class CobolEsql {
             int occursSize,
             int occursMax,
             AbstractCobolField... resultParams) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.fetchCursorOccurs(sqlca, cursorName, occursSize, occursMax, resultParams);
-        }
+        backend().fetchCursorOccurs(sqlca, cursorName, occursSize, occursMax, resultParams);
     }
 
     /**
@@ -346,10 +277,7 @@ public final class CobolEsql {
      * @param cursorName クローズするカーソル名
      */
     public static void closeCursor(CobolDataStorage sqlca, String cursorName) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.closeCursor(sqlca, cursorName);
-        }
+        backend().closeCursor(sqlca, cursorName);
     }
 
     // -------------------------------------------------------
@@ -364,10 +292,7 @@ public final class CobolEsql {
      */
     public static void prepare(
             CobolDataStorage sqlca, String stmtName, AbstractCobolField queryField) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.prepare(sqlca, stmtName, queryField);
-        }
+        backend().prepare(sqlca, stmtName, queryField);
     }
 
     /**
@@ -379,10 +304,7 @@ public final class CobolEsql {
      */
     public static void executePrepared(
             CobolDataStorage sqlca, String stmtName, AbstractCobolField... params) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.executePrepared(sqlca, stmtName, params);
-        }
+        backend().executePrepared(sqlca, stmtName, params);
     }
 
     // -------------------------------------------------------
@@ -394,10 +316,7 @@ public final class CobolEsql {
      * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void commit(CobolDataStorage sqlca) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.commit(sqlca);
-        }
+        backend().commit(sqlca);
     }
 
     /**
@@ -406,9 +325,6 @@ public final class CobolEsql {
      * @param sqlca ステータス報告用の SQLCA データストレージ
      */
     public static void rollback(CobolDataStorage sqlca) {
-        CobolEsqlBackendInterface b = backendOrNoConn(sqlca);
-        if (b != null) {
-            b.rollback(sqlca);
-        }
+        backend().rollback(sqlca);
     }
 }

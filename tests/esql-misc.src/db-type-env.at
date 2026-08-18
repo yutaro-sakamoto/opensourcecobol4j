@@ -9,9 +9,10 @@ dnl     (SQLCODE 0 / SQLSTATE 00000). This run also confirms the test database
 dnl     is reachable, so the mysql run below cannot be mistaken for a plain
 dnl     "database down" failure.
 dnl   - mysql: no CobolEsqlBackendMysql implementation exists, so resolution
-dnl     fails and CONNECT reports a connection error (SQLCODE -402 /
-dnl     SQLSTATE 08001) instead of propagating the ClassNotFoundException to
-dnl     the COBOL runtime. This path never touches the database.
+dnl     fails and the run is terminated. A misconfigured OCDB_DB_TYPE is not
+dnl     reported through SQLCA, because a SQL error there is indistinguishable
+dnl     from the database being unreachable. This path never touches the
+dnl     database.
 dnl The contrast between the two runs shows the value is honored at run time.
 
 AT_DATA([prog.cbl], [
@@ -45,11 +46,12 @@ AT_CHECK([OCDB_DB_TYPE=postgresql ${RUN_MODULE} prog], [0],
 SQLSTATE=00000
 ])
 
-dnl An unsupported value fails backend resolution; CONNECT reports the error
-dnl without touching the database and without throwing to the COBOL runtime.
-AT_CHECK([OCDB_DB_TYPE=mysql ${RUN_MODULE} prog], [0],
-[SQLCODE=-000000402
-SQLSTATE=08001
+dnl An unsupported value fails backend resolution and terminates the run
+dnl before CONNECT reaches the database, so neither SQLCODE nor SQLSTATE is
+dnl displayed. The cause is named on stderr.
+AT_CHECK([OCDB_DB_TYPE=mysql ${RUN_MODULE} prog 2>stderr.log], [1], [])
+AT_CHECK([grep -c 'Unsupported OCDB_DB_TYPE: mysql' stderr.log], [0],
+[1
 ])
 
 AT_CLEANUP
