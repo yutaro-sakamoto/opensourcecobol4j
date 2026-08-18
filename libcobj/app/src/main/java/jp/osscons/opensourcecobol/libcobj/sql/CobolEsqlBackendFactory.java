@@ -35,8 +35,9 @@ final class CobolEsqlBackendFactory {
     }
 
     /**
-     * 渡された値からバックエンドを解決する。環境変数を自分で読まないので、テストから任意の値を
-     * 渡せる。未指定（null/空）の場合は後方互換のため PostgreSQL を返す。
+     * 渡された値からバックエンドを解決する（{@link #resolve()} の実装本体。環境変数を自分で
+     * 読まないので、値を直接渡して確かめられる）。未指定（null/空）の場合は後方互換のため
+     * PostgreSQL を返す。
      *
      * <p>{@link ServiceLoader} が発見した実装のうち、{@link CobolEsqlBackendInterface#id()} が
      * 小文字化済みの DB 種別文字列と一致する最初のものを返す。

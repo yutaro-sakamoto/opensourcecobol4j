@@ -19,53 +19,33 @@ public final class CobolEsql {
     private static CobolEsqlBackendInterface backend;
 
     /**
-     * テスト用: {@code OCDB_DB_TYPE} の代わりに使う値。環境変数を設定しなくても解決処理を試せる
-     * ようにするためのもの。{@code null} のときは環境変数を読む（本番の動作）。
-     */
-    private static String dbTypeOverrideForTest;
-
-    /**
      * backend を遅延初期化して返す。{@code OCDB_DB_TYPE} の解決はプロセスで 1 回だけ行う。
      * アクセスを synchronized で直列化し、初回同時アクセス時も生成は 1 回に保たれる。
      *
      * <p>{@code OCDB_DB_TYPE} に対応する実装が無いのは設定の誤りであり、SQL のエラーとして
      * 報告すると接続失敗などと区別がつかない。解決に失敗した場合は
-     * {@link CobolEsqlBackendFactory#resolve(String)} の例外をそのまま伝播させ、実行を打ち切る。
+     * {@link CobolEsqlBackendFactory#resolve()} の例外をそのまま伝播させ、実行を打ち切る。
      *
      * @throws jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException
      *     {@code OCDB_DB_TYPE} に対応する実装が無い/生成できない場合
      */
     private static synchronized CobolEsqlBackendInterface backend() {
         if (backend == null) {
-            String dbType =
-                    dbTypeOverrideForTest != null
-                            ? dbTypeOverrideForTest
-                            : System.getenv("OCDB_DB_TYPE");
-            backend = CobolEsqlBackendFactory.resolve(dbType);
+            backend = CobolEsqlBackendFactory.resolve();
         }
         return backend;
     }
 
     // --- テスト支援（package-private。生成コードからは呼ばれない）---
 
-    /** テスト用: 解決済み backend と型上書きを破棄し、次回呼び出しで再解決させる。 */
+    /** テスト用: 解決済み backend を破棄し、次回呼び出しで再解決させる。 */
     static synchronized void resetBackend() {
         backend = null;
-        dbTypeOverrideForTest = null;
     }
 
     /** テスト用: backend を解決して返す（状態の検証・初期化に使う）。 */
     static CobolEsqlBackendInterface backendForTest() {
         return backend();
-    }
-
-    /**
-     * テスト用: {@code OCDB_DB_TYPE} の代わりに使う値を設定し、次回の backend 解決をこの値で
-     * 行わせる（環境変数を設定しなくてよい）。{@link #resetBackend()} で解除する。
-     */
-    static synchronized void setDbTypeForTest(String dbType) {
-        dbTypeOverrideForTest = dbType;
-        backend = null;
     }
 
     // -------------------------------------------------------
