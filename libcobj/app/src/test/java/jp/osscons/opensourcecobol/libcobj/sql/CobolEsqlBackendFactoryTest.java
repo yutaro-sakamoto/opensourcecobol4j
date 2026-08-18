@@ -46,12 +46,6 @@ class CobolEsqlBackendFactoryTest {
     }
 
     @Test
-    void testResolve_PostgresAlias() {
-        assertInstanceOf(
-                CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("postgres"));
-    }
-
-    @Test
     void testResolve_CaseInsensitive() {
         assertInstanceOf(
                 CobolEsqlBackendPostgresql.class, CobolEsqlBackendFactory.resolve("PostgreSQL"));

@@ -47,9 +47,6 @@ final class CobolEsqlBackendFactory {
      */
     static CobolEsqlBackendInterface resolve(String t) {
         String type = (t == null || t.isEmpty()) ? "postgresql" : t.toLowerCase(Locale.ROOT);
-        if ("postgres".equals(type)) {
-            type = "postgresql"; // 後方互換エイリアス
-        }
         try {
             for (CobolEsqlBackendInterface backend :
                     ServiceLoader.load(CobolEsqlBackendInterface.class)) {
