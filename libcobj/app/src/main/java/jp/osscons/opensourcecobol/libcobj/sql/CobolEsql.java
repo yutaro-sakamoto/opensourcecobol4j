@@ -6,10 +6,9 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 /**
  * COBOL の埋め込み SQL 操作（CONNECT、EXEC SQL、カーソル、トランザクション）のエントリポイント。
  *
- * <p>本クラスは API シグネチャを変えない薄い静的ファサードであり、実処理はすべて環境変数
- * {@code OCDB_DB_TYPE} から解決した {@link CobolEsqlBackendInterface} 実装インスタンスへ委譲する。これにより
- * 生成コード（{@code CobolEsql.xxx(...)} の静的呼び出し）は無変更のまま、DB ごとの実装差し替えを
- * 可能にする。
+ * <p>本クラスは呼び出しを受け取るだけで、実際の処理は環境変数 {@code OCDB_DB_TYPE} から選んだ
+ * {@link CobolEsqlBackendInterface} の実装へ渡す。メソッドの形は変えていないので、生成コード
+ * （{@code CobolEsql.xxx(...)} という静的呼び出し）はそのままで、DB ごとに実装を入れ替えられる。
  */
 public final class CobolEsql {
 
@@ -20,8 +19,8 @@ public final class CobolEsql {
     private static CobolEsqlBackendInterface backend;
 
     /**
-     * テスト用: {@code OCDB_DB_TYPE} の値を上書きする seam（env に依存せず解決経路を駆動する）。
-     * {@code null} のとき環境変数を使う（本番動作）。
+     * テスト用: {@code OCDB_DB_TYPE} の代わりに使う値。環境変数を設定しなくても解決処理を試せる
+     * ようにするためのもの。{@code null} のときは環境変数を読む（本番の動作）。
      */
     private static String dbTypeOverrideForTest;
 
@@ -47,7 +46,7 @@ public final class CobolEsql {
         return backend;
     }
 
-    // --- テスト支援（package-private。本番 API には露出しない）---
+    // --- テスト支援（package-private。生成コードからは呼ばれない）---
 
     /** テスト用: 解決済み backend と型上書きを破棄し、次回呼び出しで再解決させる。 */
     static synchronized void resetBackend() {
@@ -61,8 +60,8 @@ public final class CobolEsql {
     }
 
     /**
-     * テスト用: {@code OCDB_DB_TYPE} の値を上書きして次回の backend 解決を駆動する（env 非依存）。
-     * {@link #resetBackend()} で解除する。
+     * テスト用: {@code OCDB_DB_TYPE} の代わりに使う値を設定し、次回の backend 解決をこの値で
+     * 行わせる（環境変数を設定しなくてよい）。{@link #resetBackend()} で解除する。
      */
     static synchronized void setDbTypeForTest(String dbType) {
         dbTypeOverrideForTest = dbType;

@@ -7,20 +7,20 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
  * COBOL の埋め込み SQL 操作（CONNECT、EXEC SQL、カーソル、トランザクション）の DB バックエンドが
  * 公開すべき全操作を定義するインターフェース。
  *
- * <p>{@link CobolEsql} 静的ファサードはこのインターフェースの実装インスタンスへ委譲する。DB ごとの
- * 差し替えはこのインターフェースの実装（{@link CobolEsqlBackendPostgresql} など）を切り替えることで実現する。
+ * <p>{@link CobolEsql} は受け取った呼び出しを、このインターフェースの実装へ渡す。DB ごとの
+ * 差し替えは、実装（{@link CobolEsqlBackendPostgresql} など）を切り替えることで行う。
  * 接続・文の実行・カーソル・WHERE CURRENT OF・SELECT INTO・prepared statement・トランザクション・
- * エラー報告までを、すべてこの 1 インターフェースの表面に置く。
+ * エラー報告まで、必要な操作はすべてこのインターフェースに並べている。
  */
 public interface CobolEsqlBackendInterface {
 
     /**
-     * 実装ごとに固定の正規 ID（小文字）を返す。例: {@code "postgresql"} / {@code "db2"}。
+     * 実装ごとに決まっている ID（小文字）を返す。例: {@code "postgresql"} / {@code "mysql"}。
      *
-     * <p>{@link java.util.ServiceLoader} で発見された実装の中から環境変数 {@code OCDB_DB_TYPE} の
-     * 値（小文字化済み）と突き合わせる発見キーであり、ログ・デバッグ表示にも使われる。
+     * <p>{@link java.util.ServiceLoader} が見つけた実装の中から 1 つを選ぶときに、環境変数
+     * {@code OCDB_DB_TYPE} の値（小文字化済み）と突き合わせるキー。ログやデバッグ表示にも使う。
      *
-     * @return DB 種別の正規 ID
+     * @return DB 種別の ID
      */
     String id();
 

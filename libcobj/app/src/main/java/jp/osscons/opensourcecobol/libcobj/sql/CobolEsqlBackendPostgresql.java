@@ -26,7 +26,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     /**
      * カーソル名 → 先読みバッファ。サーバカーソルから {@code FETCH FORWARD} でまとめて取ってくる
-     * のは PostgreSQL 側の都合なので、基底クラスが持つカーソルの状態表とは別に本クラスで持つ。
+     * のは PostgreSQL 側の都合なので、基底クラスが持つカーソルの状態とは別に本クラスで持つ。
      * JDBC 資源は含まないため、破棄はメモリ上の状態を捨てるだけでよい。
      */
     private final Map<String, PgCursorState> cursorStates = new HashMap<>();
@@ -79,7 +79,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     protected void configureConnection(Connection c) throws SQLException {
-        // PostgreSQL は autoCommit(true) のまま明示 BEGIN で TX を管理する（移行前の挙動）。
+        // PostgreSQL は autoCommit(true) のまま、明示 BEGIN でトランザクションを管理する。
         c.setAutoCommit(true);
         begin(c);
     }
@@ -126,7 +126,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             throws SQLException {
         String command = "DECLARE " + cursorName + " CURSOR FOR " + query;
 
-        // params は基底が解決済みの有効パラメータ（OPEN ... USING 優先、なければ DECLARE 時の
+        // params は基底クラスが選び終えたパラメータ（OPEN ... USING 優先、なければ DECLARE 時の
         // パラメータ）。空ならパラメータなしで Statement を実行する。
         if (LOG.isTraceEnabled()) {
             LOG.trace(
@@ -235,7 +235,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         // 同一カーソルに対する単一行 FETCH の先読みバッファが残っているとサーバカーソル位置と
         // 食い違うため、ここで破棄しておく。
         cursorStates.remove(cursorName);
-        // 登録済みだが未 OPEN のカーソルでも短絡せず FETCH を PostgreSQL へ送り、
+        // 登録済みだが未 OPEN のカーソルでも、ここで打ち切らず FETCH を PostgreSQL へ送り、
         // そのエラー (メッセージ・SQLSTATE) を SQLCA に反映させる (Open COBOL ESQL 4J と同じ)。
         String fetchSql = "FETCH FORWARD " + occursMax + " FROM " + cursorName;
         LOG.trace("FETCH FORWARD occurs (postgresql): {}", fetchSql);
@@ -282,7 +282,7 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
     @Override
     protected void onCursorsInvalidated() {
         // COMMIT/ROLLBACK（および DISCONNECT）でサーバカーソルは消えるため、先読みバッファも
-        // すべて破棄する。生きた JDBC 資源は持たないので、メモリ上の状態を捨てるだけでよい。
+        // すべて破棄する。JDBC 資源は持たないので、メモリ上の状態を捨てるだけでよい。
         cursorStates.clear();
     }
 
@@ -292,10 +292,10 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
 
     @Override
     protected SqlErrorMapping mapSqlException(SQLException e) {
-        // 生エラー → (ECPG コード, 正規化 SQLSTATE)。PostgreSQL が返す SQLSTATE は ECPG が前提と
-        // する値そのものなので、そのまま採用する。別の DB を追加する場合は、その DB の SQLSTATE を
-        // ECPG の値へ読み替える処理がここに入る。エラー変換は各バックエンドに閉じ込め、整数コードと
-        // SQLSTATE を 1 箇所で決める。
+        // JDBC ドライバが投げた SQLException を (ECPG の SQLCODE, SQLSTATE) へ読み替える。
+        // PostgreSQL が返す SQLSTATE は ECPG が前提とする値そのものなので、そのまま採用する。
+        // 別の DB を追加する場合は、その DB の SQLSTATE を ECPG の値へ読み替える処理がここに入る。
+        // エラーの読み替えは各バックエンドに閉じ込め、SQLCODE と SQLSTATE を 1 箇所で決める。
         String sqlState = e.getSQLState();
         return new SqlErrorMapping(sqlStateToCode(sqlState), sqlState);
     }

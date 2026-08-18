@@ -24,13 +24,13 @@ import org.slf4j.LoggerFactory;
  * 対応するときは、本クラスを継承してフックを実装する。
  *
  * <p>SQLCA 構造体の byte エンコードは DB によらない COBOL 側の取り決めなので {@link SqlCA} の
- * static ヘルパを共有し、{@code 生エラー → (ECPG コード, 正規化 SQLSTATE)} の変換だけを
- * {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
+ * static ヘルパを共有し、{@code JDBC が返した SQLException → (ECPG コード, ECPG の SQLSTATE)} の
+ * 変換だけを {@link #mapSqlException(SQLException)} フックとして DB ごとに実装する。
  *
  * <p>サブクラスから見える範囲は {@code protected} フック群と、その引数・戻り値に現れる型
  * {@link DbSpec}/{@link SqlErrorMapping}（同一パッケージのトップレベルクラス）に限る。
- * カーソルについては役割を分けており、本クラスはカーソル名から {@link Cursor}（DECLARE 済みか、
- * OPEN 済みか、どのクエリに紐づくか）を引く表を持ち、DECLARE/OPEN/FETCH/CLOSE が正しい順序で
+ * カーソルについては役割を分けており、本クラスはカーソル名をキーに {@link Cursor}（DECLARE 済みか、
+ * OPEN 済みか、どのクエリに紐づくか）を保持し、DECLARE/OPEN/FETCH/CLOSE が正しい順序で
  * 呼ばれたかを判定する。フックへ渡すのはカーソル名・クエリ・解決済みパラメータという素の値だけで、
  * {@link Cursor} そのものは渡さない。{@code ResultSet} などの JDBC 資源や、先読みのような DB 固有の
  * 仕組みはサブクラス側が持つ。
@@ -67,11 +67,11 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected static final byte[] EMPTY_RESULT = new byte[0];
 
     // スレッドモデル: 生成 COBOL ランタイムは単一プロセス・単一スレッド実行を前提とする。
-    // このため接続/カーソル/prepared の registry と defaultConnId は同期せず素の
+    // このため下の connections/cursors/prepared と defaultConnId は同期せず素の
     // HashMap/フィールドのまま扱う。
     // マルチスレッド対応が必要になった場合は、ConcurrentHashMap 化と defaultConnId 更新を含む
     // 同期、または public API 全体の直列化を別途検討する (stmtCache の ConcurrentHashMap 化も
-    // 同前提下の保守的な保護であり、現時点で全レジストリの同期を意味するものではない)。
+    // 同前提下の保守的な保護であり、これら全体を同期する意味ではない)。
     private final Map<String, Connection> connections = new HashMap<>();
     private final Map<String, Cursor> cursors = new HashMap<>();
     private final Map<String, String[]> prepared = new HashMap<>();
@@ -142,8 +142,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected abstract void rollbackTransaction(Connection c) throws SQLException;
 
     /**
-     * カーソルをオープンする（DECLARE 等の DB 別の発行手段を内包）。成功時にオープン済みとして
-     * 扱えるよう、SQL の発行のみを行う（状態の更新は共通フローが行う）。
+     * カーソルをオープンする（{@code DECLARE} など、どの SQL を発行するかは DB ごとに実装する）。
+     * ここでは SQL の発行だけを行い、オープン済みかどうかの記録は本クラス側で更新する。
      *
      * @param c JDBC 接続
      * @param cursorName カーソル名
@@ -193,8 +193,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             throws SQLException;
 
     /**
-     * カーソルをクローズする（CLOSE 等の DB 別の発行手段を内包）。SQL の発行と、このカーソルに
-     * 紐づく資源・内部状態（あれば）の解放を行う。
+     * カーソルをクローズする（{@code CLOSE} など、どの SQL を発行するかは DB ごとに実装する）。
+     * SQL の発行と、このカーソルに紐づく資源や内部状態（あれば）の解放を行う。
      *
      * @param c JDBC 接続
      * @param cursorName カーソル名
@@ -203,8 +203,8 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     protected abstract void closeCursorImpl(Connection c, String cursorName) throws SQLException;
 
     /**
-     * WHERE CURRENT OF の実行前に、論理現在行へカーソル位置を補正する（PostgreSQL は先読み分の
-     * FETCH BACKWARD と先読みバッファ破棄を内包）。
+     * WHERE CURRENT OF を実行する前に、COBOL プログラムから見た現在行までカーソルを戻す
+     * （PostgreSQL では、先読みした分だけ {@code FETCH BACKWARD} して先読みバッファを捨てる）。
      *
      * @param c JDBC 接続
      * @param cursorName カーソル名
@@ -215,32 +215,32 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             Connection c, String cursorName, CobolDataStorage sqlca) throws SQLException;
 
     /**
-     * すべてのカーソルが一括で無効化されるタイミングで呼ばれる通知フック。既定は no-op。
+     * すべてのカーソルがまとめて無効になるタイミングで呼ばれる通知フック。既定では何もしない。
      *
-     * <p>呼ばれるのは (1) COMMIT/ROLLBACK によるトランザクション終端の直後、(2) DISCONNECT での
-     * 接続クローズ直前、の 2 経路。カーソルごとに生きた資源（JDBC の {@code ResultSet}/{@code
-     * Statement} など）を自前で保持するバックエンドは、本フックでそれらをすべて解放すること。解放を
-     * 怠ると COMMIT/ROLLBACK のたびに資源がリークする。カーソルごとの内部状態（先読みバッファなど）を
-     * 持つバックエンドはここで破棄する。per-cursor の状態も資源も持たないバックエンドは既定の
-     * no-op のままでよい。
+     * <p>呼ばれるのは (1) COMMIT/ROLLBACK でトランザクションが終わった直後、(2) DISCONNECT で
+     * 接続を閉じる直前、の 2 とおり。カーソルごとに JDBC の {@code ResultSet}/{@code Statement} を
+     * 自前で持つバックエンドは、本フックでそれらをすべて閉じること。閉じ忘れると COMMIT/ROLLBACK の
+     * たびに資源が残り続ける。カーソルごとの内部状態（先読みバッファなど）を持つバックエンドも、
+     * ここで捨てる。どちらも持たないバックエンドは、既定のまま何もしなくてよい。
      *
-     * <p>明示 CLOSE（1 本ずつの終端）はこのフックを通らない。per-cursor の解放は
+     * <p>カーソルを 1 本ずつ閉じる CLOSE は、このフックを通らない。その場合の解放は
      * {@link #closeCursorImpl} 側で行うこと。
      */
     protected void onCursorsInvalidated() {
-        // 既定は no-op（カーソルに紐づく生きた資源を持たないバックエンド向け）。
+        // 既定では何もしない（カーソルに紐づく資源を持たないバックエンド向け）。
     }
 
     /**
-     * DB ごとの「生エラー → (ECPG 正規コード, 正規化 SQLSTATE)」変換。{@link SQLException} 全体を
-     * 受け取るため、{@code getSQLState()} に加えて {@code getErrorCode()} も併用できる。
+     * JDBC ドライバが投げた {@link SQLException} を、COBOL 側が見る (SQLCODE, SQLSTATE) の組へ
+     * 読み替える。例外オブジェクトごと受け取るため、{@code getSQLState()} に加えて
+     * {@code getErrorCode()}（DB 固有のエラー番号）も判断材料にできる。
      *
-     * <p>SQLCODE（整数）と SQLSTATE（文字列）の両方を 1 つのフックで一貫して返すことで、DB ごとに
-     * 異なる生エラーを COBOL 側が見る ECPG 語彙へ正規化する。整数だけ変換して SQLSTATE 文字列を
-     * 素通りさせると、SQLSTATE で分岐する COBOL が DB 依存の値を見てしまうため、両者を揃える。
+     * <p>SQLCODE（整数）と SQLSTATE（文字列）の両方を 1 つのフックで返すのは、DB ごとに異なる値を
+     * ECPG が定める値へ揃えるため。整数だけ変換して SQLSTATE をドライバの値のまま通すと、SQLSTATE
+     * で分岐する COBOL プログラムが DB ごとに違う値を見ることになる。
      *
-     * @param e DB から来た SQL 例外
-     * @return ECPG 正規コードと正規化 SQLSTATE の組（{@link SqlErrorMapping}）
+     * @param e JDBC ドライバが投げた SQL 例外
+     * @return ECPG の SQLCODE と SQLSTATE の組（{@link SqlErrorMapping}）
      */
     protected abstract SqlErrorMapping mapSqlException(SQLException e);
 
@@ -295,7 +295,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 // 切断時の commit エラーは無視する
             }
             // 接続クローズ前に全カーソルを無効化し、カーソルに紐づく資源を解放する
-            // （「接続クローズが子の Statement/ResultSet を閉じる」JDBC カスケードに暗黙依存しない）。
+            // （「接続を閉じれば Statement/ResultSet も閉じる」という JDBC の動作には任せない）。
             clearCursors();
             if (!conn.isClosed()) {
                 conn.close();
@@ -738,7 +738,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     }
 
     /**
-     * カーソルを宣言して registry に登録する（パラメータ有無の共通処理）。{@code params} が
+     * カーソルを宣言して {@code cursors} に登録する（パラメータ有無の共通処理）。{@code params} が
      * {@code null} の場合はパラメータなしの DECLARE と同じ（nParams=0・params 未バインド）。
      */
     private void declareCursorInternal(
@@ -837,7 +837,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                         "Cursor not found: " + cursorName);
                 return;
             }
-            // 登録済みだが未 OPEN (OPEN 失敗を含む) のカーソルでも短絡せず FETCH を DB へ送る
+            // 登録済みだが未 OPEN (OPEN 失敗を含む) のカーソルでも、ここで打ち切らず FETCH を DB へ送る
             // (Open COBOL ESQL 4J と同じ)。エラーは下の catch 経由で SQLCA に格納される。
             LOG.trace("FETCH CURSOR {}", cursorName);
             // 正常な fetch が sqlcode=0 になるよう事前にクリアしておく。指標変数なしで NULL の列が
@@ -879,7 +879,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             // 取得行数 SQLERRD(3) を 0 で初期化してから委譲する。結果末尾 (0 行) の場合に
             // fetchOccursImpl が SQLCODE=0 のみ設定して早期 return しても、SQLERRD(3) が
             // 前回バッチの件数として残らないようにする (満杯バッチの次に 0 行 FETCH した際の
-            // stale な行数による再処理・無限ループを防ぐ)。通常パスは実件数で上書きする。
+            // 前回の行数が残ったまま使われて再処理や無限ループになるのを防ぐ)。通常は実件数で上書きする。
             SqlCA.setRowCount(sqlca, 0);
             fetchOccursImpl(conn, cursorName, occursSize, occursMax, resultParams, sqlca);
         } catch (SQLException e) {
@@ -1062,7 +1062,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
     }
 
     // -------------------------------------------------------
-    // registry（接続・カーソル・prepared statement の登録簿）
+    // 接続・カーソル・prepared statement を出し入れするメソッド
     // -------------------------------------------------------
 
     /** 接続を登録する。最初に登録された接続がデフォルトになる。 */
@@ -1107,13 +1107,13 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         for (Cursor cursor : cursors.values()) {
             cursor.isOpened = false;
         }
-        // バックエンドへ「全カーソル無効化」を通知する。本クラスが更新するのは上の状態表だけなので、
-        // カーソルに紐づく JDBC 資源や内部状態を持つ実装は、このフックで解放する。
+        // バックエンドへ「全カーソル無効化」を通知する。本クラスが更新するのは {@link Cursor} の
+        // 状態だけなので、カーソルに紐づく JDBC 資源や内部状態を持つ実装は、このフックで解放する。
         onCursorsInvalidated();
     }
 
     // -------------------------------------------------------
-    // テスト支援（package-private。本番 API には露出しない）
+    // テスト支援（package-private。本番の処理からは呼ばれない）
     // -------------------------------------------------------
 
     /** テスト用: カーソルを直接登録する。 */
@@ -1152,7 +1152,7 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
         return buildSpec(user, passwd, dbname);
     }
 
-    /** テスト用: 登録済みの全 JDBC 接続を閉じ、レジストリと文キャッシュをクリアする。 */
+    /** テスト用: 登録済みの全 JDBC 接続を閉じ、接続・カーソル・prepared と文キャッシュを空にする。 */
     final void closeAllConnectionsForTest() {
         for (Connection c : connections.values()) {
             try {
