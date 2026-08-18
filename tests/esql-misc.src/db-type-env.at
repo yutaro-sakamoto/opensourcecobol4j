@@ -6,13 +6,14 @@ dnl rather than binding the backend at build time. The same compiled program is
 dnl run twice with different OCDB_DB_TYPE values passed as a shell variable:
 dnl   - postgresql: resolves the PostgreSQL backend and CONNECT succeeds
 dnl     (SQLCODE 0 / SQLSTATE 00000). This run also confirms the test database
-dnl     is reachable, so the mysql run below cannot be mistaken for a plain
+dnl     is reachable, so the failing run below cannot be mistaken for a plain
 dnl     "database down" failure.
-dnl   - mysql: no CobolEsqlBackendMysql implementation exists, so resolution
-dnl     fails and the run is terminated. A misconfigured OCDB_DB_TYPE is not
-dnl     reported through SQLCA, because a SQL error there is indistinguishable
-dnl     from the database being unreachable. This path never touches the
-dnl     database.
+dnl   - Non-existentDB: no backend registers that id, so resolution fails and
+dnl     the run is terminated. A misconfigured OCDB_DB_TYPE is not reported
+dnl     through SQLCA, because a SQL error there is indistinguishable from the
+dnl     database being unreachable. This path never touches the database.
+dnl     The value is deliberately not the name of a database we may implement
+dnl     later, so adding a backend never turns this case into a passing one.
 dnl The contrast between the two runs shows the value is honored at run time.
 
 AT_DATA([prog.cbl], [
@@ -49,8 +50,8 @@ SQLSTATE=00000
 dnl An unsupported value fails backend resolution and terminates the run
 dnl before CONNECT reaches the database, so neither SQLCODE nor SQLSTATE is
 dnl displayed. The cause is named on stderr.
-AT_CHECK([OCDB_DB_TYPE=mysql ${RUN_MODULE} prog 2>stderr.log], [1], [])
-AT_CHECK([grep -c 'Unsupported OCDB_DB_TYPE: mysql' stderr.log], [0],
+AT_CHECK([OCDB_DB_TYPE=Non-existentDB ${RUN_MODULE} prog 2>stderr.log], [1], [])
+AT_CHECK([grep -c 'Unsupported OCDB_DB_TYPE: Non-existentDB' stderr.log], [0],
 [1
 ])
 

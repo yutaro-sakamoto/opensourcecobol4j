@@ -44,13 +44,16 @@ class CobolEsqlBackendFactoryTest {
 
     @Test
     void testResolve_Unsupported_Throws() {
-        assertThrows(CobolRuntimeException.class, () -> CobolEsqlBackendFactory.resolve("mysql"));
+        // 実装される見込みのない名前を使う（将来 DB を追加してもこのテストが意味を失わないように）。
+        assertThrows(
+                CobolRuntimeException.class,
+                () -> CobolEsqlBackendFactory.resolve("Non-existentDB"));
     }
 
     @Test
     void testUnconfigured_ConnectThrows() {
-        // 未対応の OCDB_DB_TYPE を上書きし、実際の解決失敗経路を駆動する。
-        CobolEsql.setDbTypeForTest("mysql");
+        // 対応する実装が無い値を渡し、実際に解決が失敗する経路を通す。
+        CobolEsql.setDbTypeForTest("Non-existentDB");
         CobolDataStorage sqlca = new CobolDataStorage(136);
         // 設定の誤りは SQLCA へ報告せず、そのまま呼び出し元へ伝播させる。
         assertThrows(CobolRuntimeException.class, () -> CobolEsql.connect(sqlca, null, null, null));
@@ -59,7 +62,7 @@ class CobolEsqlBackendFactoryTest {
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
     void testUnconfigured_AllOtherOperationsThrow() {
-        CobolEsql.setDbTypeForTest("mysql");
+        CobolEsql.setDbTypeForTest("Non-existentDB");
         CobolDataStorage sqlca = new CobolDataStorage(136);
         // CONNECT 以外の全エントリポイントも同じく伝播させる（接続なしとして握りつぶさない）。
         assertThrowsUnsupported("disconnect", () -> CobolEsql.disconnect(sqlca));
