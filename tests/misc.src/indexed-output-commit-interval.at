@@ -120,6 +120,96 @@ AT_CHECK([diff expected.txt actual.txt], [0], [ignore])
 
 AT_CLEANUP
 
+AT_SETUP([Status precedence of out-of-order and duplicate keys])
+
+# With ACCESS SEQUENTIAL the ordering check runs before the duplicate
+# check, matching opensource COBOL 1.x (indexed_write in libcob/fileio.c):
+# after writing 001 and 003, writing 002 is 21 (out of order, not a
+# duplicate), writing 001 is also 21 (a duplicate of an earlier record,
+# but the ordering violation takes precedence), and only a key equal to
+# the previous one (003) is 22.
+
+AT_DATA([prog.cbl],
+[       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT IDX-FILE ASSIGN TO "./IDX-FILE"
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS SEQUENTIAL
+               RECORD KEY IS IDX-KEY
+               FILE STATUS IS FS.
+       DATA DIVISION.
+       FILE SECTION.
+       FD IDX-FILE.
+       01 IDX-REC.
+          03 IDX-KEY PIC 9(3).
+          03 IDX-DATA PIC X(5).
+       WORKING-STORAGE SECTION.
+       01 FS PIC XX.
+       01 CNT PIC 9(3) VALUE 0.
+       01 EOF-FLAG PIC X VALUE "N".
+       PROCEDURE DIVISION.
+           OPEN OUTPUT IDX-FILE.
+           MOVE "001REC01" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W1 " FS.
+           MOVE "003REC02" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W2 " FS.
+      *> out of order, not a duplicate -> 21
+           MOVE "002REC03" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W3 " FS.
+      *> duplicate of an earlier record: ordering violation wins -> 21
+           MOVE "001REC04" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W4 " FS.
+      *> equal to the previous key -> 22
+           MOVE "003REC05" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W5 " FS.
+           MOVE "004REC06" TO IDX-REC.
+           WRITE IDX-REC.
+           DISPLAY "W6 " FS.
+           CLOSE IDX-FILE.
+           OPEN INPUT IDX-FILE.
+           PERFORM UNTIL EOF-FLAG = "Y"
+               READ IDX-FILE NEXT RECORD
+                   AT END MOVE "Y" TO EOF-FLAG
+                   NOT AT END
+                       ADD 1 TO CNT
+                       DISPLAY "R " IDX-KEY
+               END-READ
+           END-PERFORM.
+           CLOSE IDX-FILE.
+           DISPLAY "COUNT " CNT.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+
+AT_CHECK([${RUN_MODULE} prog], [0],
+[W1 00
+W2 00
+W3 21
+W4 21
+W5 22
+W6 00
+R 001
+R 003
+R 004
+COUNT 003
+])
+
+# The same statuses must be produced without intermediate commits.
+AT_CHECK([${RUN_MODULE} prog > expected.txt])
+AT_CHECK([COB_FILE_IDX_COMMIT_INTERVAL=INF ${RUN_MODULE} prog > actual.txt])
+AT_CHECK([diff expected.txt actual.txt], [0], [ignore])
+
+AT_CLEANUP
+
 AT_SETUP([COB_FILE_IDX_COMMIT_INTERVAL does not change WRITE results])
 
 # Writes 100 records with a duplicate-key error every 10 records, so

@@ -1213,24 +1213,34 @@ public class CobolIndexedFile extends CobolFile {
     public int write_(int opt) {
         IndexedFile p = this.filei;
 
+        // 参照実装(opensource COBOL 1.xのindexed_write冒頭のunlock_record)に合わせて、
+        // WRITEの成否にかかわらず最初に直前のレコードロックを解放する。write_内の
+        // ロック解放処理はここに集約されている。OUTPUT(遅延コミット中)/EXTENDでは
+        // READが実行できずレコードロックは存在し得ないため何もしない。
+        // 解放はこの時点でコミットして確定させ、後続のWRITE本体が失敗したときの
+        // rollbackに巻き込まれないようにする
+        if (!this.deferCommitsInOutputMode
+                && this.open_mode != COB_OPEN_EXTEND
+                && this.previousLockedRecordKey != null) {
+            try {
+                unlockPreviousRecord();
+                p.connection.commit();
+            } catch (SQLException e) {
+                return COB_STATUS_30_PERMANENT_ERROR;
+            }
+        }
+
         p.key = DBT_SET(this.keys[0].getField());
         if (p.last_key == null) {
             p.last_key = new CobolDataStorage(p.key.length);
 
         } else if (this.access_mode == COB_ACCESS_SEQUENTIAL) {
             byte[] keyBytes = p.key;
+            // 参照実装と同じく、SEQUENTIALでは直前キーとの順序チェック(21)を
+            // 重複チェック(22)より先に行う。したがって「過去に書いたキーとの重複」は
+            // 順序違反として21になり、22になるのは直前のキーと等しい場合だけ
             int comparison = p.last_key.memcmp(keyBytes, keyBytes.length);
             if (comparison > 0) {
-                // OUTPUT/EXTENDモードではREADが実行できずレコードロックは
-                // 存在しない。コミットすべき未確定の変更もないため後始末は不要
-                if (!this.deferCommitsInOutputMode && this.open_mode != COB_OPEN_EXTEND) {
-                    try {
-                        unlockPreviousRecord();
-                        p.connection.commit();
-                    } catch (SQLException e) {
-                        return COB_STATUS_30_PERMANENT_ERROR;
-                    }
-                }
                 return COB_STATUS_21_KEY_INVALID;
             }
             // OUTPUTモードのSEQUENTIALでは、テーブルの内容は自分が昇順で書いた
@@ -1249,14 +1259,8 @@ public class CobolIndexedFile extends CobolFile {
         }
 
         int ret = indexed_write_internal(false, opt);
-        // EXTENDモードではREADが実行できずレコードロックは存在しないため、
-        // ロック解放処理は不要
-        boolean mayHoldRecordLock = this.open_mode != COB_OPEN_EXTEND;
         if (ret == COB_STATUS_00_SUCCESS) {
             try {
-                if (mayHoldRecordLock) {
-                    unlockPreviousRecord();
-                }
                 if (this.commitOnModification) {
                     p.connection.commit();
                 }
@@ -1266,10 +1270,6 @@ public class CobolIndexedFile extends CobolFile {
         } else {
             try {
                 p.connection.rollback();
-                if (mayHoldRecordLock) {
-                    unlockPreviousRecord();
-                    p.connection.commit();
-                }
             } catch (SQLException rollbackEx) {
                 return ret;
             }
