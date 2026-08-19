@@ -49,7 +49,32 @@ jobs:
 
       - name: Build cobj.exe
         run: msbuild /p:Configuration=Release /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
-      
+
+      # Deliberately not guarded by upload-artifacts: assembling the bundle on
+      # every push and pull request is what keeps a broken bundle configuration
+      # from surfacing only at release time.
+      - name: Assemble the Windows release bundle
+        run: |
+          $version = (Select-String -Path configure.ac -Pattern 'AC_INIT\(\[opensource COBOL 4J\],\[([^\]]+)\]').Matches[0].Groups[1].Value
+          if (-not $version) { Write-Error "failed to extract the version from configure.ac" }
+          $name = "opensourcecobol4j-$version-windows-x64"
+          New-Item -ItemType Directory -Path "$name/bin", "$name/lib", "$name/config", "$name/copy" | Out-Null
+          Copy-Item win/x64/Release/cobj.exe "$name/bin/"
+          Copy-Item libcobj/app/build/libs/libcobj.jar "$name/lib/"
+          Copy-Item config/*.conf "$name/config/"
+          Copy-Item copy/*.cpy "$name/copy/"
+          Copy-Item win/install.ps1 "$name/"
+          Copy-Item win/release-README.txt "$name/README.txt"
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+
+      - name: Upload the Windows release bundle
+        if: ${{inputs.upload-artifacts}}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-windows-zip
+          path: opensourcecobol4j-*-windows-x64.zip
+          if-no-files-found: error
+
       - name: Upload libcobj.jar
         if: ${{inputs.upload-artifacts}}
         uses: actions/upload-artifact@v7

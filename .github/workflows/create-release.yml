@@ -15,6 +15,12 @@ jobs:
     with:
       upload-artifacts: true
 
+  build-linux-tarball:
+    needs: check-workflows
+    uses: ./.github/workflows/release-linux-build.yml
+    with:
+      upload-artifacts: true
+
   # Push the Docker image only after the GitHub release has been created, so an
   # image is never published for a release that failed to materialize.
   docker-image:
@@ -26,18 +32,29 @@ jobs:
     secrets: inherit
 
   create-release:
-    needs: build-artifacts
+    needs: [build-artifacts, build-linux-tarball]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      # Needed by actions/attest-build-provenance.
+      id-token: write
+      attestations: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ github.ref_name }}
 
     steps:
     - uses: actions/checkout@v7
 
-    - name: Create a Release
-      run: gh release create ${{ github.ref }} -F ReleaseNote.md
+    # The bundle file names carry the configure.ac version, so a tag that
+    # does not match it would publish assets named after the wrong version.
+    - name: Check that the tag matches the version in configure.ac
+      run: |
+        version=$(sed -n 's/^AC_INIT(\[opensource COBOL 4J\],\[\([^]]*\)\].*/\1/p' configure.ac)
+        if [ "v$version" != "$TAG" ]; then
+          echo "tag $TAG does not match configure.ac version $version" >&2
+          exit 1
+        fi
 
     - name: Download cobj.exe
       uses: actions/download-artifact@v8
@@ -59,13 +76,56 @@ jobs:
       with:
         name: libcobj-sbom.xml
 
-    - name: Publish artifacts
+    - name: Download the Linux release tarball
+      uses: actions/download-artifact@v8
+      with:
+        name: release-linux-tarball
+
+    - name: Download the Windows release bundle
+      uses: actions/download-artifact@v8
+      with:
+        name: release-windows-zip
+
+    - name: Generate SHA256SUMS
       run: |
-        gh release upload ${{ github.ref_name }} cobj.exe --clobber
-        gh release upload ${{ github.ref_name }} libcobj.jar --clobber
-        gh release upload ${{ github.ref_name }} libcobj-sbom.json --clobber
-        gh release upload ${{ github.ref_name }} libcobj-sbom.xml --clobber
-        gh release upload ${{ github.ref_name }} config/default.conf --clobber
+        sha256sum cobj.exe libcobj.jar libcobj-sbom.json libcobj-sbom.xml \
+          opensourcecobol4j-*-linux-x86_64.tar.gz \
+          opensourcecobol4j-*-windows-x64.zip > SHA256SUMS
+        cat SHA256SUMS
+
+    - name: Attest the build provenance of the release assets
+      uses: actions/attest-build-provenance@v3
+      with:
+        subject-path: |
+          cobj.exe
+          libcobj.jar
+          libcobj-sbom.json
+          libcobj-sbom.xml
+          opensourcecobol4j-*-linux-x86_64.tar.gz
+          opensourcecobol4j-*-windows-x64.zip
+          SHA256SUMS
+
+    - name: Compose the release notes
+      run: |
+        sed "s|__REPO__|$GITHUB_REPOSITORY|g" .github/release-note-footer.md > footer.md
+        cat ReleaseNote.md footer.md > release-notes.md
+
+    # Create the release as a draft and publish it only after every asset is
+    # uploaded, so a failure in between never leaves a public release with
+    # missing assets.
+    - name: Create a draft release
+      run: gh release create "$TAG" --draft -F release-notes.md
+
+    - name: Upload the release assets
+      run: |
+        gh release upload "$TAG" \
+          cobj.exe libcobj.jar libcobj-sbom.json libcobj-sbom.xml \
+          opensourcecobol4j-*-linux-x86_64.tar.gz \
+          opensourcecobol4j-*-windows-x64.zip \
+          SHA256SUMS --clobber
+
+    - name: Publish the release
+      run: gh release edit "$TAG" --draft=false
 
   # publish libcobj.jar to GitHub Packages
   publish:
