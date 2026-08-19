@@ -53,7 +53,7 @@ jobs:
   # placeholder is never published to Docker Hub and a missing tag fails here
   # instead of after the builds.
   resolve-version:
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
@@ -75,7 +75,7 @@ jobs:
 
   build:
     needs: resolve-version
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     strategy:
       fail-fast: false
       matrix:
@@ -147,7 +147,7 @@ jobs:
   push:
     if: inputs.push-to-dockerhub
     needs: [resolve-version, build]
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     env:
       IMAGE_VERSION: ${{ needs.resolve-version.outputs.version }}
 

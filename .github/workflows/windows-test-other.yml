@@ -9,71 +9,71 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Download test scripts
-      uses: actions/download-artifact@v8
-      with:
-        name: windows-test-scripts
-        path: tests/
+      - name: Download test scripts
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-test-scripts
+          path: tests/
 
-    - name: Download libcobj.jar
-      uses: actions/download-artifact@v8
-      with:
-        name: libcobj.jar
-        path: libcobj/app/build/libs/
+      - name: Download libcobj.jar
+        uses: actions/download-artifact@v8
+        with:
+          name: libcobj.jar
+          path: libcobj/app/build/libs/
 
-    - name: Download cobj.exe
-      uses: actions/download-artifact@v8
-      with:
-        name: cobj.exe
-        path: win/x64/Release/
+      - name: Download cobj.exe
+        uses: actions/download-artifact@v8
+        with:
+          name: cobj.exe
+          path: win/x64/Release/
 
-    - name: Install Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin'
-        java-version: '11'
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "11"
 
-    - name: Install opensource COBOL 4J
-      run: |
-        cd win
-        ./make-install.ps1
+      - name: Install opensource COBOL 4J
+        run: |
+          cd win
+          ./make-install.ps1
 
-    - name: Set up test environment
-      shell: bash
-      run: |
-        cd tests
-        cp atlocal-win.env atlocal
-        WORKSPACE=$(cd .. && pwd)
-        sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
-        sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
-        sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
+      - name: Set up test environment
+        shell: bash
+        run: |
+          cd tests
+          cp atlocal-win.env atlocal
+          WORKSPACE=$(cd .. && pwd)
+          sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
+          sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
+          sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
 
-    - name: Run tests ${{ inputs.test-name }}
-      shell: bash
-      run: |
-        # Create a diff wrapper that strips trailing CR so CRLF output from
-        # Windows binaries compares equal to LF expected outputs.
-        mkdir -p /tmp/diff-wrapper
-        printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
-        chmod +x /tmp/diff-wrapper/diff
-        export PATH="/tmp/diff-wrapper:$PATH"
-        export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
-        cd tests
-        # Autotest gives every test group its own working directory, so the
-        # groups do not interfere with each other and the suites can run their
-        # groups in parallel. The runners have 4 cores.
-        ./${{ inputs.test-name }} -j4
+      - name: Run tests ${{ inputs.test-name }}
+        shell: bash
+        run: |
+          # Create a diff wrapper that strips trailing CR so CRLF output from
+          # Windows binaries compares equal to LF expected outputs.
+          mkdir -p /tmp/diff-wrapper
+          printf '%s\n' '#!/bin/bash' 'exec /usr/bin/diff --strip-trailing-cr "$@"' > /tmp/diff-wrapper/diff
+          chmod +x /tmp/diff-wrapper/diff
+          export PATH="/tmp/diff-wrapper:$PATH"
+          export CLASSPATH=".;C:/opensourcecobol4j/lib/libcobj.jar"
+          cd tests
+          # Autotest gives every test group its own working directory, so the
+          # groups do not interfere with each other and the suites can run their
+          # groups in parallel. The runners have 4 cores.
+          ./${{ inputs.test-name }} -j4
 
-    - name: Upload log files if tests fail
-      if: failure()
-      uses: actions/upload-artifact@v7
-      with:
-        name: windows-${{ inputs.test-name }}-log
-        path: tests/${{ inputs.test-name }}.dir/
+      - name: Upload log files if tests fail
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-${{ inputs.test-name }}-log
+          path: tests/${{ inputs.test-name }}.dir/

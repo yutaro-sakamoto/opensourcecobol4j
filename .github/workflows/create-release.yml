@@ -27,38 +27,38 @@ jobs:
 
   create-release:
     needs: build-artifacts
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Create a Release
-      run: gh release create ${{ github.ref }} -F ReleaseNote.md
+      - name: Create a Release
+        run: gh release create ${{ github.ref }} -F ReleaseNote.md
 
-    - name: Download cobj.exe
-      uses: actions/download-artifact@v8
-      with:
-        name: cobj.exe
+      - name: Download cobj.exe
+        uses: actions/download-artifact@v8
+        with:
+          name: cobj.exe
 
-    - name: Download libcobj.jar
-      uses: actions/download-artifact@v8
-      with:
-        name: libcobj.jar
+      - name: Download libcobj.jar
+        uses: actions/download-artifact@v8
+        with:
+          name: libcobj.jar
 
-    - name: Publish artifacts
-      run: | 
-        gh release upload ${{ github.ref_name }} cobj.exe --clobber
-        gh release upload ${{ github.ref_name }} libcobj.jar --clobber
-        gh release upload ${{ github.ref_name }} config/default.conf --clobber
+      - name: Publish artifacts
+        run: |
+          gh release upload ${{ github.ref_name }} cobj.exe --clobber
+          gh release upload ${{ github.ref_name }} libcobj.jar --clobber
+          gh release upload ${{ github.ref_name }} config/default.conf --clobber
 
   # publish libcobj.jar to GitHub Packages
   publish:
     needs: check-workflows
-    runs-on: ubuntu-latest
+    runs-on: codebuild-opensourcecobol4j-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
     permissions:
       contents: read
       packages: write
@@ -70,8 +70,8 @@ jobs:
           mv libcobj/* opensourcecobol4j
       - uses: actions/setup-java@v5
         with:
-          java-version: '11'
-          distribution: 'temurin'
+          java-version: "11"
+          distribution: "temurin"
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
       - name: Setup Gradle

@@ -9,41 +9,41 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Download libcobj.jar
-      uses: actions/download-artifact@v8
-      with:
-        name: libcobj.jar
-        path: libcobj/app/build/libs/
-    
-    - name: Download cobj.exe
-      uses: actions/download-artifact@v8
-      with:
-        name: cobj.exe
-        path: win/x64/Release/
-      
-    - name: Install Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin'
-        java-version: '11'
-    
-    - name: Install opensource COBOL 4J
-      run: |
-        cd win
-        ./make-install.ps1
+      - name: Download libcobj.jar
+        uses: actions/download-artifact@v8
+        with:
+          name: libcobj.jar
+          path: libcobj/app/build/libs/
 
-    - name: Run tests ${{ inputs.test-name }}
-      shell: bash
-      run: |
-        export CLASSPATH='C:\opensourcecobol4j\lib\libcobj.jar'
-        export PATH="$PATH:/c/opensourcecobol4j/bin:/c/opensourcecobol4j/config"
-        cd tests/cobol85/${{ inputs.test-name }}
-        sh ../report.sh
-        cat report.txt
-        grep "Successfully executed:" report.txt > result-check
-        grep "100.00%" result-check
+      - name: Download cobj.exe
+        uses: actions/download-artifact@v8
+        with:
+          name: cobj.exe
+          path: win/x64/Release/
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Install opensource COBOL 4J
+        run: |
+          cd win
+          ./make-install.ps1
+
+      - name: Run tests ${{ inputs.test-name }}
+        shell: bash
+        run: |
+          export CLASSPATH='C:\opensourcecobol4j\lib\libcobj.jar'
+          export PATH="$PATH:/c/opensourcecobol4j/bin:/c/opensourcecobol4j/config"
+          cd tests/cobol85/${{ inputs.test-name }}
+          sh ../report.sh
+          cat report.txt
+          grep "Successfully executed:" report.txt > result-check
+          grep "100.00%" result-check

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       upload-artifacts:
-        description: 'Upload artifacts'
+        description: "Upload artifacts"
         required: true
         type: boolean
 
@@ -13,13 +13,23 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
-    steps: 
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
       - uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '21'
-      
+          distribution: "temurin"
+          java-version: "21"
+
+      # The CodeBuild Windows image ships Visual Studio 2019 Build Tools without
+      # the C++ workload and without a Windows SDK, so MSBuild cannot load
+      # Microsoft.Cpp.Default.props. Install the 2022 build tools with MSVC.
+      - name: Install the MSVC build tools
+        shell: pwsh
+        run: |
+          choco install -y --no-progress visualstudio2022buildtools
+          choco install -y --no-progress visualstudio2022-workload-vctools `
+            --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621"
+
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v3.0.0
 
@@ -28,26 +38,26 @@ jobs:
 
       - name: Restore NuGet packages
         run: nuget restore ./win/
-      
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: wrapper
-      
+
       - name: Install opensource COBOL 4J
         working-directory: libcobj
         run: ./gradlew shadowJar
 
       - name: Build cobj.exe
         run: msbuild /p:Configuration=Release /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
-      
+
       - name: Upload libcobj.jar
         if: ${{inputs.upload-artifacts}}
         uses: actions/upload-artifact@v7
         with:
           name: libcobj.jar
-          path: libcobj/app/build/libs/libcobj.jar 
-      
+          path: libcobj/app/build/libs/libcobj.jar
+
       - name: Upload cobj.exe
         if: ${{inputs.upload-artifacts}}
         uses: actions/upload-artifact@v7

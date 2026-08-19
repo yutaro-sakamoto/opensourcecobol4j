@@ -12,59 +12,59 @@ permissions:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: codebuild-opensourcecobol4j-windows-${{ github.run_id }}-${{ github.run_attempt }}
 
     env:
       CLASSPATH: ".;C:/opensourcecobol4j/lib/libcobj.jar"
       PG_LOG: "postgresql.log"
 
     steps:
-    - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
 
-    - name: Download test scripts
-      uses: actions/download-artifact@v8
-      with:
-        name: windows-test-scripts
-        path: tests/
+      - name: Download test scripts
+        uses: actions/download-artifact@v8
+        with:
+          name: windows-test-scripts
+          path: tests/
 
-    - name: Download libcobj.jar
-      uses: actions/download-artifact@v8
-      with:
-        name: libcobj.jar
-        path: libcobj/app/build/libs/
+      - name: Download libcobj.jar
+        uses: actions/download-artifact@v8
+        with:
+          name: libcobj.jar
+          path: libcobj/app/build/libs/
 
-    - name: Download cobj.exe
-      uses: actions/download-artifact@v8
-      with:
-        name: cobj.exe
-        path: win/x64/Release/
+      - name: Download cobj.exe
+        uses: actions/download-artifact@v8
+        with:
+          name: cobj.exe
+          path: win/x64/Release/
 
-    - name: Install Java
-      uses: actions/setup-java@v5
-      with:
-        distribution: 'temurin'
-        java-version: '11'
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "11"
 
-    - name: Install opensource COBOL 4J
-      run: |
-        cd win
-        ./make-install.ps1
+      - name: Install opensource COBOL 4J
+        run: |
+          cd win
+          ./make-install.ps1
 
     - name: Start PostgreSQL
       shell: pwsh
       run: ./win/start-test-postgresql.ps1 -LogFile "$env:RUNNER_TEMP/$env:PG_LOG"
 
-    - name: Set up test environment
-      shell: bash
-      run: |
-        cd tests
-        cp atlocal-win.env atlocal
-        WORKSPACE=$(cd .. && pwd)
-        sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
-        sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
-        sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
-        sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
+      - name: Set up test environment
+        shell: bash
+        run: |
+          cd tests
+          cp atlocal-win.env atlocal
+          WORKSPACE=$(cd .. && pwd)
+          sed -i "s|abs_builddir=.*|abs_builddir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_srcdir=.*|abs_srcdir='${WORKSPACE}/tests'|" atconfig
+          sed -i "s|abs_top_srcdir=.*|abs_top_srcdir='${WORKSPACE}'|" atconfig
+          sed -i "s|abs_top_builddir=.*|abs_top_builddir='${WORKSPACE}'|" atconfig
+          sed -i "s|SHELL=.*|SHELL='$(which bash)'|" atconfig
 
         # ${EMBED_DB_INFO} substitutes these connection settings into every
         # COBOL source before it is compiled.
