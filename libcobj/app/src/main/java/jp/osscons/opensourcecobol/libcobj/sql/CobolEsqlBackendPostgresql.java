@@ -84,11 +84,15 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
         // 続けて次の BEGIN を発行する。BEGIN を欠くと以降の SQL が 1 文ごとに確定してしまい、
         // COBOL プログラムが次に COMMIT / ROLLBACK を書くまで確定を保留する、という埋め込み SQL の
         // 前提が崩れる（後から ROLLBACK しても戻せなくなる）。
-        LOG.debug("COMMIT (postgresql)");
-        try (Statement stmt = c.createStatement()) {
-            stmt.execute("COMMIT");
-        }
+        issueCommit(c);
         begin(c);
+    }
+
+    @Override
+    protected void commitBeforeClose(Connection c) throws SQLException {
+        // 直後に接続を閉じるため、次の BEGIN は発行しない。発行しても空のトランザクションが
+        // クローズで破棄されるだけで、往復 1 回と紛らわしい BEGIN のログが増える。
+        issueCommit(c);
     }
 
     @Override
@@ -98,6 +102,14 @@ public final class CobolEsqlBackendPostgresql extends AbstractCobolEsqlBackend {
             stmt.execute("ROLLBACK");
         }
         begin(c);
+    }
+
+    /** {@code COMMIT} を発行する。次のトランザクションを開始するかどうかは呼び出し側が決める。 */
+    private void issueCommit(Connection c) throws SQLException {
+        LOG.debug("COMMIT (postgresql)");
+        try (Statement stmt = c.createStatement()) {
+            stmt.execute("COMMIT");
+        }
     }
 
     /** 明示 {@code BEGIN} を発行して新しいトランザクションを開始する（PostgreSQL 固有の流儀）。 */

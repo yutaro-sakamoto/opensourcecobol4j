@@ -181,6 +181,26 @@ class AbstractCobolEsqlBackendLifecycleTest {
         }
     }
 
+    /**
+     * 接続クローズ前の commit だけを別扱いにするバックエンド（PostgreSQL のような明示
+     * {@code BEGIN} 流儀の DB を模す）。切断経路が {@code commitBeforeClose} を通ること、
+     * 継続用の {@code commitTransaction} と混ざらないことを確かめるために使う。
+     */
+    private static final class SeparateCloseCommitBackend extends StubBackend {
+
+        private final List<String> closeEvents;
+
+        SeparateCloseCommitBackend(List<String> events) {
+            super(events);
+            this.closeEvents = events;
+        }
+
+        @Override
+        protected void commitBeforeClose(Connection c) {
+            closeEvents.add("commitBeforeClose");
+        }
+    }
+
     @BeforeEach
     void setUp() {
         events = new ArrayList<>();
@@ -262,11 +282,37 @@ class AbstractCobolEsqlBackendLifecycleTest {
         assertEquals(0, sqlCode(), "disconnect should succeed");
         // 切断経路でもフックが発火し、かつ接続クローズより前であること（クローズ後の解放は
         // ドライバ依存の JDBC カスケードに巻き込まれ、解放順序を保証できない）。
+        // 先頭が commitTransaction なのは commitBeforeClose の既定実装がそこへ委譲するため。
         assertEquals(
                 Arrays.asList("commitTransaction", "onCursorsInvalidated", "connectionClose"),
                 events,
                 "DISCONNECT should notify invalidation after commit and before connection close");
         assertFalse(backend.cursors.get("c1").isOpened, "cursor should be closed after DISCONNECT");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testDisconnect_UsesCommitBeforeCloseHookWhenOverridden() {
+        SeparateCloseCommitBackend b = new SeparateCloseCommitBackend(events);
+        b.addConnection(CONN_ID, stubConnection());
+        b.disconnect(sqlca);
+        assertEquals(0, sqlCode(), "disconnect should succeed");
+        assertEquals(
+                Arrays.asList("commitBeforeClose", "onCursorsInvalidated", "connectionClose"),
+                events,
+                "DISCONNECT should commit through commitBeforeClose, not commitTransaction");
+    }
+
+    @Test
+    @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    void testCommit_DoesNotUseCommitBeforeCloseHook() {
+        SeparateCloseCommitBackend b = new SeparateCloseCommitBackend(events);
+        b.addConnection(CONN_ID, stubConnection());
+        b.commit(sqlca);
+        assertEquals(0, sqlCode(), "commit should succeed");
+        assertEquals(1, count("commitTransaction"), "COMMIT should keep using commitTransaction");
+        assertEquals(
+                0, count("commitBeforeClose"), "COMMIT must not use the close-only commit hook");
     }
 
     @Test

@@ -105,9 +105,9 @@ dnl detail: its offset is the only part of the output that could shift
 dnl between PostgreSQL versions. Everything else (the libcobj-generated
 dnl DEBUG lines and the stable "relation ... does not exist" message) is
 dnl matched exactly so a log-format regression is still caught here.
-dnl The BEGIN after the DISCONNECT's COMMIT is expected: commitTransaction
-dnl leaves the connection in a new transaction, and DISCONNECT reuses that
-dnl hook before closing. The transaction is empty and the close discards it.
+dnl No BEGIN follows the DISCONNECT's COMMIT: DISCONNECT commits through
+dnl commitBeforeClose, which skips the next BEGIN because the connection is
+dnl closed right after. COMMIT/ROLLBACK keep their trailing BEGIN.
 AT_CHECK([${RUN_MODULE_LOG} prog 2>stderr.log], [0],
 [done
 ])
@@ -127,7 +127,6 @@ DEBUG ROLLBACK (postgresql)
 DEBUG BEGIN (postgresql)
 DEBUG DISCONNECT (id=OCDB_DEFAULT_DBNAME)
 DEBUG COMMIT (postgresql)
-DEBUG BEGIN (postgresql)
 ])
 
 AT_CLEANUP

@@ -120,14 +120,30 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
      * {@code autoCommit=false} 流儀の DB は {@code c.commit()} だけでよい（次のトランザクションは
      * 最初の SQL で暗黙に始まる）。
      *
-     * <p>「commit してトランザクションを継続する」公開操作（{@link #commit(CobolDataStorage)}）と、
-     * 「commit して接続を閉じる」操作（{@link #disconnect(CobolDataStorage)}）の双方が本フックを再利用する。
-     * 後者では直後に接続を閉じるため、開始された新しいトランザクションは空のまま破棄される。
+     * <p>本フックは「commit してトランザクションを継続する」公開操作（{@link #commit(CobolDataStorage)}）
+     * のためのもの。「commit して接続を閉じる」経路（{@link #disconnect(CobolDataStorage)}）は
+     * {@link #commitBeforeClose(Connection)} を通る。
      *
      * @param c JDBC 接続
      * @throws SQLException データベースアクセスエラー
      */
     protected abstract void commitTransaction(Connection c) throws SQLException;
+
+    /**
+     * 接続を閉じる直前の commit。{@link #disconnect(CobolDataStorage)} だけが呼ぶ。
+     *
+     * <p>{@link #commitTransaction(Connection)} と違い、次のトランザクションが始まる状態を作る必要は
+     * ない。直後に接続を閉じるので、開始しても空のまま破棄されるだけである。明示 {@code BEGIN} 流儀の
+     * DB は本フックを上書きして {@code BEGIN} を省けば、無駄な往復と紛らわしいログを 1 回減らせる。
+     * 既定は {@link #commitTransaction(Connection)} へ委譲するので、暗黙にトランザクションが始まる DB
+     * （{@code autoCommit=false} 流儀）は実装しなくてよい。
+     *
+     * @param c JDBC 接続
+     * @throws SQLException データベースアクセスエラー
+     */
+    protected void commitBeforeClose(Connection c) throws SQLException {
+        commitTransaction(c);
+    }
 
     /**
      * 現在のトランザクションを rollback し、以降の SQL が新しいトランザクションで実行される状態に
@@ -286,10 +302,10 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
                 return;
             }
             LOG.debug("DISCONNECT (id={})", id);
-            // 切断前に commit する。発行手段は DB 実装の commitTransaction に委ねる（明示 BEGIN 流儀の
-            // DB では次のトランザクションが開始されるが、直後にクローズするため空のまま破棄される）。
+            // 切断前に commit する。発行手段は DB 実装の commitBeforeClose に委ねる（次のトランザクション
+            // を開始しない版の commit。既定実装は commitTransaction へ委譲する）。
             try {
-                commitTransaction(conn);
+                commitBeforeClose(conn);
             } catch (SQLException ignored) {
                 // 切断時の commit エラーは無視する
             }
