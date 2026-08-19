@@ -30,8 +30,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
 import jp.osscons.opensourcecobol.libcobj.common.CobolUtil;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
@@ -390,7 +391,13 @@ public class CobolFile {
     /** TODO: 準備中 */
     protected static int cob_do_sync = 0;
 
-    private static List<CobolFile> file_cache = new ArrayList<CobolFile>();
+    /**
+     * オープン中のファイルの集合。{@code COMMIT}/{@code ROLLBACK}文とプログラム終了時に、
+     * 後始末が必要なファイルを見つけるために使用する。オープン時に追加し、クローズに
+     * 成功した時点で取り除く。{@link CobolFile}は{@code equals}を上書きしていないため
+     * 同一性で判定される。反復順(＝オープン順)を保つためLinkedHashSetを使用する。
+     */
+    private static Set<CobolFile> file_cache = new LinkedHashSet<CobolFile>();
 
     /** TODO: 準備中 */
     protected static int[] status_exception = {
@@ -676,10 +683,18 @@ public class CobolFile {
      * @param f TODO: 準備中
      */
     protected static void cacheFile(CobolFile f) {
-        if (file_cache.contains(f)) {
-            return;
-        }
         file_cache.add(f);
+    }
+
+    /**
+     * クローズが完了したファイルをキャッシュから取り除く。<br>
+     * クローズに失敗した場合は呼び出してはならない。プログラム終了時の暗黙クローズで
+     * 再試行する機会が失われ、遅延中の書き込みが確定しなくなるためである。
+     *
+     * @param f 取り除くファイル
+     */
+    private static void uncacheFile(CobolFile f) {
+        file_cache.remove(f);
     }
 
     // libcob/fileio.cのcob_file_linage_checkの実装 TODO 実装
@@ -1289,6 +1304,7 @@ public class CobolFile {
         this.flag_read_done = false;
         if (this.special != 0) {
             this.open_mode = COB_OPEN_CLOSED;
+            uncacheFile(this);
             saveStatus(COB_STATUS_00_SUCCESS, fnstatus);
             return;
         }
@@ -1313,6 +1329,7 @@ public class CobolFile {
                     this.open_mode = COB_OPEN_CLOSED;
                     break;
             }
+            uncacheFile(this);
         }
         saveStatus(ret, fnstatus);
     }
@@ -1885,7 +1902,8 @@ public class CobolFile {
      * INDEXEDファイルのOUTPUTモードで遅延されたコミット）がフラッシュされる。
      */
     public static void exitFileIO() {
-        for (CobolFile f : file_cache) {
+        // closeが成功するとキャッシュから取り除かれるため、反復中の変更を避けて複製を回す
+        for (CobolFile f : new ArrayList<CobolFile>(file_cache)) {
             if (f.open_mode != COB_OPEN_CLOSED && f.open_mode != COB_OPEN_LOCKED) {
                 String filename = f.assign.fieldToString();
                 System.err.print(
