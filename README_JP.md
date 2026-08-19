@@ -192,7 +192,7 @@ SBOMにはそれらのライブラリがバージョン・ライセンスとと�
 ```bash
 cd libcobj
 ./gradlew cyclonedxDirectBom
-# libcobj/app/build/reports/libcobj-sbom.json および libcobj-sbom.xml
+# app/build/reports/libcobj-sbom.json および libcobj-sbom.xml
 ```
 
 ## 実装状況

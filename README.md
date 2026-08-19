@@ -205,7 +205,7 @@ To generate them from a source tree:
 ```bash
 cd libcobj
 ./gradlew cyclonedxDirectBom
-# libcobj/app/build/reports/libcobj-sbom.json and libcobj-sbom.xml
+# app/build/reports/libcobj-sbom.json and libcobj-sbom.xml
 ```
 
 ## Development Progress

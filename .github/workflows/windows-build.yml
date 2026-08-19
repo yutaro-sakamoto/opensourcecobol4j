@@ -38,8 +38,9 @@ jobs:
         working-directory: libcobj
         run: ./gradlew shadowJar
 
-      # Generate the SBOM from the same build that produces libcobj.jar, so the
-      # two always describe each other. Deliberately not guarded by
+      # Generate the SBOM from the same checkout and Gradle configuration that
+      # produce libcobj.jar, so the two always describe each other.
+      # Deliberately not guarded by
       # upload-artifacts: running it on every push and pull request is what
       # keeps a broken SBOM configuration from surfacing only at release time.
       - name: Generate the SBOM of libcobj.jar
