@@ -11,7 +11,7 @@ plugins {
     pmd
     id("com.github.spotbugs") version "6.5.9"
     jacoco
-    id("org.cyclonedx.bom") version "3.3.0"
+    id("org.cyclonedx.bom") version "3.4.1"
 }
 
 repositories {
@@ -92,9 +92,9 @@ tasks.cyclonedxDirectBom {
     componentName.set("libcobj")
     componentVersion.set("2.0.0")
     schemaVersion.set(CycloneDxVersion.VERSION_16)
-    // The plugin always writes both formats. Only the JSON one is published as
-    // a release asset, but keep the XML one next to it instead of in the
-    // plugin's default directory.
+    // The plugin always writes both formats, and both are published as release
+    // assets. Keep them next to each other instead of in the plugin's default
+    // directory.
     jsonOutput.set(layout.buildDirectory.file("reports/libcobj-sbom.json"))
     xmlOutput.set(layout.buildDirectory.file("reports/libcobj-sbom.xml"))
 }

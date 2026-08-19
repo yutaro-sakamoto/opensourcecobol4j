@@ -69,3 +69,10 @@ jobs:
         with:
           name: libcobj-sbom.json
           path: libcobj/app/build/reports/libcobj-sbom.json
+
+      - name: Upload libcobj-sbom.xml
+        if: ${{inputs.upload-artifacts}}
+        uses: actions/upload-artifact@v7
+        with:
+          name: libcobj-sbom.xml
+          path: libcobj/app/build/reports/libcobj-sbom.xml

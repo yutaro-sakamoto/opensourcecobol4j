@@ -192,19 +192,20 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 
 ## SBOM
 
-Every [release](https://github.com/opensourcecobol/opensourcecobol4j/releases) ships
-`libcobj-sbom.json`, a [CycloneDX](https://cyclonedx.org/) 1.6 SBOM of `libcobj.jar`.
+Every [release](https://github.com/opensourcecobol/opensourcecobol4j/releases) ships a
+[CycloneDX](https://cyclonedx.org/) 1.6 SBOM of `libcobj.jar` in two formats:
+`libcobj-sbom.json` and `libcobj-sbom.xml`.
 
 `libcobj.jar` is a shadow (fat) jar, so the third-party libraries it bundles cannot be
 identified from the jar itself. The SBOM lists them, together with their versions and
 licenses, and can be fed to vulnerability scanners such as Trivy, Grype or Dependency-Track.
 
-To generate it from a source tree:
+To generate them from a source tree:
 
 ```bash
 cd libcobj
 ./gradlew cyclonedxDirectBom
-# libcobj/app/build/reports/libcobj-sbom.json (and .xml)
+# libcobj/app/build/reports/libcobj-sbom.json and libcobj-sbom.xml
 ```
 
 ## Development Progress

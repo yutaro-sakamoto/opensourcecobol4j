@@ -182,7 +182,7 @@ opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポ�
 
 ## SBOM
 
-各[リリース](https://github.com/opensourcecobol/opensourcecobol4j/releases)には、`libcobj.jar`の[CycloneDX](https://cyclonedx.org/) 1.6形式のSBOMである`libcobj-sbom.json`が添付されます。
+各[リリース](https://github.com/opensourcecobol/opensourcecobol4j/releases)には、`libcobj.jar`の[CycloneDX](https://cyclonedx.org/) 1.6形式のSBOMが、`libcobj-sbom.json`と`libcobj-sbom.xml`の2つの形式で添付されます。
 
 `libcobj.jar`はshadow jar(fat jar)であるため、同梱されているサードパーティ製ライブラリをjar自体から特定することはできません。
 SBOMにはそれらのライブラリがバージョン・ライセンスとともに記載されており、Trivy・Grype・Dependency-Track等の脆弱性スキャナに読み込ませることができます。
@@ -192,7 +192,7 @@ SBOMにはそれらのライブラリがバージョン・ライセンスとと�
 ```bash
 cd libcobj
 ./gradlew cyclonedxDirectBom
-# libcobj/app/build/reports/libcobj-sbom.json (および.xml)
+# libcobj/app/build/reports/libcobj-sbom.json および libcobj-sbom.xml
 ```
 
 ## 実装状況
