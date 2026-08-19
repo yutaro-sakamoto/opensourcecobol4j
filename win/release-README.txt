@@ -15,8 +15,16 @@ Requirements
 A JDK (Java Development Kit) version 11 or later. A JRE is not enough:
 cobj runs javac and jar, and running compiled programs needs java.
 
+Note: this distribution is a Shift_JIS build (compiled without
+--enable-utf8). To compile UTF-8 COBOL sources, build opensource
+COBOL 4J from source with --enable-utf8.
+
 Installation
 ------------
+
+If Windows marks the downloaded zip as blocked (SmartScreen), unblock
+it before extracting: right-click the zip, open Properties and check
+"Unblock", or run  Unblock-File .\opensourcecobol4j-<version>-windows-x64.zip
 
 Run from this directory:
 

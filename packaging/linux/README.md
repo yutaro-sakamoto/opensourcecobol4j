@@ -4,7 +4,7 @@ This archive contains a complete installation tree of opensource COBOL 4J:
 
 ```
 bin/      cobj, cobjrun, cobj-idx, cobj-api, cob-config
-lib/opensourcecobol4j/   libcobj.jar, postgresql.jar
+lib/opensourcecobol4j/   libcobj.jar
 share/opensource-cobol-4j-<version>/config/  runtime configuration files
 share/opensource-cobol-4j-<version>/copy/    copybooks
 include/  libcobj.h
@@ -14,6 +14,14 @@ include/  libcobj.h
 
 A JDK (Java Development Kit) version 11 or later. A JRE is not enough:
 `cobj` runs `javac` and `jar`, and `cobjrun` runs `java`.
+
+Note: this distribution is a Shift_JIS build (compiled without
+`--enable-utf8`). To compile UTF-8 COBOL sources, build opensource
+COBOL 4J from source with `--enable-utf8`.
+
+The bundled `libcobj.jar` comes from this Linux build; the standalone
+`libcobj.jar` release asset is a separate build of the same sources, so
+their checksums differ.
 
 ## Installation
 
@@ -39,8 +47,8 @@ directory in `COBJ_HOME`:
 ```sh
 export PATH="$COBJ_HOME/bin:$PATH"
 export CLASSPATH="$COBJ_HOME/lib/opensourcecobol4j/libcobj.jar:.:$CLASSPATH"
-export COB_CONFIG_DIR="$(echo "$COBJ_HOME"/share/*/config)"
-export COB_COPY_DIR="$(echo "$COBJ_HOME"/share/*/copy)"
+export COB_CONFIG_DIR="$(echo "$COBJ_HOME"/share/opensource-cobol-4j-*/config)"
+export COB_COPY_DIR="$(echo "$COBJ_HOME"/share/opensource-cobol-4j-*/copy)"
 ```
 
 (The directory under `share/` is named after the release version, hence

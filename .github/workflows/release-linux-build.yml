@@ -56,7 +56,8 @@ jobs:
         run: |
           mv destdir/opt/opensourcecobol4j "destdir/opt/$TARBALL_NAME"
           cp packaging/linux/README.md "destdir/opt/$TARBALL_NAME/README.md"
-          tar -C destdir/opt --owner=0 --group=0 -czf "$TARBALL_NAME.tar.gz" "$TARBALL_NAME"
+          tar -C destdir/opt --sort=name --owner=0 --group=0 --numeric-owner \
+            -czf "$TARBALL_NAME.tar.gz" "$TARBALL_NAME"
 
       # Extract the tarball somewhere else and compile and run a COBOL
       # program with nothing but the environment variables the bundled
@@ -69,7 +70,7 @@ jobs:
           workdir=$(mktemp -d)
           tar -C "$workdir" -xzf "$TARBALL_NAME.tar.gz"
           home="$workdir/$TARBALL_NAME"
-          share_dir=$(find "$home/share" -mindepth 1 -maxdepth 1 -type d)
+          share_dir=$(echo "$home"/share/opensource-cobol-4j-*)
           export PATH="$home/bin:$PATH"
           export CLASSPATH="$home/lib/opensourcecobol4j/libcobj.jar:."
           export COB_CONFIG_DIR="$share_dir/config"

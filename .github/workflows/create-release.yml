@@ -108,13 +108,17 @@ jobs:
     - name: Compose the release notes
       run: |
         sed "s|__REPO__|$GITHUB_REPOSITORY|g" .github/release-note-footer.md > footer.md
-        cat ReleaseNote.md footer.md > release-notes.md
+        { cat ReleaseNote.md; echo; cat footer.md; } > release-notes.md
 
     # Create the release as a draft and publish it only after every asset is
     # uploaded, so a failure in between never leaves a public release with
-    # missing assets.
+    # missing assets. A leftover draft from a failed earlier run is reused so
+    # that re-running the workflow can pick up where it stopped.
     - name: Create a draft release
-      run: gh release create "$TAG" --draft -F release-notes.md
+      run: |
+        if ! gh release view "$TAG" >/dev/null 2>&1; then
+          gh release create "$TAG" --draft -F release-notes.md
+        fi
 
     - name: Upload the release assets
       run: |

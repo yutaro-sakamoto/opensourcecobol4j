@@ -1,3 +1,6 @@
 # Shell scripts must keep LF line endings even when core.autocrlf is
 # enabled, otherwise sh on Windows (Git Bash) fails on the CR characters.
 *.sh text eol=lf
+
+# Bundled into the Windows release zip and read with Windows tools.
+win/release-README.txt text eol=crlf

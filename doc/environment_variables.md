@@ -4,7 +4,25 @@ This document describes the environment variables used by opensource COBOL 4J.
 
 ## Compiler Settings
 
-Under construction.
+### Path Settings
+
+#### COB_CONFIG_DIR
+
+Specifies the directory that holds the compiler configuration files (`default.conf` and the dialect configuration files).
+
+- **Value**: A directory path (default is the directory chosen when the compiler was built, `<prefix>/share/opensource-cobol-4j-<version>/config`)
+- **Example**: `COB_CONFIG_DIR=/opt/opensourcecobol4j/share/opensource-cobol-4j-2.0.0/config`
+- **Purpose**: Used to run an installation from a location other than the one it was configured with, such as an extracted release bundle.
+
+#### COB_COPY_DIR
+
+Specifies the directory that holds the copybooks shipped with opensource COBOL 4J. It is added to the copybook search path, after the `-I` directories and `COBCPY`.
+
+- **Value**: A directory path (default is the directory chosen when the compiler was built, `<prefix>/share/opensource-cobol-4j-<version>/copy`)
+- **Example**: `COB_COPY_DIR=/opt/opensourcecobol4j/share/opensource-cobol-4j-2.0.0/copy`
+- **Purpose**: Same as `COB_CONFIG_DIR`, for the copybooks shipped with opensource COBOL 4J.
+
+Documentation of the other compiler settings is under construction.
 
 ## Runtime Settings
 
