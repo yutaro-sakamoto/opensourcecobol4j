@@ -18,9 +18,9 @@
  */
 package jp.osscons.opensourcecobol.libcobj.common;
 
-import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Calendar;
+import java.time.OffsetDateTime;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,11 +78,50 @@ public class CobolUtil {
     /** プログラム終了時にエラーが発生したことを示すフラグ。 */
     public static boolean cobErrorOnExitFlag = false;
 
-    /** 現在日時を取得するためのCalendarインスタンス。 */
-    public static Calendar cal;
+    /** 順編成ファイルの入出力バッファサイズ(レコード数)のデフォルト値。 */
+    private static final int DEFAULT_FILE_SEQ_BUFFER_SIZE = 10;
 
     /** 順編成ファイルへの書き込みバッファサイズ(環境変数COB_FILE_SEQ_WRITE_BUFFER_SIZEで設定)。 */
-    public static int fileSeqWriteBufferSize = 10;
+    public static int fileSeqWriteBufferSize = DEFAULT_FILE_SEQ_BUFFER_SIZE;
+
+    /** 順編成ファイルからの読み込みバッファサイズ(環境変数COB_FILE_SEQ_READ_BUFFER_SIZEで設定)。 */
+    public static int fileSeqReadBufferSize = DEFAULT_FILE_SEQ_BUFFER_SIZE;
+
+    /**
+     * 環境変数COB_FILE_IDX_COMMIT_INTERVALに{@code INF}が指定されたか。デフォルト(環境変数が
+     * 未指定)も{@code INF}である。COBOLには{@code COMMIT}文があり、コミットの時点は
+     * プログラムが{@code COMMIT}文と{@code CLOSE}文で決めるのが本来の姿であるため、
+     * ランタイムが勝手に途中でコミットすることはしない。
+     *
+     * <p>{@code true}のときINDEXEDファイルのOUTPUTモードでは途中コミットを行わず、{@code
+     * COMMIT}文と{@code CLOSE}時のみコミットする。このとき{@link #fileIdxCommitInterval}は参照されない。
+     */
+    private static boolean fileIdxCommitIntervalIsInf = true;
+
+    /**
+     * INDEXEDファイルをOUTPUTモードで書き込むときのコミット間隔(レコード数。環境変数COB_FILE_IDX_COMMIT_INTERVALで設定)。
+     * {@link #fileIdxCommitIntervalIsInf}が{@code true}のときは参照されない。
+     */
+    private static int fileIdxCommitInterval = 0;
+
+    /**
+     * 環境変数COB_FILE_IDX_COMMIT_INTERVALに{@code INF}が指定されたかを返す。
+     *
+     * @return {@code INF}が指定されていれば{@code true}。このときINDEXEDファイルのOUTPUTモードでは
+     *     途中コミットを行わず、CLOSE時のみコミットする
+     */
+    public static boolean isFileIdxCommitIntervalInf() {
+        return fileIdxCommitIntervalIsInf;
+    }
+
+    /**
+     * INDEXEDファイルをOUTPUTモードで書き込むときのコミット間隔(レコード数)を返す。
+     *
+     * @return コミット間隔(レコード数)。{@link #isFileIdxCommitIntervalInf()}が{@code true}のときは無意味な値
+     */
+    public static int getFileIdxCommitInterval() {
+        return fileIdxCommitInterval;
+    }
 
     /** DISPLAY/ACCEPT文によるデータ出力時のエンコーディング */
     public static CobolEncoding terminalEncoding = CobolEncoding.SHIFT_JIS;
@@ -304,11 +343,68 @@ public class CobolUtil {
     }
 
     /**
+     * ファイルI/Oのバッファサイズを指定する環境変数を読み込む。<br>
+     * 環境変数が設定されていない場合や、0以上の整数として解釈できない場合はデフォルト値を返す。
+     *
+     * @param envVariableName 環境変数名
+     * @param defaultValue 環境変数が指定されていない場合に使用する値
+     * @return バッファサイズ(レコード数)
+     */
+    private static int bufferSizeFromEnv(String envVariableName, int defaultValue) {
+        String s = CobolUtil.getEnv(envVariableName);
+        if (s == null) {
+            return defaultValue;
+        }
+        int size;
+        try {
+            size = Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            size = -1;
+        }
+        if (size < 0) {
+            System.err.println("Warning: " + envVariableName + " format invalid, ignored.");
+            return defaultValue;
+        }
+        return size;
+    }
+
+    /**
+     * INDEXEDファイルのOUTPUTモードにおけるコミット間隔を環境変数から読み取り、
+     * {@link #fileIdxCommitIntervalIsInf}と{@link #fileIdxCommitInterval}に反映する。<br>
+     * {@code INF}(大文字小文字不問)と未指定は「途中コミットしない」を意味する。<br>
+     * {@code 0}は「毎回コミット」として{@code 1}に正規化する。<br>
+     * 0以上の整数とも{@code INF}とも解釈できない場合は、警告を出力して未指定と同じ扱いにする。
+     *
+     * @param envVariableName 環境変数名
+     */
+    private static void readFileIdxCommitInterval(String envVariableName) {
+        String s = CobolUtil.getEnv(envVariableName);
+        if (s == null || "INF".equalsIgnoreCase(s.trim())) {
+            CobolUtil.fileIdxCommitIntervalIsInf = true;
+            return;
+        }
+        int interval;
+        try {
+            interval = Integer.parseInt(s.trim());
+        } catch (NumberFormatException e) {
+            interval = -1;
+        }
+        if (interval < 0) {
+            System.err.println("Warning: " + envVariableName + " format invalid, ignored.");
+            CobolUtil.fileIdxCommitIntervalIsInf = true;
+            return;
+        }
+        CobolUtil.fileIdxCommitIntervalIsInf = false;
+        CobolUtil.fileIdxCommitInterval = interval == 0 ? 1 : interval;
+    }
+
+    /**
      * COBOLランタイムを初期化する。<br>
      * 未初期化の場合は、コマンドライン引数の保存、各サブシステム(INSPECT/ファイルI/O/組み込み関数)の初期化、<br>
      * およびCOB_SWITCH_1〜COB_SWITCH_8環境変数によるスイッチ設定を行う。<br>
      * その後、COB_DATE、COB_VERBOSE、COB_IO_ASSUME_REWRITE、COB_NIBBLE_C_UNSIGNED、<br>
-     * COB_FILE_SEQ_WRITE_BUFFER_SIZE、COB_TERMINAL_ENCODINGなどの環境変数を読み込んでランタイム設定を反映する。
+     * COB_FILE_SEQ_WRITE_BUFFER_SIZE、COB_FILE_SEQ_READ_BUFFER_SIZE、COB_TERMINAL_ENCODINGなどの<br>
+     * 環境変数を読み込んでランタイム設定を反映する。
      *
      * @param argv コマンドライン引数(プログラム名を含まない)
      * @param cobInitialized すでに初期化済みかどうか。trueの場合はサブシステムの初期化をスキップする
@@ -333,7 +429,6 @@ public class CobolUtil {
             }
         }
 
-        cal = Calendar.getInstance();
         String s = CobolUtil.getEnv("COB_DATE");
         if (s != null) {
             Pattern p = Pattern.compile("([0-9]{4})/([0-9]{2})/([0-9]{2})");
@@ -346,16 +441,20 @@ public class CobolUtil {
                     int year = Integer.parseInt(m.group(1));
                     int month = Integer.parseInt(m.group(2));
                     int dayOfMonth = Integer.parseInt(m.group(3));
-                    cal.set(Calendar.YEAR, year);
-                    cal.set(Calendar.MONTH, month - 1);
-                    cal.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                    LocalDateTime tm;
-                    try {
-                        tm = LocalDateTime.of(year, month, dayOfMonth, 0, 0);
-                    } catch (DateTimeException e) {
+                    // 範囲外の月日はGnuCOBOL 3.2(OSSC patch)と同様に無効として扱う。
+                    // opensource COBOL 1.5はmktimeに任せており、2026/13/01を2027/01/01として
+                    // 受け入れる一方、mktimeの戻り値が負になるエポック前の日付をすべて拒否する。
+                    // 後者は再現しないため、範囲チェックのある3.2側に揃えている。
+                    // また0年はISO暦では紀元前1年にあたり、ACCEPT FROM DATEの書式(年号内の年)と
+                    // FUNCTION CURRENT-DATE(暦年)とで異なる値になるため、同様に無効とする。
+                    if (year < 1 || month < 1 || month > 12 || dayOfMonth < 1 || dayOfMonth > 31) {
+                        System.err.println("Warning: COB_DATE format invalid, ignored.");
                         break date_time_block;
                     }
-                    cobLocalTm = tm;
+                    // 範囲内であれば、その月に存在しない日はmktimeと同様に翌月へ繰り越す。
+                    // (例: 2026/02/30は2026/03/02として扱われる。うるう年の判定はLocalDateに任せる)
+                    cobLocalTm =
+                            LocalDate.of(year, month, 1).plusDays(dayOfMonth - 1).atStartOfDay();
                 }
             } else {
                 System.err.println("Warning: COB_DATE format invalid, ignored.");
@@ -377,13 +476,11 @@ public class CobolUtil {
             CobolUtil.nibbleCForUnsigned = true;
         }
 
-        s = System.getenv("COB_FILE_SEQ_WRITE_BUFFER_SIZE");
-        if (s != null) {
-            int size = Integer.parseInt(s);
-            if (size >= 0) {
-                CobolUtil.fileSeqWriteBufferSize = size;
-            }
-        }
+        CobolUtil.fileSeqWriteBufferSize =
+                bufferSizeFromEnv("COB_FILE_SEQ_WRITE_BUFFER_SIZE", DEFAULT_FILE_SEQ_BUFFER_SIZE);
+        CobolUtil.fileSeqReadBufferSize =
+                bufferSizeFromEnv("COB_FILE_SEQ_READ_BUFFER_SIZE", DEFAULT_FILE_SEQ_BUFFER_SIZE);
+        readFileIdxCommitInterval("COB_FILE_IDX_COMMIT_INTERVAL");
 
         s = System.getenv("COB_TERMINAL_ENCODING");
         CobolUtil.terminalEncoding = CobolEncoding.SHIFT_JIS;
@@ -398,23 +495,20 @@ public class CobolUtil {
 
     // libcob/common.cとcob_localtime
     /**
-     * 現在のローカル日時を取得する。<br>
-     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、その日付に現在の時刻(時・分・秒)を<br>
-     * 反映した日時を返す。指定がない場合はシステムの現在日時を返す。
+     * 現在のローカル日時をグリニッジ標準時からのオフセット付きで取得する。<br>
+     * 環境変数COB_DATEで固定日付({@link #cobLocalTm})が指定されている場合は、日付部分だけをその値で<br>
+     * 置き換える。時刻とオフセットは常にシステムクロックから取得するため、同一プロセス内でも<br>
+     * 呼び出しのたびに新しい時刻が得られる。
      *
      * @return 取得したローカル日時
      */
-    public static LocalDateTime localtime() {
-        LocalDateTime rt = LocalDateTime.now();
-        if (CobolUtil.cobLocalTm != null) {
-            CobolUtil.cobLocalTm =
-                    CobolUtil.cobLocalTm
-                            .withHour(rt.getHour())
-                            .withMinute(rt.getMinute())
-                            .withSecond(rt.getSecond());
-            rt = CobolUtil.cobLocalTm;
+    static OffsetDateTime localtime() {
+        OffsetDateTime now = OffsetDateTime.now();
+        if (CobolUtil.cobLocalTm == null) {
+            return now;
         }
-        return rt;
+        return OffsetDateTime.of(
+                CobolUtil.cobLocalTm.toLocalDate(), now.toLocalTime(), now.getOffset());
     }
 
     // libcob/cob_verbose_outputの実装

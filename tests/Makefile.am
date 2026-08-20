@@ -32,6 +32,9 @@ TESTS = syntax \
 	cobj-idx \
 	file-lock \
 	file-lock2 \
+	file-lock3 \
+	file-lock4 \
+	file-lock5 \
 	misc
 else
 TESTS = syntax \
@@ -45,6 +48,9 @@ TESTS = syntax \
 	cobj-idx \
 	file-lock \
 	file-lock2 \
+	file-lock3 \
+	file-lock4 \
+	file-lock5 \
 	misc
 endif
 
@@ -112,7 +118,15 @@ i18n_sjis_DEPENDENCIES = \
 	i18n_sjis.src/error-print.at \
 	i18n_sjis.src/limits.at \
 	i18n_sjis.src/national.at \
-	i18n_sjis.src/mb-space.at
+	i18n_sjis.src/mb-space.at \
+	i18n_sjis.src/compare-national-diff-size.at \
+	i18n_sjis.src/compare-national.at \
+	i18n_sjis.src/file-handler-japanese.at \
+	i18n_sjis.src/japanese-char-section-var.at \
+	i18n_sjis.src/java-interface.at \
+	i18n_sjis.src/convert-string-concat.at \
+	i18n_sjis.src/fd-external.at \
+	i18n_sjis.src/copy-comments.at
 
 cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.at \
@@ -128,7 +142,9 @@ cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.src/compare-national.at \
 	cobol_utf8.src/file-handler-japanese.at \
 	cobol_utf8.src/japanese-char-section-var.at \
-	cobol_utf8.src/java-interface.at
+	cobol_utf8.src/java-interface.at \
+	cobol_utf8.src/convert-string-concat.at \
+	cobol_utf8.src/fd-external.at
 
 jp_compat_DEPENDENCIES = \
 	jp-compat.at \
@@ -198,7 +214,8 @@ command_line_options_DEPENDENCIES = \
 	command-line-options.src/jar.at \
 	command-line-options.src/std.at \
 	command-line-options.src/conf.at \
-	command-line-options.src/Wimplicit-define.at
+	command-line-options.src/Wimplicit-define.at \
+	command-line-options.src/diagnostics-show-caret.at
 
 cobj_idx_DEPENDENCIES = \
 	cobj-idx.at \
@@ -212,20 +229,29 @@ cobj_idx_DEPENDENCIES = \
 
 indexed_lock_DEPENDENCIES = \
 	file-lock.at \
-	file-lock.src/lock-file.at \
-	file-lock.src/access-same-record.at \
-	file-lock.src/access-different-record.at
+	file-lock.src/lock-file.at
 
 indexed_lock2_DEPENDENCIES = \
 	file-lock2.at \
+	file-lock2.src/lock-mode-automatic.at \
 	file-lock2.src/input-mode.at \
-	file-lock2.src/same-process.at \
-	file-lock2.src/open-start-write-rewrite.at \
-	file-lock2.src/release-lock.at \
-	file-lock2.src/open-input.at \
-	file-lock2.src/lock-mode-clause.at \
-	file-lock2.src/old-file.at \
-	file-lock2.src/lock-mode-automatic.at
+	file-lock2.src/release-lock.at
+
+indexed_lock3_DEPENDENCIES = \
+	file-lock3.at \
+	file-lock3.src/access-different-record.at \
+	file-lock3.src/open-input.at \
+	file-lock3.src/same-process.at
+
+indexed_lock4_DEPENDENCIES = \
+	file-lock4.at \
+	file-lock4.src/access-same-record.at \
+	file-lock4.src/open-start-write-rewrite.at \
+	file-lock4.src/old-file.at
+
+indexed_lock5_DEPENDENCIES = \
+	file-lock5.at \
+	file-lock5.src/lock-mode-clause.at
 
 # ESQL tests (require PostgreSQL, run separately in CI)
 esql_basic_DEPENDENCIES = \
@@ -251,7 +277,8 @@ esql_sqlca_DEPENDENCIES = \
 	esql-sqlca.src/open-fetch-close.at \
 	esql-sqlca.src/prepare-execute.at \
 	esql-sqlca.src/fetch-loop.at \
-	esql-sqlca.src/errml-errmc.at
+	esql-sqlca.src/errml-errmc.at \
+	esql-sqlca.src/bulk-fetch.at
 
 esql_cobol_data_DEPENDENCIES = \
 	esql-cobol-data.at \
@@ -261,19 +288,25 @@ esql_cobol_data_DEPENDENCIES = \
 	esql-cobol-data.src/comp3_signed.at \
 	esql-cobol-data.src/alphanumeric.at \
 	esql-cobol-data.src/japanese.at \
-	esql-cobol-data.src/varying.at
+	esql-cobol-data.src/varying.at \
+	esql-cobol-data.src/subscript.at
 
 esql_misc_DEPENDENCIES = \
 	esql-misc.at \
 	esql-misc.src/db-type-env.at \
+	esql-misc.src/logging.at \
 	esql-misc.src/long-sql.at \
 	esql-misc.src/include.at \
 	esql-misc.src/fetch-sqlca.at \
 	esql-misc.src/compile.at \
 	esql-misc.src/sql-convert.at \
 	esql-misc.src/implicit-declare.at \
+	esql-misc.src/declare-section.at \
 	esql-misc.src/sql-format.at \
-	esql-misc.src/null-without-indicator.at
+	esql-misc.src/host-var-wrap.at \
+	esql-misc.src/null-without-indicator.at \
+	esql-misc.src/sqlca-warning.at \
+	esql-misc.src/group-sub.at
 
 esql_sql_data_DEPENDENCIES = \
 	esql-sql-data.at \
@@ -301,7 +334,6 @@ $(srcdir)/esql-utf8: $(esql_utf8_DEPENDENCIES)
 misc_DEPENDENCIES = \
 	misc.src/signed-comp3.at \
 	misc.src/index-comp.at \
-	misc.src/compare-national.at \
 	misc.src/current-date.at \
 	misc.src/comp3-is-numeric.at \
 	misc.src/high-low-value.at \
@@ -309,9 +341,10 @@ misc_DEPENDENCIES = \
 	misc.src/java-interface.at \
 	misc.src/comp3-int.at \
 	misc.src/env.at \
+	misc.src/seq-read-buffer.at \
+	misc.src/indexed-output-commit-interval.at \
 	misc.src/exit-perform.at \
 	misc.src/comp-overflow.at \
-	misc.src/compare-national-diff-size.at \
 	misc.src/compare-9.at \
 	misc.src/comp3-overflow.at \
 	misc.src/cancel-hyphen.at \
@@ -326,12 +359,9 @@ misc_DEPENDENCIES = \
 	misc.src/compare-large-number.at \
 	misc.src/validate-indexed-file-keys.at \
 	misc.src/record-key-duplicates-error.at \
-	misc.src/copy-comments.at \
 	misc.src/read_prev_after_start.at \
-	misc.src/japanese-char-section-var.at \
 	misc.src/evaluate-switch.at \
 	misc.src/fserial-variable.at \
-	misc.src/file-handler-japanese.at \
 	misc.src/perform-until-div.at \
 	misc.src/search-occurs-depending.at \
 	misc.src/fix-subtract.at \
@@ -348,6 +378,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(data_rep_DEPENDENCIES) \
 	$(i18n_utf8_DEPENDENCIES) \
 	$(i18n_sjis_DEPENDENCIES) \
+	$(cobol_utf8_DEPENDENCIES) \
 	$(jp_compat_DEPENDENCIES) \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
@@ -358,7 +389,11 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(esql_misc_DEPENDENCIES) \
 	$(esql_sql_data_DEPENDENCIES) \
 	$(esql_utf8_DEPENDENCIES) \
-	embed_db_info.sh
+	embed_db_info.sh \
+	jvm-wrapper/java \
+	jvm-wrapper/javac \
+	jvm-wrapper/javap \
+	jvm-wrapper/jar
 
 DISTCLEANFILES = atconfig
 
@@ -395,4 +430,7 @@ $(srcdir)/command-line-options: $(command_line_options_DEPENDENCIES)
 $(srcdir)/cobj-idx: $(cobj_idx_DEPENDENCIES)
 $(srcdir)/file-lock: $(indexed_lock_DEPENDENCIES)
 $(srcdir)/file-lock2: $(indexed_lock2_DEPENDENCIES)
+$(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)
+$(srcdir)/file-lock4: $(indexed_lock4_DEPENDENCIES)
+$(srcdir)/file-lock5: $(indexed_lock5_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)

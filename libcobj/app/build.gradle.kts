@@ -1,4 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.cyclonedx.Version as CycloneDxVersion
+import org.cyclonedx.model.Component
 
 plugins {
     application
@@ -7,8 +9,9 @@ plugins {
     id("java")
     id("maven-publish")
     pmd
-    id("com.github.spotbugs") version "6.4.5"
+    id("com.github.spotbugs") version "6.5.9"
     jacoco
+    id("org.cyclonedx.bom") version "3.4.1"
 }
 
 repositories {
@@ -32,21 +35,21 @@ tasks {
 }
 
 dependencies {
-    implementation("com.google.guava:guava:33.5.0-jre")
-    implementation("org.xerial:sqlite-jdbc:3.51.0.0")
-    implementation("commons-cli:commons-cli:1.10.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    implementation("com.google.guava:guava:33.6.0-jre")
+    implementation("org.xerial:sqlite-jdbc:3.53.2.1")
+    implementation("commons-cli:commons-cli:1.11.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.14.4")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.testcontainers:testcontainers:1.21.0")
-    testImplementation("org.testcontainers:junit-jupiter:1.21.0")
-    testImplementation("org.testcontainers:postgresql:1.21.0")
-    implementation("org.json:json:20250517")
-    spotbugs("com.github.spotbugs:spotbugs:4.8.6")
+    testImplementation("org.testcontainers:testcontainers:1.21.4")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    testImplementation("org.testcontainers:postgresql:1.21.4")
+    implementation("org.json:json:20260719")
+    spotbugs("com.github.spotbugs:spotbugs:4.10.3")
 
-    implementation("org.slf4j:slf4j-api:2.0.17")
-    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
-    testImplementation("com.github.valfirst:slf4j-test:3.0.1")
-    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("org.slf4j:slf4j-api:2.0.18")
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.18")
+    testImplementation("com.github.valfirst:slf4j-test:3.0.3")
+    implementation("org.postgresql:postgresql:42.7.13")
 }
 
 configurations {
@@ -77,11 +80,35 @@ spotless {
   }
 }
 
+// SBOM of libcobj.jar, attached to every GitHub release.
+// libcobj.jar is a shadow jar, so the third-party libraries it bundles are not
+// visible from the jar itself. The SBOM lists them instead.
+tasks.cyclonedxDirectBom {
+    // Only the runtime classpath ends up in the shadow jar. Build-time and
+    // test-only dependencies are not part of the released artifact.
+    includeConfigs.set(listOf("runtimeClasspath"))
+    projectType.set(Component.Type.LIBRARY)
+    componentGroup.set("jp.osscons.opensourcecobol")
+    componentName.set("libcobj")
+    componentVersion.set("2.0.0")
+    schemaVersion.set(CycloneDxVersion.VERSION_16)
+    // The plugin always writes both formats, and both are published as release
+    // assets. Keep them next to each other instead of in the plugin's default
+    // directory.
+    jsonOutput.set(layout.buildDirectory.file("reports/libcobj-sbom.json"))
+    xmlOutput.set(layout.buildDirectory.file("reports/libcobj-sbom.xml"))
+}
+
 publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/opensourcecobol/opensourcecobol4j")
+            // Publish to the repository the workflow runs in, so publishing
+            // works on forks with the automatic GITHUB_TOKEN as well.
+            url =
+                uri(
+                    "https://maven.pkg.github.com/" +
+                        (System.getenv("GITHUB_REPOSITORY") ?: "opensourcecobol/opensourcecobol4j"))
             credentials {
                 username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
                 password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")

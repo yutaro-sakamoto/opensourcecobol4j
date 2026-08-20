@@ -17,6 +17,9 @@ Fixes the date returned at runtime.
 - **Format**: `YYYY/MM/DD`
 - **Example**: `COB_DATE=2024/01/15`
 - **Purpose**: Fixes the date returned by built-in functions such as `CURRENT-DATE`. Useful for testing and reproducible execution.
+- **Note**: Only the date is fixed. The time of day and the GMT offset returned by `FUNCTION CURRENT-DATE` are read from the system clock on every evaluation, so they keep advancing while the program runs. The GMT offset is therefore the one in effect right now, not the one that was in effect on the fixed date: with `TZ=Asia/Tokyo` and `COB_DATE=1880/01/01`, `FUNCTION CURRENT-DATE` returns `+0900`, not the `+0918` that Tokyo used in 1880.
+- **Date normalization**: A day that does not exist in the given month is carried over into the following month, the same way opensource COBOL does. `COB_DATE=2026/02/30` is treated as 2026/03/02, and `COB_DATE=2026/02/29` as 2026/03/01 because 2026 is not a leap year. `COB_DATE=2024/02/29` is a real date and is used as is.
+- **Invalid values**: A value that does not match `YYYY/MM/DD`, a month outside 1 to 12, a day outside 1 to 31, or the year `0000` makes the runtime print `Warning: COB_DATE format invalid, ignored.` to standard error and use the real date instead. `COB_DATE=2026/13/01`, `COB_DATE=2026/99/99` and `COB_DATE=2026/00/00` are all ignored this way.
 
 **Sample Program**
 
@@ -59,6 +62,17 @@ CURRENT-DATE:     20260227
 $ COB_DATE=1970/01/02 java cobdate
 ACCEPT FROM DATE: 19700102
 CURRENT-DATE:     19700102
+
+# A day that does not exist is carried over into the following month
+$ COB_DATE=2026/02/30 java cobdate
+ACCEPT FROM DATE: 20260302
+CURRENT-DATE:     20260302
+
+# An out-of-range value is ignored with a warning (today's date is displayed)
+$ COB_DATE=2026/13/01 java cobdate
+Warning: COB_DATE format invalid, ignored.
+ACCEPT FROM DATE: 20260227
+CURRENT-DATE:     20260227
 ```
 
 #### COB_VERBOSE
@@ -453,6 +467,30 @@ Specifies the write buffer size for sequential files.
 - **Value**: Integer >= 0 (default: 10)
 - **Example**: `COB_FILE_SEQ_WRITE_BUFFER_SIZE=100`
 - **Purpose**: Adjusts write performance.
+
+The value is the number of records buffered at once; the buffer size in bytes is this value multiplied by the maximum record length, capped at 64MB per opened file. `0` disables buffering, and records are written one by one. A value that is not an integer >= 0 is reported on standard error and the default is used instead. The buffer is used when a `SEQUENTIAL` or `LINE SEQUENTIAL` file is opened with `OUTPUT` or `EXTEND`. Increasing the value reduces the number of system calls and speeds up `WRITE`, at the cost of more memory per opened file.
+
+#### COB_FILE_SEQ_READ_BUFFER_SIZE
+
+Specifies the read buffer size for sequential files.
+
+- **Value**: Integer >= 0 (default: 10)
+- **Example**: `COB_FILE_SEQ_READ_BUFFER_SIZE=100`
+- **Purpose**: Adjusts read performance.
+
+The value is the number of records read at once; the buffer size in bytes is this value multiplied by the maximum record length, capped at 64MB per opened file. It is therefore a rough guide rather than an exact record count, because a line sequential record also carries a line terminator and a variable length sequential record carries a 4 byte record length. `0` disables buffering, and records are read one by one. A value that is not an integer >= 0 is reported on standard error and the default is used instead. The buffer is used when a `SEQUENTIAL` or `LINE SEQUENTIAL` file is opened with `INPUT`, except for a file under `/dev/`, which is read unbuffered so that reading ahead does not consume input meant for `ACCEPT` or for another process sharing the same file descriptor. Increasing the value reduces the number of system calls and speeds up `READ`, at the cost of more memory per opened file.
+
+#### COB_FILE_IDX_COMMIT_INTERVAL
+
+Specifies how often WRITEs to an indexed file opened with `OUTPUT` are committed.
+
+- **Value**: Integer >= 0 or `INF` (default: `INF`)
+- **Example**: `COB_FILE_IDX_COMMIT_INTERVAL=100000`
+- **Purpose**: Bounds how many records a crash can lose while writing an indexed file.
+
+An indexed file opened with `OUTPUT` is locked exclusively and only `WRITE` statements run until `CLOSE`, so the backing SQLite transaction does not need to be committed after every `WRITE`. By default (`INF`, case-insensitive) no intermediate commit is issued at all: the records become durable when the program executes a `COMMIT` statement and when the file is closed, which is what the COBOL `COMMIT` statement is for. Setting an integer makes the runtime commit on its own each time that many `WRITE` statements have succeeded, which bounds the loss if the process is killed or crashes before `CLOSE` at that number of records, at the cost of one fsync per interval. `0` is treated as `1`, which commits after every `WRITE`. A value that is neither an integer >= 0 nor `INF` is reported on standard error and the default is used instead.
+
+A program that reaches `STOP RUN` without `CLOSE` does not lose records: files left open are implicitly closed (with a warning), which commits them. A `ROLLBACK` statement discards the records written since the last commit. Files opened with `INPUT`, `I-O` or `EXTEND` are not affected. Duplicate-key detection (file status 21/22) is not affected either; it still happens on every `WRITE`.
 
 #### COB_IO_ASSUME_REWRITE
 

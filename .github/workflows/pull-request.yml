@@ -30,7 +30,7 @@ jobs:
     needs: check-workflows
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
@@ -39,7 +39,7 @@ jobs:
     needs: check-workflows
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/build.yml
     with:
       os: ${{ matrix.os }}
@@ -60,7 +60,10 @@ jobs:
           - "misc"
           - "file-lock"
           - "file-lock2"
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+          - "file-lock3"
+          - "file-lock4"
+          - "file-lock5"
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -82,8 +85,11 @@ jobs:
           - "cobj-idx"
           - "file-lock"
           - "file-lock2"
-          #- "misc"
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+          - "file-lock3"
+          - "file-lock4"
+          - "file-lock5"
+          - "misc"
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -94,7 +100,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-esql.yml
     with:
       os: ${{ matrix.os }}
@@ -103,7 +109,7 @@ jobs:
     needs: build-utf8
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-esql-utf8.yml
     with:
       os: ${{ matrix.os }}
@@ -112,7 +118,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04"]
+        os: ["ubuntu:26.04"]
     uses: ./.github/workflows/test-esql-examples.yml
     with:
       os: ${{ matrix.os }}
@@ -121,7 +127,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-cobj-api.yml
     with:
       os: ${{ matrix.os }}
@@ -131,7 +137,7 @@ jobs:
     strategy:
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -144,7 +150,7 @@ jobs:
       fail-fast: false
       matrix:
         test_name: ["IC", "IF", "IX", "NC", "OB", "RL", "SG", "SM", "SQ", "ST"]
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -157,7 +163,7 @@ jobs:
     strategy:
       matrix:
         test_name: ["CM", "DB", "RW"]
-        os: ["ubuntu:24.04", "almalinux:9", "amazonlinux:2023"]
+        os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-nist.yml
     with:
       test-name: ${{ matrix.test_name }}
@@ -208,15 +214,30 @@ jobs:
           - "syntax"
           - "file-lock"
           - "file-lock2"
+          - "file-lock3"
+          - "file-lock4"
+          - "file-lock5"
           - "misc"
     uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
 
-  # TODO: Re-enable when Windows PostgreSQL setup is resolved.
-  # windows-test-esql:
-  #   needs: [windows-build, windows-generate-test-scripts]
-  #   uses: ./.github/workflows/windows-test-esql.yml
+  # esql-utf8 is missing on purpose: it needs a compiler configured with
+  # --enable-utf8, and the Windows build is Shift_JIS only.
+  windows-test-esql:
+    needs: [windows-build, windows-generate-test-scripts]
+    strategy:
+      fail-fast: false
+      matrix:
+        test_name:
+          - "esql-basic"
+          - "esql-sqlca"
+          - "esql-cobol-data"
+          - "esql-misc"
+          - "esql-sql-data"
+    uses: ./.github/workflows/windows-test-esql.yml
+    with:
+      test-name: ${{ matrix.test_name }}
 
   static-analysis:
     needs: check-workflows

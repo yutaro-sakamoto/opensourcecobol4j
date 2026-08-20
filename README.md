@@ -19,7 +19,6 @@ opensource COBOL 4J is tested with the following platforms and dependencies:
 
 * Ubuntu 24.04 and OpenJDK 21
 * AlmaLinux 9 and OpenJDK 11
-* Amazon Linux 2023 and OpenJDK 21
 
 If you want to check requirements of older versions, see [doc/requirements-all.md](./doc/requirements-all.md).
 
@@ -41,13 +40,6 @@ sudo apt-get install -y default-jdk build-essential bison flex gettext texinfo l
 ```
 dnf -y update
 dnf install -y java-11-openjdk-devel gcc make bison flex automake autoconf diffutils gettext
-```
-
-#### Amazon Linux 2023
-
-```
-dnf -y update
-dnf install -y java-21-amazon-corretto-devel gcc make bison flex automake autoconf diffutils gettext tar gzip
 ```
 
 ### Install opensource COBOL 4J
@@ -197,6 +189,24 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [The specification of locking for INDEXED files in opensource COBOL 4J](./doc/specification-locking-indexed-file.md)
 * [Environment Variables Reference](./doc/environment_variables.md)
+
+## SBOM
+
+Every [release](https://github.com/opensourcecobol/opensourcecobol4j/releases) ships a
+[CycloneDX](https://cyclonedx.org/) 1.6 SBOM of `libcobj.jar` in two formats:
+`libcobj-sbom.json` and `libcobj-sbom.xml`.
+
+`libcobj.jar` is a shadow (fat) jar, so the third-party libraries it bundles cannot be
+identified from the jar itself. The SBOM lists them, together with their versions and
+licenses, and can be fed to vulnerability scanners such as Trivy, Grype or Dependency-Track.
+
+To generate them from a source tree:
+
+```bash
+cd libcobj
+./gradlew cyclonedxDirectBom
+# app/build/reports/libcobj-sbom.json and libcobj-sbom.xml
+```
 
 ## Development Progress
 
