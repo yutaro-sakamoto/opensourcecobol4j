@@ -502,7 +502,9 @@ extern int yydebug;
     ZERO = 703,                    /* ZERO  */
     EXEC_SQL_STATEMENT = 704,      /* "EXEC SQL statement"  */
     EXEC_JAVA_STATEMENT = 705,     /* "EXEC JAVA statement"  */
-    UNARY_SIGN = 706               /* UNARY_SIGN  */
+    EXEC_JAVA_IMPORT_STATEMENT = 706, /* "EXEC JAVA IMPORT statement"  */
+    EXEC_JAVA_MEMBER_STATEMENT = 707, /* "EXEC JAVA CLASS-MEMBER statement"  */
+    UNARY_SIGN = 708               /* UNARY_SIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif

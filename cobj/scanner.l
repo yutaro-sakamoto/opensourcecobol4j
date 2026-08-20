@@ -84,6 +84,11 @@ static int			esql_start_line = 0;
  * (値は tree.h の enum cb_java_scan_state)。 */
 static int			java_scan_state = CB_JAVA_SCAN_NORMAL;
 static int			java_scan_prev = 0;
+/* 収集中のブロックの種別 (END-EXEC で返すトークンを切り替える) */
+#define JAVA_BLOCK_CODE		0	/* EXEC JAVA */
+#define JAVA_BLOCK_IMPORT	1	/* EXEC JAVA IMPORT */
+#define JAVA_BLOCK_MEMBER	2	/* EXEC JAVA CLASS-MEMBER */
+static int			java_block_kind = JAVA_BLOCK_CODE;
 
 /* 実体は tree.c の cb_java_scan_step (走査状態機械を 3 実装で共有する) */
 static void
@@ -192,6 +197,12 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	memcpy(esql_buff + esql_buff_len, yytext, len);
 	esql_buff_len += len;
   }
+  ";"+ {
+	/* 後方の <*>;+ 規則 (COBOL では ; を区切りとして読み捨てる) が
+	 * SQL 本文の連続セミコロン (リテラル内の ';;' 等) を握り潰さない
+	 * よう、ここで明示的に本文へ取り込む。 */
+	java_buff_append (yytext, strlen (yytext));
+  }
   . {
 	if (esql_buff_len + 2 >= esql_buff_capacity) {
 		esql_buff_capacity *= 2;
@@ -224,7 +235,14 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 		/* location は END-EXEC 行ではなく EXEC JAVA 開始行を指すようにする */
 		yylval->source_file = (unsigned char *)cb_source_file;
 		yylval->source_line = esql_start_line;
-		return EXEC_JAVA_STATEMENT;
+		switch (java_block_kind) {
+		case JAVA_BLOCK_IMPORT:
+			return EXEC_JAVA_IMPORT_STATEMENT;
+		case JAVA_BLOCK_MEMBER:
+			return EXEC_JAVA_MEMBER_STATEMENT;
+		default:
+			return EXEC_JAVA_STATEMENT;
+		}
 	}
   }
   \n {
@@ -233,6 +251,13 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 	java_buff_append ("\n", 1);
   }
   [ \t]+ {
+	java_scan_feed (yytext, strlen (yytext));
+	java_buff_append (yytext, strlen (yytext));
+  }
+  ";"+ {
+	/* 後方の <*>;+ 規則 (COBOL では ; を区切りとして読み捨てる) が
+	 * JAVA_STATE の連続セミコロン (for (;;) 等) を握り潰さないよう、
+	 * ここで明示的に本文へ取り込む。 */
 	java_scan_feed (yytext, strlen (yytext));
 	java_buff_append (yytext, strlen (yytext));
   }
@@ -452,6 +477,45 @@ H\"[^\"\n]*\" {
 	BEGIN ESQL_STATE;
 }
 
+"EXEC"[ \t\n]+"JAVA"[ \t\n]+"IMPORT"/[ \t\n] {
+	/* EXEC JAVA IMPORT ~ END-EXEC。本文の収集は EXEC JAVA と同じで、
+	 * END-EXEC で返すトークンだけを変える。
+	 * 後続を空白・改行に限定しているため、通常の EXEC JAVA の本文が
+	 * Import.run() のような識別子で始まっても誤検出しない
+	 * (caseless のため IMPORT は import/Import にも一致することに注意)。 */
+	esql_start_line = cb_source_line;
+	count_lines (yytext);
+	if (!esql_buff) {
+		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
+		esql_buff_capacity = ESQL_BUFF_SIZE;
+	}
+	esql_buff_len = 0;
+	esql_buff[0] = '\0';
+	java_scan_state = 0;
+	java_scan_prev = 0;
+	java_block_kind = JAVA_BLOCK_IMPORT;
+	BEGIN JAVA_STATE;
+}
+
+"EXEC"[ \t\n]+"JAVA"[ \t\n]+"CLASS-MEMBER"/[ \t\n] {
+	/* EXEC JAVA CLASS-MEMBER ~ END-EXEC。本文の収集は EXEC JAVA と
+	 * 同じで、END-EXEC で返すトークンだけを変える。
+	 * (キーワードにハイフンを含むため、Java の識別子で始まる通常の
+	 *  EXEC JAVA 本文と衝突しない) */
+	esql_start_line = cb_source_line;
+	count_lines (yytext);
+	if (!esql_buff) {
+		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
+		esql_buff_capacity = ESQL_BUFF_SIZE;
+	}
+	esql_buff_len = 0;
+	esql_buff[0] = '\0';
+	java_scan_state = 0;
+	java_scan_prev = 0;
+	java_block_kind = JAVA_BLOCK_MEMBER;
+	BEGIN JAVA_STATE;
+}
+
 "EXEC"[ \t\n]+"JAVA" {
 	/* Enter EXEC JAVA state and collect Java text.
 	 * EXEC JAVA の開始行を保存しておき、END-EXEC で emit する
@@ -466,6 +530,7 @@ H\"[^\"\n]*\" {
 	esql_buff[0] = '\0';
 	java_scan_state = 0;
 	java_scan_prev = 0;
+	java_block_kind = JAVA_BLOCK_CODE;
 	BEGIN JAVA_STATE;
 }
 
@@ -959,7 +1024,14 @@ H\"[^\"\n]*\" {
 	/* END-EXEC が無いままソースが終わった。以前は黙って残りを
 	 * 飲み込んだまま正常終了していたため、明示的にエラーにする。 */
 	cb_error (_("%s statement is not terminated by END-EXEC"),
-		  YY_START == ESQL_STATE ? "EXEC SQL" : "EXEC JAVA");
+		  YY_START == ESQL_STATE
+			  ? "EXEC SQL"
+			  : (java_block_kind == JAVA_BLOCK_IMPORT
+				     ? "EXEC JAVA IMPORT"
+				     : (java_block_kind == JAVA_BLOCK_MEMBER
+						? "EXEC JAVA CLASS-MEMBER"
+						: "EXEC JAVA")));
+	java_block_kind = JAVA_BLOCK_CODE;
 	BEGIN INITIAL;
 	yyterminate ();
 }

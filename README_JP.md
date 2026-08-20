@@ -183,7 +183,9 @@ opensource COBOL 4Jは`EXEC JAVA ... END-EXEC`をサポートしており、生�
            END-EXEC.
 ```
 
-- [EXEC JAVAガイド](./doc/exec-java-guide_JP.md) -- 構文、ホスト変数と読み書きに使うlibcobjのメソッド、ブロック内に書けるもの・書けないもの、注意すべき制限事項を網羅したドキュメント。
+メソッド本体の中には書けないものを扱うために、2つのブロックを併用できます。`EXEC JAVA IMPORT ... END-EXEC`は、生成されるJavaファイルの先頭に`import`宣言を出力し、クラスを単純名で使用できるようにします。`EXEC JAVA CLASS-MEMBER ... END-EXEC`は、生成クラスにフィールド・メソッド・ネストクラスを追加し、それらをプログラム内のどの`EXEC JAVA`ブロックからも使用できるようにします。
+
+- [EXEC JAVAガイド](./doc/exec-java-guide_JP.md) -- 構文、ホスト変数と読み書きに使うlibcobjのメソッド、ブロック内に書けるもの・書けないもの、クラスのimport、クラスメンバの宣言、注意すべき制限事項を網羅したドキュメント。
 
 ## ドキュメント
 

@@ -240,6 +240,61 @@ EXEC JAVA ~ END-EXECは、libcobj.jarのメソッド呼び出しに変換され�
 ```
 
 他の文と同様にブロック`{}`で囲まれるため、ブロック内で宣言したJavaのローカル変数のスコープは、そのEXEC JAVAブロック内に限られる。
+
+### EXEC JAVA IMPORT文
+
+EXEC JAVA IMPORT ~ END-EXECは、その位置には何も生成せず、ブロック内に書かれたimport宣言を生成Javaファイル先頭のimport部(libcobjのimportの後)に出力する。
+DATA DIVISION(WORKING-STORAGE SECTION等)にもPROCEDURE DIVISIONの文の位置にも記述でき、どこに書いてもそのプログラムの生成ファイル全体に効く。
+
+```cobol
+       EXEC JAVA IMPORT
+          import java.util.List;
+       END-EXEC.
+```
+
+```java
+import jp.osscons.opensourcecobol.libcobj.ui.*;
+import jp.osscons.opensourcecobol.libcobj.sql.*;
+import java.util.List;
+```
+
+ブロック内にはimport宣言とJavaのコメントしか書けず、それ以外はcobjがコンパイルエラーとして報告する。
+
+### EXEC JAVA CLASS-MEMBER文
+
+EXEC JAVA CLASS-MEMBER ~ END-EXECは、その位置には実行されるコードを生成せず、ブロック内に書かれた宣言を生成クラスのクラス本体へ出力する。
+これにより、EXEC JAVAブロックからは書けないフィールド・メソッド・ネストクラスを生成クラスに追加できる。
+EXEC JAVA IMPORTと同様に、DATA DIVISIONにもPROCEDURE DIVISIONの文の位置にも記述できる。
+
+```cobol
+       EXEC JAVA CLASS-MEMBER
+          private int counter = 0;
+          private int nextCounter() {
+             return ++counter;
+          }
+          private String greet(String name) {
+             return "hello, " + name + " #" + :WRK-N.getInt();
+          }
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+```
+
+```java
+  /* EXEC JAVA CLASS-MEMBER declarations */
+  private int counter = 0;
+  private int nextCounter() {
+     return ++counter;
+  }
+  private String greet(String name) {
+     return "hello, " + name + " #" + f_WRK_N.getInt();
+  }
+```
+
+EXEC JAVAと同様にホスト変数`:NAME`が置換される点に注意する。
+置換先の`f_WRK_N`は同じクラスのインスタンスフィールドであるため、ここで宣言したインスタンスメソッドから参照できる。
+また、ホスト変数の解決はプログラム全体の解析後に行われるため、上の例のようにブロックをデータ項目の定義より前に書いても参照できる。
+ただし出力位置は`f_XXX`の宣言より前になるので、フィールド初期化子からホスト変数を参照することはできない。
+
 文法や制限事項の詳細は[EXEC JAVAガイド](./exec-java-guide_JP.md)を参照のこと。
 
 ## プログラム全体の制御構造

@@ -6891,6 +6891,10 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
   joutput_line("import jp.osscons.opensourcecobol.libcobj.file.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.ui.*;");
   joutput_line("import jp.osscons.opensourcecobol.libcobj.sql.*;");
+  /* EXEC JAVA IMPORT ~ END-EXEC で登録されたユーザ定義の import 宣言 */
+  for (l = prog->exec_java_import_list; l; l = CB_CHAIN(l)) {
+    joutput_line("%s", (const char *)CB_LITERAL(CB_VALUE(l))->data);
+  }
   joutput("\n");
 
   /*if (!cb_flag_no_cobol_comment) {
@@ -6973,6 +6977,17 @@ void codegen(struct cb_program *prog, const int nested, char **program_id_list,
     }
   }*/
   joutput_execution_entry_func();
+
+  if (prog->exec_java_member_list) {
+    /* EXEC JAVA CLASS-MEMBER ~ END-EXEC で登録されたユーザ定義の
+     * クラスメンバ宣言。:VAR は f_XXX に置換済みで、ここは
+     * f_XXX の宣言と同じクラス本体なのでメンバメソッドから参照できる。 */
+    joutput_newline();
+    joutput_line("/* EXEC JAVA CLASS-MEMBER declarations */");
+    for (l = prog->exec_java_member_list; l; l = CB_CHAIN(l)) {
+      joutput_exec_java(CB_EXEC_JAVA(CB_VALUE(l)));
+    }
+  }
 
   if (has_external) {
     joutput_newline();

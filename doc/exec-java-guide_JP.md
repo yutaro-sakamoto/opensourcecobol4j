@@ -50,12 +50,20 @@ NUM=0030
            EXEC JAVA
                <Javaの文>
            END-EXEC.
+
+           EXEC JAVA IMPORT
+               <Javaのimport宣言>
+           END-EXEC.
+
+           EXEC JAVA CLASS-MEMBER
+               <Javaのフィールド・メソッド・ネストクラスの宣言>
+           END-EXEC.
 ```
 
-- `EXEC JAVA` は PROCEDURE DIVISION 内の、COBOL の文が書ける位置であればどこにでも記述できます。
-- `EXEC`、`JAVA`、`END-EXEC` は他の COBOL 語と同様に大文字・小文字を区別せずに認識されます。その間に書いた Java コードの大文字・小文字はそのまま保持されます。
+- `EXEC JAVA` は PROCEDURE DIVISION 内の、COBOL の文が書ける位置であればどこにでも記述できます。残る 2 つの形式、[`EXEC JAVA IMPORT`](#クラスの-import) と [`EXEC JAVA CLASS-MEMBER`](#クラスメンバの宣言) は、その位置に加えて DATA DIVISION にも記述できます。
+- `EXEC`、`JAVA`、`IMPORT`、`CLASS-MEMBER`、`END-EXEC` は他の COBOL 語と同様に大文字・小文字を区別せずに認識されます。その間に書いた Java コードの大文字・小文字はそのまま保持されます。
 - ブロックの内容は、その文が現れる位置の生成 Java ソースへそのまま出力されます。コンパイラが行うのは、ブロックの全行に共通する行頭の字下げを取り除き、周囲の生成コードに合わせて字下げし直すことだけで、それ以外に Java コードを書き換えることはありません。
-- ブロックの中身は Java の**文**の並びです。生成されるクラスのメソッド本体の中に埋め込まれるため、クラスやファイルのレベルでしか書けない宣言（`import`、メソッド宣言、フィールド宣言）は記述できません。[ブロック内での Java の書き方](#ブロック内での-java-の書き方)を参照してください。
+- ブロックの中身は Java の**文**の並びです。生成されるクラスのメソッド本体の中に埋め込まれるため、クラスやファイルのレベルでしか書けない宣言（メソッド宣言、フィールド宣言）は記述できません。`import` 宣言には専用の `EXEC JAVA IMPORT` ブロックがあります。[クラスの import](#クラスの-import)を参照してください。
 
 ## ホスト変数 (`:NAME`)
 
@@ -118,7 +126,7 @@ prog.cbl:8: Error: 'NO-SUCH-VAR' undefined
 prog.cbl:8: Error: EXEC JAVA: ':PARA-NAME' is not a data item
 ```
 
-エラーが報告される行は、ブロック内で参照が現れた行ではなく `EXEC JAVA` 文の行です。
+エラーが報告される行は、ブロック内で参照が現れた行ではなく `EXEC JAVA` 文の開始行です。[`EXEC JAVA CLASS-MEMBER`](#クラスメンバの宣言) ブロックでも同様です (このブロックのホスト変数は、プログラム全体の解析が終わった時点で解決されます)。
 
 ## ブロック内での Java の書き方
 
@@ -126,7 +134,7 @@ prog.cbl:8: Error: EXEC JAVA: ':PARA-NAME' is not a data item
 
 生成される Java ソースは libcobj の各パッケージを import しているため、`AbstractCobolField`、`CobolDataStorage`、`CobolRuntimeException`、`CobolStopRunException` などは単純名で使用できます。`java.lang` のクラス（`String`、`Integer`、`System` など）も通常どおり使用できます。
 
-`EXEC JAVA` ブロックはメソッド本体の中に置かれるため、`import` 文を追加することは**できません**。それ以外のクラスは完全修飾名で参照してください。
+それ以外のクラスは、完全修飾名で参照するか、[`EXEC JAVA IMPORT`](#クラスの-import) ブロックで import して単純名で使用します。
 
 ```cobol
            EXEC JAVA
@@ -135,6 +143,73 @@ prog.cbl:8: Error: EXEC JAVA: ':PARA-NAME' is not a data item
               System.out.println(names);
            END-EXEC.
 ```
+
+### クラスの import
+
+`EXEC JAVA` ブロックはメソッド本体の中に置かれるため、その中に `import` 宣言を書くことはできません。代わりに `EXEC JAVA IMPORT ~ END-EXEC` ブロックに import 宣言を記述します。
+
+```cobol
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          import java.util.ArrayList;
+          import java.util.List;
+          import static java.lang.Math.max;
+       END-EXEC.
+      *...
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              List<Integer> xs = new ArrayList<Integer>();
+              xs.add(3);
+              :WRK-N.setInt(max(xs.get(0), 5));
+           END-EXEC.
+```
+
+- 宣言は、生成される `.java` ファイル先頭の import 部 (libcobj の import の後) に出力されます。
+- ブロックは DATA DIVISION (`EXEC SQL` の宣言が書ける WORKING-STORAGE SECTION 等) にも、PROCEDURE DIVISION の文の位置にも記述できます。どこに書いても、そのプログラムの生成ファイル全体に効きます。可読性のため、プログラムの先頭付近に書くことを推奨します。
+- ブロックの中身に書けるのは `import` 宣言 (`import a.b.C;`、`import static a.b.C.d;`、ワイルドカード形式 `import a.b.*;` / `import static a.b.C.*;`) と Java のコメントだけです。それ以外を書くとコンパイルエラーになります (生成ファイルの先頭に壊れたテキストが出力されると、`javac` のエラーが極めて分かりにくくなるためです)。import する名前の構成要素に Java の予約語は書けず、名前の途中に空白を入れることもできません (`import java . util . List;` はエラーになります)。名前に使えるのは ASCII の識別子のみです。宣言の間の余分な `;` は読み飛ばされます。
+- ブロック内の誤った宣言はすべて報告されるため、1 回のコンパイルで問題を一覧できます。また、エラーが指す行はブロックの開始行ではなく、その宣言が書かれた行です。
+
+  ```
+  prog.cbl:7: Error: EXEC JAVA IMPORT: not an import declaration: 'int x = 1'
+  prog.cbl:8: Error: EXEC JAVA IMPORT: invalid import declaration: 'import int.foo'
+  prog.cbl:9: Error: EXEC JAVA IMPORT: missing ';' in import declaration: 'import java.util.Map'
+  ```
+
+- `EXEC JAVA IMPORT` ブロック内ではホスト変数 (`:NAME`) は使用できません。
+- 同じ宣言が複数回現れた場合 (ブロックの重複など) は 1 つにまとめて出力されます。比較は正規化した後で行われるため、字句の間の空白、改行、コメントの違いがあってもまとめられます。通常の import と `static` import は別の宣言として扱われます。
+- DATA DIVISION 内では、後ろにデータ記述項が続く場合は `EXEC SQL` と同様に分離符のピリオド付きで `END-EXEC.` と書いてください。
+
+### クラスメンバの宣言
+
+`EXEC JAVA` ブロックに書けるのは文だけなので、メソッドやフィールドの宣言はできません。生成クラスにメンバ (フィールド、メソッド、ネストクラスなど) を追加するには、`EXEC JAVA CLASS-MEMBER ~ END-EXEC` ブロックを使います。
+
+```cobol
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA CLASS-MEMBER
+          private int counter = 0;
+          private int nextCounter() {
+             return ++counter;
+          }
+          private String greet(String name) {
+             return "hello, " + name + " #" + :WRK-N.getInt();
+          }
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+      *...
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              :WRK-N.setInt(nextCounter());
+           END-EXEC.
+```
+
+- ブロックの内容は生成クラスのクラス本体に出力されます。`EXEC JAVA` と同様に `:NAME` はホスト変数のフィールドに置換され、そのフィールドは同じクラスのインスタンスフィールドなので、インスタンスメソッドの中から読み書きできます。上の例のように、ブロックがデータ項目の定義より前にあっても参照できます。
+- ブロックは `EXEC JAVA IMPORT` と同じ場所 (DATA DIVISION、または PROCEDURE DIVISION の文の位置) に書けます。文の位置に書いた場合、その位置に実行コードは生成されません (宣言がクラス本体に出力されるだけです)。
+- 宣言したメンバは同じプログラムのどの `EXEC JAVA` ブロックからも使えます。逆にメンバメソッド同士の呼び出しや、メンバメソッドからのホスト変数の読み書きもできます。
+- ホスト変数の参照はメソッドの中でのみ行ってください。フィールド初期化子やインスタンス初期化子ブロックから参照しては**いけません**。メンバの宣言はクラス本体の中でホスト変数のフィールドより前に出力されるため、`javac` が `illegal forward reference` として拒否します。さらに、ホスト変数のオブジェクトはコンストラクタ本体が呼ぶ `init()` で生成され、フィールド初期化子・インスタンス初期化子はコンストラクタ本体より先に実行されるため、このエラーを回避する書き方 (`this.:WRK-N` のようにフィールドを修飾する) をしても値は `null` です。
+- `static` メンバからはホスト変数を参照できません。ホスト変数のフィールドはインスタンスフィールドであり、`javac` が `non-static variable ... cannot be referenced from a static context` を報告します。
+- `EXEC JAVA` と同様、本文は `cobj` では検査されません。メンバ宣言の誤りは生成された `.java` ファイルに対する `javac` のエラーとして報告されます。
 
 ### ローカル変数のスコープ
 
@@ -199,9 +274,11 @@ prog.cbl:8: Error: EXEC JAVA: ':PARA-NAME' is not a data item
 
 - **修飾参照は使用できません。** `X OF GRP` のような修飾は書けません。`:TBL(1)` のような添字も認識されず、括弧は Java のコードとしてそのまま出力されます。名前はプログラム内で一意に解決できる必要があります。修飾や添字が必要な項目は、いったん作業項目に `MOVE` してからその項目を参照してください。
 
-- **固定形式のソースは 72 桁までしか読まれません。** `EXEC SQL` と同様に、`EXEC JAVA` ブロックの内容も通常の COBOL のソース読み込み処理を通ります。固定形式では 8〜72 桁だけがプログラムとして扱われ、73 桁目以降は捨てられます。長い Java の行は末尾が失われ、多くの場合は行末の `;` が欠けて、原因の分かりにくい Java の構文エラーになります。Java の各行を十分短く保つか、`-Wcolumn-overflow` オプションを付けて 72 桁を超える行を警告させるか、自由形式（`-free`）でコンパイルしてください。
+- **固定形式のソースは 72 桁までしか読まれません。** `EXEC SQL` と同様に、`EXEC JAVA`、`EXEC JAVA IMPORT`、`EXEC JAVA CLASS-MEMBER` ブロックの内容も通常の COBOL のソース読み込み処理を通ります。固定形式では 8〜72 桁だけがプログラムとして扱われ、73 桁目以降は捨てられます。長い Java の行は末尾が失われ、多くの場合は行末の `;` が欠けて、原因の分かりにくい Java の構文エラーになります (`EXEC JAVA IMPORT` ブロックでは `EXEC JAVA IMPORT: missing ';' in import declaration` というエラーになります)。Java の各行を十分短く保つか、`-Wcolumn-overflow` オプションを付けて 72 桁を超える行を警告させるか、自由形式（`-free`）でコンパイルしてください。
 
-- **`END-EXEC` の無いブロックはコンパイルエラーになります。** `EXEC JAVA` ブロックが開いたままソースが終わった場合 (`END-EXEC` の書き忘れや、閉じていない `/* ... */` コメントが `END-EXEC` を飲み込んだ場合)、`cobj` は `EXEC JAVA statement is not terminated by END-EXEC` を報告して失敗します。
+- **ユーザの import は libcobj のクラスを隠すことがあります。** 生成ファイルは libcobj の各パッケージをオンデマンド (`.*`) で import しており、単一型 import はそれより常に優先されます。libcobj には `Const`、`FileIO`、`IndexedFile`、`Linage` などありふれた単純名のクラスがあるため、同じ単純名の無関係なクラスを import すると**生成コード側**の参照が壊れることがあります。その場合は import をやめて完全修飾名で参照してください。
+
+- **`END-EXEC` の無いブロックはコンパイルエラーになります。** ブロックが開いたままソースが終わった場合 (`END-EXEC` の書き忘れや、閉じていない `/* ... */` コメントが `END-EXEC` を飲み込んだ場合)、`cobj` は `... statement is not terminated by END-EXEC` を報告して失敗します。メッセージには開いたままになったブロックの形式 (`EXEC JAVA`、`EXEC JAVA IMPORT`、`EXEC JAVA CLASS-MEMBER`) が表示されます。
 
 - **Java コードは `cobj` では検査されません。** 記述した Java の誤り（構文エラー、存在しないメソッド、型の不一致）は、生成された `.java` ファイルに対して Java コンパイラが報告します。そのため報告される行番号は、COBOL ソースではなく生成された Java ソースのものです。
 
@@ -232,3 +309,15 @@ java program
 ```
 
 Java のローカル変数のスコープがブロック内に限られるのは、この `{ ... }` があるためです。
+
+残る 2 つの形式は、ファイル内の別の場所に出力されます。`EXEC JAVA IMPORT` ブロックの宣言はファイル先頭の import 部 (libcobj の import の後) に追加されます。`EXEC JAVA CLASS-MEMBER` ブロックは、`/* EXEC JAVA CLASS-MEMBER declarations */` というコメントの下に、そのプログラムの他の `CLASS-MEMBER` ブロックのメンバとまとめてクラス本体へ出力されます。
+
+```java
+  /* EXEC JAVA CLASS-MEMBER declarations */
+  private int counter = 0;
+  private int nextCounter() {
+     return ++counter;
+  }
+```
+
+このブロックを PROCEDURE DIVISION の文の位置に書いた場合、その位置には `/* prog.cbl:8: EXEC JAVA CLASS-MEMBER */` というコメントが残るだけで、実行されるコードはありません。

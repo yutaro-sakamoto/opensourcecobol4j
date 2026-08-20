@@ -193,7 +193,9 @@ opensource COBOL 4J supports `EXEC JAVA ... END-EXEC`, which embeds Java source 
            END-EXEC.
 ```
 
-- [EXEC JAVA Guide](./doc/exec-java-guide.md) -- Syntax, host variables and the libcobj methods used to read and write them, what may and may not be written inside a block, and the restrictions to be aware of.
+Two companion blocks cover what cannot be written inside a method body: `EXEC JAVA IMPORT ... END-EXEC` emits `import` declarations at the top of the generated Java file, so that classes can be used by their simple names, and `EXEC JAVA CLASS-MEMBER ... END-EXEC` adds fields, methods and nested classes to the generated class, where they can be called from any `EXEC JAVA` block of the program.
+
+- [EXEC JAVA Guide](./doc/exec-java-guide.md) -- Syntax, host variables and the libcobj methods used to read and write them, what may and may not be written inside a block, importing classes, declaring class members, and the restrictions to be aware of.
 
 ## Documentation
 

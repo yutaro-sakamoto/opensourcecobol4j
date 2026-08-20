@@ -1336,7 +1336,10 @@ enum cb_java_scan_state {
 };
 
 extern void cb_java_scan_step(int *state, int *prev, int c);
-extern cb_tree cb_build_exec_java(cb_tree java_literal);
+extern cb_tree cb_build_exec_java(cb_tree java_literal, int resolve_now);
+extern void cb_add_exec_java_import(cb_tree java_literal);
+extern void cb_add_exec_java_member(cb_tree java_literal);
+extern void cb_resolve_exec_java_members(struct cb_program *prog);
 
 /*
  * SORT
@@ -1527,7 +1530,9 @@ struct cb_program {
   cb_tree collating_sequence;
   cb_tree cursor_pos;
   cb_tree crt_status;
-  cb_tree returning; /* RETURNING */
+  cb_tree returning;             /* RETURNING */
+  cb_tree exec_java_import_list; /* EXEC JAVA IMPORT declarations */
+  cb_tree exec_java_member_list; /* EXEC JAVA CLASS-MEMBER declarations */
   struct cb_word *word_table[CB_WORD_HASH_SIZE];
   /* internal variables */
   int loop_counter;                /* Loop counters */

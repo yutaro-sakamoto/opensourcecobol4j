@@ -188,6 +188,260 @@ AT_CHECK([java prog], [0],
 
 AT_CLEANUP
 
+AT_SETUP([EXEC JAVA IMPORT])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          import java.util.ArrayList;
+          import java.util.List;
+          import static java.lang.Math.max;
+          // duplicates are folded into one, stray ';' is skipped
+          import java.util.List;;
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           EXEC JAVA IMPORT
+              import java.util.function.*;
+           END-EXEC.
+           EXEC JAVA
+              List<Integer> xs = new ArrayList<Integer>();
+              xs.add(3);
+              xs.add(7);
+              Supplier<Integer> s = () -> max(xs.get(0), xs.get(1));
+              :WRK-N.setInt(s.get());
+           END-EXEC.
+           DISPLAY "N=" WRK-N.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([grep -c "^import java.util.List;" prog.java], [0], [1
+])
+AT_CHECK([java prog], [0],
+[N=07
+])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA IMPORT invalid declaration])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          int x = 1;
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl], [1], [ignore], [ignore])
+
+AT_DATA([prog2.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog2.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          import int.foo;
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog2.cbl], [1], [ignore], [ignore])
+
+AT_DATA([prog3.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog3.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          import *;
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog3.cbl], [1], [ignore], [ignore])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA IMPORT reports every declaration with its line])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA IMPORT
+          import static;
+          import int.foo;
+          int x = 1;
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl 2>&1 | grep -c "^prog.cbl:@<:@0-9@:>@*: Error: EXEC JAVA IMPORT"], [0], [3
+])
+AT_CHECK([${COBJ} prog.cbl 2>&1 | grep -c "^prog.cbl:7: Error: EXEC JAVA IMPORT: invalid import declaration"], [0], [1
+])
+AT_CHECK([${COBJ} prog.cbl 2>&1 | grep -c "^prog.cbl:9: Error: EXEC JAVA IMPORT: not an import declaration"], [0], [1
+])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA missing END-EXEC])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              int n = 1;
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl 2>&1 | grep -c "EXEC JAVA statement is not terminated by END-EXEC"], [0], [1
+])
+
+AT_DATA([prog2.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog2.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA CLASS-MEMBER
+          private int x = 1;
+])
+
+AT_CHECK([${COBJ} prog2.cbl 2>&1 | grep -c "EXEC JAVA CLASS-MEMBER statement is not terminated by END-EXEC"], [0], [1
+])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA consecutive semicolons])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WRK-A PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              int i = 0;
+              for (;;) { i++; if (i > 2) break; }
+              String t = "a;;b";;
+              System.out.println(t + i);
+              :WRK-A.setInt(i);
+           END-EXEC.
+           DISPLAY "A=" WRK-A.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[a;;b3
+A=03
+])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA CLASS-MEMBER])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA CLASS-MEMBER
+          private int counter = 0;
+          private int nextCounter() {
+             return ++counter;
+          }
+          private String greet(String name) {
+             return "hello, " + name + " #" + :WRK-N.getInt();
+          }
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       01 WRK-S PIC X(16) VALUE SPACE.
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              :WRK-N.setInt(nextCounter());
+              :WRK-N.setInt(nextCounter());
+              :WRK-S.moveFrom(greet("cobol"));
+           END-EXEC.
+           DISPLAY "N=" WRK-N.
+           DISPLAY "S=" WRK-S "/".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[N=02
+S=hello, cobol #2 /
+])
+
+AT_DATA([prog2.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog2.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WRK-S PIC X(8) VALUE SPACE.
+       PROCEDURE DIVISION.
+      * CLASS-MEMBER at a statement position; ';;' kept in the string
+           EXEC JAVA CLASS-MEMBER
+              private String tag() {
+                 return "a;;b";
+              }
+           END-EXEC.
+           EXEC JAVA
+              :WRK-S.moveFrom(tag());
+           END-EXEC.
+           DISPLAY "S=" WRK-S "/".
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog2.cbl])
+AT_CHECK([java prog2], [0],
+[S=a;;b    /
+])
+
+AT_CLEANUP
+
+AT_SETUP([EXEC JAVA CLASS-MEMBER undefined host variable])
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       EXEC JAVA CLASS-MEMBER
+          private int bad() { return :NO-SUCH.getInt(); }
+       END-EXEC.
+       01 WRK-N PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl], [1], [ignore], [ignore])
+
+AT_CLEANUP
+
 AT_SETUP([EXEC JAVA undefined host variable])
 
 AT_DATA([prog.cbl], [
