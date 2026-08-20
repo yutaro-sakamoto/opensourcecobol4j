@@ -76,6 +76,37 @@ static int			esql_in_quote = 0;
  * コメントが COBOL 上の EXEC SQL 行ではなく数行後の END-EXEC を指す。 */
 static int			esql_start_line = 0;
 
+/* EXEC JAVA state variables.
+ * バッファ (esql_buff) と esql_start_line は ESQL と共有する
+ * (排他状態なので同時には使われない)。
+ * java_scan_state は Java の文字列/文字リテラル/コメントの内側を追跡し、
+ * その中に現れた END-EXEC をブロック終端と誤認しないためのもの
+ * (値は tree.h の enum cb_java_scan_state)。 */
+static int			java_scan_state = CB_JAVA_SCAN_NORMAL;
+static int			java_scan_prev = 0;
+
+/* 実体は tree.c の cb_java_scan_step (走査状態機械を 3 実装で共有する) */
+static void
+java_scan_feed (const char *s, size_t len)
+{
+	size_t i;
+	for (i = 0; i < len; i++) {
+		cb_java_scan_step (&java_scan_state, &java_scan_prev,
+				   (unsigned char)s[i]);
+	}
+}
+
+static void
+java_buff_append (const char *s, size_t len)
+{
+	while (esql_buff_len + len + 2 >= esql_buff_capacity) {
+		esql_buff_capacity *= 2;
+		esql_buff = cobc_realloc (esql_buff, esql_buff_capacity);
+	}
+	memcpy (esql_buff + esql_buff_len, s, len);
+	esql_buff_len += len;
+}
+
 static int read_literal (int mark, enum cb_category);
 static int scan_x (char *text);
 static int scan_h (char *text);
@@ -86,7 +117,7 @@ static void count_lines (char *text);
 %}
 
 %s DECIMAL_IS_PERIOD DECIMAL_IS_COMMA
-%x PICTURE_STATE FUNCTION_STATE ESQL_STATE
+%x PICTURE_STATE FUNCTION_STATE ESQL_STATE JAVA_STATE
 
 
 JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
@@ -174,6 +205,49 @@ JPNWORD [\xA0-\xDF]|([\x81-\x9F\xE0-\xFC][\x40-\x7E\x80-\xFC])
 		}
 	}
 	esql_buff[esql_buff_len++] = yytext[0];
+  }
+}
+
+<JAVA_STATE>{
+  "END-EXEC" {
+	if (java_scan_state != 0) {
+		/* Java の文字列・文字リテラル・コメント内の END-EXEC は
+		 * ブロック終端ではなく Java コードの一部 */
+		java_scan_feed (yytext, strlen (yytext));
+		java_buff_append (yytext, strlen (yytext));
+	} else {
+		/* End of EXEC JAVA block. 本文の整形 (共通インデント除去等) は
+		 * cb_build_exec_java (tree.c) が行う。 */
+		BEGIN INITIAL;
+		esql_buff[esql_buff_len] = '\0';
+		yylval = cb_build_alphanumeric_literal ((unsigned char *)esql_buff, esql_buff_len);
+		/* location は END-EXEC 行ではなく EXEC JAVA 開始行を指すようにする */
+		yylval->source_file = (unsigned char *)cb_source_file;
+		yylval->source_line = esql_start_line;
+		return EXEC_JAVA_STATEMENT;
+	}
+  }
+  \n {
+	cb_source_line++;
+	java_scan_feed ("\n", 1);
+	java_buff_append ("\n", 1);
+  }
+  [ \t]+ {
+	java_scan_feed (yytext, strlen (yytext));
+	java_buff_append (yytext, strlen (yytext));
+  }
+
+  {JPNWORD} {
+	/* SJIS 2バイト文字は状態機械に通さない。第2バイトが 0x5C の文字
+	 * (「表」「十」「ソ」等) を '\\' と誤認して、直後の引用符を
+	 * 取りこぼすのを防ぐ。 */
+	java_scan_prev = 0;
+	java_buff_append (yytext, strlen (yytext));
+  }
+
+  . {
+	java_scan_feed (yytext, 1);
+	java_buff_append (yytext, 1);
   }
 }
 
@@ -376,6 +450,23 @@ H\"[^\"\n]*\" {
 	esql_buff[0] = '\0';
 	esql_in_quote = 0;
 	BEGIN ESQL_STATE;
+}
+
+"EXEC"[ \t\n]+"JAVA" {
+	/* Enter EXEC JAVA state and collect Java text.
+	 * EXEC JAVA の開始行を保存しておき、END-EXEC で emit する
+	 * EXEC_JAVA_STATEMENT トークンの location として使う。 */
+	esql_start_line = cb_source_line;
+	count_lines (yytext);
+	if (!esql_buff) {
+		esql_buff = cobc_malloc (ESQL_BUFF_SIZE);
+		esql_buff_capacity = ESQL_BUFF_SIZE;
+	}
+	esql_buff_len = 0;
+	esql_buff[0] = '\0';
+	java_scan_state = 0;
+	java_scan_prev = 0;
+	BEGIN JAVA_STATE;
 }
 
 "END"[ \t\n]+"PROGRAM" {
@@ -862,6 +953,15 @@ H\"[^\"\n]*\" {
 	yylval = NULL;
 	return yytext[0];
   }
+}
+
+<ESQL_STATE,JAVA_STATE><<EOF>> {
+	/* END-EXEC が無いままソースが終わった。以前は黙って残りを
+	 * 飲み込んだまま正常終了していたため、明示的にエラーにする。 */
+	cb_error (_("%s statement is not terminated by END-EXEC"),
+		  YY_START == ESQL_STATE ? "EXEC SQL" : "EXEC JAVA");
+	BEGIN INITIAL;
+	yyterminate ();
 }
 
 <<EOF>> {

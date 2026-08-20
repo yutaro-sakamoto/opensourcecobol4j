@@ -126,7 +126,8 @@ i18n_sjis_DEPENDENCIES = \
 	i18n_sjis.src/java-interface.at \
 	i18n_sjis.src/convert-string-concat.at \
 	i18n_sjis.src/fd-external.at \
-	i18n_sjis.src/copy-comments.at
+	i18n_sjis.src/copy-comments.at \
+	i18n_sjis.src/exec-java.at
 
 cobol_utf8_DEPENDENCIES = \
 	cobol_utf8.at \
@@ -369,7 +370,8 @@ misc_DEPENDENCIES = \
 	misc.src/comp1-comp2.at \
 	misc.src/variable-length-file.at \
 	misc.src/convert-string-concat.at \
-	misc.src/complex-odo.at
+	misc.src/complex-odo.at \
+	misc.src/exec-java.at
 
 EXTRA_DIST = $(srcdir)/package.m4 \
 	$(TESTS) \

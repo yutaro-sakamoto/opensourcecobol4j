@@ -19,7 +19,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-%expect 148
+%expect 149
 
 %defines
 %verbose
@@ -759,6 +759,7 @@ setup_use_file (struct cb_file *fileptr)
 %token ZERO
 
 %token EXEC_SQL_STATEMENT	"EXEC SQL statement"
+%token EXEC_JAVA_STATEMENT	"EXEC JAVA statement"
 
 %left '+' '-'
 %left '*' '/'
@@ -3969,6 +3970,7 @@ statement:
 | use_statement
 | write_statement
 | exec_sql_statement
+| exec_java_statement
 | NEXT_SENTENCE
   {
 	if (cb_verify (cb_next_sentence_phrase, "NEXT SENTENCE")) {
@@ -7355,6 +7357,29 @@ exec_sql_statement:
 	if (sql_node != cb_error_node) {
 		current_statement->body =
 			cb_list_add (current_statement->body, sql_node);
+	}
+  }
+;
+
+/*
+ * EXEC JAVA statement
+ */
+
+exec_java_statement:
+  EXEC_JAVA_STATEMENT
+  {
+	cb_tree java_node;
+	BEGIN_STATEMENT ("EXEC JAVA", 0);
+	/* BEGIN_STATEMENT は cb_source_line (= END-EXEC 行) を入れる。
+	   $1 のリテラルには scanner が EXEC JAVA 開始行を入れているので、
+	   そちらで上書きして「コメントは EXEC JAVA の行を指す」ようにする。 */
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
+	java_node = cb_build_exec_java ($1);
+	if (java_node != cb_error_node) {
+		current_statement->body =
+			cb_list_add (current_statement->body, java_node);
 	}
   }
 ;

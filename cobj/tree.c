@@ -2637,6 +2637,283 @@ struct cb_sql_host_var *cb_sql_host_var_list_add(struct cb_sql_host_var *list,
 }
 
 /*
+ * EXEC JAVA
+ */
+
+/* Java コードを 1 バイト進めて走査状態 (enum cb_java_scan_state) を更新する。
+ * 文字列リテラル・文字リテラル・コメントの内側では :VAR を置換せず、
+ * END-EXEC も終端として扱わないために使う。cb_build_exec_java のほか
+ * scanner.l / pplex.l のレキサーからも共有される。
+ * 多バイト文字は呼び出し側で丸ごと読み飛ばして *prev を 0 にすること
+ * (SJIS の第2バイト 0x5C を '\\' と誤認するのを防ぐため)。 */
+void cb_java_scan_step(int *state, int *prev, int c) {
+  switch (*state) {
+  case CB_JAVA_SCAN_NORMAL:
+    if (*prev == '/' && c == '/') {
+      *state = CB_JAVA_SCAN_LINE_COMMENT;
+      c = 0;
+    } else if (*prev == '/' && c == '*') {
+      *state = CB_JAVA_SCAN_BLOCK_COMMENT;
+      c = 0;
+    } else if (c == '"') {
+      *state = CB_JAVA_SCAN_DQUOTE;
+      c = 0;
+    } else if (c == '\'') {
+      *state = CB_JAVA_SCAN_SQUOTE;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_DQUOTE:
+    if (*prev == '\\') {
+      /* エスケープされた文字 (\" や \\ など) を消費 */
+      c = 0;
+    } else if (c == '"') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_SQUOTE:
+    if (*prev == '\\') {
+      c = 0;
+    } else if (c == '\'') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_LINE_COMMENT:
+    break;
+  case CB_JAVA_SCAN_BLOCK_COMMENT:
+    if (*prev == '*' && c == '/') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  }
+  if (c == '\n') {
+    /* Java の文字列・文字リテラル・行コメントは行をまたげない */
+    if (*state == CB_JAVA_SCAN_DQUOTE || *state == CB_JAVA_SCAN_SQUOTE ||
+        *state == CB_JAVA_SCAN_LINE_COMMENT) {
+      *state = CB_JAVA_SCAN_NORMAL;
+    }
+    c = 0;
+  }
+  *prev = c;
+}
+
+#ifndef I18N_UTF8
+/* SJIS の 2 バイト文字の先行バイトか (第2バイトが 0x5C 等でも
+ * エスケープ判定・ホスト変数判定に関与させないため丸ごと読み飛ばす) */
+static int exec_java_sjis_lead_byte(int c) {
+  return (c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC);
+}
+#endif /* !I18N_UTF8 */
+
+/* ホスト変数名 (:VAR) を構成できる文字。COBOL の利用者語に合わせて
+ * 英数字とハイフン・アンダースコアを許す。 */
+static int exec_java_word_char(int c) {
+  return isalnum(c) || c == '_' || c == '-';
+}
+
+/* 先頭・末尾の空行と、非空行に共通する行頭空白を取り除いたコピーを返す。
+ * 生成 Java の可読性のための整形で、コードの意味は変えない。 */
+static char *exec_java_normalize_text(const char *src) {
+  size_t min_indent = (size_t)-1;
+  const char *p = src;
+  char *out;
+  char *q;
+  char *start;
+
+  /* 非空行の行頭空白 (スペース/タブの文字数) の最小値を求める */
+  while (*p) {
+    size_t indent = 0;
+    while (*p == ' ' || *p == '\t') {
+      indent++;
+      p++;
+    }
+    if (*p != '\n' && *p != '\0' && indent < min_indent) {
+      min_indent = indent;
+    }
+    while (*p && *p != '\n') {
+      p++;
+    }
+    if (*p == '\n') {
+      p++;
+    }
+  }
+  if (min_indent == (size_t)-1) {
+    min_indent = 0;
+  }
+
+  out = cobc_malloc(strlen(src) + 2);
+  q = out;
+  p = src;
+  while (*p) {
+    size_t skipped = 0;
+    char *line_start = q;
+    while ((*p == ' ' || *p == '\t') && skipped < min_indent) {
+      p++;
+      skipped++;
+    }
+    while (*p && *p != '\n') {
+      *q++ = *p++;
+    }
+    /* 各行の行末空白を除去 */
+    while (q > line_start && (q[-1] == ' ' || q[-1] == '\t')) {
+      q--;
+    }
+    if (*p == '\n') {
+      *q++ = *p++;
+    }
+  }
+  *q = '\0';
+  /* 末尾の空白・改行を除去 */
+  while (q > out && (q[-1] == ' ' || q[-1] == '\t' || q[-1] == '\n')) {
+    *--q = '\0';
+  }
+  /* 先頭の空行を除去 */
+  start = out;
+  while (*start) {
+    char *scan = start;
+    while (*scan == ' ' || *scan == '\t') {
+      scan++;
+    }
+    if (*scan == '\n') {
+      start = scan + 1;
+    } else {
+      break;
+    }
+  }
+  if (start != out) {
+    memmove(out, start, strlen(start) + 1);
+  }
+  return out;
+}
+
+static struct cb_exec_java_part *
+exec_java_add_part(struct cb_exec_java_part **head,
+                   struct cb_exec_java_part **tail, char *text,
+                   cb_tree var_ref) {
+  struct cb_exec_java_part *part;
+
+  part = cobc_malloc(sizeof(struct cb_exec_java_part));
+  part->text = text;
+  part->var_ref = var_ref;
+  part->next = NULL;
+  if (*tail) {
+    (*tail)->next = part;
+  } else {
+    *head = part;
+  }
+  *tail = part;
+  return part;
+}
+
+/* EXEC JAVA ~ END-EXEC の本文 (java_literal) を、リテラルな Java テキストと
+ * :VAR ホスト変数参照の交互リストに分解して CB_TAG_EXEC_JAVA ノードを作る。
+ * ホスト変数はこの時点で解決し、未定義ならエラーにする。 */
+cb_tree cb_build_exec_java(cb_tree java_literal) {
+  struct cb_exec_java *node;
+  struct cb_exec_java_part *head = NULL;
+  struct cb_exec_java_part *tail = NULL;
+  int state = CB_JAVA_SCAN_NORMAL;
+  int prev = 0;
+  char *text;
+  const char *p;
+  const char *seg_start;
+  int has_error = 0;
+
+  text = exec_java_normalize_text((const char *)CB_LITERAL(java_literal)->data);
+  p = text;
+  seg_start = text;
+  while (*p) {
+    int c = (unsigned char)*p;
+
+#ifndef I18N_UTF8
+    if (exec_java_sjis_lead_byte(c) && p[1]) {
+      /* SJIS の 2 バイト文字は状態機械に通さず読み飛ばす */
+      p += 2;
+      prev = 0;
+      continue;
+    }
+#endif /* !I18N_UTF8 */
+
+    /* 開始は英数字に限る (COBOL の利用者語は '_' や '-' で始まれない)。
+     * 直前が ':' の場合はメソッド参照 (Foo::bar) なので置換しない。 */
+    if (state == CB_JAVA_SCAN_NORMAL && c == ':' && prev != ':' &&
+        isalnum((unsigned char)p[1])) {
+      /* ホスト変数参照 */
+      const char *name_start = p + 1;
+      const char *name_end = name_start;
+      size_t name_len;
+      char *name;
+      cb_tree ref;
+      cb_tree resolved;
+
+      while (exec_java_word_char((unsigned char)*name_end)) {
+        name_end++;
+      }
+      /* COBOL の利用者語はハイフンで終われないので、末尾のハイフンは
+       * Java コード側 (減算等) とみなして名前に含めない */
+      while (name_end > name_start && name_end[-1] == '-') {
+        name_end--;
+      }
+      name_len = (size_t)(name_end - name_start);
+      /* 直前までのテキスト断片を part にする */
+      if (p > seg_start) {
+        char *seg = cobc_malloc((size_t)(p - seg_start) + 1);
+        memcpy(seg, seg_start, (size_t)(p - seg_start));
+        seg[p - seg_start] = '\0';
+        exec_java_add_part(&head, &tail, seg, NULL);
+      }
+      name = cobc_malloc(name_len + 1);
+      memcpy(name, name_start, name_len);
+      name[name_len] = '\0';
+      ref = cb_build_reference(name);
+      CB_TREE(ref)->source_file = java_literal->source_file;
+      CB_TREE(ref)->source_line = java_literal->source_line;
+      resolved = cb_ref(ref);
+      if (!resolved || resolved == cb_error_node) {
+        /* cb_ref が undefined エラーを報告済み */
+        has_error = 1;
+      } else if (!CB_FIELD_P(resolved)) {
+        cb_error_x(java_literal, _("EXEC JAVA: ':%s' is not a data item"),
+                   name);
+        has_error = 1;
+      } else {
+        /* codegen (joutput_param) が field_cache に登録して f_ 宣言を
+         * 生成する条件 (count > 0) をパース時点で満たしておく */
+        CB_FIELD(resolved)->count++;
+        exec_java_add_part(&head, &tail, NULL, ref);
+      }
+      p = name_end;
+      seg_start = name_end;
+      prev = 0;
+      continue;
+    }
+    cb_java_scan_step(&state, &prev, c);
+    p++;
+  }
+  if (p > seg_start) {
+    char *seg = cobc_malloc((size_t)(p - seg_start) + 1);
+    memcpy(seg, seg_start, (size_t)(p - seg_start));
+    seg[p - seg_start] = '\0';
+    exec_java_add_part(&head, &tail, seg, NULL);
+  }
+  free(text);
+
+  if (has_error) {
+    return cb_error_node;
+  }
+
+  node = make_tree(CB_TAG_EXEC_JAVA, CB_CATEGORY_UNKNOWN,
+                   sizeof(struct cb_exec_java));
+  node->parts = head;
+  CB_TREE(node)->source_file = java_literal->source_file;
+  CB_TREE(node)->source_line = java_literal->source_line;
+  return CB_TREE(node);
+}
+
+/*
  * FUNCTION
  */
 

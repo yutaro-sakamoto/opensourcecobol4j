@@ -3903,6 +3903,38 @@ static void joutput_sql_string_arg(const char *sql) {
   }
 }
 
+/* EXEC JAVA: 本文のテキスト断片をそのまま出力し、ホスト変数参照 (:VAR) は
+ * 対応する AbstractCobolField (f_XXX) に置換する。テキスト中の改行の後には
+ * 現在のインデントを挿入して、生成 Java の字下げを揃える。 */
+static void joutput_exec_java(struct cb_exec_java *p) {
+  struct cb_exec_java_part *part;
+
+  joutput_prefix();
+  for (part = p->parts; part; part = part->next) {
+    if (part->text) {
+      const char *s = part->text;
+      const char *nl;
+      while ((nl = strchr(s, '\n')) != NULL) {
+        joutput("%.*s\n", (int)(nl - s), s);
+        joutput_prefix();
+        s = nl + 1;
+      }
+      joutput("%s", s);
+    }
+    if (part->var_ref) {
+      cb_tree resolved = cb_ref(part->var_ref);
+      if (resolved && resolved != cb_error_node && CB_FIELD_P(resolved)) {
+        /* cb_build_exec_java がパース時に解決済みで count も加算済み */
+        joutput_param(part->var_ref, 0);
+      } else {
+        /* 解決済みの参照しか part にならないため、ここには到達しない */
+        ABORT();
+      }
+    }
+  }
+  joutput("\n");
+}
+
 static void joutput_exec_sql(struct cb_exec_sql *p) {
   struct cb_sql_host_var *hv;
 
@@ -4398,6 +4430,9 @@ static void joutput_stmt(cb_tree x, enum joutput_stmt_type output_type) {
     break;
   case CB_TAG_EXEC_SQL:
     joutput_exec_sql(CB_EXEC_SQL(x));
+    break;
+  case CB_TAG_EXEC_JAVA:
+    joutput_exec_java(CB_EXEC_JAVA(x));
     break;
   case CB_TAG_GOTO:
     joutput_goto(CB_GOTO(x));

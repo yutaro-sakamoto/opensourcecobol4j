@@ -219,6 +219,29 @@ CALL文も、libcobj.jarに定義されたメソッドの呼び出しに変換�
 
 opensource COBOL 4Jにおいて、CALL文で指定されたモジュール名は原則として実行時に解決される。
 
+### EXEC JAVA文
+
+EXEC JAVA ~ END-EXECは、libcobj.jarのメソッド呼び出しに変換されるのではなく、ブロック内に書かれたJavaコードがその位置にそのまま出力される。
+ホスト変数`:NAME`は、そのデータ項目に対応するAbstractCobolFieldのオブジェクトに置換される。
+
+```cobol
+           EXEC JAVA
+              int n = :WRK-NUM.getInt();
+              :WRK-NUM.setInt(n * 3);
+           END-EXEC.
+```
+
+```java
+/* ej.cbl:7: EXEC JAVA */
+{
+  int n = f_WRK_NUM.getInt();
+  f_WRK_NUM.setInt(n * 3);
+}
+```
+
+他の文と同様にブロック`{}`で囲まれるため、ブロック内で宣言したJavaのローカル変数のスコープは、そのEXEC JAVAブロック内に限られる。
+文法や制限事項の詳細は[EXEC JAVAガイド](./exec-java-guide_JP.md)を参照のこと。
+
 ## プログラム全体の制御構造
 
 COBOLでは、PROCEDURE DIVISION内はSECTIONやPARAGRAPHによって、分割される。

@@ -182,6 +182,19 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 - [ESQL Design](./doc/esql-design.md) -- Internal design notes: the compilation pipeline, AST nodes, and runtime structure.
 - [ESQL Examples](./example/esql/) -- Working example programs demonstrating basic operations, cursors, prepared statements, and populating and fetching a table.
 
+## Embedded Java (EXEC JAVA)
+
+opensource COBOL 4J supports `EXEC JAVA ... END-EXEC`, which embeds Java source code directly into the generated Java program. COBOL data items are accessed from the Java code with the host variable notation `:NAME`, as in Embedded SQL.
+
+```cobol
+           EXEC JAVA
+              int n = :WRK-NUM.getInt();
+              :WRK-NUM.setInt(n * 3);
+           END-EXEC.
+```
+
+- [EXEC JAVA Guide](./doc/exec-java-guide.md) -- Syntax, host variables and the libcobj methods used to read and write them, what may and may not be written inside a block, and the restrictions to be aware of.
+
 ## Documentation
 
 * [The API reference of the runtime library `libcobj.jar`](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)

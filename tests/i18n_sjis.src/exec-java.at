@@ -1,0 +1,30 @@
+AT_SETUP([EXEC JAVA with SJIS string literal])
+
+# SJIS の第2バイトが 0x5C ('\') になる文字 (表・十・ソ など) を Java の
+# 文字列リテラルに書いても、エスケープと誤認して文字列の終端を
+# 取りこぼさないことの回帰テスト。出力はエンコーディング差を避けるため
+# ASCII のみで検証する (javac が SJIS ソースを正しく解釈できていれば
+# "表" は 1 文字なので length() は 1 になる)。
+
+AT_DATA([prog.cbl], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01 WRK-A PIC 9(2) VALUE 0.
+       PROCEDURE DIVISION.
+           EXEC JAVA
+              String s = "表十ソ能構申";
+              // コメント内の表ソも無害
+              :WRK-A.setInt(s.length() + 3);
+           END-EXEC.
+           DISPLAY "A=" WRK-A.
+           STOP RUN.
+])
+
+AT_CHECK([${COBJ} prog.cbl])
+AT_CHECK([java prog], [0],
+[A=09
+])
+
+AT_CLEANUP
