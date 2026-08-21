@@ -1460,6 +1460,10 @@ void cb_validate_program_body(struct cb_program *prog) {
   /* resolve all labels */
   cb_tree l;
 
+  /* EXEC JAVA CLASS-MEMBER のホスト変数はデータ項目の定義より前に
+   * 現れることがあるため、プログラム全体の解析後にまとめて解決する */
+  cb_resolve_exec_java_members(prog);
+
   for (l = cb_list_reverse(prog->label_list); l; l = CB_CHAIN(l)) {
     cb_tree x = CB_VALUE(l);
     cb_tree v = cb_ref(x);

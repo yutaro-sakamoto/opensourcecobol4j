@@ -89,6 +89,8 @@ enum cb_tag {
   CB_TAG_SWITCH,
 
   CB_TAG_EXEC_SQL, /* EXEC SQL statement */
+
+  CB_TAG_EXEC_JAVA, /* EXEC JAVA statement */
 };
 
 enum cb_alphabet_name_type {
@@ -1303,6 +1305,43 @@ esql_build_and_resolve(enum cb_sql_command command, char *sql_text,
                        int res_host_count, int conn_use_other_db);
 
 /*
+ * EXEC JAVA
+ */
+
+/* EXEC JAVA ~ END-EXEC の本文を、リテラルな Java テキスト断片と
+ * ホスト変数参照 (:VAR) の交互リストとして保持する。
+ * text と var_ref はどちらか一方が NULL のことがある。 */
+struct cb_exec_java_part {
+  char *text;      /* literal Java source fragment (NULL if none) */
+  cb_tree var_ref; /* COBOL host variable reference (NULL if none) */
+  struct cb_exec_java_part *next;
+};
+
+struct cb_exec_java {
+  struct cb_tree_common common;
+  struct cb_exec_java_part *parts;
+};
+
+#define CB_EXEC_JAVA(x) (CB_TREE_CAST(CB_TAG_EXEC_JAVA, struct cb_exec_java, x))
+#define CB_EXEC_JAVA_P(x) (CB_TREE_TAG(x) == CB_TAG_EXEC_JAVA)
+
+/* EXEC JAVA 本文の走査状態。Java の文字列リテラル・文字リテラル・コメントの
+ * 内側を追跡する共有状態機械 (tree.c / scanner.l / pplex.l で使用)。 */
+enum cb_java_scan_state {
+  CB_JAVA_SCAN_NORMAL = 0,
+  CB_JAVA_SCAN_DQUOTE,
+  CB_JAVA_SCAN_SQUOTE,
+  CB_JAVA_SCAN_LINE_COMMENT,
+  CB_JAVA_SCAN_BLOCK_COMMENT
+};
+
+extern void cb_java_scan_step(int *state, int *prev, int c);
+extern cb_tree cb_build_exec_java(cb_tree java_literal, int resolve_now);
+extern void cb_add_exec_java_import(cb_tree java_literal);
+extern void cb_add_exec_java_member(cb_tree java_literal);
+extern void cb_resolve_exec_java_members(struct cb_program *prog);
+
+/*
  * SORT
  */
 
@@ -1491,7 +1530,9 @@ struct cb_program {
   cb_tree collating_sequence;
   cb_tree cursor_pos;
   cb_tree crt_status;
-  cb_tree returning; /* RETURNING */
+  cb_tree returning;             /* RETURNING */
+  cb_tree exec_java_import_list; /* EXEC JAVA IMPORT declarations */
+  cb_tree exec_java_member_list; /* EXEC JAVA CLASS-MEMBER declarations */
   struct cb_word *word_table[CB_WORD_HASH_SIZE];
   /* internal variables */
   int loop_counter;                /* Loop counters */

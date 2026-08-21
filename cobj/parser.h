@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.7.4.  */
+/* A Bison parser, made by GNU Bison 3.8.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -501,7 +501,10 @@ extern int yydebug;
     YYYYMMDD = 702,                /* YYYYMMDD  */
     ZERO = 703,                    /* ZERO  */
     EXEC_SQL_STATEMENT = 704,      /* "EXEC SQL statement"  */
-    UNARY_SIGN = 705               /* UNARY_SIGN  */
+    EXEC_JAVA_STATEMENT = 705,     /* "EXEC JAVA statement"  */
+    EXEC_JAVA_IMPORT_STATEMENT = 706, /* "EXEC JAVA IMPORT statement"  */
+    EXEC_JAVA_MEMBER_STATEMENT = 707, /* "EXEC JAVA CLASS-MEMBER statement"  */
+    UNARY_SIGN = 708               /* UNARY_SIGN  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -516,6 +519,8 @@ typedef int YYSTYPE;
 
 extern YYSTYPE yylval;
 
+
 int yyparse (void);
+
 
 #endif /* !YY_YY_PARSER_H_INCLUDED  */

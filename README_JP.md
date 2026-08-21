@@ -172,6 +172,21 @@ opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポ�
 - [ESQL設計ドキュメント](./doc/esql-design_JP.md) -- コンパイルパイプライン、AST ノード、ランタイム構造などの内部設計メモ。
 - [ESQLサンプル](./example/esql/) -- 基本操作、カーソル、プリペアドステートメント、テーブルへの登録・取得を示す実行可能なサンプルプログラム。
 
+## Javaコードの埋め込み (EXEC JAVA)
+
+opensource COBOL 4Jは`EXEC JAVA ... END-EXEC`をサポートしており、生成されるJavaプログラムにJavaのソースコードを直接埋め込めます。Javaコードからは、Embedded SQLと同じホスト変数の記法`:NAME`でCOBOLのデータ項目を読み書きできます。
+
+```cobol
+           EXEC JAVA
+              int n = :WRK-NUM.getInt();
+              :WRK-NUM.setInt(n * 3);
+           END-EXEC.
+```
+
+メソッド本体の中には書けないものを扱うために、2つのブロックを併用できます。`EXEC JAVA IMPORT ... END-EXEC`は、生成されるJavaファイルの先頭に`import`宣言を出力し、クラスを単純名で使用できるようにします。`EXEC JAVA CLASS-MEMBER ... END-EXEC`は、生成クラスにフィールド・メソッド・ネストクラスを追加し、それらをプログラム内のどの`EXEC JAVA`ブロックからも使用できるようにします。
+
+- [EXEC JAVAガイド](./doc/exec-java-guide_JP.md) -- 構文、ホスト変数と読み書きに使うlibcobjのメソッド、ブロック内に書けるもの・書けないもの、クラスのimport、クラスメンバの宣言、注意すべき制限事項を網羅したドキュメント。
+
 ## ドキュメント
 
 * [ランタイムライブラリ`libcobj.jar`のAPIリファレンス](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)

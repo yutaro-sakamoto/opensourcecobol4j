@@ -114,6 +114,25 @@ static char *esql_include_fname = NULL;
 static int esql_passthru_in_quote = 0;
 static int esql_passthru_active = 0;
 
+/* EXEC JAVA パススルー用の走査状態。Java の文字列/文字リテラル/コメントの
+ * 内側に現れた END-EXEC をブロック終端と誤認しないためのもの。
+ * 実体は tree.c の cb_java_scan_step (走査状態機械を 3 実装で共有する)。
+ * 状態値は tree.h の enum cb_java_scan_state (0 = CB_JAVA_SCAN_NORMAL)。 */
+extern void cb_java_scan_step (int *state, int *prev, int c);
+
+static int java_passthru_state = 0;
+static int java_passthru_prev = 0;
+
+static void
+java_passthru_feed (const char *s, size_t len)
+{
+	size_t i;
+	for (i = 0; i < len; i++) {
+		cb_java_scan_step (&java_passthru_state, &java_passthru_prev,
+				   (unsigned char)s[i]);
+	}
+}
+
 
 %}
 ifdef(M4.I18N_UTF8,>>>>>
@@ -141,7 +160,7 @@ WORD		([_0-9A-Z-]|{JPNWORD})+
 NUMRIC_LITERAL	[+-]?[0-9,.]*[0-9]
 ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 
-%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE
+%x PROCESS_STATE COPY_STATE PSEUDO_STATE DATANAME_JOIN_STATE ESQL_PASSTHRU_STATE ESQL_INCLUDE_STATE JAVA_PASSTHRU_STATE
 
 %%
 
@@ -224,6 +243,14 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	esql_passthru_in_quote = 0;
 	esql_passthru_active = 1;
 	BEGIN ESQL_PASSTHRU_STATE;
+}
+
+"EXEC"({ZENSPC}|[ ])+"JAVA" {
+	/* Pass through EXEC JAVA blocks to the main scanner */
+	ppecho ("EXEC JAVA");
+	java_passthru_state = 0;
+	java_passthru_prev = 0;
+	BEGIN JAVA_PASSTHRU_STATE;
 }
 
 "COPY"			{ BEGIN COPY_STATE; return COPY; }
@@ -322,6 +349,52 @@ ALNUM_LITERAL	\"[^\"\n]*\"|\'[^\'\n]*\'
 	if (yytext[0] == '\'') {
 		esql_passthru_in_quote = !esql_passthru_in_quote;
 	}
+	ppecho (yytext);
+  }
+}
+
+<JAVA_PASSTHRU_STATE>{
+  "END-EXEC"({ZENSPC}|[ ])*"." {
+	if (java_passthru_state != 0) {
+		/* Java の文字列・文字リテラル・コメント内: 終端ではない */
+		java_passthru_feed (yytext, strlen (yytext));
+		ppecho (yytext);
+	} else {
+		ppecho (" END-EXEC.");
+		BEGIN INITIAL;
+	}
+  }
+  "END-EXEC" {
+	if (java_passthru_state != 0) {
+		java_passthru_feed (yytext, strlen (yytext));
+		ppecho (yytext);
+	} else {
+		ppecho (" END-EXEC");
+		BEGIN INITIAL;
+	}
+  }
+  \n {
+	java_passthru_feed ("\n", 1);
+	ppecho ("\n");
+	cb_source_line++;
+  }
+ifdef(M4.I18N_UTF8,>>>>>
+  {UTF8_EXT} {
+	/* 多バイト文字は状態機械に通さない (そのまま素通しする) */
+	java_passthru_prev = 0;
+	ppecho (yytext);
+  }
+<<<<<,>>>>>
+  {JPNWORD} {
+	/* SJIS 2バイト文字は状態機械に通さない。第2バイトが 0x5C の文字
+	 * (「表」「十」「ソ」等) を '\\' と誤認して、直後の引用符を
+	 * 取りこぼすのを防ぐ。 */
+	java_passthru_prev = 0;
+	ppecho (yytext);
+  }
+<<<<<)
+  . {
+	java_passthru_feed (yytext, 1);
 	ppecho (yytext);
   }
 }

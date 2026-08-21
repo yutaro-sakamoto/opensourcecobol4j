@@ -19,7 +19,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-%expect 148
+%expect 153
 
 %defines
 %verbose
@@ -759,6 +759,9 @@ setup_use_file (struct cb_file *fileptr)
 %token ZERO
 
 %token EXEC_SQL_STATEMENT	"EXEC SQL statement"
+%token EXEC_JAVA_STATEMENT	"EXEC JAVA statement"
+%token EXEC_JAVA_IMPORT_STATEMENT	"EXEC JAVA IMPORT statement"
+%token EXEC_JAVA_MEMBER_STATEMENT	"EXEC JAVA CLASS-MEMBER statement"
 
 %left '+' '-'
 %left '*' '/'
@@ -2618,6 +2621,10 @@ record_description_list_2:
 | record_description_list_2 '.'
 | record_description_list_2 exec_sql_data_statement
 | exec_sql_data_statement
+| record_description_list_2 exec_java_import_data_statement
+| exec_java_import_data_statement
+| record_description_list_2 exec_java_member_data_statement
+| exec_java_member_data_statement
 ;
 
 exec_sql_data_statement:
@@ -2631,6 +2638,28 @@ exec_sql_data_statement:
 | EXEC_SQL_STATEMENT '.'
   {
 	(void) CB_LITERAL ($1)->data;
+  }
+;
+
+exec_java_import_data_statement:
+  EXEC_JAVA_IMPORT_STATEMENT
+  {
+	cb_add_exec_java_import ($1);
+  }
+| EXEC_JAVA_IMPORT_STATEMENT '.'
+  {
+	cb_add_exec_java_import ($1);
+  }
+;
+
+exec_java_member_data_statement:
+  EXEC_JAVA_MEMBER_STATEMENT
+  {
+	cb_add_exec_java_member ($1);
+  }
+| EXEC_JAVA_MEMBER_STATEMENT '.'
+  {
+	cb_add_exec_java_member ($1);
   }
 ;
 
@@ -3969,6 +3998,9 @@ statement:
 | use_statement
 | write_statement
 | exec_sql_statement
+| exec_java_statement
+| exec_java_import_statement
+| exec_java_member_statement
 | NEXT_SENTENCE
   {
 	if (cb_verify (cb_next_sentence_phrase, "NEXT SENTENCE")) {
@@ -7356,6 +7388,63 @@ exec_sql_statement:
 		current_statement->body =
 			cb_list_add (current_statement->body, sql_node);
 	}
+  }
+;
+
+/*
+ * EXEC JAVA statement
+ */
+
+exec_java_statement:
+  EXEC_JAVA_STATEMENT
+  {
+	cb_tree java_node;
+	BEGIN_STATEMENT ("EXEC JAVA", 0);
+	/* BEGIN_STATEMENT は cb_source_line (= END-EXEC 行) を入れる。
+	   $1 のリテラルには scanner が EXEC JAVA 開始行を入れているので、
+	   そちらで上書きして「コメントは EXEC JAVA の行を指す」ようにする。 */
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
+	java_node = cb_build_exec_java ($1, 1);
+	if (java_node != cb_error_node) {
+		current_statement->body =
+			cb_list_add (current_statement->body, java_node);
+	}
+  }
+;
+
+/*
+ * EXEC JAVA IMPORT statement
+ * (PROCEDURE DIVISION 内に書かれた場合。実行コードは生成せず、
+ *  import 宣言を登録するだけ)
+ */
+
+exec_java_import_statement:
+  EXEC_JAVA_IMPORT_STATEMENT
+  {
+	BEGIN_STATEMENT ("EXEC JAVA IMPORT", 0);
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
+	cb_add_exec_java_import ($1);
+  }
+;
+
+/*
+ * EXEC JAVA CLASS-MEMBER statement
+ * (PROCEDURE DIVISION 内に書かれた場合。実行コードはその位置には生成せず、
+ *  生成クラスのクラス本体に出力するメンバ宣言として登録するだけ)
+ */
+
+exec_java_member_statement:
+  EXEC_JAVA_MEMBER_STATEMENT
+  {
+	BEGIN_STATEMENT ("EXEC JAVA CLASS-MEMBER", 0);
+	if ($1->source_line) {
+		CB_TREE (current_statement)->source_line = $1->source_line;
+	}
+	cb_add_exec_java_member ($1);
   }
 ;
 

@@ -2637,6 +2637,585 @@ struct cb_sql_host_var *cb_sql_host_var_list_add(struct cb_sql_host_var *list,
 }
 
 /*
+ * EXEC JAVA
+ */
+
+/* Java コードを 1 バイト進めて走査状態 (enum cb_java_scan_state) を更新する。
+ * 文字列リテラル・文字リテラル・コメントの内側では :VAR を置換せず、
+ * END-EXEC も終端として扱わないために使う。cb_build_exec_java のほか
+ * scanner.l / pplex.l のレキサーからも共有される。
+ * 多バイト文字は呼び出し側で丸ごと読み飛ばして *prev を 0 にすること
+ * (SJIS の第2バイト 0x5C を '\\' と誤認するのを防ぐため)。 */
+void cb_java_scan_step(int *state, int *prev, int c) {
+  switch (*state) {
+  case CB_JAVA_SCAN_NORMAL:
+    if (*prev == '/' && c == '/') {
+      *state = CB_JAVA_SCAN_LINE_COMMENT;
+      c = 0;
+    } else if (*prev == '/' && c == '*') {
+      *state = CB_JAVA_SCAN_BLOCK_COMMENT;
+      c = 0;
+    } else if (c == '"') {
+      *state = CB_JAVA_SCAN_DQUOTE;
+      c = 0;
+    } else if (c == '\'') {
+      *state = CB_JAVA_SCAN_SQUOTE;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_DQUOTE:
+    if (*prev == '\\') {
+      /* エスケープされた文字 (\" や \\ など) を消費 */
+      c = 0;
+    } else if (c == '"') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_SQUOTE:
+    if (*prev == '\\') {
+      c = 0;
+    } else if (c == '\'') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  case CB_JAVA_SCAN_LINE_COMMENT:
+    break;
+  case CB_JAVA_SCAN_BLOCK_COMMENT:
+    if (*prev == '*' && c == '/') {
+      *state = CB_JAVA_SCAN_NORMAL;
+      c = 0;
+    }
+    break;
+  }
+  if (c == '\n') {
+    /* Java の文字列・文字リテラル・行コメントは行をまたげない */
+    if (*state == CB_JAVA_SCAN_DQUOTE || *state == CB_JAVA_SCAN_SQUOTE ||
+        *state == CB_JAVA_SCAN_LINE_COMMENT) {
+      *state = CB_JAVA_SCAN_NORMAL;
+    }
+    c = 0;
+  }
+  *prev = c;
+}
+
+#ifndef I18N_UTF8
+/* SJIS の 2 バイト文字の先行バイトか (第2バイトが 0x5C 等でも
+ * エスケープ判定・ホスト変数判定に関与させないため丸ごと読み飛ばす) */
+static int exec_java_sjis_lead_byte(int c) {
+  return (c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC);
+}
+#endif /* !I18N_UTF8 */
+
+/* ホスト変数名 (:VAR) を構成できる文字。COBOL の利用者語に合わせて
+ * 英数字とハイフン・アンダースコアを許す。 */
+static int exec_java_word_char(int c) {
+  return isalnum(c) || c == '_' || c == '-';
+}
+
+/* 先頭・末尾の空行と、非空行に共通する行頭空白を取り除いたコピーを返す。
+ * 生成 Java の可読性のための整形で、コードの意味は変えない。 */
+static char *exec_java_normalize_text(const char *src) {
+  size_t min_indent = (size_t)-1;
+  const char *p = src;
+  char *out;
+  char *q;
+  char *start;
+
+  /* 非空行の行頭空白 (スペース/タブの文字数) の最小値を求める */
+  while (*p) {
+    size_t indent = 0;
+    while (*p == ' ' || *p == '\t') {
+      indent++;
+      p++;
+    }
+    if (*p != '\n' && *p != '\0' && indent < min_indent) {
+      min_indent = indent;
+    }
+    while (*p && *p != '\n') {
+      p++;
+    }
+    if (*p == '\n') {
+      p++;
+    }
+  }
+  if (min_indent == (size_t)-1) {
+    min_indent = 0;
+  }
+
+  out = cobc_malloc(strlen(src) + 2);
+  q = out;
+  p = src;
+  while (*p) {
+    size_t skipped = 0;
+    char *line_start = q;
+    while ((*p == ' ' || *p == '\t') && skipped < min_indent) {
+      p++;
+      skipped++;
+    }
+    while (*p && *p != '\n') {
+      *q++ = *p++;
+    }
+    /* 各行の行末空白を除去 */
+    while (q > line_start && (q[-1] == ' ' || q[-1] == '\t')) {
+      q--;
+    }
+    if (*p == '\n') {
+      *q++ = *p++;
+    }
+  }
+  *q = '\0';
+  /* 末尾の空白・改行を除去 */
+  while (q > out && (q[-1] == ' ' || q[-1] == '\t' || q[-1] == '\n')) {
+    *--q = '\0';
+  }
+  /* 先頭の空行を除去 */
+  start = out;
+  while (*start) {
+    char *scan = start;
+    while (*scan == ' ' || *scan == '\t') {
+      scan++;
+    }
+    if (*scan == '\n') {
+      start = scan + 1;
+    } else {
+      break;
+    }
+  }
+  if (start != out) {
+    memmove(out, start, strlen(start) + 1);
+  }
+  return out;
+}
+
+static struct cb_exec_java_part *
+exec_java_add_part(struct cb_exec_java_part **head,
+                   struct cb_exec_java_part **tail, char *text,
+                   cb_tree var_ref) {
+  struct cb_exec_java_part *part;
+
+  part = cobc_malloc(sizeof(struct cb_exec_java_part));
+  part->text = text;
+  part->var_ref = var_ref;
+  part->next = NULL;
+  if (*tail) {
+    (*tail)->next = part;
+  } else {
+    *head = part;
+  }
+  *tail = part;
+  return part;
+}
+
+/* :VAR 参照を解決し、codegen (joutput_param) が field_cache に登録して
+ * f_ 宣言を生成する条件 (count > 0) を満たしておく。
+ * 解決できない場合はエラーを報告して -1 を返す。 */
+static int exec_java_resolve_ref(cb_tree ref) {
+  cb_tree resolved = cb_ref(ref);
+
+  if (!resolved || resolved == cb_error_node) {
+    /* cb_ref が undefined エラーを報告済み */
+    return -1;
+  }
+  if (!CB_FIELD_P(resolved)) {
+    cb_error_x(ref, _("EXEC JAVA: ':%s' is not a data item"), CB_NAME(ref));
+    return -1;
+  }
+  CB_FIELD(resolved)->count++;
+  return 0;
+}
+
+/* EXEC JAVA ~ END-EXEC の本文 (java_literal) を、リテラルな Java テキストと
+ * :VAR ホスト変数参照の交互リストに分解して CB_TAG_EXEC_JAVA ノードを作る。
+ * resolve_now が真ならホスト変数をこの時点で解決し、未定義ならエラーにする
+ * (PROCEDURE DIVISION の EXEC JAVA はデータ部の解析完了後に現れるため即時
+ * 解決できる)。偽なら参照の構築だけ行い、解決は後段
+ * (cb_resolve_exec_java_members) に委ねる (CLASS-MEMBER ブロックはデータ
+ * 項目の定義より前に書かれることがあるため)。 */
+cb_tree cb_build_exec_java(cb_tree java_literal, int resolve_now) {
+  struct cb_exec_java *node;
+  struct cb_exec_java_part *head = NULL;
+  struct cb_exec_java_part *tail = NULL;
+  int state = CB_JAVA_SCAN_NORMAL;
+  int prev = 0;
+  char *text;
+  const char *p;
+  const char *seg_start;
+  int has_error = 0;
+
+  text = exec_java_normalize_text((const char *)CB_LITERAL(java_literal)->data);
+  p = text;
+  seg_start = text;
+  while (*p) {
+    int c = (unsigned char)*p;
+
+#ifndef I18N_UTF8
+    if (exec_java_sjis_lead_byte(c) && p[1]) {
+      /* SJIS の 2 バイト文字は状態機械に通さず読み飛ばす */
+      p += 2;
+      prev = 0;
+      continue;
+    }
+#endif /* !I18N_UTF8 */
+
+    /* 開始は英数字に限る (COBOL の利用者語は '_' や '-' で始まれない)。
+     * 直前が ':' の場合はメソッド参照 (Foo::bar) なので置換しない。 */
+    if (state == CB_JAVA_SCAN_NORMAL && c == ':' && prev != ':' &&
+        isalnum((unsigned char)p[1])) {
+      /* ホスト変数参照 */
+      const char *name_start = p + 1;
+      const char *name_end = name_start;
+      size_t name_len;
+      char *name;
+      cb_tree ref;
+
+      while (exec_java_word_char((unsigned char)*name_end)) {
+        name_end++;
+      }
+      /* COBOL の利用者語はハイフンで終われないので、末尾のハイフンは
+       * Java コード側 (減算等) とみなして名前に含めない */
+      while (name_end > name_start && name_end[-1] == '-') {
+        name_end--;
+      }
+      name_len = (size_t)(name_end - name_start);
+      /* 直前までのテキスト断片を part にする */
+      if (p > seg_start) {
+        char *seg = cobc_malloc((size_t)(p - seg_start) + 1);
+        memcpy(seg, seg_start, (size_t)(p - seg_start));
+        seg[p - seg_start] = '\0';
+        exec_java_add_part(&head, &tail, seg, NULL);
+      }
+      name = cobc_malloc(name_len + 1);
+      memcpy(name, name_start, name_len);
+      name[name_len] = '\0';
+      ref = cb_build_reference(name);
+      CB_TREE(ref)->source_file = java_literal->source_file;
+      CB_TREE(ref)->source_line = java_literal->source_line;
+      if (resolve_now && exec_java_resolve_ref(ref) < 0) {
+        has_error = 1;
+      } else {
+        exec_java_add_part(&head, &tail, NULL, ref);
+      }
+      p = name_end;
+      seg_start = name_end;
+      prev = 0;
+      continue;
+    }
+    cb_java_scan_step(&state, &prev, c);
+    p++;
+  }
+  if (p > seg_start) {
+    char *seg = cobc_malloc((size_t)(p - seg_start) + 1);
+    memcpy(seg, seg_start, (size_t)(p - seg_start));
+    seg[p - seg_start] = '\0';
+    exec_java_add_part(&head, &tail, seg, NULL);
+  }
+  free(text);
+
+  if (has_error) {
+    return cb_error_node;
+  }
+
+  node = make_tree(CB_TAG_EXEC_JAVA, CB_CATEGORY_UNKNOWN,
+                   sizeof(struct cb_exec_java));
+  node->parts = head;
+  CB_TREE(node)->source_file = java_literal->source_file;
+  CB_TREE(node)->source_line = java_literal->source_line;
+  return CB_TREE(node);
+}
+
+/* import 宣言の修飾名を構成できる文字 (Java の識別子文字) */
+static int exec_java_import_ident_char(int c) {
+  return isalnum(c) || c == '_' || c == '$';
+}
+
+/* コメント (// と block comment) を空白に置き換えたコピーを返す。
+ * EXEC JAVA IMPORT の本文検証用。エラー位置の行番号計算のため、
+ * コメント内も含めて改行はすべて保存する。 */
+static char *exec_java_strip_comments(const char *src) {
+  char *out = cobc_malloc(strlen(src) + 2);
+  char *q = out;
+  const char *p = src;
+
+  while (*p) {
+    if (p[0] == '/' && p[1] == '/') {
+      while (*p && *p != '\n') {
+        p++;
+      }
+    } else if (p[0] == '/' && p[1] == '*') {
+      p += 2;
+      while (*p && !(p[0] == '*' && p[1] == '/')) {
+        if (*p == '\n') {
+          *q++ = '\n';
+        }
+        p++;
+      }
+      if (*p) {
+        p += 2;
+      }
+      *q++ = ' ';
+    } else {
+      *q++ = *p++;
+    }
+  }
+  *q = '\0';
+  return out;
+}
+
+/* Java の予約語 (と、識別子に使えない true/false/null)。
+ * import の修飾名のセグメントとしては書けない。 */
+static int exec_java_is_reserved_word(const char *s, size_t len) {
+  static const char *const words[] = {
+      "abstract",   "assert",       "boolean",   "break",      "byte",
+      "case",       "catch",        "char",      "class",      "const",
+      "continue",   "default",      "do",        "double",     "else",
+      "enum",       "extends",      "final",     "finally",    "float",
+      "for",        "goto",         "if",        "implements", "import",
+      "instanceof", "int",          "interface", "long",       "native",
+      "new",        "package",      "private",   "protected",  "public",
+      "return",     "short",        "static",    "strictfp",   "super",
+      "switch",     "synchronized", "this",      "throw",      "throws",
+      "transient",  "try",          "void",      "volatile",   "while",
+      "_",          "true",         "false",     "null"};
+  size_t i;
+
+  for (i = 0; i < sizeof(words) / sizeof(words[0]); i++) {
+    if (strlen(words[i]) == len && strncmp(words[i], s, len) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/* エラーメッセージ用に、宣言の先頭から ';' または行末までの断片を返す */
+static char *exec_java_import_snippet(const char *p) {
+  static char snippet[64];
+  size_t i = 0;
+
+  while (p[i] && p[i] != ';' && p[i] != '\n' && i < sizeof(snippet) - 4) {
+    snippet[i] = p[i];
+    i++;
+  }
+  if (p[i] && p[i] != ';' && p[i] != '\n') {
+    snippet[i++] = '.';
+    snippet[i++] = '.';
+    snippet[i++] = '.';
+  }
+  snippet[i] = '\0';
+  return snippet;
+}
+
+/* import 宣言のエラーを、ブロック先頭行ではなく問題の宣言がある行を
+ * 指して報告する (text 先頭から decl_start までの改行数で補正する)。
+ * fmt は snippet を 1 つ埋め込む書式文字列。 */
+static void exec_java_import_error(cb_tree java_literal, const char *text,
+                                   const char *decl_start, const char *fmt) {
+  const char *s;
+  int saved_line = java_literal->source_line;
+
+  for (s = text; s < decl_start; s++) {
+    if (*s == '\n') {
+      java_literal->source_line++;
+    }
+  }
+  cb_error_x(java_literal, fmt, exec_java_import_snippet(decl_start));
+  java_literal->source_line = saved_line;
+}
+
+/* EXEC JAVA IMPORT ~ END-EXEC の本文を検証し、import 宣言を
+ * current_program->exec_java_import_list に登録する。登録された宣言は
+ * codegen が生成 Java ファイル先頭の import 部にそのまま出力する。
+ * ファイル先頭に壊れたテキストが出ると javac のエラーが極めて分かり
+ * にくくなるため、import 宣言 (import [static] a.b.C; / a.b.*;) 以外は
+ * ここでコンパイルエラーにする。ホスト変数 (:VAR) は使用できない。 */
+void cb_add_exec_java_import(cb_tree java_literal) {
+  char *text;
+  char *canonical;
+  const char *p;
+
+  if (!current_program) {
+    /* parser の呼び出し箇所 (DATA DIVISION の record description list と
+     * PROCEDURE DIVISION の文の位置) は必ずプログラム文脈内なので、
+     * 通常ここには来ない */
+    return;
+  }
+  text = exec_java_strip_comments((const char *)CB_LITERAL(java_literal)->data);
+  /* "import " + "static " + 修飾名 + ";" が収まるサイズ */
+  canonical = cobc_malloc(strlen(text) + 16);
+  p = text;
+  for (;;) {
+    const char *decl_start;
+    char *jname;
+    char *q;
+    int is_static = 0;
+    int bad = 0;
+    cb_tree l;
+    int dup = 0;
+
+    while (isspace((unsigned char)*p)) {
+      p++;
+    }
+    if (!*p) {
+      break;
+    }
+    if (*p == ';') {
+      /* 宣言間の余分なセミコロンは読み飛ばす */
+      p++;
+      continue;
+    }
+    decl_start = p;
+    if (strncmp(p, "import", 6) != 0 ||
+        exec_java_import_ident_char((unsigned char)p[6])) {
+      exec_java_import_error(
+          java_literal, text, decl_start,
+          _("EXEC JAVA IMPORT: not an import declaration: '%s'"));
+      goto next_decl;
+    }
+    p += 6;
+    if (!isspace((unsigned char)*p)) {
+      exec_java_import_error(
+          java_literal, text, decl_start,
+          _("EXEC JAVA IMPORT: not an import declaration: '%s'"));
+      goto next_decl;
+    }
+    while (isspace((unsigned char)*p)) {
+      p++;
+    }
+    if (strncmp(p, "static", 6) == 0 && isspace((unsigned char)p[6])) {
+      is_static = 1;
+      p += 6;
+      while (isspace((unsigned char)*p)) {
+        p++;
+      }
+    }
+    strcpy(canonical, "import ");
+    if (is_static) {
+      strcat(canonical, "static ");
+    }
+    jname = canonical + strlen(canonical);
+    q = jname;
+    /* '.' 区切りの修飾名。'*' は最後のセグメントとしてのみ許す。
+     * セグメントに Java の予約語は書けず、名前の途中に空白は書けない。 */
+    for (;;) {
+      char *seg;
+
+      if (*p == '*') {
+        /* '*' は 'a.b.*' のように '.' の直後にのみ書ける */
+        if (q == jname || q[-1] != '.') {
+          bad = 1;
+        } else {
+          *q++ = *p++;
+        }
+        break;
+      }
+      if (!isalpha((unsigned char)*p) && *p != '_' && *p != '$') {
+        break;
+      }
+      seg = q;
+      while (exec_java_import_ident_char((unsigned char)*p)) {
+        *q++ = *p++;
+      }
+      if (exec_java_is_reserved_word(seg, (size_t)(q - seg))) {
+        bad = 1;
+        break;
+      }
+      if (*p != '.') {
+        break;
+      }
+      *q++ = *p++;
+    }
+    if (bad || q == jname || q[-1] == '.') {
+      exec_java_import_error(
+          java_literal, text, decl_start,
+          _("EXEC JAVA IMPORT: invalid import declaration: '%s'"));
+      goto next_decl;
+    }
+    while (isspace((unsigned char)*p)) {
+      p++;
+    }
+    if (*p != ';') {
+      exec_java_import_error(
+          java_literal, text, decl_start,
+          _("EXEC JAVA IMPORT: missing ';' in import declaration: '%s'"));
+      goto next_decl;
+    }
+    p++;
+    *q++ = ';';
+    *q = '\0';
+    /* 完全に同じ宣言は 1 つにまとめる (比較は正規化後の形で行う) */
+    for (l = current_program->exec_java_import_list; l; l = CB_CHAIN(l)) {
+      if (strcmp((const char *)CB_LITERAL(CB_VALUE(l))->data, canonical) == 0) {
+        dup = 1;
+        break;
+      }
+    }
+    if (!dup) {
+      current_program->exec_java_import_list =
+          cb_list_add(current_program->exec_java_import_list,
+                      cb_build_alphanumeric_literal((unsigned char *)canonical,
+                                                    strlen(canonical)));
+    }
+    continue;
+
+  next_decl:
+    /* エラーを報告した宣言は捨て、次の ';' の後から検証を続ける
+     * (1 回のコンパイルでできるだけ多くのエラーを報告するため) */
+    while (*p && *p != ';') {
+      p++;
+    }
+    if (*p) {
+      p++;
+    }
+  }
+  free(canonical);
+  free(text);
+}
+
+/* EXEC JAVA CLASS-MEMBER ~ END-EXEC の本文を、生成クラスのクラス本体に
+ * 出力するメンバ宣言 (フィールド・メソッド等) として current_program に
+ * 登録する。本文の扱いは EXEC JAVA と同じで、:VAR ホスト変数も置換される
+ * (メンバメソッドは f_XXX と同じクラスのインスタンスメソッドになるため
+ * 参照できる。フィールド初期化子では f_XXX はまだ生成されていないので
+ * 参照してはならない)。 */
+void cb_add_exec_java_member(cb_tree java_literal) {
+  cb_tree node;
+
+  if (!current_program) {
+    return;
+  }
+  node = cb_build_exec_java(java_literal, 0);
+  if (node == cb_error_node) {
+    /* resolve_now = 0 ではエラーにならないため現状は到達しないが、
+     * cb_build_exec_java がエラーを返しうる将来の変更に備えた防御 */
+    return;
+  }
+  current_program->exec_java_member_list =
+      cb_list_add(current_program->exec_java_member_list, node);
+}
+
+/* プログラムの構文解析が終わった時点 (全データ項目が定義済み) で、
+ * CLASS-MEMBER ブロック内のホスト変数をまとめて解決する。
+ * cb_validate_program_body から呼ばれる。未定義ならここでエラーになり、
+ * codegen には解決済みの参照しか渡らない。 */
+void cb_resolve_exec_java_members(struct cb_program *prog) {
+  cb_tree l;
+  struct cb_exec_java_part *part;
+
+  for (l = prog->exec_java_member_list; l; l = CB_CHAIN(l)) {
+    for (part = CB_EXEC_JAVA(CB_VALUE(l))->parts; part; part = part->next) {
+      if (part->var_ref && exec_java_resolve_ref(part->var_ref) < 0) {
+        /* エラー報告済み (コンパイルはここで失敗が確定する)。
+         * codegen に未解決の参照を渡さないよう part からも外して、
+         * joutput_exec_java の不変条件「var_ref は常に解決済み」を
+         * 局所的に保つ。 */
+        part->var_ref = NULL;
+      }
+    }
+  }
+}
+
+/*
  * FUNCTION
  */
 
