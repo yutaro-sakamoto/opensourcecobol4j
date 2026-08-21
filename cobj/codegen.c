@@ -3911,7 +3911,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
   case CB_SQL_CONNECT_INFORMAL:
   case CB_SQL_CONNECT_SHORT:
     joutput_prefix();
-    joutput("CobolSql.connect(");
+    joutput("CobolEsql.connect(");
     joutput_exec_sql_field_name("SQLCA");
     for (hv = p->host_list; hv; hv = hv->next) {
       joutput(", ");
@@ -3922,21 +3922,21 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_DISCONNECT:
     joutput_prefix();
-    joutput("CobolSql.disconnect(");
+    joutput("CobolEsql.disconnect(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(");\n");
     break;
 
   case CB_SQL_COMMIT:
     joutput_prefix();
-    joutput("CobolSql.commit(");
+    joutput("CobolEsql.commit(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(");\n");
     break;
 
   case CB_SQL_ROLLBACK:
     joutput_prefix();
-    joutput("CobolSql.rollback(");
+    joutput("CobolEsql.rollback(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(");\n");
     break;
@@ -3946,12 +3946,12 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     if (p->cursor_name) {
       /* UPDATE/DELETE ... WHERE CURRENT OF cursor。バルクフェッチの
          カーソル位置補正のため専用メソッドへ振り分け、修飾カーソル名を渡す。 */
-      joutput("CobolSql.execWhereCurrentOf(");
+      joutput("CobolEsql.execWhereCurrentOf(");
       joutput_exec_sql_field_name("SQLCA");
       joutput_sql_string_arg(p->sql_text);
       joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
     } else {
-      joutput("CobolSql.exec(");
+      joutput("CobolEsql.exec(");
       joutput_exec_sql_field_name("SQLCA");
       joutput_sql_string_arg(p->sql_text);
       joutput(");\n");
@@ -3962,14 +3962,14 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
     joutput_prefix();
     if (p->cursor_name) {
       /* WHERE CURRENT OF を伴う位置付き UPDATE/DELETE（ホスト変数あり）。 */
-      joutput("CobolSql.execWithParamsWhereCurrentOf(");
+      joutput("CobolEsql.execWithParamsWhereCurrentOf(");
       joutput_exec_sql_field_name("SQLCA");
       joutput_sql_string_arg(p->sql_text);
       joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
       joutput_sql_host_list_newline(p->host_list);
       joutput(");\n");
     } else {
-      joutput("CobolSql.execWithParams(");
+      joutput("CobolEsql.execWithParams(");
       joutput_exec_sql_field_name("SQLCA");
       joutput_sql_string_arg(p->sql_text);
       joutput_sql_host_list_newline(p->host_list);
@@ -3979,7 +3979,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_SELECT_INTO_ONE:
     joutput_prefix();
-    joutput("CobolSql.selectInto(");
+    joutput("CobolEsql.selectInto(");
     joutput_exec_sql_field_name("SQLCA");
     joutput_sql_string_arg(p->sql_text);
     joutput_sql_field_array_newline(p->host_list);
@@ -3989,7 +3989,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_SELECT_INTO_OCCURS:
     joutput_prefix();
-    joutput("CobolSql.selectIntoOccurs(");
+    joutput("CobolEsql.selectIntoOccurs(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", %d, %d", p->occurs_size, p->occurs_max);
     joutput_sql_string_arg(p->sql_text);
@@ -4000,7 +4000,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_DECLARE_CURSOR:
     joutput_prefix();
-    joutput("CobolSql.declareCursor(");
+    joutput("CobolEsql.declareCursor(");
     joutput_exec_sql_field_name("SQLCA");
     if (p->prepare_name && p->prepare_name[0]) {
       joutput(", \"%s_%s\", \"%s\");\n", excp_current_program_id,
@@ -4014,7 +4014,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_DECLARE_CURSOR_PARAMS:
     joutput_prefix();
-    joutput("CobolSql.declareCursorWithParams(");
+    joutput("CobolEsql.declareCursorWithParams(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
     joutput_sql_string_arg(p->sql_text);
@@ -4024,14 +4024,14 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_OPEN_CURSOR:
     joutput_prefix();
-    joutput("CobolSql.openCursor(");
+    joutput("CobolEsql.openCursor(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
     break;
 
   case CB_SQL_OPEN_CURSOR_PARAMS:
     joutput_prefix();
-    joutput("CobolSql.openCursorWithParams(");
+    joutput("CobolEsql.openCursorWithParams(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
     joutput_sql_host_list_newline(p->host_list);
@@ -4040,14 +4040,14 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_CLOSE_CURSOR:
     joutput_prefix();
-    joutput("CobolSql.closeCursor(");
+    joutput("CobolEsql.closeCursor(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\");\n", excp_current_program_id, p->cursor_name);
     break;
 
   case CB_SQL_FETCH_ONE:
     joutput_prefix();
-    joutput("CobolSql.fetchCursor(");
+    joutput("CobolEsql.fetchCursor(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\"", excp_current_program_id, p->cursor_name);
     joutput_sql_host_list_newline(p->res_host_list);
@@ -4056,7 +4056,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_FETCH_OCCURS:
     joutput_prefix();
-    joutput("CobolSql.fetchCursorOccurs(");
+    joutput("CobolEsql.fetchCursorOccurs(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s_%s\", %d, %d", excp_current_program_id, p->cursor_name,
             p->occurs_size, p->occurs_max);
@@ -4066,7 +4066,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_PREPARE:
     joutput_prefix();
-    joutput("CobolSql.prepare(");
+    joutput("CobolEsql.prepare(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s\", ", p->prepare_name);
     if (p->host_list) {
@@ -4079,7 +4079,7 @@ static void joutput_exec_sql(struct cb_exec_sql *p) {
 
   case CB_SQL_EXECUTE_PREPARED:
     joutput_prefix();
-    joutput("CobolSql.executePrepared(");
+    joutput("CobolEsql.executePrepared(");
     joutput_exec_sql_field_name("SQLCA");
     joutput(", \"%s\"", p->prepare_name);
     joutput_sql_host_list_newline(p->host_list);
