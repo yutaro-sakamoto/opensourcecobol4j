@@ -2,6 +2,7 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Optional;
 
 /** Represents a result of fetching a data from SQLite tables. */
@@ -64,7 +65,7 @@ enum CursorPosition {
 
 /** Emulates a cursor in SQLite */
 final class IndexedCursor {
-    private final IndexedStatementCache stmts;
+    private final IndexedFile file;
     private byte[] key;
     private final int tableIndex;
     private final boolean isDuplicate;
@@ -76,12 +77,8 @@ final class IndexedCursor {
     private Optional<FetchResult> previousFetchResult;
 
     private IndexedCursor(
-            IndexedStatementCache stmts,
-            byte[] key,
-            int tableIndex,
-            boolean isDuplicate,
-            int comparator) {
-        this.stmts = stmts;
+            IndexedFile file, byte[] key, int tableIndex, boolean isDuplicate, int comparator) {
+        this.file = file;
         this.key = key;
         this.tableIndex = tableIndex;
         this.isDuplicate = isDuplicate;
@@ -93,12 +90,8 @@ final class IndexedCursor {
     }
 
     static Optional<IndexedCursor> createCursor(
-            IndexedStatementCache stmts,
-            byte[] key,
-            int tableIndex,
-            boolean isDuplicate,
-            int comparator) {
-        return Optional.of(new IndexedCursor(stmts, key, tableIndex, isDuplicate, comparator));
+            IndexedFile file, byte[] key, int tableIndex, boolean isDuplicate, int comparator) {
+        return Optional.of(new IndexedCursor(file, key, tableIndex, isDuplicate, comparator));
     }
 
     static boolean matchKeyHead(byte[] originalKey, byte[] fetchKey) {
@@ -172,7 +165,8 @@ final class IndexedCursor {
         } else {
             query = String.format("select key, value from %s order by key limit 1", subTable);
         }
-        try (ResultSet rs = this.stmts.get(query).executeQuery()) {
+        try (Statement stmt = this.file.connection.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
             if (rs.next()) {
                 byte[] key = rs.getBytes("key");
                 byte[] value = rs.getBytes("value");
@@ -211,7 +205,8 @@ final class IndexedCursor {
         } else {
             query = String.format("select key, value from %s order by key desc limit 1", subTable);
         }
-        try (ResultSet rs = this.stmts.get(query).executeQuery()) {
+        try (Statement stmt = this.file.connection.createStatement();
+                ResultSet rs = stmt.executeQuery(query)) {
             if (rs.next()) {
                 byte[] key = rs.getBytes("key");
                 byte[] value = rs.getBytes("value");
@@ -292,7 +287,7 @@ final class IndexedCursor {
         }
 
         try {
-            PreparedStatement stmt = this.stmts.get(query);
+            PreparedStatement stmt = this.file.statementCache.get(query);
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
                 int dupNo =
@@ -385,7 +380,7 @@ final class IndexedCursor {
         }
 
         try {
-            PreparedStatement stmt = this.stmts.get(query);
+            PreparedStatement stmt = this.file.statementCache.get(query);
             stmt.setBytes(1, key);
             if (this.isDuplicate) {
                 int dupNo =
@@ -485,7 +480,7 @@ final class IndexedCursor {
         }
 
         try {
-            PreparedStatement stmt = this.stmts.get(query);
+            PreparedStatement stmt = this.file.statementCache.get(query);
             stmt.setBytes(1, key);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
