@@ -684,8 +684,7 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
 
-        this.cursor =
-                IndexedCursor.createCursor(p.statementCache, p.key, p.key_index, isDuplicate, cond);
+        this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, cond);
         if (!this.cursor.isPresent()) {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
@@ -899,17 +898,13 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
         if (this.indexedFirstRead || this.flag_begin_of_file) {
-            this.cursor =
-                    IndexedCursor.createCursor(
-                            p.statementCache, p.key, p.key_index, isDuplicate, COB_GE);
+            this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, COB_GE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_10_END_OF_FILE;
             }
             this.cursor.get().moveToFirst();
         } else if (this.flag_end_of_file) {
-            this.cursor =
-                    IndexedCursor.createCursor(
-                            p.statementCache, p.key, p.key_index, isDuplicate, COB_LE);
+            this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, COB_LE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
@@ -1122,7 +1117,7 @@ public class CobolIndexedFile extends CobolFile {
         // insert into the primary table
         p.data = DBT_SET(this.record);
         try {
-            PreparedStatement insertStatement = this.insertStatementFor(0);
+            PreparedStatement insertStatement = p.statementCache.get(insertSql(0));
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
@@ -1144,7 +1139,7 @@ public class CobolIndexedFile extends CobolFile {
                     return returnWith(p, closeCursor, 0, COB_STATUS_22_KEY_EXISTS);
                 }
 
-                PreparedStatement insertStatement = this.insertStatementFor(i);
+                PreparedStatement insertStatement = p.statementCache.get(insertSql(i));
                 insertStatement.setBytes(1, p.key);
                 insertStatement.setBytes(2, p.data);
                 if (isDuplicateColumn(i)) {
@@ -1186,16 +1181,6 @@ public class CobolIndexedFile extends CobolFile {
             return String.format("insert into %s values (?, ?, ?)", getTableName(index));
         }
         return String.format("insert into %s values (?, ?)", getTableName(index));
-    }
-
-    /**
-     * {@code index}番目のキーのテーブルへのINSERT用PreparedStatementを返す。
-     *
-     * <p>{@link IndexedStatementCache}から取得するため、オープン中はテーブルごとに1つの
-     * PreparedStatementが使い回される。呼び出し側はcloseしてはならない。
-     */
-    private PreparedStatement insertStatementFor(int index) throws SQLException {
-        return this.filei.statementCache.get(insertSql(index));
     }
 
     @Override
