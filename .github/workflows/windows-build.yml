@@ -49,20 +49,77 @@ jobs:
 
       - name: Build cobj.exe
         run: msbuild /p:Configuration=Release /p:AdditionalIncludePaths=./:./cobj/:./win:./lib win/opensourcecobol4j.sln
-      
+
+      # Deliberately not guarded by upload-artifacts: assembling the bundle on
+      # every push and pull request is what keeps a broken bundle configuration
+      # from surfacing only at release time.
+      - name: Assemble the Windows release bundle
+        run: |
+          $m = Select-String -Path configure.ac -Pattern 'AC_INIT\(\[opensource COBOL 4J\],\[([^\]]+)\]'
+          if (-not $m) { Write-Host "failed to extract the version from configure.ac"; exit 1 }
+          $version = $m.Matches[0].Groups[1].Value
+          $name = "opensourcecobol4j-$version-windows-x64"
+          New-Item -ItemType Directory -Path "$name/bin", "$name/lib", "$name/config", "$name/copy" | Out-Null
+          Copy-Item win/x64/Release/cobj.exe "$name/bin/"
+          Copy-Item libcobj/app/build/libs/libcobj.jar "$name/lib/"
+          Copy-Item config/*.conf "$name/config/"
+          Copy-Item copy/*.cpy "$name/copy/"
+          Copy-Item win/install.ps1 "$name/"
+          Copy-Item win/release-README.txt "$name/README.txt"
+          Compress-Archive -Path $name -DestinationPath "$name.zip"
+
+      # Extract the zip somewhere else, run the bundled installer and compile
+      # and run a COBOL program, mirroring the smoke test of the Linux release
+      # tarball. This is the only place install.ps1 is ever executed before a
+      # user runs it. The installer writes user environment variables, which
+      # is fine on a throwaway runner.
+      - name: Smoke-test the Windows release bundle
+        run: |
+          $name = (Get-Item opensourcecobol4j-*-windows-x64.zip).BaseName
+          Expand-Archive "$name.zip" -DestinationPath "$env:RUNNER_TEMP\bundle-smoke"
+          & "$env:RUNNER_TEMP\bundle-smoke\$name\install.ps1" -InstallDir "$env:RUNNER_TEMP\o4j"
+          $env:PATH = "$env:RUNNER_TEMP\o4j\bin;$env:PATH"
+          $env:CLASSPATH = "$env:RUNNER_TEMP\o4j\lib\libcobj.jar;."
+          $env:COB_CONFIG_DIR = "$env:RUNNER_TEMP\o4j\config"
+          $env:COB_COPY_DIR = "$env:RUNNER_TEMP\o4j\copy"
+          $workdir = Join-Path $env:RUNNER_TEMP "bundle-smoke-work"
+          New-Item -ItemType Directory -Path $workdir | Out-Null
+          Set-Location $workdir
+          Set-Content -Path HELLO.cbl -Value @(
+            "       IDENTIFICATION DIVISION.",
+            "       PROGRAM-ID. HELLO.",
+            "       PROCEDURE DIVISION.",
+            '           DISPLAY "HELLO WORLD!".'
+          )
+          cobj HELLO.cbl
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $out = java HELLO
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ($out -notmatch "HELLO WORLD!") { Write-Host "unexpected output: $out"; exit 1 }
+
+      - name: Upload the Windows release bundle
+        if: ${{inputs.upload-artifacts}}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-windows-zip
+          path: opensourcecobol4j-*-windows-x64.zip
+          if-no-files-found: error
+
       - name: Upload libcobj.jar
         if: ${{inputs.upload-artifacts}}
         uses: actions/upload-artifact@v7
         with:
           name: libcobj.jar
-          path: libcobj/app/build/libs/libcobj.jar 
-      
+          path: libcobj/app/build/libs/libcobj.jar
+          if-no-files-found: error
+
       - name: Upload cobj.exe
         if: ${{inputs.upload-artifacts}}
         uses: actions/upload-artifact@v7
         with:
           name: cobj.exe
           path: win/x64/Release/cobj.exe
+          if-no-files-found: error
 
       - name: Upload libcobj-sbom.json
         if: ${{inputs.upload-artifacts}}
@@ -70,6 +127,7 @@ jobs:
         with:
           name: libcobj-sbom.json
           path: libcobj/app/build/reports/libcobj-sbom.json
+          if-no-files-found: error
 
       - name: Upload libcobj-sbom.xml
         if: ${{inputs.upload-artifacts}}
@@ -77,3 +135,4 @@ jobs:
         with:
           name: libcobj-sbom.xml
           path: libcobj/app/build/reports/libcobj-sbom.xml
+          if-no-files-found: error
