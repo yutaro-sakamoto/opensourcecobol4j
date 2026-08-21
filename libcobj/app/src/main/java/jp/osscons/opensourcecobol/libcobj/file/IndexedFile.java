@@ -19,7 +19,6 @@
 package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 
 /**
@@ -58,10 +57,10 @@ class IndexedFile {
     int[] last_dupno;
 
     /**
-     * WRITE/REWRITEで使い回す、テーブルごとのINSERT用PreparedStatement。
-     * 最初に使うときに生成され、CLOSE時に解放される。
+     * この接続で発行するSQL文のPreparedStatementキャッシュ。接続確立時に生成され、
+     * CLOSE時に解放される。
      */
-    PreparedStatement[] cachedInsertStatements;
+    IndexedStatementCache statementCache;
 
     /** REWRITE用のキーごとの状態として予約されているが、オープン時に確保されるのみで、現在の実装では代わりにローカル配列で重複番号を受け渡しており、実際には使用されていない。 */
     int[] rewrite_sec_key;

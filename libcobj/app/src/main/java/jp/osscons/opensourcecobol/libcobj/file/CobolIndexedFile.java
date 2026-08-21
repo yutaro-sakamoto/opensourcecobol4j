@@ -294,6 +294,7 @@ public class CobolIndexedFile extends CobolFile {
                 return COB_STATUS_00_SUCCESS;
             } else {
                 try {
+                    p.statementCache.closeAll();
                     p.connection.close();
                 } catch (SQLException closeEx) {
                     return COB_STATUS_30_PERMANENT_ERROR;
@@ -302,6 +303,7 @@ public class CobolIndexedFile extends CobolFile {
             }
         } catch (SQLException e) {
             try {
+                p.statementCache.closeAll();
                 p.connection.close();
             } catch (SQLException closeEx) {
                 return COB_STATUS_30_PERMANENT_ERROR;
@@ -331,6 +333,7 @@ public class CobolIndexedFile extends CobolFile {
                 st.execute("select 1");
             }
             p.connection.commit();
+            p.statementCache = new IndexedStatementCache(p.connection);
         } catch (SQLException e) {
             int errorCode = e.getErrorCode();
             if (errorCode == SQLiteErrorCode.SQLITE_BUSY.code) {
@@ -350,14 +353,15 @@ public class CobolIndexedFile extends CobolFile {
             String fileLockTableExistsSql =
                     "select exists(select 1 from sqlite_master where type = 'table' and name ="
                             + " 'file_lock')";
-            ResultSet fileLockTableExistsResultSet = st.executeQuery(fileLockTableExistsSql);
-            if (fileLockTableExistsResultSet.next()) {
-                boolean fileLockTableExists = fileLockTableExistsResultSet.getInt(1) == 1;
-                if (!fileLockTableExists) {
-                    return COB_STATUS_92_VERSION_INCOMPATIBLE;
+            try (ResultSet fileLockTableExistsResultSet = st.executeQuery(fileLockTableExistsSql)) {
+                if (fileLockTableExistsResultSet.next()) {
+                    boolean fileLockTableExists = fileLockTableExistsResultSet.getInt(1) == 1;
+                    if (!fileLockTableExists) {
+                        return COB_STATUS_92_VERSION_INCOMPATIBLE;
+                    }
+                } else {
+                    return COB_STATUS_92_VERSION_INCOMPATIBLE; // file_lock table does not exist
                 }
-            } else {
-                return COB_STATUS_92_VERSION_INCOMPATIBLE; // file_lock table does not exist
             }
 
             boolean lockedByColumnExists = false;
@@ -418,7 +422,8 @@ public class CobolIndexedFile extends CobolFile {
         String processUuid = this.getProcessUuid();
         String processId = this.getProcessId();
 
-        try (PreparedStatement statement = p.connection.prepareStatement(insertSql)) {
+        try {
+            PreparedStatement statement = p.statementCache.get(insertSql);
             statement.setString(1, processUuid);
             statement.setString(2, processId);
             statement.setString(3, openMode);
@@ -607,29 +612,23 @@ public class CobolIndexedFile extends CobolFile {
         previousLockedRecordKey = null;
 
         try {
-            try (Statement statement = p.connection.createStatement()) {
-                // Close the file lock
-                String deleteFileLockSql = "delete from file_lock where locked_by = ?";
-                try (PreparedStatement deleteFileLockStatement =
-                        p.connection.prepareStatement(deleteFileLockSql)) {
-                    deleteFileLockStatement.setString(1, this.getProcessUuid());
-                    deleteFileLockStatement.executeUpdate();
-                }
-                String unlockRecordsSql =
-                        String.format(
-                                "update %s set locked_by = null, process_id = null, locked_at ="
-                                        + " null where locked_by = ?",
-                                getTableName(0));
-                try (PreparedStatement unlockRecordsStatement =
-                        p.connection.prepareStatement(unlockRecordsSql)) {
-                    unlockRecordsStatement.setString(1, this.getProcessUuid());
-                    unlockRecordsStatement.executeUpdate();
-                }
-            }
+            // Close the file lock
+            String deleteFileLockSql = "delete from file_lock where locked_by = ?";
+            PreparedStatement deleteFileLockStatement = p.statementCache.get(deleteFileLockSql);
+            deleteFileLockStatement.setString(1, this.getProcessUuid());
+            deleteFileLockStatement.executeUpdate();
+            String unlockRecordsSql =
+                    String.format(
+                            "update %s set locked_by = null, process_id = null, locked_at ="
+                                    + " null where locked_by = ?",
+                            getTableName(0));
+            PreparedStatement unlockRecordsStatement = p.statementCache.get(unlockRecordsSql);
+            unlockRecordsStatement.setString(1, this.getProcessUuid());
+            unlockRecordsStatement.executeUpdate();
             // このコミットはロック解放に加えて、OUTPUTモードで遅延された
             // WRITE群（writeDeferred参照）をまとめて永続化する役割も持つ
             p.connection.commit();
-            this.closeCachedInsertStatements();
+            p.statementCache.closeAll();
             p.connection.close();
             // 状態のリセットはクローズが成功してから行う。先に行うと、クローズに
             // 失敗して(CobolFile.closeがopen_modeを維持するため)後続のWRITEが
@@ -685,8 +684,7 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
 
-        this.cursor =
-                IndexedCursor.createCursor(p.connection, p.key, p.key_index, isDuplicate, cond);
+        this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, cond);
         if (!this.cursor.isPresent()) {
             return COB_STATUS_30_PERMANENT_ERROR;
         }
@@ -738,12 +736,11 @@ public class CobolIndexedFile extends CobolFile {
                 String.format(
                         "select exists(select 1 from %s where key = ? and locked_by != ?)",
                         getTableName(0));
-        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
-            selectStatement.setBytes(1, key);
-            selectStatement.setString(2, this.getProcessUuid());
-            try (ResultSet rs = selectStatement.executeQuery()) {
-                return rs.next() && rs.getInt(1) == 1;
-            }
+        PreparedStatement selectStatement = p.statementCache.get(query);
+        selectStatement.setBytes(1, key);
+        selectStatement.setString(2, this.getProcessUuid());
+        try (ResultSet rs = selectStatement.executeQuery()) {
+            return rs.next() && rs.getInt(1) == 1;
         }
     }
 
@@ -754,13 +751,12 @@ public class CobolIndexedFile extends CobolFile {
                         "update %s set locked_by = ?, process_id = ?, locked_at = datetime('now')"
                                 + " where key = ?",
                         getTableName(0));
-        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
-            updateStatement.setString(1, this.getProcessUuid());
-            updateStatement.setString(2, this.getProcessId());
-            updateStatement.setBytes(3, key);
-            int updatedRecordcount = updateStatement.executeUpdate();
-            return updatedRecordcount == 1;
-        }
+        PreparedStatement updateStatement = p.statementCache.get(updateSql);
+        updateStatement.setString(1, this.getProcessUuid());
+        updateStatement.setString(2, this.getProcessId());
+        updateStatement.setBytes(3, key);
+        int updatedRecordcount = updateStatement.executeUpdate();
+        return updatedRecordcount == 1;
     }
 
     private void unlockPreviousRecord() throws SQLException {
@@ -774,11 +770,10 @@ public class CobolIndexedFile extends CobolFile {
                         "update %s set locked_by = null, process_id = null, locked_at = null where"
                                 + " key = ? and locked_by = ?",
                         getTableName(0));
-        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
-            updateStatement.setBytes(1, previousLockedRecordKey);
-            updateStatement.setString(2, this.getProcessUuid());
-            updateStatement.executeUpdate();
-        }
+        PreparedStatement updateStatement = p.statementCache.get(updateSql);
+        updateStatement.setBytes(1, previousLockedRecordKey);
+        updateStatement.setString(2, this.getProcessUuid());
+        updateStatement.executeUpdate();
         previousLockedRecordKey = null;
     }
 
@@ -803,11 +798,10 @@ public class CobolIndexedFile extends CobolFile {
                         "update %s set locked_by = null, process_id = null, locked_at = null where"
                                 + " key = ? and locked_by = ?",
                         getTableName(0));
-        try (PreparedStatement updateStatement = p.connection.prepareStatement(updateSql)) {
-            updateStatement.setBytes(1, previousLockedRecordKey);
-            updateStatement.setString(2, this.getProcessUuid());
-            updateStatement.executeUpdate();
-        }
+        PreparedStatement updateStatement = p.statementCache.get(updateSql);
+        updateStatement.setBytes(1, previousLockedRecordKey);
+        updateStatement.setString(2, this.getProcessUuid());
+        updateStatement.executeUpdate();
         previousLockedRecordKey = key;
     }
 
@@ -904,17 +898,13 @@ public class CobolIndexedFile extends CobolFile {
 
         boolean isDuplicate = this.keys[p.key_index].getFlag() != 0;
         if (this.indexedFirstRead || this.flag_begin_of_file) {
-            this.cursor =
-                    IndexedCursor.createCursor(
-                            p.connection, p.key, p.key_index, isDuplicate, COB_GE);
+            this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, COB_GE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_10_END_OF_FILE;
             }
             this.cursor.get().moveToFirst();
         } else if (this.flag_end_of_file) {
-            this.cursor =
-                    IndexedCursor.createCursor(
-                            p.connection, p.key, p.key_index, isDuplicate, COB_LE);
+            this.cursor = IndexedCursor.createCursor(p, p.key, p.key_index, isDuplicate, COB_LE);
             if (!this.cursor.isPresent()) {
                 return COB_STATUS_30_PERMANENT_ERROR;
             }
@@ -1030,7 +1020,8 @@ public class CobolIndexedFile extends CobolFile {
 
     private boolean keyExistsInTable(IndexedFile p, int index, byte[] key) {
         String query = String.format("select * from %s where key = ?", getTableName(index));
-        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
+        try {
+            PreparedStatement selectStatement = p.statementCache.get(query);
             selectStatement.setBytes(1, key);
             selectStatement.setFetchSize(0);
             try (ResultSet rs = selectStatement.executeQuery()) {
@@ -1045,14 +1036,17 @@ public class CobolIndexedFile extends CobolFile {
         return this.keys[index].getFlag() != 0;
     }
 
-    private int getNextKeyDupNo(Connection conn, int index, byte[] key) {
+    private int getNextKeyDupNo(IndexedFile p, int index) {
         try {
             PreparedStatement selectStatement =
-                    conn.prepareStatement(
+                    p.statementCache.get(
                             String.format(
                                     "select ifnull(max(dupNo), -1) from %s", getTableName(index)));
             try (ResultSet rs = selectStatement.executeQuery()) {
-                return rs.getInt(1) + 1;
+                if (rs.next()) {
+                    return rs.getInt(1) + 1;
+                }
+                return 0;
             }
         } catch (SQLException e) {
             return 0;
@@ -1123,7 +1117,7 @@ public class CobolIndexedFile extends CobolFile {
         // insert into the primary table
         p.data = DBT_SET(this.record);
         try {
-            PreparedStatement insertStatement = this.insertStatementFor(0);
+            PreparedStatement insertStatement = p.statementCache.get(insertSql(0));
             insertStatement.setBytes(1, p.key);
             insertStatement.setBytes(2, p.data);
             insertStatement.execute();
@@ -1145,7 +1139,7 @@ public class CobolIndexedFile extends CobolFile {
                     return returnWith(p, closeCursor, 0, COB_STATUS_22_KEY_EXISTS);
                 }
 
-                PreparedStatement insertStatement = this.insertStatementFor(i);
+                PreparedStatement insertStatement = p.statementCache.get(insertSql(i));
                 insertStatement.setBytes(1, p.key);
                 insertStatement.setBytes(2, p.data);
                 if (isDuplicateColumn(i)) {
@@ -1158,7 +1152,7 @@ public class CobolIndexedFile extends CobolFile {
                         dupNo = p.last_dupno[i];
                         p.last_dupno[i] = dupNo + 1;
                     } else if (dupNumbers == null || dupNumbers[i] < 0 || i != this.fetchKeyIndex) {
-                        dupNo = getNextKeyDupNo(p.connection, i, p.key);
+                        dupNo = getNextKeyDupNo(p, i);
                     } else {
                         dupNo = dupNumbers[i];
                     }
@@ -1187,47 +1181,6 @@ public class CobolIndexedFile extends CobolFile {
             return String.format("insert into %s values (?, ?, ?)", getTableName(index));
         }
         return String.format("insert into %s values (?, ?)", getTableName(index));
-    }
-
-    /**
-     * {@code index}番目のキーのテーブルへのINSERT用PreparedStatementを返す。
-     *
-     * <p>テーブルのスキーマはオープン成功時点で確定しオープン中に変わることはないため、
-     * INSERT文のたびに同じSQLを解析し直す無駄を省き、オープン中はテーブルごとに1つの
-     * PreparedStatementを生成して使い回す(WRITE/REWRITEのすべてのモードで共通。
-     * PreparedStatementは接続内で完結するため、ファイルを他プロセスと共有していても、
-     * コミットやロールバックをまたいでも安全)。呼び出し側はcloseしてはならない。
-     * {@link #closeCachedInsertStatements}がCLOSE時に解放する。
-     */
-    private PreparedStatement insertStatementFor(int index) throws SQLException {
-        IndexedFile p = this.filei;
-        if (p.cachedInsertStatements == null) {
-            p.cachedInsertStatements = new PreparedStatement[this.nkeys];
-        }
-        PreparedStatement statement = p.cachedInsertStatements[index];
-        if (statement == null) {
-            statement = p.connection.prepareStatement(insertSql(index));
-            p.cachedInsertStatements[index] = statement;
-        }
-        return statement;
-    }
-
-    /** WRITE用にキャッシュしたINSERT文を解放する。 */
-    private void closeCachedInsertStatements() {
-        IndexedFile p = this.filei;
-        if (p.cachedInsertStatements == null) {
-            return;
-        }
-        for (PreparedStatement statement : p.cachedInsertStatements) {
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    System.err.println("Failed to close a prepared statement");
-                }
-            }
-        }
-        p.cachedInsertStatements = null;
     }
 
     @Override
@@ -1477,7 +1430,8 @@ public class CobolIndexedFile extends CobolFile {
         String query =
                 String.format(
                         "select key from %s " + "where key = ? and value = ?", getTableName(index));
-        try (PreparedStatement selectStatement = p.connection.prepareStatement(query)) {
+        try {
+            PreparedStatement selectStatement = p.statementCache.get(query);
             selectStatement.setBytes(1, key);
             selectStatement.setBytes(2, primaryKey);
             selectStatement.setFetchSize(0);
@@ -1592,7 +1546,8 @@ public class CobolIndexedFile extends CobolFile {
 
         // delete data from the primary table
         String query = String.format("delete from %s where key = ?", getTableName(0));
-        try (PreparedStatement statement = p.connection.prepareStatement(query)) {
+        try {
+            PreparedStatement statement = p.statementCache.get(query);
             statement.setBytes(1, p.key);
             statement.execute();
         } catch (SQLException e) {
@@ -1603,10 +1558,12 @@ public class CobolIndexedFile extends CobolFile {
         for (int i = 1; i < this.nkeys; ++i) {
             // save the duplicate number of the record to be deleted
             if (isDuplicateColumn(i)) {
-                try (PreparedStatement statement =
-                        p.connection.prepareStatement(
-                                String.format(
-                                        "select dupNo from %s where value = ?", getTableName(i)))) {
+                try {
+                    PreparedStatement statement =
+                            p.statementCache.get(
+                                    String.format(
+                                            "select dupNo from %s where value = ?",
+                                            getTableName(i)));
                     statement.setBytes(1, p.key);
                     try (ResultSet rs = statement.executeQuery()) {
                         if (rs.next()) {
@@ -1621,9 +1578,10 @@ public class CobolIndexedFile extends CobolFile {
                 }
             }
             // delete the record
-            try (PreparedStatement statement =
-                    p.connection.prepareStatement(
-                            String.format("delete from %s where value = ?", getTableName(i)))) {
+            try {
+                PreparedStatement statement =
+                        p.statementCache.get(
+                                String.format("delete from %s where value = ?", getTableName(i)));
                 statement.setBytes(1, p.key);
                 statement.execute();
             } catch (SQLException e) {
@@ -1720,10 +1678,9 @@ public class CobolIndexedFile extends CobolFile {
             if (p.connection.isClosed()) {
                 return;
             }
-            try (PreparedStatement statement = p.connection.prepareStatement(unlockSql)) {
-                statement.setString(1, getProcessUuid());
-                statement.executeUpdate();
-            }
+            PreparedStatement statement = p.statementCache.get(unlockSql);
+            statement.setString(1, getProcessUuid());
+            statement.executeUpdate();
             p.connection.commit();
             previousLockedRecordKey = null;
         } catch (SQLException e) {
