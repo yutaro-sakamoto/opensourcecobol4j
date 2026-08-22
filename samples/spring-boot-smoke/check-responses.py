@@ -38,5 +38,9 @@ for thread, counters in per_thread.items():
     if counters != list(range(counters[0], counters[0] + len(counters))):
         bad += 1
         print("counter of", thread, "is not contiguous:", counters)
+expected = int(sys.argv[2]) if len(sys.argv) > 2 else None
+if expected is not None and total != expected:
+    bad += 1
+    print("expected", expected, "responses but got", total)
 print("responses", total, "threads", len(per_thread), "bad", bad)
 sys.exit(1 if bad or total == 0 else 0)

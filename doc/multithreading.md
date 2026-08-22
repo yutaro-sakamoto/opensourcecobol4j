@@ -91,8 +91,22 @@ in a server that reuses its threads. Without it, the state of the previous run
 unit (open files, resolved programs, `EXTERNAL` items, switches) stays on the
 pooled thread and is seen by the next request that lands on it.
 
+ESQL connections that the program left open (no `DISCONNECT`) are committed and
+closed as well.
+
 `CobolRunUnit.resetThreadState()` discards the same state **without** closing the
 open files. Use it only when the files have already been closed.
+
+Ending the run unit does not reset the Java objects of the programs themselves:
+if the same instance of a generated program is run again afterwards, its
+`WORKING-STORAGE` still holds the values of the previous run. Create a new
+instance for a new run unit when the program must start from its `VALUE`
+clauses. Programs reached through `CALL` are instantiated anew, because the
+`CALL` cache belongs to the run unit.
+
+Values set with `SET ENVIRONMENT` or `DISPLAY ... UPON ENVIRONMENT-VALUE` belong
+to the run unit too: they are visible to the programs of the same thread only and
+are discarded with it.
 
 If the program ends with `STOP RUN`, the run unit is already ended (see below)
 and a further `CobolRunUnit.end()` is harmless.

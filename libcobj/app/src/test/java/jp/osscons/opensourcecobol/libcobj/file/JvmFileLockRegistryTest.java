@@ -48,6 +48,18 @@ class JvmFileLockRegistryTest {
         return p.toString();
     }
 
+    /** 別のスレッド(別の実行単位)からロックを取得する。 */
+    private static JvmFileLockRegistry.Lease acquireFromOtherThread(
+            String file, FileChannel channel, boolean shared) throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            return executor.submit(() -> JvmFileLockRegistry.acquire(file, channel, shared))
+                    .get(30, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static FileChannel openRead(String file) throws IOException {
         return FileChannel.open(Paths.get(file), StandardOpenOption.READ);
     }
@@ -81,22 +93,44 @@ class JvmFileLockRegistryTest {
             JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, cs, true);
             assertNotNull(shared, "shared lock");
             assertNull(
-                    JvmFileLockRegistry.acquire(file, other, false),
-                    "exclusive conflicts with shared");
+                    acquireFromOtherThread(file, other, false), "exclusive conflicts with shared");
             JvmFileLockRegistry.release(shared);
 
             JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
             assertNotNull(exclusive, "exclusive lock");
             assertNull(
-                    JvmFileLockRegistry.acquire(file, other, true),
-                    "shared conflicts with exclusive");
+                    acquireFromOtherThread(file, other, true), "shared conflicts with exclusive");
             assertNull(
-                    JvmFileLockRegistry.acquire(file, other, false),
+                    acquireFromOtherThread(file, other, false),
                     "exclusive conflicts with exclusive");
             JvmFileLockRegistry.release(exclusive);
-            JvmFileLockRegistry.Lease again = JvmFileLockRegistry.acquire(file, other, false);
+            JvmFileLockRegistry.Lease again = acquireFromOtherThread(file, other, false);
             assertNotNull(again, "reacquire after release");
             JvmFileLockRegistry.release(again);
+        }
+    }
+
+    @Test
+    void sameThreadMayReopenTheFileInAnyMode() throws Exception {
+        String file = newFile();
+        try (FileChannel cs = openRead(file);
+                FileChannel ce = openWrite(file);
+                FileChannel other = openWrite(file)) {
+            JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, cs, true);
+            assertNotNull(shared, "shared lock");
+            JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
+            assertNotNull(exclusive, "the same run unit may open the file again for output");
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            try {
+                Future<JvmFileLockRegistry.Lease> attempt =
+                        executor.submit(() -> JvmFileLockRegistry.acquire(file, other, true));
+                assertNull(attempt.get(30, TimeUnit.SECONDS), "another thread is refused");
+            } finally {
+                executor.shutdownNow();
+            }
+            JvmFileLockRegistry.release(exclusive);
+            JvmFileLockRegistry.release(shared);
+            assertFalse(JvmFileLockRegistry.isLocked(file), "all leases released");
         }
     }
 
@@ -125,10 +159,10 @@ class JvmFileLockRegistryTest {
             JvmFileLockRegistry.release(a);
             ca.close();
             assertNull(
-                    JvmFileLockRegistry.acquire(file, other, false),
+                    acquireFromOtherThread(file, other, false),
                     "exclusive still refused while the second holder remains");
             JvmFileLockRegistry.release(b);
-            JvmFileLockRegistry.Lease ex = JvmFileLockRegistry.acquire(file, other, false);
+            JvmFileLockRegistry.Lease ex = acquireFromOtherThread(file, other, false);
             assertNotNull(ex, "exclusive lock after all holders released");
             JvmFileLockRegistry.release(ex);
         }

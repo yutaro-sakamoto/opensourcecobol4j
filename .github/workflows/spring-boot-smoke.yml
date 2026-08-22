@@ -25,6 +25,7 @@ env:
 jobs:
   spring-boot-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     container:
       image: ${{ inputs.os }}
     steps:
@@ -80,8 +81,8 @@ jobs:
             fi
             sleep 1
           done
-          seq 1 500 | xargs -P 32 -I{} curl -sf "http://localhost:18080/calc?num={}&txt=banana" > responses.txt
-          python3 check-responses.py responses.txt
+          seq 1 500 | xargs -P 32 -I{} curl -sf --max-time 30 "http://localhost:18080/calc?num={}&txt=banana" > responses.txt
+          python3 check-responses.py responses.txt 500
           curl -sf http://localhost:18080/end
           if ! kill -0 $APP_PID 2> /dev/null; then
             echo "the application died during the test"
@@ -89,7 +90,7 @@ jobs:
             exit 1
           fi
           kill $APP_PID
-          if grep -i "exception" app.log; then
+          if grep -E "Exception|^\s+at " app.log; then
             echo "exceptions were logged"
             cat app.log
             exit 1

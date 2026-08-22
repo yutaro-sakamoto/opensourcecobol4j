@@ -809,6 +809,7 @@ multithread_DEPENDENCIES = \
 	multithread.src/arith-intrinsic.at \
 	multithread.src/call-working-storage.at \
 	multithread.src/stop-run.at \
+	multithread.src/io-error-in-called-program.at \
 	multithread.src/sequential-file.at \
 	multithread.src/file-sharing.at \
 	multithread.src/indexed-record-lock.at \

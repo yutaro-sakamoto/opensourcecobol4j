@@ -277,7 +277,7 @@ public class CobolFileSort {
         } catch (IOException e) {
             return null;
         }
-        fp.setChannel(fc, null);
+        fp.setChannel(fc);
         return fp;
     }
 

@@ -429,7 +429,6 @@ public class CobolUtil {
             CobolUtil.commandLineArgs = argv == null ? new String[0] : argv;
             CobolFile.cob_init_fileio();
         }
-        initialized.set(true);
 
         String s = CobolUtil.getEnv("COB_DATE");
         if (s != null) {
@@ -493,6 +492,8 @@ public class CobolUtil {
                 CobolUtil.terminalEncoding = CobolEncoding.UTF8;
             }
         }
+        // 設定値をすべて読み込んでから初期化済みにする(他のスレッドが途中の値を観測しないように)
+        initialized.set(true);
     }
 
     /**
