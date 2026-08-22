@@ -18,9 +18,10 @@
  */
 package jp.osscons.opensourcecobol.libcobj.exceptions;
 
+import jp.osscons.opensourcecobol.libcobj.call.CobolResolve;
+import jp.osscons.opensourcecobol.libcobj.common.CobolModule;
+import jp.osscons.opensourcecobol.libcobj.common.CobolRunUnit;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
-import jp.osscons.opensourcecobol.libcobj.data.CobolPointerRegistry;
-import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 
 /** STOP RUNの呼び出し時にスローされる例外。返り値を保持する。 */
 public final class CobolStopRunException extends Exception {
@@ -87,11 +88,64 @@ public final class CobolStopRunException extends Exception {
         CobolStopRunException.throwException(status);
     }
 
-    /** デフォルトの終了処理を実行する。CobolStopRunExceptionをスローしない。 */
+    /**
+     * デフォルトの終了処理を実行する。CobolStopRunExceptionをスローしない。<br>
+     * 現在のスレッドの実行単位を終了し、オープン中のファイルのクローズとランタイム状態の破棄を行う。
+     * 他のスレッドで実行中の実行単位には影響しない。
+     */
     public static void stopRun() {
         // TODO screen実装時に追加
         // cob_screen_terminate();
-        CobolFile.exitFileIO();
-        CobolPointerRegistry.clear();
+        CobolRunUnit.end();
+    }
+
+    /**
+     * STOP RUNによって実行単位が終了したときの返り値(スレッドごとに保持する)。 STOP RUNが実行されていない場合はnull。
+     */
+    private static final ThreadLocal<Integer> lastStopRunCode = new ThreadLocal<>();
+
+    /**
+     * 生成されたCOBOLプログラムのrun_moduleがCobolStopRunExceptionまたは{@link CobolStopRunSignal}を 捕捉したときに呼び出す。<br>
+     * 呼び出し元のモジュールスタックとコールスタックを1段戻し、このプログラムが実行単位のルート
+     * (モジュールスタックが空になった)であれば実行単位の終了処理({@link #stopRun()})を行って返り値を返す。
+     * ルートでなければ{@link CobolStopRunSignal}をスローして呼び出し元のCOBOLプログラムへ巻き戻す。
+     *
+     * @param returnCode STOP RUNの返り値
+     * @return 実行単位のルートで捕捉した場合のSTOP RUNの返り値
+     * @throws CobolStopRunSignal 実行単位のルートでない場合
+     */
+    public static int handleAtFrame(int returnCode) {
+        CobolResolve.popCallStackList();
+        CobolModule.pop();
+        if (CobolModule.getStackDepth() > 0) {
+            throw new CobolStopRunSignal(returnCode);
+        }
+        stopRun();
+        lastStopRunCode.set(returnCode);
+        return returnCode;
+    }
+
+    /**
+     * 現在のスレッドでSTOP RUNによって実行単位が終了したかどうかを返す。<br>
+     * 生成されたmainメソッドがプロセスの終了コードを決めるために使用する。 呼び出すと記録はクリアされる。
+     *
+     * @return STOP RUNが実行されていればその返り値、実行されていなければnull
+     */
+    public static Integer consumeStopRunCode() {
+        Integer code = lastStopRunCode.get();
+        lastStopRunCode.remove();
+        return code;
+    }
+
+    /**
+     * 生成されたmainメソッドの末尾で呼び出し、実行単位を終了する。<br>
+     * STOP RUNで終了していた場合はその返り値で{@link System#exit}する。 それ以外の場合はSystem.exitを呼ばずに復帰する。
+     */
+    public static void exitMain() {
+        Integer stopRunCode = consumeStopRunCode();
+        stopRun();
+        if (stopRunCode != null) {
+            System.exit(stopRunCode);
+        }
     }
 }

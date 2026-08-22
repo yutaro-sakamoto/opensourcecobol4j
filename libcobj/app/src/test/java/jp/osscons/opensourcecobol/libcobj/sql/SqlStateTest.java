@@ -2,31 +2,14 @@ package jp.osscons.opensourcecobol.libcobj.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SqlStateTest {
 
     @BeforeEach
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
-    void resetStaticState() throws Exception {
-        Field connectionsField = SqlState.class.getDeclaredField("connections");
-        connectionsField.setAccessible(true);
-        connectionsField.set(null, new HashMap<>());
-
-        Field cursorsField = SqlState.class.getDeclaredField("cursors");
-        cursorsField.setAccessible(true);
-        cursorsField.set(null, new HashMap<>());
-
-        Field preparedField = SqlState.class.getDeclaredField("preparedStatements");
-        preparedField.setAccessible(true);
-        preparedField.set(null, new HashMap<>());
-
-        Field defaultField = SqlState.class.getDeclaredField("defaultConnId");
-        defaultField.setAccessible(true);
-        defaultField.set(null, null);
+    void resetStaticState() {
+        SqlState.resetThreadState();
     }
 
     // ---------- Connection management ----------

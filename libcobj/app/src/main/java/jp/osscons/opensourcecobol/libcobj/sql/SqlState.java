@@ -3,16 +3,42 @@ package jp.osscons.opensourcecobol.libcobj.sql;
 import java.util.HashMap;
 import java.util.Map;
 
-/** SQL 接続、カーソル、prepared statement を管理するグローバルなレジストリ。 */
+/** SQL 接続、カーソル、prepared statement を管理するレジストリ。実行単位(スレッド)ごとに独立している。 */
 final class SqlState {
+
+    /**
+     * 実行単位(スレッド)ごとに保持する作業状態。<br>
+     * 文の処理は複数のメソッド呼び出しにまたがって状態を共有するため、スレッドごとに独立させる。
+     */
+    private static final class State {
+        Map<String, SqlConnection> connections = new HashMap<>();
+
+        Map<String, SqlCursor> cursors = new HashMap<>();
+
+        Map<String, String[]> preparedStatements = new HashMap<>();
+
+        String defaultConnId = null;
+    }
+
+    /** 現在のスレッドの作業状態。実行単位はスレッドごとに独立しているため、スレッドごとに保持する。 */
+    private static final ThreadLocal<State> state = ThreadLocal.withInitial(State::new);
+
+    /** 現在のスレッドに紐づく作業状態を破棄する。実行単位の終了時に呼び出す。 */
+    public static void resetThreadState() {
+        state.remove();
+    }
 
     /** ユーティリティクラスのインスタンス化を防ぐための private コンストラクタ。 */
     private SqlState() {}
 
-    private static Map<String, SqlConnection> connections = new HashMap<>();
-    private static Map<String, SqlCursor> cursors = new HashMap<>();
-    private static Map<String, String[]> preparedStatements = new HashMap<>();
-    private static String defaultConnId = null;
+    /**
+     * 現在のスレッドに登録されているすべての接続を返す(テスト用)。
+     *
+     * @return 接続の識別子と接続の対応表
+     */
+    static Map<String, SqlConnection> allConnections() {
+        return state.get().connections;
+    }
 
     /**
      * 接続を登録する。最初に登録された接続がデフォルトになる。
@@ -21,9 +47,10 @@ final class SqlState {
      * @param conn SQL 接続
      */
     static void addConnection(String id, SqlConnection conn) {
-        connections.put(id, conn);
-        if (defaultConnId == null) {
-            defaultConnId = id;
+        State st = state.get();
+        st.connections.put(id, conn);
+        if (st.defaultConnId == null) {
+            st.defaultConnId = id;
         }
     }
 
@@ -33,11 +60,12 @@ final class SqlState {
      * @return デフォルトの接続。登録されていない場合は null
      */
     static SqlConnection getDefaultConnection() {
-        if (defaultConnId != null) {
-            return connections.get(defaultConnId);
+        State st = state.get();
+        if (st.defaultConnId != null) {
+            return st.connections.get(st.defaultConnId);
         }
-        if (!connections.isEmpty()) {
-            return connections.values().iterator().next();
+        if (!st.connections.isEmpty()) {
+            return st.connections.values().iterator().next();
         }
         return null;
     }
@@ -48,12 +76,13 @@ final class SqlState {
      * @param id 削除する接続の識別子
      */
     static void removeConnection(String id) {
-        connections.remove(id);
-        if (id != null && id.equals(defaultConnId)) {
-            if (!connections.isEmpty()) {
-                defaultConnId = connections.keySet().iterator().next();
+        State st = state.get();
+        st.connections.remove(id);
+        if (id != null && id.equals(st.defaultConnId)) {
+            if (!st.connections.isEmpty()) {
+                st.defaultConnId = st.connections.keySet().iterator().next();
             } else {
-                defaultConnId = null;
+                st.defaultConnId = null;
             }
         }
     }
@@ -65,7 +94,8 @@ final class SqlState {
      * @param cursor カーソルのディスクリプタ
      */
     static void addCursor(String name, SqlCursor cursor) {
-        cursors.put(name, cursor);
+        State st = state.get();
+        st.cursors.put(name, cursor);
     }
 
     /**
@@ -75,7 +105,8 @@ final class SqlState {
      * @return カーソルのディスクリプタ。見つからない場合は null
      */
     static SqlCursor getCursor(String name) {
-        return cursors.get(name);
+        State st = state.get();
+        return st.cursors.get(name);
     }
 
     /**
@@ -86,7 +117,8 @@ final class SqlState {
      * @param nParams パラメータの個数
      */
     static void addPrepared(String name, String query, int nParams) {
-        preparedStatements.put(name, new String[] {query, String.valueOf(nParams)});
+        State st = state.get();
+        st.preparedStatements.put(name, new String[] {query, String.valueOf(nParams)});
     }
 
     /**
@@ -96,12 +128,14 @@ final class SqlState {
      * @return [query, nParams] の2要素の配列。見つからない場合は null
      */
     static String[] getPrepared(String name) {
-        return preparedStatements.get(name);
+        State st = state.get();
+        return st.preparedStatements.get(name);
     }
 
     /** すべてのカーソルをクローズ済みとしてマークする（例: COMMIT や ROLLBACK の後）。 */
     static void clearCursors() {
-        for (SqlCursor cursor : cursors.values()) {
+        State st = state.get();
+        for (SqlCursor cursor : st.cursors.values()) {
             cursor.isOpened = false;
             // COMMIT/ROLLBACK でサーバカーソルは消えるため、先読みバッファも破棄する。
             cursor.clearBuffer();

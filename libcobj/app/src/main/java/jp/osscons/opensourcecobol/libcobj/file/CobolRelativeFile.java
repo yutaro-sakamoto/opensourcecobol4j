@@ -131,7 +131,6 @@ public class CobolRelativeFile extends CobolFile {
 
     @Override
     public int open_(String filename, int mode, int sharing) throws IOException {
-        FileChannel ch;
         try {
             switch (mode) {
                 case COB_OPEN_INPUT:
@@ -164,18 +163,10 @@ public class CobolRelativeFile extends CobolFile {
             }
         }
 
-        ch = fp.getChannel();
-
-        FileLock fl = null;
         if (!filename.startsWith("/dev/")) {
+            boolean isSharedLock = sharing == 0 && mode != COB_OPEN_OUTPUT;
             try {
-                boolean isSharedLock;
-                if (sharing != 0 || mode == COB_OPEN_OUTPUT) {
-                    isSharedLock = false;
-                } else {
-                    isSharedLock = true;
-                }
-                fl = ch.tryLock(0L, Long.MAX_VALUE, isSharedLock);
+                this.lockLease = JvmFileLockRegistry.acquire(filename, isSharedLock);
             } catch (NonWritableChannelException e) {
                 this.fp.close();
                 return EBADF;
@@ -183,10 +174,7 @@ public class CobolRelativeFile extends CobolFile {
                 this.fp.close();
                 return COB_STATUS_61_FILE_SHARING;
             }
-
-            this.file.setRandomAccessFile(this.fp, fl);
-
-            if (fl == null || !fl.isValid()) {
+            if (this.lockLease == null) {
                 this.fp.close();
                 return COB_STATUS_61_FILE_SHARING;
             }
@@ -197,7 +185,7 @@ public class CobolRelativeFile extends CobolFile {
             this.fp.seek(0);
         }
 
-        this.file.setRandomAccessFile(this.fp, fl);
+        this.file.setRandomAccessFile(this.fp, null);
         if ((this.flag_select_features & COB_SELECT_LINAGE) != 0) {
             if (this.file_linage_check()) {
                 return COB_LINAGE_INVALID;
@@ -225,7 +213,7 @@ public class CobolRelativeFile extends CobolFile {
                         }
                     }
 
-                    this.file.releaseLock();
+                    this.releaseLockLease();
                     this.fp.close();
                     this.file.close();
 

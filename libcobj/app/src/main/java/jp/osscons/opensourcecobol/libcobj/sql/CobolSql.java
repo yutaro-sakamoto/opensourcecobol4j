@@ -1002,4 +1002,9 @@ public final class CobolSql {
             }
         }
     }
+
+    /** 現在のスレッドに紐づくSQLの接続・カーソル・prepared statementの登録情報を破棄する。実行単位の終了時に呼び出す。 */
+    public static void resetThreadState() {
+        SqlState.resetThreadState();
+    }
 }

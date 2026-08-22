@@ -51,10 +51,7 @@ class CobolSqlTest {
     void setUp() throws Exception {
         sqlca = new CobolDataStorage(136);
 
-        resetStaticField(SqlState.class, "connections", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "cursors", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "preparedStatements", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "defaultConnId", null);
+        SqlState.resetThreadState();
 
         Field cacheField = CobolSql.class.getDeclaredField("stmtCache");
         cacheField.setAccessible(true);
@@ -69,26 +66,16 @@ class CobolSqlTest {
     void tearDown() throws Exception {
         BulkFetchConfig.setFetchRecords(1);
         // Close ALL connections registered in SqlState, not just the default
-        try {
-            Field connField = SqlState.class.getDeclaredField("connections");
-            connField.setAccessible(true);
-            java.util.Map<String, SqlConnection> allConns =
-                    (java.util.Map<String, SqlConnection>) connField.get(null);
-            for (SqlConnection sc : allConns.values()) {
-                try {
-                    Connection c = sc.getConnection();
-                    if (c != null && !c.isClosed()) {
-                        c.close();
-                    }
-                } catch (Exception ignored) {
+        for (SqlConnection sc : SqlState.allConnections().values()) {
+            try {
+                Connection c = sc.getConnection();
+                if (c != null && !c.isClosed()) {
+                    c.close();
                 }
+            } catch (Exception ignored) {
             }
-        } catch (ReflectiveOperationException ignored) {
         }
-        resetStaticField(SqlState.class, "connections", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "cursors", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "preparedStatements", new java.util.HashMap<>());
-        resetStaticField(SqlState.class, "defaultConnId", null);
+        SqlState.resetThreadState();
 
         Field cacheField = CobolSql.class.getDeclaredField("stmtCache");
         cacheField.setAccessible(true);
@@ -96,12 +83,6 @@ class CobolSqlTest {
     }
 
     @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
-    private void resetStaticField(Class<?> clazz, String fieldName, Object value) throws Exception {
-        Field f = clazz.getDeclaredField(fieldName);
-        f.setAccessible(true);
-        f.set(null, value);
-    }
-
     private void connectToPostgres() throws Exception {
         String dbSpec =
                 "testdb@"
