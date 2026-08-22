@@ -18,5 +18,16 @@ Pass `-PcobjBin=/path/to/cobj` and `-PlibcobjJar=/path/to/libcobj.jar` to
 
 The controller keeps one instance of the COBOL program per request thread
 (`ThreadLocal`), which gives every thread its own run unit with its own
-WORKING-STORAGE. `GET /end` ends the run unit of the thread that serves the
-request by calling `CobolRunUnit.end()`.
+WORKING-STORAGE, open files and EXTERNAL items. `GET /end` ends the run unit of
+the thread that serves the request by calling `CobolRunUnit.end()`, which closes
+the files it left open and discards its run-unit state -- worth doing on a
+pooled thread so nothing leaks into the next request.
+
+`STOP RUN` in a program called this way does not stop the server: it ends the run
+unit of the request thread and returns to the Java caller.
+
+`libcobj.jar` bundles `slf4j-simple` as its SLF4J provider, which conflicts with
+Spring Boot's Logback, so `build.gradle.kts` excludes
+`spring-boot-starter-logging` and `ch.qos.logback`.
+
+See [doc/multithreading.md](../../doc/multithreading.md) for the full model.

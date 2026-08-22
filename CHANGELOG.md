@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### New Features
+
+- **Programs can be run from several threads of one JVM.** `libcobj` now keeps the state of a COBOL run unit per thread, so a Java application such as a Tomcat or Spring Boot server can run generated programs on its request threads: each thread is an independent run unit with its own `WORKING-STORAGE`, open files, `EXTERNAL` items, program switches and ESQL session.
+  - `CobolUtil.ensureInitialized()` initializes the runtime once per JVM, for Java callers that do not go through the generated `main` method.
+  - `jp.osscons.opensourcecobol.libcobj.common.CobolRunUnit.end()` ends the run unit of the calling thread, implicitly closing the files it left open.
+  - The output of one `DISPLAY` statement is written atomically, so concurrent threads do not interleave inside a statement.
+  - Threads of one JVM share files under the same rules as separate processes: sequential, line sequential and relative files through a JVM-internal lock registry, INDEXED files through a lock owner recorded per run unit.
+  - See [Calling generated programs from multi-threaded Java applications](./doc/multithreading.md), the `samples/spring-boot-smoke/` example and the new `tests/multithread` suite.
+
+### Changed
+
+- **`STOP RUN` no longer calls `System.exit` when the program was entered from Java.** It ends the run unit of the calling thread and returns to the Java caller of the root program of that run unit, which receives the `STOP RUN` return code. Only the `main` method of a generated program still exits the process.
+
+### Removed
+
+- Several public static fields of `libcobj.jar` were replaced by accessor methods, because the state behind them is now per run unit. Java code that used them directly has to be updated:
+  - `CobolRuntimeException.code` and `CobolExceptionInfo.code` &rarr; `getExceptionCode()`, `setExceptionCode()`, `clearExceptionCode()`
+  - `CobolCallParams.callParams` &rarr; `CobolCallParams.get()` and `CobolCallParams.set(int)`
+  - `CobolFile.errorFile` &rarr; `CobolFile.getErrorFile()`
+  - `CobolUtil.cobSwitch` &rarr; `CobolUtil.getSwitches()`; `CobolUtil.cobErrorOnExitFlag` &rarr; `getErrorOnExitFlag()`/`setErrorOnExitFlag(boolean)`; `CobolUtil.cobSaveCallParams` &rarr; `getSaveCallParams()`/`setSaveCallParams(int)`; `CobolUtil.currentArgIndex` &rarr; `getCurrentArgIndex()`/`setCurrentArgIndex(int)`; `CobolUtil.cobLocalEnv` &rarr; `getLocalEnvName()`/`setLocalEnvName(String)`; `CobolUtil.verbose` is now private and is set from `COB_VERBOSE`
+  - `CobolNationalField.workReturnSize` was removed; `han2zen` returns an array of the exact length.
+
 ## [2.1.0] - 2026-08-31
 
 ### New Features
