@@ -134,6 +134,15 @@ jobs:
     with:
       os: ${{ matrix.os }}
 
+  run-spring-boot-smoke:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:26.04"]
+    uses: ./.github/workflows/spring-boot-smoke.yml
+    with:
+      os: ${{ matrix.os }}
+
   run-test-nist:
     needs: build
     strategy:
