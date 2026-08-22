@@ -63,6 +63,7 @@ jobs:
           - "file-lock3"
           - "file-lock4"
           - "file-lock5"
+          - "multithread"
         os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -89,6 +90,7 @@ jobs:
           - "file-lock4"
           - "file-lock5"
           - "misc"
+          - "multithread"
         os: ["ubuntu:26.04", "almalinux:9"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -218,6 +220,7 @@ jobs:
           - "file-lock4"
           - "file-lock5"
           - "misc"
+          - "multithread"
     uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}
