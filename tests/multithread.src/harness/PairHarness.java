@@ -52,7 +52,7 @@ public class PairHarness {
         }
         List<String> lines = new ArrayList<>();
         for (Future<String> f : futures) {
-            for (String line : f.get(300, TimeUnit.SECONDS).split("\n")) {
+            for (String line : f.get(300, TimeUnit.SECONDS).split("\r?\n")) {
                 if (!line.isEmpty()) {
                     lines.add(line);
                 }
@@ -62,8 +62,8 @@ public class PairHarness {
         System.setOut(realOut);
         java.util.Collections.sort(lines);
         for (String line : lines) {
-            realOut.println(line);
+            realOut.print(line + "\n");
         }
-        realOut.println("alive");
+        realOut.print("alive\n");
     }
 }
