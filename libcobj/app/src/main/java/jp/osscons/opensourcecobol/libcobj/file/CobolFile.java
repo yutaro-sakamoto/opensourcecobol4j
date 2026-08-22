@@ -1277,7 +1277,7 @@ public class CobolFile {
         if (!filename.startsWith("/dev/")) {
             boolean isSharedLock = sharing == 0 && mode != COB_OPEN_OUTPUT;
             try {
-                this.lockLease = JvmFileLockRegistry.acquire(filename, isSharedLock);
+                this.lockLease = JvmFileLockRegistry.acquire(filename, fp, isSharedLock);
             } catch (NonWritableChannelException e) {
                 fp.close();
                 return EBADF;

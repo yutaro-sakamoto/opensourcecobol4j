@@ -143,7 +143,7 @@ public class ThreadHarness {
         Map<String, Integer> lines = new TreeMap<>();
         Map<Integer, Integer> returnCodes = new TreeMap<>();
         for (Result r : results) {
-            for (String line : r.output.split("\n")) {
+            for (String line : r.output.split("\r?\n")) {
                 if (line.isEmpty()) {
                     continue;
                 }
@@ -152,12 +152,12 @@ public class ThreadHarness {
             returnCodes.merge(r.returnCode, 1, Integer::sum);
         }
         for (Map.Entry<String, Integer> e : lines.entrySet()) {
-            realOut.println(e.getValue() + " " + e.getKey());
+            realOut.print(e.getValue() + " " + e.getKey() + "\n");
         }
         for (Map.Entry<Integer, Integer> e : returnCodes.entrySet()) {
-            realOut.println("return-code " + e.getKey() + " x" + e.getValue());
+            realOut.print("return-code " + e.getKey() + " x" + e.getValue() + "\n");
         }
-        realOut.println("alive");
+        realOut.print("alive\n");
         realOut.flush();
     }
 }
