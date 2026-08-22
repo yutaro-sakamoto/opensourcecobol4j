@@ -505,11 +505,4 @@ public class CobolInspect {
         }
         st.inspectVar.putSign(st.inspectSign);
     }
-
-    /** 処理状況を記録するinspectMarkを既定サイズ({@link CobolConstant#COB_MEDIUM_BUFF})で初期化する。 */
-    public static void initString() {
-        State st = state.get();
-        st.inspectMark = new int[CobolConstant.COB_MEDIUM_BUFF];
-        st.lastsize = CobolConstant.COB_MEDIUM_BUFF;
-    }
 }

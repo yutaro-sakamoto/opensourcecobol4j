@@ -1241,12 +1241,13 @@ public class CobolFile {
                     fp = FileChannel.open(Paths.get(filename), StandardOpenOption.READ);
                     break;
                 case COB_OPEN_OUTPUT:
+                    // 切り詰めはロックを取得してから行う(他の実行単位がオープン中で
+                    // FILE STATUS 61となる場合にその内容を消さないように)
                     fp =
                             FileChannel.open(
                                     Paths.get(filename),
                                     StandardOpenOption.WRITE,
-                                    StandardOpenOption.CREATE,
-                                    StandardOpenOption.TRUNCATE_EXISTING);
+                                    StandardOpenOption.CREATE);
                     break;
                 case COB_OPEN_I_O:
                     fp =
@@ -1291,7 +1292,11 @@ public class CobolFile {
             }
         }
 
-        this.file.setChannel(fp, null);
+        if (mode == COB_OPEN_OUTPUT) {
+            fp.truncate(0);
+        }
+
+        this.file.setChannel(fp);
         if ((this.flag_select_features & COB_SELECT_LINAGE) != 0) {
             if (this.file_linage_check()) {
                 return COB_LINAGE_INVALID;

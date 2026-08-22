@@ -47,7 +47,6 @@ class CobolSqlTest {
     }
 
     @BeforeEach
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void setUp() throws Exception {
         sqlca = new CobolDataStorage(136);
 
@@ -61,7 +60,6 @@ class CobolSqlTest {
         BulkFetchConfig.setFetchRecords(1);
     }
 
-    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     @AfterEach
     void tearDown() throws Exception {
         BulkFetchConfig.setFetchRecords(1);
@@ -82,7 +80,6 @@ class CobolSqlTest {
         ((ConcurrentHashMap<?, ?>) cacheField.get(null)).clear();
     }
 
-    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     private void connectToPostgres() throws Exception {
         String dbSpec =
                 "testdb@"

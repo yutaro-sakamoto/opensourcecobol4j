@@ -77,14 +77,17 @@ public final class CobolStopRunException extends Exception {
     }
 
     /**
-     * デフォルトの終了処理を実行してから、CobolStopRunExceptionをスローする。
-     * デフォルトの終了処理では、COBOLプログラムによってオープンされたファイルのクローズが行われる。
+     * CobolStopRunExceptionをスローする。<br>
+     * 例外が実行単位のルートのプログラムに到達したとき({@link #handleAtFrame(int)})に、
+     * COBOLプログラムによってオープンされたファイルのクローズなどの終了処理が行われる。
      *
      * @param status STOP RUNの返り値
      * @throws CobolStopRunException このメソッドでは必ずCobolStopRunExceptionがスローされる。
      */
     public static void stopRunAndThrow(int status) throws CobolStopRunException {
-        stopRun();
+        // 実行単位の終了処理は、例外が実行単位のルートのプログラムまで巻き戻されたときに
+        // handleAtFrameが行う。ここで行うとモジュールスタックが空になり、CALL先で発生した
+        // STOP RUNがルートと誤判定されて呼び出し元へ復帰してしまう。
         CobolStopRunException.throwException(status);
     }
 
@@ -123,6 +126,11 @@ public final class CobolStopRunException extends Exception {
         stopRun();
         lastStopRunCode.set(returnCode);
         return returnCode;
+    }
+
+    /** 現在のスレッドに記録されたSTOP RUNの返り値を破棄する。実行単位の状態を破棄するときに呼び出す。 */
+    public static void resetThreadState() {
+        lastStopRunCode.remove();
     }
 
     /**

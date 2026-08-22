@@ -37,7 +37,6 @@ class CobolSqlLoggingTest {
     private TestLogger sqlConnectionLogger;
 
     @BeforeEach
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     void setUp() throws Exception {
         sqlca = new CobolDataStorage(136);
         SqlState.resetThreadState();
@@ -50,7 +49,6 @@ class CobolSqlLoggingTest {
         TestLoggerFactory.clear();
     }
 
-    @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
     @AfterEach
     void tearDown() throws Exception {
         for (SqlConnection sc : SqlState.allConnections().values()) {
@@ -69,7 +67,6 @@ class CobolSqlLoggingTest {
         TestLoggerFactory.clear();
     }
 
-    @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
     private CobolDataStorage makeStorage(String value) {
         byte[] bytes = value.getBytes();
         CobolDataStorage s = new CobolDataStorage(bytes.length);

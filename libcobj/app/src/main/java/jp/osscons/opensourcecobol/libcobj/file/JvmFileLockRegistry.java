@@ -35,7 +35,8 @@ import java.util.Map;
  * <p>OSのファイルロック({@link FileChannel#tryLock})はプロセス単位で管理されており、 同一JVM内で既にロックされている範囲を再度ロックしようとすると
  * {@link OverlappingFileLockException}がスローされる。 このクラスはファイルごとにJVM内での保持状況を記録し、
  * 別プロセスからのOPENと同じ規則(共有ロック同士は共存でき、排他ロックが絡む場合はFILE STATUS 61)で
- * JVM内のスレッド間のロックを判定する。
+ * JVM内のスレッド間のロックを判定する。同じ実行単位(スレッド)が同じファイルを複数のSELECTで
+ * オープンする場合は、1つのプロセス内のロックが互いに競合しないのと同様に競合させない。
  *
  * <p>OSのロックは最初の保持者がファイルのI/Oに使うチャネル上に取得する(Windowsではロックが必須ロックであり、
  * 別のハンドルで取得したロックは自分自身のI/Oも妨げるため、I/Oに使うチャネル自身で取得する必要がある)。
@@ -49,6 +50,12 @@ final class JvmFileLockRegistry {
     static final class Lease {
         private final String key;
         private final FileChannel channel;
+
+        /** この票を取得した実行単位(スレッド) */
+        private final Thread owner = Thread.currentThread();
+
+        /** 排他ロックとして要求されたかどうか */
+        private boolean exclusiveRequested;
 
         /** この保持者のチャネルに取得したOSのロック。OSのロックを持っていない場合はnull */
         private FileLock osLock;
@@ -95,15 +102,29 @@ final class JvmFileLockRegistry {
         String key = keyOf(filename);
         Entry entry = entries.get(key);
         if (entry != null) {
-            if (entry.exclusive || !shared) {
+            boolean sameRunUnit = true;
+            for (Lease holder : entry.holders) {
+                if (holder.owner != Thread.currentThread()) {
+                    sameRunUnit = false;
+                    break;
+                }
+            }
+            if (!sameRunUnit && (entry.exclusive || !shared)) {
                 return null;
             }
+            // 同じ実行単位からの再オープンでは競合させない。OSのロックは最初の保持者のものを
+            // そのまま使う(同じJVMの別チャネルで取り直すことはできない)
             Lease lease = new Lease(key, channel);
+            lease.exclusiveRequested = !shared;
             entry.holders.add(lease);
+            if (!shared) {
+                entry.exclusive = true;
+            }
             return lease;
         }
 
         Lease lease = new Lease(key, channel);
+        lease.exclusiveRequested = !shared;
         FileLock osLock;
         try {
             osLock = channel.tryLock(0L, Long.MAX_VALUE, shared);
@@ -143,21 +164,45 @@ final class JvmFileLockRegistry {
                 System.err.println("Failed to release the lock of " + lease.key);
             }
             lease.osLock = null;
+            // 解放から取り直しまでの間に別プロセスが排他ロックを取得した場合は取り直せず、
+            // 残った保持者はOSのロック無しで続行する(警告を出力する)
+            boolean handedOver = false;
             for (Lease other : entry.holders) {
-                try {
-                    FileLock osLock = other.channel.tryLock(0L, Long.MAX_VALUE, !entry.exclusive);
-                    if (osLock != null && osLock.isValid()) {
-                        other.osLock = osLock;
-                        break;
-                    }
-                } catch (IOException | RuntimeException e) {
-                    System.err.println("Failed to hand over the lock of " + lease.key);
+                handedOver = tryLockFor(other, !entry.exclusive);
+                if (!handedOver && entry.exclusive) {
+                    // 排他ロックを取れないチャネル(読み取り専用)には共有ロックで代用する
+                    handedOver = tryLockFor(other, true);
                 }
+                if (handedOver) {
+                    break;
+                }
+            }
+            if (!handedOver && !entry.holders.isEmpty()) {
+                System.err.println("Failed to hand over the lock of " + lease.key);
             }
         }
         if (entry.holders.isEmpty()) {
             entries.remove(lease.key);
+            return;
         }
+        boolean exclusive = false;
+        for (Lease other : entry.holders) {
+            exclusive |= other.exclusiveRequested;
+        }
+        entry.exclusive = exclusive;
+    }
+
+    private static boolean tryLockFor(Lease lease, boolean shared) {
+        try {
+            FileLock osLock = lease.channel.tryLock(0L, Long.MAX_VALUE, shared);
+            if (osLock != null && osLock.isValid()) {
+                lease.osLock = osLock;
+                return true;
+            }
+        } catch (IOException | RuntimeException e) {
+            return false;
+        }
+        return false;
     }
 
     /**

@@ -154,7 +154,7 @@ public class CobolRelativeFile extends CobolFile {
             }
         } catch (IOException e) {
             if (this.fp != null) {
-                this.file.setRandomAccessFile(this.fp, null);
+                this.file.setRandomAccessFile(this.fp);
             }
             if (Files.notExists(Paths.get(filename))) {
                 return ENOENT;
@@ -186,7 +186,7 @@ public class CobolRelativeFile extends CobolFile {
             this.fp.seek(0);
         }
 
-        this.file.setRandomAccessFile(this.fp, null);
+        this.file.setRandomAccessFile(this.fp);
         if ((this.flag_select_features & COB_SELECT_LINAGE) != 0) {
             if (this.file_linage_check()) {
                 return COB_LINAGE_INVALID;

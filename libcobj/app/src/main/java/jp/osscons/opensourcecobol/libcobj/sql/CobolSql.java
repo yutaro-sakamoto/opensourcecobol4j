@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import jp.osscons.opensourcecobol.libcobj.data.AbstractCobolField;
@@ -1003,8 +1004,31 @@ public final class CobolSql {
         }
     }
 
-    /** 現在のスレッドに紐づくSQLの接続・カーソル・prepared statementの登録情報を破棄する。実行単位の終了時に呼び出す。 */
+    /**
+     * 現在のスレッドに紐づくSQLの接続・カーソル・prepared statementの登録情報を破棄する。実行単位の終了時に呼び出す。<br>
+     * DISCONNECTされずに残っている接続はコミットしてクローズし、その接続でキャッシュしたPreparedStatementも閉じる。
+     */
     public static void resetThreadState() {
+        for (SqlConnection conn : new ArrayList<>(SqlState.allConnections().values())) {
+            Connection jdbcConn = conn.getConnection();
+            try {
+                if (jdbcConn != null && !jdbcConn.isClosed()) {
+                    try (Statement stmt = jdbcConn.createStatement()) {
+                        stmt.execute("COMMIT");
+                    } catch (SQLException e) {
+                        LOG.warn("COMMIT at the end of the run unit failed: {}", e.getMessage());
+                    }
+                }
+                conn.close();
+            } catch (SQLException e) {
+                LOG.warn(
+                        "Closing a connection at the end of the run unit failed: {}",
+                        e.getMessage());
+            }
+            if (jdbcConn != null) {
+                closeCachedStatements(jdbcConn);
+            }
+        }
         SqlState.resetThreadState();
     }
 }

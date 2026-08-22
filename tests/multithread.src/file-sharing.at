@@ -50,6 +50,11 @@ AT_DATA([prog1.cbl], [
            CLOSE F1 F2.
            OPEN OUTPUT F1.
            DISPLAY "prog1 open output while shared " ST.
+      *    the refused OPEN OUTPUT must not have truncated the file
+           OPEN INPUT F1.
+           READ F1.
+           DISPLAY "prog1 read after refused output " ST " " R1 "|".
+           CLOSE F1.
            MOVE 6 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 7 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog2 closed: OUTPUT succeeds
@@ -120,6 +125,7 @@ prog1 open output after close 00
 prog1 open output rel 00
 prog1 open output seq 00
 prog1 open output while shared 61
+prog1 read after refused output 00 hello     |
 prog1 return-code 0
 prog2 close 00 00
 prog2 open input rel 00
