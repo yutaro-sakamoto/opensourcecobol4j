@@ -45,6 +45,7 @@ jobs:
             tests/file-lock4
             tests/file-lock5
             tests/misc
+            tests/multithread
             tests/esql-basic
             tests/esql-sqlca
             tests/esql-cobol-data

@@ -35,7 +35,8 @@ TESTS = syntax \
 	file-lock3 \
 	file-lock4 \
 	file-lock5 \
-	misc
+	misc \
+	multithread
 else
 TESTS = syntax \
 	run \
@@ -51,7 +52,8 @@ TESTS = syntax \
 	file-lock3 \
 	file-lock4 \
 	file-lock5 \
-	misc
+	misc \
+	multithread
 endif
 
 syntax_DEPENDENCIES = \
@@ -253,6 +255,19 @@ indexed_lock5_DEPENDENCIES = \
 	file-lock5.at \
 	file-lock5.src/lock-mode-clause.at
 
+multithread_DEPENDENCIES = \
+	multithread.at \
+	multithread.src/arith-intrinsic.at \
+	multithread.src/call-working-storage.at \
+	multithread.src/stop-run.at \
+	multithread.src/sequential-file.at \
+	multithread.src/file-sharing.at \
+	multithread.src/indexed-record-lock.at \
+	multithread.src/sort.at \
+	multithread.src/harness/ThreadHarness.java \
+	multithread.src/harness/PairHarness.java \
+	multithread.src/harness/SyncPoint.java
+
 # ESQL tests (require PostgreSQL, run separately in CI)
 esql_basic_DEPENDENCIES = \
 	esql-basic.at \
@@ -382,6 +397,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
 	$(misc_DEPENDENCIES) \
+	$(multithread_DEPENDENCIES) \
 	$(esql_basic_DEPENDENCIES) \
 	$(esql_sqlca_DEPENDENCIES) \
 	$(esql_cobol_data_DEPENDENCIES) \
@@ -433,3 +449,4 @@ $(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)
 $(srcdir)/file-lock4: $(indexed_lock4_DEPENDENCIES)
 $(srcdir)/file-lock5: $(indexed_lock5_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
+$(srcdir)/multithread: $(multithread_DEPENDENCIES)

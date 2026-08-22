@@ -585,7 +585,8 @@ SUBDIRS = cobol85
 @I18N_UTF8_FALSE@	file-lock3 \
 @I18N_UTF8_FALSE@	file-lock4 \
 @I18N_UTF8_FALSE@	file-lock5 \
-@I18N_UTF8_FALSE@	misc
+@I18N_UTF8_FALSE@	misc \
+@I18N_UTF8_FALSE@	multithread
 
 @I18N_UTF8_TRUE@TESTS = syntax \
 @I18N_UTF8_TRUE@	run \
@@ -601,7 +602,8 @@ SUBDIRS = cobol85
 @I18N_UTF8_TRUE@	file-lock3 \
 @I18N_UTF8_TRUE@	file-lock4 \
 @I18N_UTF8_TRUE@	file-lock5 \
-@I18N_UTF8_TRUE@	misc
+@I18N_UTF8_TRUE@	misc \
+@I18N_UTF8_TRUE@	multithread
 
 syntax_DEPENDENCIES = \
 	syntax.at \
@@ -802,6 +804,19 @@ indexed_lock5_DEPENDENCIES = \
 	file-lock5.at \
 	file-lock5.src/lock-mode-clause.at
 
+multithread_DEPENDENCIES = \
+	multithread.at \
+	multithread.src/arith-intrinsic.at \
+	multithread.src/call-working-storage.at \
+	multithread.src/stop-run.at \
+	multithread.src/sequential-file.at \
+	multithread.src/file-sharing.at \
+	multithread.src/indexed-record-lock.at \
+	multithread.src/sort.at \
+	multithread.src/harness/ThreadHarness.java \
+	multithread.src/harness/PairHarness.java \
+	multithread.src/harness/SyncPoint.java
+
 
 # ESQL tests (require PostgreSQL, run separately in CI)
 esql_basic_DEPENDENCIES = \
@@ -925,6 +940,7 @@ EXTRA_DIST = $(srcdir)/package.m4 \
 	$(command_line_options_DEPENDENCIES) \
 	$(cobj_idx_DEPENDENCIES) \
 	$(misc_DEPENDENCIES) \
+	$(multithread_DEPENDENCIES) \
 	$(esql_basic_DEPENDENCIES) \
 	$(esql_sqlca_DEPENDENCIES) \
 	$(esql_cobol_data_DEPENDENCIES) \
@@ -1326,6 +1342,13 @@ misc.log: misc
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+multithread.log: multithread
+	@p='multithread'; \
+	b='multithread'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 cobol_utf8.log: cobol_utf8
 	@p='cobol_utf8'; \
 	b='cobol_utf8'; \
@@ -1572,6 +1595,7 @@ $(srcdir)/file-lock3: $(indexed_lock3_DEPENDENCIES)
 $(srcdir)/file-lock4: $(indexed_lock4_DEPENDENCIES)
 $(srcdir)/file-lock5: $(indexed_lock5_DEPENDENCIES)
 $(srcdir)/misc: $(misc_DEPENDENCIES)
+$(srcdir)/multithread: $(multithread_DEPENDENCIES)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
