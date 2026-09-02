@@ -90,7 +90,7 @@ tasks.cyclonedxDirectBom {
     projectType.set(Component.Type.LIBRARY)
     componentGroup.set("jp.osscons.opensourcecobol")
     componentName.set("libcobj")
-    componentVersion.set("2.0.0")
+    componentVersion.set("2.1.0")
     schemaVersion.set(CycloneDxVersion.VERSION_16)
     // The plugin always writes both formats, and both are published as release
     // assets. Keep them next to each other instead of in the plugin's default
