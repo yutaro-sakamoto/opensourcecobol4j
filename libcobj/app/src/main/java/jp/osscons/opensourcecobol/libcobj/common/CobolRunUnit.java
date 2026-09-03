@@ -27,7 +27,7 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
 import jp.osscons.opensourcecobol.libcobj.file.CobolIndexedFile;
-import jp.osscons.opensourcecobol.libcobj.sql.CobolSql;
+import jp.osscons.opensourcecobol.libcobj.sql.CobolEsql;
 import jp.osscons.opensourcecobol.libcobj.termio.CobolTerminal;
 
 /**
@@ -72,7 +72,7 @@ public final class CobolRunUnit {
         CobolDecimal.resetThreadState();
         CobolTerminal.resetThreadState();
         CobolSystemRoutine.resetThreadState();
-        CobolSql.resetThreadState();
+        CobolEsql.resetThreadState();
         CobolStopRunException.resetThreadState();
     }
 }
