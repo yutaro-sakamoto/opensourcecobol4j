@@ -68,6 +68,7 @@ jobs:
           - "file-lock4"
           - "file-lock5"
           - "misc"
+          - "multithread"
         os: ["ubuntu:26.04"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -94,6 +95,7 @@ jobs:
           - "file-lock4"
           - "file-lock5"
           - "misc"
+          - "multithread"
         os: ["ubuntu:26.04"]
     uses: ./.github/workflows/test-other.yml
     with:
@@ -134,6 +136,15 @@ jobs:
       matrix:
         os: ["ubuntu:26.04"]
     uses: ./.github/workflows/test-cobj-api.yml
+    with:
+      os: ${{ matrix.os }}
+
+  run-spring-boot-smoke:
+    needs: build
+    strategy:
+      matrix:
+        os: ["ubuntu:26.04"]
+    uses: ./.github/workflows/spring-boot-smoke.yml
     with:
       os: ${{ matrix.os }}
 
@@ -224,6 +235,7 @@ jobs:
           - "file-lock4"
           - "file-lock5"
           - "misc"
+          - "multithread"
     uses: ./.github/workflows/windows-test-other.yml
     with:
       test-name: ${{ matrix.test_name }}

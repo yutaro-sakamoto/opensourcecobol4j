@@ -57,9 +57,9 @@ class CobolStringTest {
         CobolString.stringAppend(src);
         CobolString.stringFinish();
 
-        assertNotEquals(0, CobolRuntimeException.code);
+        assertNotEquals(0, CobolRuntimeException.getExceptionCode());
         assertEquals(6, ptr.getInt());
-        CobolRuntimeException.code = 0;
+        CobolRuntimeException.clearExceptionCode();
     }
 
     /** 連結先に収まる通常のSTRING文が連結先と文字位置を正しく更新することを確認する。 */
@@ -75,7 +75,7 @@ class CobolStringTest {
         CobolString.stringAppend(src);
         CobolString.stringFinish();
 
-        assertEquals(0, CobolRuntimeException.code);
+        assertEquals(0, CobolRuntimeException.getExceptionCode());
         assertEquals(" XYZ  ", dst.getString());
         assertEquals(5, ptr.getInt());
     }
