@@ -20,3 +20,11 @@ jobs:
       - name: Run actionlint
         run: |
           ./actionlint
+
+      # Warns only: an upstream archival must not block an unrelated pull request.
+      # Many jobs gate on this one, so the step must never be able to fail it.
+      - name: Check for archived actions
+        continue-on-error: true
+        run: bash ./.github/check-archived-actions.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
