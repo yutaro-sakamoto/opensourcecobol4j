@@ -45,6 +45,16 @@ jobs:
       os: ${{ matrix.os }}
       configure-args: --enable-utf8
 
+  # Build (but do not upload) the Linux release tarball on every pull request
+  # so a broken release build cannot go unnoticed until a tag is pushed. The
+  # workflow smoke-tests the tarball itself; the full test suites keep
+  # running against the regular build only.
+  release-linux-build:
+    needs: check-workflows
+    uses: ./.github/workflows/release-linux-build.yml
+    with:
+      upload-artifacts: false
+
   run-test-other:
     needs: build
     strategy:

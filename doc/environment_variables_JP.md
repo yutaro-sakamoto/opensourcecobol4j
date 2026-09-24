@@ -4,7 +4,25 @@ opensource COBOL 4J で使用される環境変数について説明します。
 
 ## コンパイラ設定
 
-準備中
+### パス設定
+
+#### COB_CONFIG_DIR
+
+コンパイラの設定ファイル(`default.conf`および各方言用の設定ファイル)が置かれているディレクトリを指定します。
+
+- **値**: ディレクトリのパス(デフォルトはコンパイラのビルド時に決定されたディレクトリ `<prefix>/share/opensource-cobol-4j-<version>/config`)
+- **例**: `COB_CONFIG_DIR=/opt/opensourcecobol4j/share/opensource-cobol-4j-2.0.0/config`
+- **用途**: リリースバンドルを展開した場合など、ビルド時に指定した場所とは異なる場所にインストールしたものを使用するときに指定します。
+
+#### COB_COPY_DIR
+
+opensource COBOL 4Jに同梱されているコピー句が置かれているディレクトリを指定します。このディレクトリは、`-I`オプションで指定したディレクトリおよび`COBCPY`の後ろにコピー句の検索パスとして追加されます。
+
+- **値**: ディレクトリのパス(デフォルトはコンパイラのビルド時に決定されたディレクトリ `<prefix>/share/opensource-cobol-4j-<version>/copy`)
+- **例**: `COB_COPY_DIR=/opt/opensourcecobol4j/share/opensource-cobol-4j-2.0.0/copy`
+- **用途**: `COB_CONFIG_DIR`と同様に、同梱のコピー句の場所を変更するときに指定します。
+
+その他のコンパイラ設定の説明は準備中です。
 
 ## ランタイム設定
 

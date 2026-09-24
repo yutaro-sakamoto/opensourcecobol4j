@@ -1,0 +1,89 @@
+name: build the Linux release tarball
+
+on:
+  workflow_call:
+    inputs:
+      upload-artifacts:
+        description: 'Upload artifacts'
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # AlmaLinux 9 ships glibc 2.34, so the binaries run on RHEL 9
+    # derivatives and on Ubuntu 22.04 or later.
+    container:
+      image: almalinux:9
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Install dependencies
+        run: |
+          dnf -y update
+          dnf install -y gcc make autoconf diffutils gettext bison flex
+
+      - name: Checkout opensource COBOL 4J
+        uses: actions/checkout@v7
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+
+      - name: Resolve the version from configure.ac
+        run: |
+          version=$(sed -n 's/^AC_INIT(\[opensource COBOL 4J\],\[\([^]]*\)\].*/\1/p' configure.ac)
+          if [ -z "$version" ]; then
+            echo "failed to extract the version from configure.ac" >&2
+            exit 1
+          fi
+          echo "TARBALL_NAME=opensourcecobol4j-${version}-linux-x86_64" >> "$GITHUB_ENV"
+
+      - name: Build and install into a staging tree
+        run: |
+          ./configure --prefix=/opt/opensourcecobol4j
+          make
+          make install DESTDIR="$PWD/destdir"
+
+      - name: Create the release tarball
+        run: |
+          mv destdir/opt/opensourcecobol4j "destdir/opt/$TARBALL_NAME"
+          cp packaging/linux/README.md "destdir/opt/$TARBALL_NAME/README.md"
+          tar -C destdir/opt --sort=name --owner=0 --group=0 --numeric-owner \
+            -czf "$TARBALL_NAME.tar.gz" "$TARBALL_NAME"
+
+      # Extract the tarball somewhere else and compile and run a COBOL
+      # program with nothing but the environment variables the bundled
+      # README documents. This proves on every run that the tarball is
+      # complete and relocatable; the full test suites already run
+      # against the regular build, so a smoke test is all that is
+      # needed here.
+      - name: Smoke-test the relocated tree
+        run: |
+          workdir=$(mktemp -d)
+          tar -C "$workdir" -xzf "$TARBALL_NAME.tar.gz"
+          home="$workdir/$TARBALL_NAME"
+          share_dir=$(echo "$home"/share/opensource-cobol-4j-*)
+          export PATH="$home/bin:$PATH"
+          export CLASSPATH="$home/lib/opensourcecobol4j/libcobj.jar:."
+          export COB_CONFIG_DIR="$share_dir/config"
+          export COB_COPY_DIR="$share_dir/copy"
+          cd "$workdir"
+          printf '       IDENTIFICATION DIVISION.\n       PROGRAM-ID. HELLO.\n       PROCEDURE DIVISION.\n           DISPLAY "HELLO WORLD!".\n' > HELLO.cbl
+          cobj HELLO.cbl
+          java HELLO | grep -q "HELLO WORLD!"
+
+      - name: Upload the release tarball
+        if: ${{ inputs.upload-artifacts }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-tarball
+          path: opensourcecobol4j-*-linux-x86_64.tar.gz
+          if-no-files-found: error

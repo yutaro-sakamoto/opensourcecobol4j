@@ -19,6 +19,34 @@ opensource COBOL 4Jは、下記の環境でテストされています：
 
 古いバージョンの動作環境については、[doc/requirements-all.md](./doc/requirements-all.md)をご覧ください。
 
+## リリースバンドルからのインストール
+
+各[リリース](https://github.com/opensourcecobol/opensourcecobol4j/releases)には、opensource COBOL 4Jの一式をビルド済みの形で含むバンドルが添付されています。
+`cobj`が`javac`と`jar`を実行するため、JDK(11以降)は別途インストールしてください。
+
+| ファイル名 | 内容 |
+|---|---|
+| `opensourcecobol4j-<version>-linux-x86_64.tar.gz` | AlmaLinux 9でビルドした`cobj`、`cobjrun`、`cobj-idx`、`cobj-api`、`libcobj.jar`、設定ファイル、コピー句 |
+| `opensourcecobol4j-<version>-windows-x64.zip` | `cobj.exe`、`libcobj.jar`、設定ファイル、コピー句、`install.ps1` |
+
+各バンドルには、インストール方法と設定すべき環境変数を説明したREADMEが同梱されています。
+どちらのバンドルもインストール先は固定されていません。任意の場所に展開し、[`COB_CONFIG_DIR`と`COB_COPY_DIR`](./doc/environment_variables_JP.md)にバンドル内の設定ファイル・コピー句のディレクトリを指定してください。
+
+ソースコードからビルドしてインストールする場合は、以下の手順をご覧ください。
+
+### ダウンロードしたファイルの検証
+
+同じリリースに添付されている`SHA256SUMS`に、全ファイルのチェックサムが記載されています。
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+また、すべてのリリースファイルにはGitHub Actionsが生成した[SLSAのビルド来歴証明](https://slsa.dev/)が付与されており、GitHub CLIで検証できます。
+
+```bash
+gh attestation verify <asset> -R opensourcecobol/opensourcecobol4j
+```
 
 ## インストール(Linux)
 
