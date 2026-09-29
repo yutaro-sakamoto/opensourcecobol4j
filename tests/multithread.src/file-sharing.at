@@ -1,8 +1,9 @@
 AT_SETUP([File sharing between threads follows the rules for separate processes])
 
 dnl prog1 holds "shared.txt" open in OUTPUT mode while prog2 tries to open it,
-dnl then both open it for INPUT at the same time. The two programs run on two
-dnl threads of one JVM and synchronise with CALL "SyncPoint".
+dnl then both hold it open for INPUT. The two programs run on two threads of
+dnl one JVM and synchronise with CALL "SyncPoint" after every observation, so
+dnl the numbered output lines read exactly in execution order.
 AT_DATA([prog1.cbl], [
        IDENTIFICATION DIVISION.
        PROGRAM-ID. prog1.
@@ -39,12 +40,13 @@ AT_DATA([prog1.cbl], [
            CLOSE F1 F2.
            DISPLAY "06 prog1 close " ST " " ST2.
            MOVE 3 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
-      *    both programs open the files for INPUT
+      *    open the files for INPUT first; prog2 waits at step 4
            OPEN INPUT F1.
            DISPLAY "07 prog1 open input seq " ST.
            OPEN INPUT F2.
            DISPLAY "08 prog1 open input rel " ST2.
            MOVE 4 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
+      *    prog2 opens and reads the files while prog1 holds them
            MOVE 5 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog2 still holds INPUT: OUTPUT must be refused
            CLOSE F1 F2.
@@ -98,6 +100,8 @@ AT_DATA([prog2.cbl], [
            DISPLAY "05 prog2 open output seq while output " ST.
            MOVE 2 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 3 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
+           MOVE 4 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
+      *    prog1 holds the files for INPUT; open and read them too
            OPEN INPUT F1.
            DISPLAY "09 prog2 open input seq " ST.
            READ F1.
@@ -106,7 +110,6 @@ AT_DATA([prog2.cbl], [
            DISPLAY "11 prog2 open input rel " ST2.
            READ F2.
            DISPLAY "12 prog2 read rel " ST2 " " R2 "|".
-           MOVE 4 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 5 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 6 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            CLOSE F1 F2.
