@@ -68,6 +68,7 @@ tests/esql-cobol-data
 tests/esql-misc
 tests/esql-sql-data
 tests/esql-utf8
+tests/esql-multithread
 tests/cobol85/*/*.class
 tests/cobol85/*/*.java
 tests/cobol85/*/*.out
