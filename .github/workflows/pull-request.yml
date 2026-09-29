@@ -247,6 +247,7 @@ jobs:
           - "esql-cobol-data"
           - "esql-misc"
           - "esql-sql-data"
+          - "esql-multithread"
     uses: ./.github/workflows/windows-test-esql.yml
     with:
       test-name: ${{ matrix.test_name }}
