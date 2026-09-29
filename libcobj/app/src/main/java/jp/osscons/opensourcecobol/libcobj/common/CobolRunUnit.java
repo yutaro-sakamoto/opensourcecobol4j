@@ -26,6 +26,7 @@ import jp.osscons.opensourcecobol.libcobj.exceptions.CobolExceptionInfo;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolRuntimeException;
 import jp.osscons.opensourcecobol.libcobj.exceptions.CobolStopRunException;
 import jp.osscons.opensourcecobol.libcobj.file.CobolFile;
+import jp.osscons.opensourcecobol.libcobj.file.CobolFileSort;
 import jp.osscons.opensourcecobol.libcobj.file.CobolIndexedFile;
 import jp.osscons.opensourcecobol.libcobj.sql.CobolEsql;
 import jp.osscons.opensourcecobol.libcobj.termio.CobolTerminal;
@@ -54,9 +55,15 @@ public final class CobolRunUnit {
         resetThreadState();
     }
 
-    /** 現在のスレッドに紐づくランタイム状態をすべて破棄する(ファイルのクローズは行わない)。 */
+    /**
+     * 現在のスレッドに紐づくランタイム状態をすべて破棄する(ファイルのクローズは行わない)。<br>
+     * 注意: libcobjにThreadLocalの状態を持つクラスを追加したときは、そのクラスに
+     * resetThreadState()を定義し、必ずここからも呼び出すこと。呼び出しが漏れると、
+     * スレッドプールで再利用されるスレッドに前の実行単位の状態が残る。
+     */
     public static void resetThreadState() {
         CobolFile.resetThreadState();
+        CobolFileSort.resetThreadState();
         CobolIndexedFile.resetRunUnitId();
         CobolPointerRegistry.resetThreadState();
         CobolModule.resetThreadState();
