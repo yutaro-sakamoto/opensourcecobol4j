@@ -166,8 +166,7 @@ public class CobolRelativeFile extends CobolFile {
         if (!filename.startsWith("/dev/")) {
             boolean isSharedLock = sharing == 0 && mode != COB_OPEN_OUTPUT;
             try {
-                this.lockLease =
-                        JvmFileLockRegistry.acquire(filename, this.fp.getChannel(), isSharedLock);
+                this.lockLease = JvmFileLockRegistry.acquire(filename, isSharedLock);
             } catch (NonWritableChannelException e) {
                 this.fp.close();
                 return EBADF;

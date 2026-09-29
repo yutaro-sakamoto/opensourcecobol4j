@@ -18,6 +18,7 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,18 +27,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** 同一JVM内のファイルロック台帳のテスト。 */
+/** 実行単位間・プロセス間のファイルロック台帳のテスト。 */
 class JvmFileLockRegistryTest {
 
     @TempDir Path tempDir;
@@ -49,146 +50,132 @@ class JvmFileLockRegistryTest {
     }
 
     /** 別のスレッド(別の実行単位)からロックを取得する。 */
-    private static JvmFileLockRegistry.Lease acquireFromOtherThread(
-            String file, FileChannel channel, boolean shared) throws Exception {
+    private static JvmFileLockRegistry.Lease acquireFromOtherThread(String file, boolean shared)
+            throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            return executor.submit(() -> JvmFileLockRegistry.acquire(file, channel, shared))
+            return executor.submit(() -> JvmFileLockRegistry.acquire(file, shared))
                     .get(30, TimeUnit.SECONDS);
         } finally {
             executor.shutdownNow();
         }
     }
 
-    private static FileChannel openRead(String file) throws IOException {
-        return FileChannel.open(Paths.get(file), StandardOpenOption.READ);
-    }
-
-    private static FileChannel openWrite(String file) throws IOException {
-        return FileChannel.open(Paths.get(file), StandardOpenOption.READ, StandardOpenOption.WRITE);
+    @Test
+    void sharedLocksCoexistAcrossThreads() throws Exception {
+        String file = newFile();
+        JvmFileLockRegistry.Lease mine = JvmFileLockRegistry.acquire(file, true);
+        JvmFileLockRegistry.Lease other = acquireFromOtherThread(file, true);
+        assertNotNull(mine, "first shared lock");
+        assertNotNull(other, "shared lock of another thread coexists");
+        JvmFileLockRegistry.release(mine);
+        assertTrue(JvmFileLockRegistry.isLocked(file), "still held by the other holder");
+        JvmFileLockRegistry.release(other);
+        assertFalse(JvmFileLockRegistry.isLocked(file), "released by the last holder");
     }
 
     @Test
-    void sharedLocksCoexist() throws Exception {
+    void exclusiveLockConflictsAcrossThreads() throws Exception {
         String file = newFile();
-        try (FileChannel ca = openRead(file);
-                FileChannel cb = openRead(file)) {
-            JvmFileLockRegistry.Lease a = JvmFileLockRegistry.acquire(file, ca, true);
-            JvmFileLockRegistry.Lease b = JvmFileLockRegistry.acquire(file, cb, true);
-            assertNotNull(a, "first shared lock");
-            assertNotNull(b, "second shared lock coexists with the first");
-            JvmFileLockRegistry.release(a);
-            assertTrue(JvmFileLockRegistry.isLocked(file), "still held by the second holder");
-            JvmFileLockRegistry.release(b);
-            assertFalse(JvmFileLockRegistry.isLocked(file), "released by the last holder");
-        }
+        JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, true);
+        assertNotNull(shared, "shared lock");
+        assertNull(acquireFromOtherThread(file, false), "exclusive conflicts with shared");
+        JvmFileLockRegistry.release(shared);
+
+        JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, false);
+        assertNotNull(exclusive, "exclusive lock");
+        assertNull(acquireFromOtherThread(file, true), "shared conflicts with exclusive");
+        assertNull(acquireFromOtherThread(file, false), "exclusive conflicts with exclusive");
+        JvmFileLockRegistry.release(exclusive);
+        JvmFileLockRegistry.Lease again = acquireFromOtherThread(file, false);
+        assertNotNull(again, "reacquire after release");
+        JvmFileLockRegistry.release(again);
     }
 
     @Test
-    void exclusiveLockConflictsWithSharedAndExclusive() throws Exception {
+    void sameThreadMayReopenAndUpgrade() throws Exception {
         String file = newFile();
-        try (FileChannel cs = openRead(file);
-                FileChannel ce = openWrite(file);
-                FileChannel other = openWrite(file)) {
-            JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, cs, true);
-            assertNotNull(shared, "shared lock");
-            assertNull(
-                    acquireFromOtherThread(file, other, false), "exclusive conflicts with shared");
-            JvmFileLockRegistry.release(shared);
+        JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, true);
+        assertNotNull(shared, "shared lock");
+        JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, false);
+        assertNotNull(exclusive, "the same run unit may open the file again for output");
+        assertNull(acquireFromOtherThread(file, true), "another thread is refused");
 
-            JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
-            assertNotNull(exclusive, "exclusive lock");
-            assertNull(
-                    acquireFromOtherThread(file, other, true), "shared conflicts with exclusive");
-            assertNull(
-                    acquireFromOtherThread(file, other, false),
-                    "exclusive conflicts with exclusive");
-            JvmFileLockRegistry.release(exclusive);
-            JvmFileLockRegistry.Lease again = acquireFromOtherThread(file, other, false);
-            assertNotNull(again, "reacquire after release");
-            JvmFileLockRegistry.release(again);
-        }
+        JvmFileLockRegistry.release(exclusive);
+        // 排他の保持者が解放されたので共有へ降格し、他の実行単位の共有オープンが通る
+        JvmFileLockRegistry.Lease other = acquireFromOtherThread(file, true);
+        assertNotNull(other, "downgraded to shared after the exclusive holder released");
+        JvmFileLockRegistry.release(other);
+        JvmFileLockRegistry.release(shared);
+        assertFalse(JvmFileLockRegistry.isLocked(file), "all leases released");
     }
 
     @Test
-    void sameThreadMayReopenTheFileInAnyMode() throws Exception {
+    void upgradeIsRefusedWhileAnotherThreadShares() throws Exception {
         String file = newFile();
-        try (FileChannel cs = openRead(file);
-                FileChannel ce = openWrite(file);
-                FileChannel other = openWrite(file)) {
-            JvmFileLockRegistry.Lease shared = JvmFileLockRegistry.acquire(file, cs, true);
-            assertNotNull(shared, "shared lock");
-            JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
-            assertNotNull(exclusive, "the same run unit may open the file again for output");
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            try {
-                Future<JvmFileLockRegistry.Lease> attempt =
-                        executor.submit(() -> JvmFileLockRegistry.acquire(file, other, true));
-                assertNull(attempt.get(30, TimeUnit.SECONDS), "another thread is refused");
-            } finally {
-                executor.shutdownNow();
-            }
-            JvmFileLockRegistry.release(exclusive);
-            JvmFileLockRegistry.release(shared);
-            assertFalse(JvmFileLockRegistry.isLocked(file), "all leases released");
-        }
+        JvmFileLockRegistry.Lease mine = JvmFileLockRegistry.acquire(file, true);
+        JvmFileLockRegistry.Lease other = acquireFromOtherThread(file, true);
+        assertNotNull(mine, "my shared lock");
+        assertNotNull(other, "shared lock of another thread");
+        assertNull(
+                JvmFileLockRegistry.acquire(file, false),
+                "exclusive re-open is refused while another thread shares the file");
+        JvmFileLockRegistry.release(other);
+        JvmFileLockRegistry.release(mine);
     }
 
     @Test
-    void lockOwnerCanStillWriteThroughItsChannel() throws Exception {
+    void dataRegionIsNotCoveredByTheLock() throws Exception {
         String file = newFile();
-        try (FileChannel ce = openWrite(file)) {
-            JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
-            assertNotNull(exclusive, "exclusive lock");
-            ce.write(ByteBuffer.wrap(new byte[] {'y'}), 0);
-            JvmFileLockRegistry.release(exclusive);
+        JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, false);
+        assertNotNull(exclusive, "exclusive lock");
+        try (FileChannel io =
+                FileChannel.open(
+                        Paths.get(file), StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            // 台帳のロックは実データの範囲を覆っていないので、同一JVMの別チャネルでも
+            // データ範囲のロックが取れ(重なっていればOverlappingFileLockException)、
+            // 読み書きもロックに妨げられない
+            FileLock dataLock = io.tryLock(0L, 1024L, false);
+            assertNotNull(dataLock, "a lock on the data region does not overlap");
+            dataLock.release();
+            io.write(ByteBuffer.wrap(new byte[] {'y'}), 0L);
+            ByteBuffer buf = ByteBuffer.allocate(1);
+            io.read(buf, 0L);
+            assertEquals('y', buf.get(0), "reads and writes go through");
         }
-        assertTrue(Files.readAllBytes(Paths.get(file))[0] == 'y', "write went through");
+        JvmFileLockRegistry.release(exclusive);
     }
 
     @Test
-    void lockIsHandedOverWhenTheFirstHolderCloses() throws Exception {
+    void lockSurvivesTheClosingOfAHoldersOwnChannel() throws Exception {
         String file = newFile();
-        try (FileChannel ca = openRead(file);
-                FileChannel cb = openRead(file);
-                FileChannel other = openWrite(file)) {
-            JvmFileLockRegistry.Lease a = JvmFileLockRegistry.acquire(file, ca, true);
-            JvmFileLockRegistry.Lease b = JvmFileLockRegistry.acquire(file, cb, true);
-            assertNotNull(a, "first shared lock");
-            assertNotNull(b, "second shared lock");
-            JvmFileLockRegistry.release(a);
-            ca.close();
-            assertNull(
-                    acquireFromOtherThread(file, other, false),
-                    "exclusive still refused while the second holder remains");
-            JvmFileLockRegistry.release(b);
-            JvmFileLockRegistry.Lease ex = acquireFromOtherThread(file, other, false);
-            assertNotNull(ex, "exclusive lock after all holders released");
-            JvmFileLockRegistry.release(ex);
-        }
+        // 保持者AとBが共有ロックを取り、Aが自分のI/Oチャネルを閉じても(=CLOSEしても)
+        // ロックは台帳のチャネル上にあるため、他の実行単位への保護は途切れない
+        JvmFileLockRegistry.Lease a = JvmFileLockRegistry.acquire(file, true);
+        JvmFileLockRegistry.Lease b = acquireFromOtherThread(file, true);
+        assertNotNull(a, "holder A");
+        assertNotNull(b, "holder B");
+        FileChannel aChannel = FileChannel.open(Paths.get(file), StandardOpenOption.READ);
+        aChannel.close();
+        JvmFileLockRegistry.release(a);
+        assertNull(
+                acquireFromOtherThread(file, false),
+                "exclusive is still refused while B holds the file");
+        JvmFileLockRegistry.release(b);
+        JvmFileLockRegistry.Lease exclusive = acquireFromOtherThread(file, false);
+        assertNotNull(exclusive, "exclusive succeeds after the last holder released");
+        JvmFileLockRegistry.release(exclusive);
     }
 
     @Test
-    void lockIsHeldAcrossThreads() throws Exception {
-        String file = newFile();
-        try (FileChannel ce = openWrite(file);
-                FileChannel other = openRead(file)) {
-            JvmFileLockRegistry.Lease exclusive = JvmFileLockRegistry.acquire(file, ce, false);
-            assertNotNull(exclusive, "exclusive lock");
-            ExecutorService executor = Executors.newSingleThreadExecutor();
-            try {
-                Future<JvmFileLockRegistry.Lease> attempt =
-                        executor.submit(() -> JvmFileLockRegistry.acquire(file, other, true));
-                assertNull(attempt.get(30, TimeUnit.SECONDS), "another thread sees the conflict");
-                JvmFileLockRegistry.release(exclusive);
-                Future<JvmFileLockRegistry.Lease> again =
-                        executor.submit(() -> JvmFileLockRegistry.acquire(file, other, true));
-                JvmFileLockRegistry.Lease lease = again.get(30, TimeUnit.SECONDS);
-                assertNotNull(lease, "another thread can lock after release");
-                JvmFileLockRegistry.release(lease);
-            } finally {
-                executor.shutdownNow();
-            }
-        }
+    void differentFilesDoNotConflict() throws Exception {
+        String a = newFile();
+        String b = newFile();
+        JvmFileLockRegistry.Lease la = JvmFileLockRegistry.acquire(a, false);
+        JvmFileLockRegistry.Lease lb = JvmFileLockRegistry.acquire(b, false);
+        assertNotNull(la, "lock on a");
+        assertNotNull(lb, "lock on b");
+        JvmFileLockRegistry.release(la);
+        JvmFileLockRegistry.release(lb);
     }
 }
