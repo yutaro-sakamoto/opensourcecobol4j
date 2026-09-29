@@ -52,29 +52,30 @@ AT_DATA([prog1.cbl], [
        01 SYNC-STEP PIC 9(2).
        PROCEDURE DIVISION.
            OPEN I-O F.
-           DISPLAY "prog1 open i-o " ST.
+           DISPLAY "01 prog1 open i-o " ST.
            MOVE 1 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog1 read with lock 1 " ST " " V "|".
+           DISPLAY "02 prog1 read with lock 1 " ST " " V "|".
            MOVE 1 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog2 tries the locked record and another record
            MOVE 2 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            UNLOCK F.
-           DISPLAY "prog1 unlock " ST.
+           DISPLAY "06 prog1 unlock " ST.
            MOVE 3 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog2 locks record 2; prog1 must see it
            MOVE 4 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 2 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog1 read with lock 2 while locked " ST.
+           DISPLAY "09 prog1 read with lock 2 while locked " ST.
            MOVE 5 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog2 closed the file, releasing its locks
            MOVE 6 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 2 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog1 read with lock 2 after close " ST " " V "|".
+           DISPLAY "11 prog1 read with lock 2 after close "
+                   ST " " V "|".
            CLOSE F.
-           DISPLAY "prog1 close " ST.
+           DISPLAY "12 prog1 close " ST.
            GOBACK.
 ])
 
@@ -102,29 +103,30 @@ AT_DATA([prog2.cbl], [
        PROCEDURE DIVISION.
            MOVE 1 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            OPEN I-O F.
-           DISPLAY "prog2 open i-o " ST.
+           DISPLAY "03 prog2 open i-o " ST.
            MOVE 1 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog2 read with lock 1 while locked " ST.
+           DISPLAY "04 prog2 read with lock 1 while locked " ST.
            MOVE 3 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog2 read with lock 3 " ST " " V "|".
+           DISPLAY "05 prog2 read with lock 3 " ST " " V "|".
            UNLOCK F.
            MOVE 2 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog1 unlocks record 1
            MOVE 3 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            MOVE 1 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog2 read with lock 1 after unlock " ST " " V "|".
+           DISPLAY "07 prog2 read with lock 1 after unlock "
+                   ST " " V "|".
            UNLOCK F.
            MOVE 2 TO K.
            READ F WITH LOCK.
-           DISPLAY "prog2 read with lock 2 " ST " " V "|".
+           DISPLAY "08 prog2 read with lock 2 " ST " " V "|".
            MOVE 4 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
       *    prog1 tries record 2 while prog2 holds it
            MOVE 5 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            CLOSE F.
-           DISPLAY "prog2 close " ST.
+           DISPLAY "10 prog2 close " ST.
            MOVE 6 TO SYNC-STEP. CALL "SyncPoint" USING SYNC-STEP.
            GOBACK.
 ])
@@ -135,19 +137,19 @@ AT_CHECK([${COBJ} setup.cbl prog1.cbl prog2.cbl])
 AT_CHECK([java setup], [0], [setup 00
 ])
 AT_CHECK([java PairHarness prog1 prog2], [0],
-[prog1 close 00
-prog1 open i-o 00
-prog1 read with lock 1 00 one     |
-prog1 read with lock 2 after close 00 two     |
-prog1 read with lock 2 while locked 51
+[01 prog1 open i-o 00
+02 prog1 read with lock 1 00 one     |
+03 prog2 open i-o 00
+04 prog2 read with lock 1 while locked 51
+05 prog2 read with lock 3 00 three   |
+06 prog1 unlock 00
+07 prog2 read with lock 1 after unlock 00 one     |
+08 prog2 read with lock 2 00 two     |
+09 prog1 read with lock 2 while locked 51
+10 prog2 close 00
+11 prog1 read with lock 2 after close 00 two     |
+12 prog1 close 00
 prog1 return-code 0
-prog1 unlock 00
-prog2 close 00
-prog2 open i-o 00
-prog2 read with lock 1 after unlock 00 one     |
-prog2 read with lock 1 while locked 51
-prog2 read with lock 2 00 two     |
-prog2 read with lock 3 00 three   |
 prog2 return-code 0
 alive
 ])
