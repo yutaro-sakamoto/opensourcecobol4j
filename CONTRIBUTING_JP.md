@@ -3,7 +3,7 @@ Hagane COBOLへのコントリビュートを検討頂きありがとうござ�
 
 # Issues
 
-Hagane COBOLに関するトピックを投稿してください。ただし、英語か日本語での記載をお願いします。
+Hagane COBOLに関するトピックは[Issues](https://github.com/yutaro-sakamoto/Hagane-COBOL/issues)に投稿してください。ただし、英語か日本語での記載をお願いします。
 
 # Pull Requests
 CIはテストとコードの静的解析を実行します。

@@ -19,11 +19,13 @@ jobs:
   # image is never published for a release that failed to materialize.
   docker-image:
     needs: create-release
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/docker-image.yml
     with:
-      push-to-dockerhub: true
+      push-image: true
       release-tag: ${{ github.ref_name }}
-    secrets: inherit
 
   create-release:
     needs: build-artifacts

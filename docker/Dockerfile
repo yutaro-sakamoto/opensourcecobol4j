@@ -28,6 +28,11 @@ RUN ./configure --prefix=/usr/ ${configure_args} && \
 # Runtime stage
 FROM almalinux:9-minimal
 
+# link the image published to GitHub Container Registry to this repository
+LABEL org.opencontainers.image.source="https://github.com/yutaro-sakamoto/Hagane-COBOL"
+LABEL org.opencontainers.image.description="Hagane COBOL, a COBOL compiler that translates COBOL programs to Java programs"
+LABEL org.opencontainers.image.licenses="GPL-3.0-or-later AND LGPL-3.0-or-later"
+
 SHELL ["/bin/bash", "-c"]
 
 # install runtime dependencies only (javac is required by cobj)

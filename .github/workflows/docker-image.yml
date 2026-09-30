@@ -3,32 +3,27 @@ name: build docker image
 on:
   workflow_call:
     inputs:
-      push-to-dockerhub:
-        description: "Push the built images to Docker Hub"
+      push-image:
+        description: "Push the built images to GitHub Container Registry"
         required: false
         type: boolean
         default: false
       release-tag:
-        description: "Release git tag (e.g. v1.1.20). Used as the image version; PR/dispatch builds use a placeholder tag."
+        description: "Release git tag (e.g. v1.0.0). Used as the image version; PR/dispatch builds use a placeholder tag."
         required: false
         type: string
         default: ""
-    secrets:
-      DOCKERHUB_USERNAME:
-        required: false
-      DOCKERHUB_TOKEN:
-        required: false
   # Mirror the workflow_call inputs so a failed release push can be retried
   # manually without re-running the whole release workflow.
   workflow_dispatch:
     inputs:
-      push-to-dockerhub:
-        description: "Push the built images to Docker Hub"
+      push-image:
+        description: "Push the built images to GitHub Container Registry"
         required: false
         type: boolean
         default: false
       release-tag:
-        description: "Release git tag (e.g. v1.1.20). Required when push-to-dockerhub is true."
+        description: "Release git tag (e.g. v1.0.0). Required when push-image is true."
         required: false
         type: string
         default: ""
@@ -37,9 +32,9 @@ permissions:
   contents: read
 
 env:
-  # This fork releases its Docker images independently of the upstream
-  # repository.
-  IMAGE_NAME: ossyutarosakamoto/opensourcecobol4j
+  # The images are published to GitHub Container Registry of this repository.
+  # Image names must be lowercase.
+  IMAGE_NAME: ghcr.io/yutaro-sakamoto/hagane-cobol
   # Keep in sync with the build job's matrix. The push job uses this list to
   # verify that no variant's image is missing before pushing anything; a
   # variant present in the matrix but missing here is still pushed (the push
@@ -50,7 +45,7 @@ jobs:
   # Resolve the image version once, before the expensive builds: the git tag
   # without the leading "v" is the image version. Builds that do not push fall
   # back to a placeholder version; pushing requires a real release tag, so a
-  # placeholder is never published to Docker Hub and a missing tag fails here
+  # placeholder is never published and a missing tag fails here
   # instead of after the builds.
   resolve-version:
     runs-on: ubuntu-latest
@@ -61,12 +56,12 @@ jobs:
         id: resolve
         env:
           RELEASE_TAG: ${{ inputs.release-tag }}
-          PUSH_TO_DOCKERHUB: ${{ inputs.push-to-dockerhub }}
+          PUSH_IMAGE: ${{ inputs.push-image }}
         run: |
           version="${RELEASE_TAG#v}"
           if [ -z "$version" ]; then
-            if [ "$PUSH_TO_DOCKERHUB" = "true" ]; then
-              echo "a non-empty release-tag is required when push-to-dockerhub is true" >&2
+            if [ "$PUSH_IMAGE" = "true" ]; then
+              echo "a non-empty release-tag is required when push-image is true" >&2
               exit 1
             fi
             version="dev"
@@ -126,12 +121,12 @@ jobs:
       # derives every tag to push from the artifacts themselves. The tarball
       # is uploaded uncompressed: upload-artifact compresses it anyway.
       - name: Save the docker image
-        if: inputs.push-to-dockerhub
+        if: inputs.push-image
         run: |
           docker save "$IMAGE_NAME:$IMAGE_TAG" -o "image-${{ matrix.variant }}.tar"
 
       - name: Upload the docker image
-        if: inputs.push-to-dockerhub
+        if: inputs.push-image
         uses: actions/upload-artifact@v7
         with:
           name: docker-image-${{ matrix.variant }}
@@ -142,23 +137,27 @@ jobs:
           # workflow run, so a re-run would otherwise fail to upload.
           overwrite: true
 
-  # Push the images to Docker Hub in a fixed order: the variant images (e.g.
+  # Push the images to GitHub Container Registry in a fixed order: the variant images (e.g.
   # UTF-8) first, then the versioned default image, and "latest" at the end.
   push:
-    if: inputs.push-to-dockerhub
+    if: inputs.push-image
     needs: [resolve-version, build]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     env:
       IMAGE_VERSION: ${{ needs.resolve-version.outputs.version }}
 
     steps:
       # Login first so that bad credentials fail the job before the large
       # artifact download.
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v4
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download the docker images
         uses: actions/download-artifact@v8
@@ -185,7 +184,7 @@ jobs:
             docker load < "$tarball"
           done
 
-      - name: Push the images to Docker Hub
+      - name: Push the images to GitHub Container Registry
         run: |
           # Push every tag loaded from the artifacts, so an image added to
           # the build matrix can never be silently left unpushed: variant

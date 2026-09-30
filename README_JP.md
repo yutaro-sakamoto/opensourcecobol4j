@@ -8,14 +8,28 @@
 
 変更履歴は[CHANGELOG.md](./CHANGELOG.md)をご覧ください。
 
+## opensource COBOL 4JからHagane COBOLへの名称変更
+
+Hagane COBOLは、これまで[opensource COBOL 4J](https://github.com/opensourcecobol/opensourcecobol4j)のフォークとしてこのリポジトリで開発されてきました。
+バージョン1.0.0からは、新しい名称**Hagane COBOL**のもとで独立してリリースします。
+あわせて、リポジトリも`yutaro-sakamoto/opensourcecobol4j`から[yutaro-sakamoto/Hagane-COBOL](https://github.com/yutaro-sakamoto/Hagane-COBOL)に移りました。
+
+* バージョン番号は1.0.0から数え直します。Hagane COBOL 1.0.0はopensource COBOL 4J 2.1.0をもとにしています。
+  opensource COBOL 4J 2.1.0からの変更点は[ReleaseNote.md](./ReleaseNote.md)をご覧ください。
+* コマンド名(`cobj`、`cobj-idx`、`cobj-api`)、ランタイムライブラリ`libcobj.jar`、Javaパッケージ`jp.osscons.opensourcecobol`、
+  インストール先(`/usr/lib/opensourcecobol4j/libcobj.jar`、`C:\opensourcecobol4j`)は変わりません。
+  既存のビルドスクリプトや`CLASSPATH`の設定はそのまま使えます。
+* DockerイメージはDocker Hubではなく、GitHub Container Registry(`ghcr.io/yutaro-sakamoto/hagane-cobol`)で配布します。
+
 ## ライセンス
 ランタイムライブラリであるlibcobjはLGPL 3、それ以外のソフトウェアやライブラリはGPL 3の下で配布されています。
 
 ## 動作環境
 Hagane COBOLは、下記の環境でテストされています：
 
-* Ubuntu 24.04 と OpenJDK 21
+* Ubuntu 26.04 と OpenJDK 21
 * AlmaLinux 9 と OpenJDK 11
+* Windows と OpenJDK 21
 
 古いバージョンの動作環境については、[doc/requirements-all.md](./doc/requirements-all.md)をご覧ください。
 
@@ -25,7 +39,7 @@ Hagane COBOLは、下記の環境でテストされています：
 ### 依存ライブラリのインストール
 下記のコマンドを実行します。
 
-#### Ubuntu 24.04
+#### Ubuntu 26.04
 ```
 sudo apt-get update
 sudo apt-get install -y default-jdk build-essential bison flex gettext texinfo libgmp-dev autoconf
@@ -39,9 +53,9 @@ dnf install -y java-11-openjdk-devel gcc make bison flex automake autoconf diffu
 
 ### Hagane COBOLのインストール
 ```
-curl -L -o opensourcecobol4j-v2.1.0.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v2.1.0.tar.gz
-tar zxvf opensourcecobol4j-v2.1.0.tar.gz
-cd opensourcecobol4j-2.1.0
+curl -L -o hagane-cobol-v1.0.0.tar.gz https://github.com/yutaro-sakamoto/Hagane-COBOL/archive/refs/tags/v1.0.0.tar.gz
+tar zxvf hagane-cobol-v1.0.0.tar.gz
+cd Hagane-COBOL-1.0.0
 ./configure --prefix=/usr/
 make
 sudo make install
@@ -50,9 +64,9 @@ sudo make install
 UTF-8のCOBOLソースコード対応版コンパイラをインストールする場合は、下記のコマンドを実行する。
 
 ```
-curl -L -o opensourcecobol4j-v2.1.0.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v2.1.0.tar.gz
-tar zxvf opensourcecobol4j-v2.1.0.tar.gz
-cd opensourcecobol4j-2.1.0
+curl -L -o hagane-cobol-v1.0.0.tar.gz https://github.com/yutaro-sakamoto/Hagane-COBOL/archive/refs/tags/v1.0.0.tar.gz
+tar zxvf hagane-cobol-v1.0.0.tar.gz
+cd Hagane-COBOL-1.0.0
 ./configure --prefix=/usr/ --enable-utf8
 touch cobj/*.m4
 make
@@ -67,7 +81,7 @@ sudo make install
 export CLASSPATH="$CLASSPATH:/usr/lib/opensourcecobol4j/libcobj.jar"
 ```
 
-古いバージョンのインストール方法は、[doc/installation_jp](./doc/installation_jp)をご覧ください。
+Hagane COBOLの前身であるopensource COBOL 4Jのインストール方法は、[opensource COBOL 4Jのリポジトリ](https://github.com/opensourcecobol/opensourcecobol4j)をご覧ください。
 
 ## インストール (Windows)
 ### Visual Studioのインストール
@@ -117,11 +131,14 @@ Windows版のHagane COBOLはVisual Studioに含まれるCLコンパイラを使�
 2. `C:\opensourcecobol4j\lib\libcobj.jar`を環境変数CLASSPATHに追加する。
 
 ## Dockerを使ったインストール
-Hagane COBOLのDockerコンテナを利用できます。
+Hagane COBOLのDockerコンテナをGitHub Container Registryで配布しています。
 
 ```bash
-docker pull opensourcecobol/opensourcecobol4j:2.1.0
+docker pull ghcr.io/yutaro-sakamoto/hagane-cobol:1.0.0
+docker run -it --rm ghcr.io/yutaro-sakamoto/hagane-cobol:1.0.0
 ```
+
+UTF-8のCOBOLソースコード向けのコンパイラは、イメージ`ghcr.io/yutaro-sakamoto/hagane-cobol:1.0.0-utf8`に入っています。
 
 以下のコマンドを実行して、"Hello World"のCOBOLプログラムを実行します。
 
@@ -183,7 +200,7 @@ Hagane COBOLは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポート�
 
 ## SBOM
 
-各[リリース](https://github.com/opensourcecobol/opensourcecobol4j/releases)には、`libcobj.jar`の[CycloneDX](https://cyclonedx.org/) 1.6形式のSBOMが、`libcobj-sbom.json`と`libcobj-sbom.xml`の2つの形式で添付されます。
+各[リリース](https://github.com/yutaro-sakamoto/Hagane-COBOL/releases)には、`libcobj.jar`の[CycloneDX](https://cyclonedx.org/) 1.6形式のSBOMが、`libcobj-sbom.json`と`libcobj-sbom.xml`の2つの形式で添付されます。
 
 `libcobj.jar`はshadow jar(fat jar)であるため、同梱されているサードパーティ製ライブラリをjar自体から特定することはできません。
 SBOMにはそれらのライブラリがバージョン・ライセンスとともに記載されており、Trivy・Grype・Dependency-Track等の脆弱性スキャナに読み込ませることができます。
@@ -321,6 +338,6 @@ Options:
 ```
 cobj-apiを用いたSpring Bootアプリケーションの作成方法については、[こちら](./doc/cobj-api_SpringBoot_JP.md)をご覧ください。
 
-## コントリビューㇳ
+## コントリビュート
 コントリビュータ向けのガイドラインは[CONTRIBUTING_JP.md](./CONTRIBUTING_JP.md)を参照してください。
-コントリビュータの一覧は https://github.com/opensourcecobol/opensourcecobol4j/graphs/contributors に掲載されています。
+コントリビュータの一覧は https://github.com/yutaro-sakamoto/Hagane-COBOL/graphs/contributors に掲載されています。

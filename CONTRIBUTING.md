@@ -3,7 +3,7 @@ A summary of how to contribute is below.
 
 # Issues
 
-Although any topics related to Hagane COBOL can be posted in [Issues](https://github.com/opensourcecobol/opensourcecobol4j/issues), please submit ones written in English or Japanese.
+Although any topics related to Hagane COBOL can be posted in [Issues](https://github.com/yutaro-sakamoto/Hagane-COBOL/issues), please submit ones written in English or Japanese.
 
 # Pull Requests
 

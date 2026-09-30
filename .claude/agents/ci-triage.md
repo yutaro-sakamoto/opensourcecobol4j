@@ -11,7 +11,7 @@ color: yellow
 ## 前提
 
 - **リモート名は環境によって異なる**(`origin`が存在しない構成もある)。上流は opensourcecobol/opensourcecobol4j。`gh`を使う前に必ず`git remote -v`で宛先と対象ブランチを確認する。
-- ワークフローは`.github/workflows/`にある。`push.yml`と`pull_request.yml`で走るジョブが違い、**AlmaLinux 9の`run-test-other`はpull_requestでしか走らない**。
+- ワークフローは`.github/workflows/`にある。`push.yml`と`pull-request.yml`で走るジョブが違い、**AlmaLinux 9の`run-test-other`はpull_requestでしか走らない**。
 
 ## 手順
 
