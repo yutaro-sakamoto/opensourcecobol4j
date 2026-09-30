@@ -20,15 +20,20 @@ package jp.osscons.opensourcecobol.libcobj.file;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +57,11 @@ import java.util.Map;
  * Javadocにも明記されている)。このため、ロックを保持している間は、このJVMの誰もそのファイルのチャネルを
  * 閉じてはならない。保持者のCLOSEや、FILE STATUS 61で拒否されたOPENが手放すチャネルは、
  * {@link #release(Lease, Closeable)}と{@link #closeFor(String, Closeable)}を通じて台帳が預かり、
- * 最後の保持者が解放してOSのロックを手放すときにまとめて閉じる。
+ * 最後の保持者が解放してOSのロックを手放すときにまとめて閉じる。 保持者が絶えず入れ替わって最後の保持者が
+ * 現れない場合でも預かるチャネルが増え続けないよう、このJVMでのファイルのオープンは
+ * {@link #openChannel}と{@link #openRandomAccessFile}を通して行い、預かっているチャネルのうち
+ * 同じモードで開いたものがあれば新たに開かずに再利用する。これにより、預かるチャネルの数は
+ * そのファイルを同時にオープンしていた実行単位の数を超えない。
  *
  * <p>ロックのモード変更(同一実行単位がINPUTとOUTPUTを重ねてオープンした場合の昇格・降格)は、
  * 隣接するもう1つの範囲({@link #BRIDGE_POSITION})を橋渡しに使う: 目的のモードでブリッジ範囲を
@@ -115,6 +124,26 @@ final class JvmFileLockRegistry {
 
     /** 正規化したパスをキーとするロックの台帳。このクラスのモニタで保護する。 */
     private static final Map<String, Entry> entries = new HashMap<>();
+
+    /** 再利用できる形で開かれたファイル。預かったチャネルを次のオープンで使い回すために記録する。 */
+    private static final class Reusable {
+        /** 開いたときのモード。同じモードのオープンにだけ再利用する */
+        final String mode;
+
+        /** 呼び出し元に返すオブジェクト(FileChannelまたはRandomAccessFile) */
+        final Object handle;
+
+        Reusable(String mode, Object handle) {
+            this.mode = mode;
+            this.handle = handle;
+        }
+    }
+
+    /**
+     * {@link #openChannel}と{@link #openRandomAccessFile}で開いたチャネルと、その開き方の対応。
+     * チャネルを閉じるときに取り除く。このクラスのモニタで保護する。
+     */
+    private static final Map<Closeable, Reusable> reusables = new IdentityHashMap<>();
 
     private static String keyOf(String filename) {
         Path path = Paths.get(filename).toAbsolutePath();
@@ -225,6 +254,83 @@ final class JvmFileLockRegistry {
         } else {
             entry.exclusive = exclusive;
         }
+    }
+
+    /**
+     * ファイルをFileChannelとして開く。そのファイルについて預かっているチャネルのうち、同じオプションで
+     * 開いたものがあれば、新たに開かずにそれを先頭の位置に戻して返す。
+     *
+     * @param filename 開くファイルのパス
+     * @param options {@link FileChannel#open(Path, OpenOption...)}に渡すオプション
+     * @return 開いたチャネル
+     * @throws IOException ファイルを開けなかった場合
+     */
+    static synchronized FileChannel openChannel(String filename, OpenOption... options)
+            throws IOException {
+        String mode = "channel:" + optionsKey(options);
+        Object reused = takeParked(filename, mode);
+        if (reused != null) {
+            FileChannel channel = (FileChannel) reused;
+            channel.position(0L);
+            return channel;
+        }
+        FileChannel channel = FileChannel.open(Paths.get(filename), options);
+        reusables.put(channel, new Reusable(mode, channel));
+        return channel;
+    }
+
+    /**
+     * ファイルをRandomAccessFileとして開く。そのファイルについて預かっているもののうち、同じモードで
+     * 開いたものがあれば、新たに開かずにそれを先頭の位置に戻して返す。預けるときは{@link
+     * RandomAccessFile#getChannel()}のチャネルを渡すこと。
+     *
+     * @param filename 開くファイルのパス
+     * @param mode {@link RandomAccessFile}のモード("r"や"rw")
+     * @return 開いたファイル
+     * @throws IOException ファイルを開けなかった場合
+     */
+    static synchronized RandomAccessFile openRandomAccessFile(String filename, String mode)
+            throws IOException {
+        String key = "raf:" + mode;
+        Object reused = takeParked(filename, key);
+        if (reused != null) {
+            RandomAccessFile raf = (RandomAccessFile) reused;
+            raf.seek(0L);
+            return raf;
+        }
+        RandomAccessFile raf = new RandomAccessFile(filename, mode);
+        reusables.put(raf.getChannel(), new Reusable(key, raf));
+        return raf;
+    }
+
+    /** 預かっているチャネルから、指定したモードで開いたものを取り出す。なければnull。 */
+    private static Object takeParked(String filename, String mode) {
+        Entry entry = entries.get(keyOf(filename));
+        if (entry == null) {
+            return null;
+        }
+        Iterator<Closeable> it = entry.parked.iterator();
+        while (it.hasNext()) {
+            Closeable parked = it.next();
+            Reusable reusable = reusables.get(parked);
+            if (reusable != null
+                    && reusable.mode.equals(mode)
+                    && parked instanceof FileChannel
+                    && ((FileChannel) parked).isOpen()) {
+                it.remove();
+                return reusable.handle;
+            }
+        }
+        return null;
+    }
+
+    private static String optionsKey(OpenOption... options) {
+        List<String> names = new ArrayList<>();
+        for (OpenOption option : options) {
+            names.add(option.toString());
+        }
+        Collections.sort(names);
+        return String.join(",", names);
     }
 
     /**
@@ -383,6 +489,7 @@ final class JvmFileLockRegistry {
         if (resource == null) {
             return;
         }
+        reusables.remove(resource);
         try {
             resource.close();
         } catch (IOException e) {

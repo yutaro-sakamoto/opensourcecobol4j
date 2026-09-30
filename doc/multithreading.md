@@ -7,6 +7,11 @@ programs at the same time.
 This document describes the model that makes this work, and what an application
 has to do at the boundary between Java and COBOL.
 
+Programs compiled by an earlier version of `cobj` must be recompiled: the
+generated code now calls accessor methods for the per-thread state of `libcobj`
+instead of the public static fields it used before, so an old class fails with
+`NoSuchFieldError` on this `libcobj.jar`.
+
 ## One run unit per thread
 
 `libcobj` keeps the state of a COBOL **run unit** per thread, so **each thread is

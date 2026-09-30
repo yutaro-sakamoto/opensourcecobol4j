@@ -1246,31 +1246,27 @@ public class CobolFile {
         try {
             switch (mode) {
                 case COB_OPEN_INPUT:
-                    fp = FileChannel.open(Paths.get(filename), StandardOpenOption.READ);
+                    fp = JvmFileLockRegistry.openChannel(filename, StandardOpenOption.READ);
                     break;
                 case COB_OPEN_OUTPUT:
                     // 切り詰めはロックを取得してから行う(他の実行単位がオープン中で
                     // FILE STATUS 61となる場合にその内容を消さないように)
                     fp =
-                            FileChannel.open(
-                                    Paths.get(filename),
-                                    StandardOpenOption.WRITE,
-                                    StandardOpenOption.CREATE);
+                            JvmFileLockRegistry.openChannel(
+                                    filename, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                     break;
                 case COB_OPEN_I_O:
                     fp =
-                            FileChannel.open(
-                                    Paths.get(filename),
+                            JvmFileLockRegistry.openChannel(
+                                    filename,
                                     StandardOpenOption.READ,
                                     StandardOpenOption.WRITE,
                                     StandardOpenOption.CREATE);
                     break;
                 case COB_OPEN_EXTEND:
                     fp =
-                            FileChannel.open(
-                                    Paths.get(filename),
-                                    StandardOpenOption.APPEND,
-                                    StandardOpenOption.CREATE);
+                            JvmFileLockRegistry.openChannel(
+                                    filename, StandardOpenOption.APPEND, StandardOpenOption.CREATE);
                     break;
                 default:
                     break;
@@ -2248,6 +2244,8 @@ public class CobolFile {
                         return;
                 }
             } catch (IOException e1) {
+                // ロックを取得した後で例外が発生した場合も、取得したロックとチャネルを手放す
+                this.releaseLockLease(this.file.detachChannel());
                 saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
                 return;
             }

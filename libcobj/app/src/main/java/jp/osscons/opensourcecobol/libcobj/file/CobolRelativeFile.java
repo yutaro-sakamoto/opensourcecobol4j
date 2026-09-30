@@ -140,18 +140,18 @@ public class CobolRelativeFile extends CobolFile {
         try {
             switch (mode) {
                 case COB_OPEN_INPUT:
-                    raf = new RandomAccessFile(dataPath, "r");
+                    raf = JvmFileLockRegistry.openRandomAccessFile(dataPath, "r");
                     raf.seek(0);
                     break;
                 case COB_OPEN_OUTPUT:
-                    raf = new RandomAccessFile(dataPath, "rw");
+                    raf = JvmFileLockRegistry.openRandomAccessFile(dataPath, "rw");
                     break;
                 case COB_OPEN_I_O:
-                    raf = new RandomAccessFile(dataPath, "rw");
+                    raf = JvmFileLockRegistry.openRandomAccessFile(dataPath, "rw");
                     raf.seek(0);
                     break;
                 case COB_OPEN_EXTEND:
-                    raf = new RandomAccessFile(dataPath, "rw");
+                    raf = JvmFileLockRegistry.openRandomAccessFile(dataPath, "rw");
                     raf.seek(0);
                     raf.seek(raf.length());
                     break;
@@ -159,7 +159,7 @@ public class CobolRelativeFile extends CobolFile {
                     return EACCESS;
             }
         } catch (IOException e) {
-            JvmFileLockRegistry.closeFor(dataPath, raf);
+            JvmFileLockRegistry.closeFor(dataPath, raf == null ? null : raf.getChannel());
             if (Files.notExists(Paths.get(filename))) {
                 return ENOENT;
             } else {
@@ -173,14 +173,14 @@ public class CobolRelativeFile extends CobolFile {
             try {
                 this.lockLease = JvmFileLockRegistry.acquire(dataPath, isSharedLock);
             } catch (NonWritableChannelException e) {
-                JvmFileLockRegistry.closeFor(dataPath, this.fp);
+                JvmFileLockRegistry.closeFor(dataPath, this.fp.getChannel());
                 return EBADF;
             } catch (IOException e) {
-                JvmFileLockRegistry.closeFor(dataPath, this.fp);
+                JvmFileLockRegistry.closeFor(dataPath, this.fp.getChannel());
                 return COB_STATUS_61_FILE_SHARING;
             }
             if (this.lockLease == null) {
-                JvmFileLockRegistry.closeFor(dataPath, this.fp);
+                JvmFileLockRegistry.closeFor(dataPath, this.fp.getChannel());
                 return COB_STATUS_61_FILE_SHARING;
             }
         }

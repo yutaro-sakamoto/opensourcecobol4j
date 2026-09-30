@@ -21,10 +21,13 @@ package jp.osscons.opensourcecobol.libcobj.file;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -231,6 +234,57 @@ class JvmFileLockRegistryTest {
         JvmFileLockRegistry.release(b, null);
         assertFalse(aChannel.isOpen(), "A's channel is closed when the last holder releases");
         assertFalse(refusedByAnotherProcess(file), "another process gets the lock after release");
+    }
+
+    @Test
+    void parkedChannelsAreReusedSoTheirNumberStaysBounded() throws Exception {
+        String file = newFile();
+        // 常に誰かがファイルを開いているため最後の保持者が現れない状況で、OPENとCLOSEを繰り返す。
+        // 預かったチャネルは次のOPENで再利用されるので、預かる数は増え続けない
+        JvmFileLockRegistry.Lease keeper = acquireFromOtherThread(file, true);
+        assertNotNull(keeper, "a holder that keeps the file open");
+        FileChannel first = null;
+        for (int i = 0; i < 100; i++) {
+            FileChannel ch = JvmFileLockRegistry.openChannel(file, StandardOpenOption.READ);
+            if (first == null) {
+                first = ch;
+            } else {
+                assertSame(first, ch, "the parked channel is reused");
+            }
+            assertEquals(0L, ch.position(), "a reused channel starts at the beginning");
+            ByteBuffer buf = ByteBuffer.allocate(1);
+            ch.read(buf);
+            JvmFileLockRegistry.Lease lease = JvmFileLockRegistry.acquire(file, true);
+            assertNotNull(lease, "shared lock");
+            JvmFileLockRegistry.release(lease, ch);
+            assertEquals(1, JvmFileLockRegistry.parkedCount(file), "at most one parked channel");
+        }
+        JvmFileLockRegistry.release(keeper, null);
+        assertFalse(first.isOpen(), "closed when the last holder releases");
+    }
+
+    @Test
+    void parkedChannelsAreReusedOnlyForTheSameMode() throws Exception {
+        String file = newFile();
+        JvmFileLockRegistry.Lease keeper = acquireFromOtherThread(file, true);
+        FileChannel reader = JvmFileLockRegistry.openChannel(file, StandardOpenOption.READ);
+        JvmFileLockRegistry.closeFor(file, reader);
+        FileChannel writer =
+                JvmFileLockRegistry.openChannel(
+                        file, StandardOpenOption.READ, StandardOpenOption.WRITE);
+        assertNotSame(reader, writer, "a read-only channel is not reused for read-write");
+        JvmFileLockRegistry.closeFor(file, writer);
+        assertEquals(2, JvmFileLockRegistry.parkedCount(file), "both are parked");
+
+        RandomAccessFile raf = JvmFileLockRegistry.openRandomAccessFile(file, "r");
+        raf.seek(1L);
+        JvmFileLockRegistry.closeFor(file, raf.getChannel());
+        RandomAccessFile again = JvmFileLockRegistry.openRandomAccessFile(file, "r");
+        assertSame(raf, again, "a parked RandomAccessFile is reused for the same mode");
+        assertEquals(0L, again.getFilePointer(), "and starts at the beginning");
+        JvmFileLockRegistry.closeFor(file, again.getChannel());
+        JvmFileLockRegistry.release(keeper, null);
+        assertFalse(reader.isOpen() || writer.isOpen(), "all parked channels are closed");
     }
 
     @Test

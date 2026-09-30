@@ -484,14 +484,16 @@ public class CobolUtil {
         readFileIdxCommitInterval("COB_FILE_IDX_COMMIT_INTERVAL");
 
         s = System.getenv("COB_TERMINAL_ENCODING");
-        CobolUtil.terminalEncoding = CobolEncoding.SHIFT_JIS;
+        // 他のスレッドが途中の値を観測しないよう、判定してから1回だけ代入する
+        CobolEncoding encoding = CobolEncoding.SHIFT_JIS;
         if (s != null) {
             Pattern p = Pattern.compile("[uU][tT][fF][_-]?8");
             Matcher m = p.matcher(s);
             if (m.matches()) {
-                CobolUtil.terminalEncoding = CobolEncoding.UTF8;
+                encoding = CobolEncoding.UTF8;
             }
         }
+        CobolUtil.terminalEncoding = encoding;
         // 設定値をすべて読み込んでから初期化済みにする(他のスレッドが途中の値を観測しないように)
         initialized.set(true);
     }
@@ -503,8 +505,14 @@ public class CobolUtil {
      * 初期化は同一JVM内で1回だけ行われ、複数スレッドから同時に呼び出しても安全である。
      */
     public static void ensureInitialized() {
-        if (!initialized.get()) {
-            cob_init(new String[0], false);
+        if (initialized.get()) {
+            return;
+        }
+        synchronized (INIT_LOCK) {
+            // 同時に呼び出した他のスレッドが先に初期化を終えていれば、再初期化しない
+            if (!initialized.get()) {
+                cobInitInternal(new String[0], false);
+            }
         }
     }
 
