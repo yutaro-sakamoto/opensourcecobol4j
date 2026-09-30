@@ -100,3 +100,8 @@ report.html
 # ローカルビルドのインストール先と git worktree の置き場
 /local/
 /wt/
+
+# website (VitePress)
+website/node_modules/
+website/.vitepress/cache/
+website/.vitepress/dist/

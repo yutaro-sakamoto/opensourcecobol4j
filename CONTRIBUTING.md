@@ -44,3 +44,17 @@ Run the following command in libcobj/ directory:
 ```
 ./gradlew pmdMain
 ```
+
+## Website
+
+The source of the [website](https://yutaro-sakamoto.github.io/Hagane-COBOL/) is in `website/` and is built with [VitePress](https://vitepress.dev/) (English pages at `website/`, Japanese pages at `website/ja/`).
+It is built by CI on every pull request and push, and deployed to GitHub Pages whenever `main` is updated.
+To preview it locally with Node.js installed (CI uses Node.js 22), run the following commands:
+```
+cd website
+npm ci
+npm run dev
+```
+
+`npm run build` generates the static site in `website/.vitepress/dist/`, and `npm run preview` serves the built site.
+The Javadoc of libcobj (served under `/javadoc/libcobj/`) is added to the site only by CI, so it is not included in a local build.

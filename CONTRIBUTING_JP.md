@@ -45,3 +45,17 @@ Hagane COBOLのlibcobj/ディレクトリで下記のコマンドを実行して
 ```
 ./gradlew pmdMain
 ```
+
+## Webサイト
+
+[Webサイト](https://yutaro-sakamoto.github.io/Hagane-COBOL/ja/)のソースは`website/`にあり、[VitePress](https://vitepress.dev/)でビルドします(英語版は`website/`直下、日本語版は`website/ja/`)。
+CIがPull Requestとpushのたびにビルドし、`main`が更新されるとGitHub Pagesに公開します。
+ローカルで確認するには、Node.jsをインストールした環境(CIではNode.js 22を使用)で下記のコマンドを実行してください。
+```
+cd website
+npm ci
+npm run dev
+```
+
+`npm run build`を実行すると`website/.vitepress/dist/`に静的サイトが生成され、`npm run preview`でビルド結果を確認できます。
+libcobjのJavadoc(`/javadoc/libcobj/`以下で公開)はCIでのみサイトに追加されるため、ローカルのビルドには含まれません。

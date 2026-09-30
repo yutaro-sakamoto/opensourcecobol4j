@@ -1,0 +1,66 @@
+name: build website
+
+# Build the static website in website/ with VitePress, together with the
+# Javadoc of libcobj, which is served under /javadoc/libcobj/.
+on:
+  workflow_call:
+    inputs:
+      upload-pages-artifact:
+        description: "Upload the site as the artifact deployed to GitHub Pages"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+
+      - name: Build the website
+        working-directory: website
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Javadoc
+        working-directory: libcobj
+        run: |
+          ./gradlew javadoc
+          mkdir -p ../website/.vitepress/dist/javadoc
+          cp -r app/build/docs/javadoc ../website/.vitepress/dist/javadoc/libcobj
+
+      # Always keep the built HTML as a plain artifact, so that the site can be
+      # downloaded and checked before it is published.
+      - name: Upload the website
+        uses: actions/upload-artifact@v7
+        with:
+          name: website
+          path: website/.vitepress/dist
+          if-no-files-found: error
+
+      - name: Upload the GitHub Pages artifact
+        if: inputs.upload-pages-artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/.vitepress/dist
