@@ -8,6 +8,8 @@ This compiler is deeply inspired by ["opensource COBOL"](https://github.com/open
 
 [CHANGELOG.md](./CHANGELOG.md) contains all notable changes.
 
+The website of Hagane COBOL, with installation and usage guides and the API reference of `libcobj.jar`, is at <https://yutaro-sakamoto.github.io/Hagane-COBOL/>.
+
 ## Renamed from opensource COBOL 4J
 
 Hagane COBOL was formerly developed in this repository as a fork of
@@ -140,7 +142,7 @@ https://www.oracle.com/java/technologies/downloads/?er=221886#java8-windows
 
 ### Set the environment variables
 1. Add C:\opensourcecobol4j\bin to the PATH environment variable.
-2. Add C:\opensourcecobol4j\lib\libcobj.jar to the CLASSPATH environment variable.
+2. Set the CLASSPATH environment variable to `.;C:\opensourcecobol4j\lib\libcobj.jar` (the leading `.` is needed to run the programs in the current directory).
 
 
 ## Install with Docker
@@ -205,7 +207,7 @@ Hagane COBOL supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing COBOL p
 
 ## Documentation
 
-* [The API reference of the runtime library `libcobj.jar`](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)
+* [The API reference of the runtime library `libcobj.jar`](https://yutaro-sakamoto.github.io/Hagane-COBOL/javadoc/libcobj/index.html)
 * [Hagane COBOL: Java変換解説](./doc/converted_Java_file_JP.md)
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [The specification of locking for INDEXED files in Hagane COBOL](./doc/specification-locking-indexed-file.md)

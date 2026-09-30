@@ -8,6 +8,8 @@
 
 変更履歴は[CHANGELOG.md](./CHANGELOG.md)をご覧ください。
 
+インストール方法や使い方のガイド、`libcobj.jar`のAPIリファレンスは、Hagane COBOLのWebサイト<https://yutaro-sakamoto.github.io/Hagane-COBOL/ja/>で公開しています。
+
 ## opensource COBOL 4JからHagane COBOLへの名称変更
 
 Hagane COBOLは、これまで[opensource COBOL 4J](https://github.com/opensourcecobol/opensourcecobol4j)のフォークとしてこのリポジトリで開発されてきました。
@@ -128,7 +130,7 @@ Windows版のHagane COBOLはVisual Studioに含まれるCLコンパイラを使�
 
 ### 環境変数の設定
 1. `C:\opensourcecobol4j\bin`を環境変数PATHに追加する。
-2. `C:\opensourcecobol4j\lib\libcobj.jar`を環境変数CLASSPATHに追加する。
+2. 環境変数CLASSPATHを`.;C:\opensourcecobol4j\lib\libcobj.jar`にする(カレントディレクトリのプログラムを実行するため、先頭の`.`が必要)。
 
 ## Dockerを使ったインストール
 Hagane COBOLのDockerコンテナをGitHub Container Registryで配布しています。
@@ -191,7 +193,7 @@ Hagane COBOLは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポート�
 
 ## ドキュメント
 
-* [ランタイムライブラリ`libcobj.jar`のAPIリファレンス](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)
+* [ランタイムライブラリ`libcobj.jar`のAPIリファレンス](https://yutaro-sakamoto.github.io/Hagane-COBOL/javadoc/libcobj/index.html)
 * [Hagane COBOL: Java変換解説](./doc/converted_Java_file_JP.md)
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [INDEXEDファイルのロックの仕様](./doc/specification-locking-indexed-file_JP.md)

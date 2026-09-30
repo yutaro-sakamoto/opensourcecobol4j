@@ -113,6 +113,7 @@ tests/以下の構成:
   - scanner.l - flex向けのCOBOLレキサー定義
   - scanner.l.m4 - m4マクロで、scanner.lを生成するためのファイル
 - libcobj/ - libcobj.jarのためのコードを格納する。libocobj.jarは、COBOLからJavaへの変換で生成されたJavaコードが依存するライブラリ
+- website/ - GitHub Pagesで公開するWebサイト(VitePress)のソース。英語版は直下、日本語版はja/以下。libcobjのJavadocはCIがビルド時に追加する
 - .claude-work/ - Claudeの作業用ディレクトリ(git管理外)。「作業用ディレクトリ」の節を参照
 - local/ - `make install`のインストール先(git管理外)
 - wt/ - `git worktree`の置き場(git管理外)

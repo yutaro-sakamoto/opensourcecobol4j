@@ -25,6 +25,33 @@ jobs:
     needs: check-workflows
     uses: ./.github/workflows/unit-test.yml
 
+  website:
+    needs: check-workflows
+    uses: ./.github/workflows/website.yml
+    with:
+      upload-pages-artifact: ${{ github.repository == 'yutaro-sakamoto/Hagane-COBOL' && github.ref == 'refs/heads/main' }}
+
+  # Publish the website to GitHub Pages whenever main is updated. A newer
+  # push to main cancels this whole run (see the workflow-level concurrency),
+  # including a deploy in progress; the newer run then deploys newer content.
+  deploy-website:
+    if: github.repository == 'yutaro-sakamoto/Hagane-COBOL' && github.ref == 'refs/heads/main'
+    needs: website
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
   build:
     needs: check-workflows
     strategy:
