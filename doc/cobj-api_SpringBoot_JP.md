@@ -75,7 +75,7 @@
     info_sample.jsonには、"LINKAGE SECTION"で定義された変数と、その型名が記述される。
     ```
     {
-      "opensourcecobol4j_version": "1.1.1",
+      "opensourcecobol4j_version": "1.0.0",
       "program_id": "sample",
       "procedure_division_using_parameters": [
         {
@@ -154,7 +154,7 @@
     │   └── test
     └── target
     ```
-    * libcobj.jarは、opensource COBOL 4Jをインストールすると、"opensourcecobol4j/libcobj/app/build/lib/"配下に生成されるjarファイルである。
+    * libcobj.jarは、Hagane COBOLをビルドすると、Hagane COBOLのソースツリーの"libcobj/app/build/libs/"配下に生成されるjarファイルである。インストール後は/usr/lib/opensourcecobol4j/libcobj.jarにも配置される。
 
 6. 依存関係の追加
 * Gradleの場合  
@@ -175,7 +175,7 @@ pom.xmlに以下の依存関係を追加する。
     <dependency>
         	<groupId>libcobj</groupId>
 			<artifactId>libcobj</artifactId>
-			<version>1.1.0(cobjのバージョン)</version>
+			<version>1.0.0(cobjのバージョン)</version>
         	<scope>system</scope>
         	<systemPath>${basedir}/lib/libcobj.jar</systemPath>
     	</dependency>

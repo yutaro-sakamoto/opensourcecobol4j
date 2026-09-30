@@ -1,5 +1,5 @@
 {
-    "name": "opensource COBOL 4J development",
+    "name": "Hagane COBOL development",
     "build": {
         "dockerfile": "Dockerfile"
     },

@@ -73,7 +73,7 @@ The project will be created according to the above steps.
     info_sample.json describes the variables defined in the "LINKAGE SECTION" and their type names.
     ```
     {
-      "opensourcecobol4j_version": "1.1.1",
+      "opensourcecobol4j_version": "1.0.0",
       "program_id": "sample",
       "procedure_division_using_parameters": [
         {
@@ -153,7 +153,7 @@ In this procedure, they will be placed in "src/main/java/com/example/cobj_api_te
     │   └── test
     └── target
     ```
-    * libcobj.jar is a jar file that is generated under "opensourcecobol4j/libcobj/app/build/lib/" when opensource COBOL 4J is installed.
+    * libcobj.jar is a jar file that is generated under "libcobj/app/build/libs/" in the source tree of Hagane COBOL when Hagane COBOL is built. It is also installed as /usr/lib/opensourcecobol4j/libcobj.jar.
 
 6. 依存関係の追加
 * For Gradle   
@@ -174,7 +174,7 @@ In this procedure, they will be placed in "src/main/java/com/example/cobj_api_te
     <dependency>
         	<groupId>libcobj</groupId>
 			<artifactId>libcobj</artifactId>
-			<version>1.1.0(version of cobj)</version>
+			<version>1.0.0(version of cobj)</version>
         	<scope>system</scope>
         	<systemPath>${basedir}/lib/libcobj.jar</systemPath>
     </dependency>

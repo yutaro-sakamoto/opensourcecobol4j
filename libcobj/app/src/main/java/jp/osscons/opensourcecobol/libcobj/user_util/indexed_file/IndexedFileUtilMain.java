@@ -35,7 +35,7 @@ import org.apache.commons.cli.ParseException;
 import org.sqlite.SQLiteConfig;
 
 /**
- * Main class of the utility tool `cobj-idx` to handle a indexed file of opensource COBOL 4J. This
+ * Main class of the utility tool `cobj-idx` to handle a indexed file of Hagane COBOL. This
  * tool is used to show information of the indexed file, load data to the indexed file, and unload
  * data from the indexed file.
  */
@@ -221,8 +221,7 @@ class IndexedFileUtilMain {
 
     /** cobj-idxコマンドのヘルプメッセージを標準出力へ出力する。 */
     private static void printHelpMessage() {
-        System.out.println(
-                "cobj-idx - A utility tool to handle an indexed file of opensource COBOL 4J");
+        System.out.println("cobj-idx - A utility tool to handle an indexed file of Hagane COBOL");
         System.out.println();
         System.out.println("Usage:");
         System.out.println("cobj-idx <sub command> [options] <indexed file>");

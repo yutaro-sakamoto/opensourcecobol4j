@@ -1,14 +1,14 @@
-# Embedded SQL (ESQL) ガイド -- opensource COBOL 4J
+# Embedded SQL (ESQL) ガイド -- Hagane COBOL
 
 ## 概要
 
-opensource COBOL 4Jは、COBOLプログラムからPostgreSQLデータベースに直接アクセスするためのEmbedded SQL (EXEC SQL) をサポートしています。COBOL のホスト変数をSQLステートメントのバインドパラメータとして使用することで、COBOLとSQLの間でシームレスにデータをやり取りできます。
+Hagane COBOLは、COBOLプログラムからPostgreSQLデータベースに直接アクセスするためのEmbedded SQL (EXEC SQL) をサポートしています。COBOL のホスト変数をSQLステートメントのバインドパラメータとして使用することで、COBOLとSQLの間でシームレスにデータをやり取りできます。
 
 `EXEC SQL ... END-EXEC` ステートメントを含むCOBOLソースファイルを `cobj` でコンパイルすると、コンパイラはEmbedded SQLをJDBCを介したJavaデータベース呼び出しに変換します。
 
 ## 前提条件
 
-- **opensource COBOL 4J** がインストール済みであること（[README_JP.md](../README_JP.md) を参照）
+- **Hagane COBOL** がインストール済みであること（[README_JP.md](../README_JP.md) を参照）
 - **PostgreSQL** サーバー（バージョン9.6以降）
 
 ## クイックスタート

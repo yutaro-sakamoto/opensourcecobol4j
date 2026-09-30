@@ -1,4 +1,4 @@
-これはopensource COBOL 4Jと呼ばれるCOBOLからJavaへのトランスパイラのリポジトリである。
+これはHagane COBOLと呼ばれるCOBOLからJavaへのトランスパイラのリポジトリである。
 
 # 開発方法
 
@@ -103,7 +103,7 @@ tests/以下の構成:
 以下に主要なフォルダとファイルの説明を示す。
 
 - cobj/ - COBOLからJavaへの変換のためのコードを格納
-  - cobj.c - cobjコマンド(opensource COBOL 4Jのメインコマンド)のコード
+  - cobj.c - cobjコマンド(Hagane COBOLのメインコマンド)のコード
   - codegen.c - COBOLからJavaへのコード生成を行うコード
   - esql.c - EXEC SQL文の解析と処理を行うコード
   - esql-scanner.l - flex向けのEmbedded SQLレキサー定義

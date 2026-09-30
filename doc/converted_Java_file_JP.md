@@ -1,9 +1,9 @@
-# opensource COBOL 4J: Java変換解説
+# Hagane COBOL: Java変換解説
 
 ## はじめに
 
-opensource COBOL 4Jは、COBOLプログラムをJavaプログラムに変換して実行するコンパイラである。
-本文書ではopensource COBOL 4JのCOBOLからJavaへの変換方法について、重要な箇所を解説する。
+Hagane COBOLは、COBOLプログラムをJavaプログラムに変換して実行するコンパイラである。
+本文書ではHagane COBOLのCOBOLからJavaへの変換方法について、重要な箇所を解説する。
 
 ## 変数・集団項目
 
@@ -217,7 +217,7 @@ CALL文も、libcobj.jarに定義されたメソッドの呼び出しに変換�
 }
 ```
 
-opensource COBOL 4Jにおいて、CALL文で指定されたモジュール名は原則として実行時に解決される。
+Hagane COBOLにおいて、CALL文で指定されたモジュール名は原則として実行時に解決される。
 
 ## プログラム全体の制御構造
 
@@ -248,7 +248,7 @@ COBOLでは、PROCEDURE DIVISION内はSECTIONやPARAGRAPHによって、分割�
            DISPLAY "END".
 ```
 
-opensouce COBOL 4Jでは、SECTION内やPARAGRAPHで分割された処理を切り出し、それらをCobolControlクラスから派生した無名クラスに変換する。
+Hagane COBOLでは、SECTION内やPARAGRAPHで分割された処理を切り出し、それらをCobolControlクラスから派生した無名クラスに変換する。
 変換後の無名クラスは、PROCEDURE DIVISION内で記述された順番通りに、CobolControlクラスの配列に格納される。
 
 ```java
@@ -317,7 +317,7 @@ new CobolControl(l_SUB__A_02, CobolControl.LabelType.label) {
 }
 ```
 
-CobolControlクラスは、opensource COBOL 4Jが提供するランタイムであるlibcobj.jarに含まれるクラスである。
+CobolControlクラスは、Hagane COBOLが提供するランタイムであるlibcobj.jarに含まれるクラスである。
 runメソッドに、実際の処理が記述され、その他必要な情報はメンバ変数に格納される。
 
 runメソッドの戻り値は、その段落・節の実行後に続けて実行すべきCobolControlである。
@@ -336,7 +336,7 @@ public void execEntry(int start) throws CobolRuntimeException, CobolStopRunExcep
 
 CobolControlの配列contListを使って、PROCEDURE DIVISION内の処理を実行する。
 
-opensource COBOL 4Jでは、PERFORM文やGO TO文はCobolControlクラスの機能を利用して呼び出しやジャンプを実現するメソッドを用意している。
+Hagane COBOLでは、PERFORM文やGO TO文はCobolControlクラスの機能を利用して呼び出しやジャンプを実現するメソッドを用意している。
 PERFORM文やGO TO文はこれらのメソッドを呼び出すコードへと変換される。
 `CobolControl.perform`はその場で指定された段落・節を実行するstaticメソッドであり、
 `PERFORM ... THRU ...`文の場合は`CobolControl.performThrough`が使用される。
@@ -389,7 +389,7 @@ Javaアプリケーションから変換後のプログラムを呼び出す場�
 [マルチスレッドのJavaアプリケーションから変換後のプログラムを呼び出す](./multithreading_JP.md)を参照。
 
 ## libcobj/の解説
-libcobj.jarはopensource COBOL 4Jのランタイムであり、
+libcobj.jarはHagane COBOLのランタイムであり、
 `opensourcecobol4j/libcobj/src/jp/osscons/opensourcecobol/libcobj`に格納されているJavaソースコードよりビルドされる。
 これらのソースコードの概要を以下に示す。
 

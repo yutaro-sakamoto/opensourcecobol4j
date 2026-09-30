@@ -1314,7 +1314,7 @@ AT_CHECK([test -e TESTFILE], [0])
 
 AT_CLEANUP
 
-# opensource COBOL 4J does not support PROGRAM-ID containing special characters
+# Hagane COBOL does not support PROGRAM-ID containing special characters
 #AT_SETUP([CALL unusual PROGRAM-ID.])
 #AT_CHECK([${SKIP_TEST}])
 #

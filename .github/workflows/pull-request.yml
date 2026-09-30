@@ -262,4 +262,11 @@ jobs:
 
   docker-image:
     needs: check-workflows
+    # The push job of docker-image.yml requests packages: write, and GitHub
+    # checks the permissions of every job of a called workflow up front, even
+    # of jobs that are skipped. Pull requests never push (push-image defaults
+    # to false).
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/docker-image.yml

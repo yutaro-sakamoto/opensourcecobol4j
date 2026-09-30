@@ -1,9 +1,9 @@
-Thank you for your interest in contributing to opensource COBOL 4J.
+Thank you for your interest in contributing to Hagane COBOL.
 A summary of how to contribute is below.
 
 # Issues
 
-Although any topics related to opensource COBOL 4J can be posted in [Issues](https://github.com/opensourcecobol/opensourcecobol4j/issues), please submit ones written in English or Japanese.
+Although any topics related to Hagane COBOL can be posted in [Issues](https://github.com/yutaro-sakamoto/Hagane-COBOL/issues), please submit ones written in English or Japanese.
 
 # Pull Requests
 
@@ -35,8 +35,8 @@ We strongly recommend using [Visual Studio Code with Dev Containers](https://cod
 
 ### check with clang-format and google-java-format
 
-Run `./format` in the top directory of opensource COBOL 4J.
-If you want to make sure all files are formatted, run `./check-format` in the top directory of opensource COBOL 4J.
+Run `./format` in the top directory of Hagane COBOL.
+If you want to make sure all files are formatted, run `./check-format` in the top directory of Hagane COBOL.
 
 ### PMD
 

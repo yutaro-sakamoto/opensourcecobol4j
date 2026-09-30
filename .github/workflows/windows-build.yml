@@ -1,4 +1,4 @@
-name: build opensource COBOL 4J on Windows
+name: build Hagane COBOL on Windows
 
 on:
   workflow_call:
@@ -23,7 +23,7 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v3.0.0
 
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
 
       - name: Restore NuGet packages
@@ -34,7 +34,7 @@ jobs:
         with:
           gradle-version: wrapper
       
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         working-directory: libcobj
         run: ./gradlew shadowJar
 

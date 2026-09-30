@@ -1,4 +1,16 @@
-| version (opensource COBOL 4J) | OS | version (JDK) | 
+## Hagane COBOL
+
+| version (Hagane COBOL) | OS | version (JDK) |
+| -- | -- | -- |
+| 1.0.0 | Windows | 21 |
+| 1.0.0 | Ubuntu 26.04 | 21 |
+| 1.0.0 | AlmaLinux 9 | 11 |
+
+## opensource COBOL 4J
+
+Hagane COBOL was formerly released as opensource COBOL 4J. Hagane COBOL 1.0.0 is based on opensource COBOL 4J 2.1.0.
+
+| version (opensource COBOL 4J) | OS | version (JDK) |
 | -- | -- | -- |
 | 2.1.0 | Windows | 21 |
 | 2.1.0 | Ubuntu 24.04 | 21 |

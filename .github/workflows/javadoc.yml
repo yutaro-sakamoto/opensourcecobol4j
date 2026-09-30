@@ -15,7 +15,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
       
       - name: Run javadoc

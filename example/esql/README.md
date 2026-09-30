@@ -1,10 +1,10 @@
-# ESQL Examples for opensource COBOL 4J
+# ESQL Examples for Hagane COBOL
 
 This directory contains example COBOL programs demonstrating Embedded SQL (EXEC SQL) with PostgreSQL.
 
 ## Prerequisites
 
-- opensource COBOL 4J installed
+- Hagane COBOL installed
 - PostgreSQL server running
 - A database and user created (defaults: `testdb` / `main_user` / `password`)
 
@@ -67,4 +67,4 @@ make clean
 
 The COBOL source files contain placeholders like `<|DB_NAME|>` for database connection details. The Makefile copies each source file to a `*_run.cbl` file, replaces the placeholders with values from `db-config.sh`, then compiles and runs the program.
 
-For more details on Embedded SQL in opensource COBOL 4J, see the [ESQL Guide](../../doc/esql-guide.md).
+For more details on Embedded SQL in Hagane COBOL, see the [ESQL Guide](../../doc/esql-guide.md).

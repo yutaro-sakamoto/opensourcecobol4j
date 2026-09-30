@@ -25,10 +25,10 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-9 build-essential gettext autoconf
 
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
 
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         run: |
           ./configure --prefix=/usr/
           make

@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
+          name: hagane-cobol-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
 
       - name: Install Java
         uses: actions/setup-java@v5
@@ -54,10 +54,10 @@ jobs:
           dnf -y update
           dnf install -y gcc make
 
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         run: |
-          tar zxf opensourcecobol4j.tar.gz
-          mv opensourcecobol4j/* .
+          tar zxf hagane-cobol.tar.gz
+          mv hagane-cobol/* .
           make install
       
       - name: Run tests ${{ inputs.test-name }}
