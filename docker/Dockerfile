@@ -1,4 +1,4 @@
-# Build opensource COBOL 4J from the source tree in the build context and
+# Build Hagane COBOL from the source tree in the build context and
 # install it into a minimal runtime image.
 #
 # Build arguments:
@@ -17,7 +17,7 @@ RUN microdnf update -y && \
     microdnf install -y gcc make bison flex m4 automake autoconf diffutils gettext java-11-openjdk-devel tar gzip && \
     microdnf clean all
 
-# build and install opensource COBOL 4J (EXEC SQL support is included)
+# build and install Hagane COBOL (EXEC SQL support is included)
 COPY . /root/opensourcecobol4j
 WORKDIR /root/opensourcecobol4j
 RUN ./configure --prefix=/usr/ ${configure_args} && \

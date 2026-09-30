@@ -6,7 +6,7 @@ concurrent requests to check that the generated code and `libcobj` work in
 a multi-threaded servlet container.
 
 ```sh
-# opensource COBOL 4J must be installed (cobj on PATH) and libcobj built
+# Hagane COBOL must be installed (cobj on PATH) and libcobj built
 ../../libcobj/gradlew -p . bootJar
 java -jar build/libs/spring-boot-smoke.jar &
 curl 'http://localhost:18080/calc?num=12&txt=banana'

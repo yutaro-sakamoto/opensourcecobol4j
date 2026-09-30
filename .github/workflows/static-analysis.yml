@@ -12,7 +12,7 @@ jobs:
     container:
       image: almalinux:9
     steps:
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
 
       - uses: actions/setup-java@v5
@@ -26,7 +26,7 @@ jobs:
           dnf install -y epel-release
           dnf install -y gcc make bison flex automake autoconf diffutils gettext java-21-openjdk-devel git-clang-format cppcheck
 
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         run: |
           ./configure --prefix=/usr/
           make

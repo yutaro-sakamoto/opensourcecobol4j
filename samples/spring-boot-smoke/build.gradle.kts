@@ -3,7 +3,7 @@
 // to check that the generated code and libcobj behave in a multi-threaded
 // servlet container.
 //
-// Build (after `make install` of opensource COBOL 4J and a libcobj build):
+// Build (after `make install` of Hagane COBOL and a libcobj build):
 //   ../../libcobj/gradlew -p . bootJar
 // Override the locations with -PcobjBin=... and -PlibcobjJar=...
 

@@ -1,8 +1,8 @@
 # configuration-params-JP
 ## 概要
-opensource COBOL 4J のコンフィグファイルに記載されているパラメータについて説明する。
+Hagane COBOL のコンフィグファイルに記載されているパラメータについて説明する。
 
-opensource COBOL 4J をインストールすると、デフォルトの設定ファイルが `/usr/local/share/opensource-cobol-4j-1.0.7/config/default.conf` に配置され、コンパイル時に参照されるようになっている。また、コンパイル時に `-conf` を使用することで参照するコンフィグファイルを変更することもできる。設定ファイルはリポジトリの `config` ディレクトリに格納されていて、デフォルトで参照される `default.conf` のほかに以下のものがある。これらは、それぞれファイル名に対応する方言を許容する設定ファイルである。
+Hagane COBOL をインストールすると、デフォルトの設定ファイルが `/usr/local/share/opensource-cobol-4j-1.0.7/config/default.conf` に配置され、コンパイル時に参照されるようになっている。また、コンパイル時に `-conf` を使用することで参照するコンフィグファイルを変更することもできる。設定ファイルはリポジトリの `config` ディレクトリに格納されていて、デフォルトで参照される `default.conf` のほかに以下のものがある。これらは、それぞれファイル名に対応する方言を許容する設定ファイルである。
 * `boundary-limit.conf`
 * `bs2000.conf`
 * `cobol85.conf`

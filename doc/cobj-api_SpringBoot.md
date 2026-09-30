@@ -153,7 +153,7 @@ In this procedure, they will be placed in "src/main/java/com/example/cobj_api_te
     │   └── test
     └── target
     ```
-    * libcobj.jar is a jar file that is generated under "opensourcecobol4j/libcobj/app/build/lib/" when opensource COBOL 4J is installed.
+    * libcobj.jar is a jar file that is generated under "opensourcecobol4j/libcobj/app/build/lib/" when Hagane COBOL is installed.
 
 6. 依存関係の追加
 * For Gradle   

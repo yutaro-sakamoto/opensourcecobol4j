@@ -154,7 +154,7 @@
     │   └── test
     └── target
     ```
-    * libcobj.jarは、opensource COBOL 4Jをインストールすると、"opensourcecobol4j/libcobj/app/build/lib/"配下に生成されるjarファイルである。
+    * libcobj.jarは、Hagane COBOLをインストールすると、"opensourcecobol4j/libcobj/app/build/lib/"配下に生成されるjarファイルである。
 
 6. 依存関係の追加
 * Gradleの場合  

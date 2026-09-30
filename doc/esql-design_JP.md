@@ -2,7 +2,7 @@
 
 ## 概要
 
-このドキュメントは Embedded SQL (EXEC SQL ... END-EXEC) のサポートが opensource COBOL 4J の内部でどのように構成されているかを示します。ユーザ向けの使い方は [esql-guide_JP.md](./esql-guide_JP.md) を参照してください。
+このドキュメントは Embedded SQL (EXEC SQL ... END-EXEC) のサポートが Hagane COBOL の内部でどのように構成されているかを示します。ユーザ向けの使い方は [esql-guide_JP.md](./esql-guide_JP.md) を参照してください。
 
 ESQL サポートは大きく次の 2 層に分かれます。
 

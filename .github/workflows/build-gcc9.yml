@@ -1,4 +1,4 @@
-name: build opensource COBOL 4J using gcc 9
+name: build Hagane COBOL using gcc 9
 
 on:
   workflow_call:
@@ -20,10 +20,10 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y gcc-9 build-essential gettext autoconf
 
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
       
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         run: |
           ./configure --prefix=/usr/ CC=gcc-9
           make

@@ -1,9 +1,9 @@
-opensource COBOL 4Jへのコントリビュートを検討頂きありがとうございます。
+Hagane COBOLへのコントリビュートを検討頂きありがとうございます。
 下記にコントリビュートの手順を示します。
 
 # Issues
 
-opensource COBOL 4Jに関するトピックを投稿してください。ただし、英語か日本語での記載をお願いします。
+Hagane COBOLに関するトピックを投稿してください。ただし、英語か日本語での記載をお願いします。
 
 # Pull Requests
 CIはテストとコードの静的解析を実行します。
@@ -36,12 +36,12 @@ Pull Request提出時には、./formatを実行してリポジトリ内のコー
 
 ### clang-formatとgoogle-java-format
 
-opensource COBOL 4Jのトップディレクトリで`./format`を実行してください。
+Hagane COBOLのトップディレクトリで`./format`を実行してください。
 `./check-format`を実行することで、フォーマットが完了したかを確認できます。
 
 ### PMD
 
-opensource COBOL 4Jのlibcobj/ディレクトリで下記のコマンドを実行してください。
+Hagane COBOLのlibcobj/ディレクトリで下記のコマンドを実行してください。
 ```
 ./gradlew pmdMain
 ```

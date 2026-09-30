@@ -1,4 +1,4 @@
-| version (opensource COBOL 4J) | OS | version (JDK) | 
+| version (Hagane COBOL) | OS | version (JDK) | 
 | -- | -- | -- |
 | 2.1.0 | Windows | 21 |
 | 2.1.0 | Ubuntu 24.04 | 21 |

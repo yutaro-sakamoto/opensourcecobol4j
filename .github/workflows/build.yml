@@ -1,4 +1,4 @@
-name: build opensource COBOL 4J
+name: build Hagane COBOL
 
 on:
   workflow_call:
@@ -44,7 +44,7 @@ jobs:
           dnf -y update
           dnf install -y gcc make autoconf diffutils gettext bison flex
 
-      - name: Checkout opensource COBOL 4J
+      - name: Checkout Hagane COBOL
         uses: actions/checkout@v7
       
       - name: Setup Gradle
@@ -52,14 +52,14 @@ jobs:
         with:
           gradle-version: wrapper
       
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         if: inputs.configure-args == ''
         run: |
           ./configure --prefix=/usr/ CFLAGS=-Werror
           make
           echo "ARTIFACT_NAME=${{ inputs.os }}" | sed 's/:/-/g' >> "$GITHUB_ENV"
 
-      - name: Install opensource COBOL 4J
+      - name: Install Hagane COBOL
         if: inputs.configure-args != ''
         run: |
           ./configure --prefix=/usr/ CFLAGS=-Werror ${{ inputs.configure-args }}
@@ -69,12 +69,15 @@ jobs:
 
       - name: Create an artifact file
         run: |
+         # The checkout directory is named after the repository, so archive
+         # it under a fixed top-level name that the test jobs can rely on.
+         repo_dir="$(basename "$GITHUB_WORKSPACE")"
          cd ../
-         tar zcf opensourcecobol4j.tar.gz opensourcecobol4j
-         mv opensourcecobol4j.tar.gz opensourcecobol4j
+         tar zcf hagane-cobol.tar.gz --transform "s,^$repo_dir,hagane-cobol," "$repo_dir"
+         mv hagane-cobol.tar.gz "$repo_dir"
       
       - name: Upload an artifact
         uses: actions/upload-artifact@v7
         with:
-          name: opensourcecobol4j-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
-          path: opensourcecobol4j.tar.gz
+          name: hagane-cobol-${{ env.ARTIFACT_NAME }}-opt_${{ inputs.configure-args }}
+          path: hagane-cobol.tar.gz

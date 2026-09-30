@@ -1,14 +1,14 @@
-# Embedded SQL (ESQL) Guide for opensource COBOL 4J
+# Embedded SQL (ESQL) Guide for Hagane COBOL
 
 ## Overview
 
-opensource COBOL 4J supports Embedded SQL (EXEC SQL) to interact with PostgreSQL databases directly from COBOL programs. COBOL host variables are used as bind parameters in SQL statements, enabling seamless data exchange between COBOL and SQL.
+Hagane COBOL supports Embedded SQL (EXEC SQL) to interact with PostgreSQL databases directly from COBOL programs. COBOL host variables are used as bind parameters in SQL statements, enabling seamless data exchange between COBOL and SQL.
 
 When a COBOL source file containing `EXEC SQL ... END-EXEC` statements is compiled with `cobj`, the compiler translates the embedded SQL into Java database calls via JDBC.
 
 ## Prerequisites
 
-- **opensource COBOL 4J** installed (see [README.md](../README.md))
+- **Hagane COBOL** installed (see [README.md](../README.md))
 - **PostgreSQL** server (version 9.6 or later)
 
 ## Quick Start

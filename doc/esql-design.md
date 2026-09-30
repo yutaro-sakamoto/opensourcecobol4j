@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes how Embedded SQL (`EXEC SQL ... END-EXEC`) support is wired into opensource COBOL 4J. For end-user usage, see [esql-guide.md](./esql-guide.md).
+This document describes how Embedded SQL (`EXEC SQL ... END-EXEC`) support is wired into Hagane COBOL. For end-user usage, see [esql-guide.md](./esql-guide.md).
 
 ESQL support is split into two layers:
 

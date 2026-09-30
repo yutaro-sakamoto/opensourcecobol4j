@@ -1,8 +1,8 @@
-# opensource COBOL 4J
+# Hagane COBOL
 
 [日本語版README](./README_JP.md)
 
-"opensource COBOL 4J" is a COBOL compiler that translates COBOL programs to Java programs.
+"Hagane COBOL" is a COBOL compiler that translates COBOL programs to Java programs.
 This compiler is deeply inspired by ["opensource COBOL"](https://github.com/opensourcecobol/opensource-cobol) which translates COBOL programs to C programs.
 (In fact, this repository contains a lot of source files of ["opensource COBOL"](https://github.com/opensourcecobol/opensource-cobol))
 
@@ -15,7 +15,7 @@ Other software and libraries are distributed under the GNU GENERAL PUBLIC LICENS
 
 ## Requirements
 
-opensource COBOL 4J is tested with the following platforms and dependencies:
+Hagane COBOL is tested with the following platforms and dependencies:
 
 * Ubuntu 24.04 and OpenJDK 21
 * AlmaLinux 9 and OpenJDK 11
@@ -42,7 +42,7 @@ dnf -y update
 dnf install -y java-11-openjdk-devel gcc make bison flex automake autoconf diffutils gettext
 ```
 
-### Install opensource COBOL 4J
+### Install Hagane COBOL
 ```
 curl -L -o opensourcecobol4j-v2.1.0.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v2.1.0.tar.gz
 tar zxvf opensourcecobol4j-v2.1.0.tar.gz
@@ -77,11 +77,11 @@ If you want to check installations of older versions, see [doc/installation/](./
 
 ## Installation (Windows)
 ### Install Visual Studio
-The Windows version of opensource COBOL 4J uses the CL compiler included in Visual Studio, so you must have [Visual Studio](https://visualstudio.microsoft.com/) installed　beforehand.
+The Windows version of Hagane COBOL uses the CL compiler included in Visual Studio, so you must have [Visual Studio](https://visualstudio.microsoft.com/) installed　beforehand.
 
 
 ### Build a solution file
-1. Download the complete set of files for opensource COBOL 4J.
+1. Download the complete set of files for Hagane COBOL.
 2.  Open win/opensourcecobol4j.sln with Visual Studio.
 3. Select "Debug" or "Release" mode.
 ![alt text](image/readme1_en.png)
@@ -127,7 +127,7 @@ https://www.oracle.com/java/technologies/downloads/?er=221886#java8-windows
 
 ## Install with Docker
 
-The docker container for opensource COBOL 4J is available.
+The docker container for Hagane COBOL is available.
 
 ```bash
 docker pull opensourcecobol/opensourcecobol4j:2.1.0
@@ -176,7 +176,7 @@ java [PROGRAM-ID]
 
 ## Embedded SQL (ESQL)
 
-opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing COBOL programs to execute SQL statements directly using host variables.
+Hagane COBOL supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing COBOL programs to execute SQL statements directly using host variables.
 
 - [ESQL Guide](./doc/esql-guide.md) -- Comprehensive documentation covering all supported SQL statements, host variable types, error handling, how to enable SQL execution logging, and more.
 - [ESQL Design](./doc/esql-design.md) -- Internal design notes: the compilation pipeline, AST nodes, and runtime structure.
@@ -185,9 +185,9 @@ opensource COBOL 4J supports Embedded SQL (`EXEC SQL`) for PostgreSQL, allowing 
 ## Documentation
 
 * [The API reference of the runtime library `libcobj.jar`](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)
-* [opensource COBOL 4J: Java変換解説](./doc/converted_Java_file_JP.md)
+* [Hagane COBOL: Java変換解説](./doc/converted_Java_file_JP.md)
 * [configuration-params-JP](./doc/configuration-params-JP.md)
-* [The specification of locking for INDEXED files in opensource COBOL 4J](./doc/specification-locking-indexed-file.md)
+* [The specification of locking for INDEXED files in Hagane COBOL](./doc/specification-locking-indexed-file.md)
 * [Environment Variables Reference](./doc/environment_variables.md)
 * [Calling generated programs from multi-threaded Java applications](./doc/multithreading.md)
 
@@ -225,7 +225,7 @@ Implemented.
 
 ## Status of NIST85 test
 
-opensource COBOL 4J is tested using [NIST COBOL85 test suite](https://www.itl.nist.gov/div897/ctg/cobol_form.htm).
+Hagane COBOL is tested using [NIST COBOL85 test suite](https://www.itl.nist.gov/div897/ctg/cobol_form.htm).
 
 The result of NIST COBOL85 main test suites:
 
@@ -261,10 +261,10 @@ total        21        0    21     0      0    0       0       0     0
 ```
 
 ## cobj-idx
-`cobj-idx`, a utility for indexed files, is also installed when installing opensource COBOL 4J.
+`cobj-idx`, a utility for indexed files, is also installed when installing Hagane COBOL.
 
 ```
-cobj-idx - A utility tool to handle an indexed file of opensource COBOL 4J
+cobj-idx - A utility tool to handle an indexed file of Hagane COBOL
 
 Usage:
 cobj-idx <sub command> [options] <indexed file>
@@ -341,5 +341,5 @@ For information on how to create a Spring Boot application using cobj-api, see [
 
 ## Contributing
 
-Guidelines for contributing to opensource COBOL 4J can be found in [CONTRIBUTING.md](./CONTRIBUTING.md).
+Guidelines for contributing to Hagane COBOL can be found in [CONTRIBUTING.md](./CONTRIBUTING.md).
 Contributors are listed in https://github.com/opensourcecobol/opensourcecobol4j/graphs/contributors

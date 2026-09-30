@@ -305,10 +305,10 @@
 #define PACKAGE_BUGREPORT "ws-opensource-cobol-contact@osscons.jp"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "opensource COBOL 4J"
+#define PACKAGE_NAME "Hagane COBOL"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "opensource COBOL 4J 2.1.0"
+#define PACKAGE_STRING "Hagane COBOL 2.1.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "opensource-cobol4j-2.1.0"

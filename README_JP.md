@@ -1,9 +1,9 @@
-# opensource COBOL 4J
+# Hagane COBOL
 
 [English version README](./README.md)
 
-"opensource COBOL 4J"は、COBOLソースコードをJavaソースコードに変換するCOBOLコンパイラです。
-"opensource COBOL 4J"は、COBOLからCソースコードに変換するCOBOLコンパイラ["opensource COBOL"](https://github.com/opensourcecobol/opensource-cobol)をもとに開発されています。
+"Hagane COBOL"は、COBOLソースコードをJavaソースコードに変換するCOBOLコンパイラです。
+"Hagane COBOL"は、COBOLからCソースコードに変換するCOBOLコンパイラ["opensource COBOL"](https://github.com/opensourcecobol/opensource-cobol)をもとに開発されています。
 （実際、このリポジトリには多くの["opensource COBOL"](https://github.com/opensourcecobol/opensource-cobol)のソースファイルが含まれています。）
 
 変更履歴は[CHANGELOG.md](./CHANGELOG.md)をご覧ください。
@@ -12,7 +12,7 @@
 ランタイムライブラリであるlibcobjはLGPL 3、それ以外のソフトウェアやライブラリはGPL 3の下で配布されています。
 
 ## 動作環境
-opensource COBOL 4Jは、下記の環境でテストされています：
+Hagane COBOLは、下記の環境でテストされています：
 
 * Ubuntu 24.04 と OpenJDK 21
 * AlmaLinux 9 と OpenJDK 11
@@ -37,7 +37,7 @@ dnf -y update
 dnf install -y java-11-openjdk-devel gcc make bison flex automake autoconf diffutils gettext
 ```
 
-### opensource COBOL 4Jのインストール
+### Hagane COBOLのインストール
 ```
 curl -L -o opensourcecobol4j-v2.1.0.tar.gz https://github.com/opensourcecobol/opensourcecobol4j/archive/refs/tags/v2.1.0.tar.gz
 tar zxvf opensourcecobol4j-v2.1.0.tar.gz
@@ -71,11 +71,11 @@ export CLASSPATH="$CLASSPATH:/usr/lib/opensourcecobol4j/libcobj.jar"
 
 ## インストール (Windows)
 ### Visual Studioのインストール
-Windows版のopensource COBOL 4JはVisual Studioに含まれるCLコンパイラを使用します。
+Windows版のHagane COBOLはVisual Studioに含まれるCLコンパイラを使用します。
 そのため、まずは[Visual Studio](https://visualstudio.microsoft.com/)をインストールする必要があります。
 
 ### ソリューションファイルのビルド
-1. opensource COBOL 4Jのファイル一式をダウンロードする。
+1. Hagane COBOLのファイル一式をダウンロードする。
 2. Visual Studioでwin/opensourcecobol4j.slnを開く。
 3. ”Debug”または”Release”モードを選択する。
     ![alt text](image/readme1.png)
@@ -117,7 +117,7 @@ Windows版のopensource COBOL 4JはVisual Studioに含まれるCLコンパイラ
 2. `C:\opensourcecobol4j\lib\libcobj.jar`を環境変数CLASSPATHに追加する。
 
 ## Dockerを使ったインストール
-opensource COBOL 4JのDockerコンテナを利用できます。
+Hagane COBOLのDockerコンテナを利用できます。
 
 ```bash
 docker pull opensourcecobol/opensourcecobol4j:2.1.0
@@ -166,7 +166,7 @@ java [PROGRAM-ID]
 
 ## Embedded SQL (ESQL)
 
-opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポートしており、COBOLプログラムからホスト変数を使用してSQL文を直接実行できます。
+Hagane COBOLは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポートしており、COBOLプログラムからホスト変数を使用してSQL文を直接実行できます。
 
 - [ESQLガイド](./doc/esql-guide_JP.md) -- サポートされるSQL文、ホスト変数の型、エラーハンドリング、SQL実行ログの有効化・設定方法などを網羅したドキュメント。
 - [ESQL設計ドキュメント](./doc/esql-design_JP.md) -- コンパイルパイプライン、AST ノード、ランタイム構造などの内部設計メモ。
@@ -175,7 +175,7 @@ opensource COBOL 4Jは、PostgreSQL向けのEmbedded SQL (`EXEC SQL`) をサポ�
 ## ドキュメント
 
 * [ランタイムライブラリ`libcobj.jar`のAPIリファレンス](https://opensourcecobol.github.io/opensourcecobol4j/javadoc/libcobj/index.html)
-* [opensource COBOL 4J: Java変換解説](./doc/converted_Java_file_JP.md)
+* [Hagane COBOL: Java変換解説](./doc/converted_Java_file_JP.md)
 * [configuration-params-JP](./doc/configuration-params-JP.md)
 * [INDEXEDファイルのロックの仕様](./doc/specification-locking-indexed-file_JP.md)
 * [環境変数リファレンス](./doc/environment_variables_JP.md)
@@ -209,7 +209,7 @@ cd libcobj
 * 組み込み関数 (ACOS, LENGTH, MAXなど)
 
 ## NIST85テストの状況
-opensource COBOL 4Jは[NIST COBOL85 test suite](https://www.itl.nist.gov/div897/ctg/cobol_form.htm)によりテストされています。
+Hagane COBOLは[NIST COBOL85 test suite](https://www.itl.nist.gov/div897/ctg/cobol_form.htm)によりテストされています。
 
 主要テスト結果：
 
@@ -244,10 +244,10 @@ rw            4        0     4     0      0    0       0       0     0   REPORT 
 total        21        0    21     0      0    0       0       0     0
 ```
 ## cobj-idx
-`cobj-idx`コマンドはINDEXEDファイルを扱うためのユーティリティで、opensource COBOL 4Jをインストールする際に、一緒にインストールされます。
+`cobj-idx`コマンドはINDEXEDファイルを扱うためのユーティリティで、Hagane COBOLをインストールする際に、一緒にインストールされます。
 
 ```
-cobj-idx - A utility tool to handle an indexed file of opensource COBOL 4J
+cobj-idx - A utility tool to handle an indexed file of Hagane COBOL
 
 Usage:
 cobj-idx <sub command> [options] <indexed file>

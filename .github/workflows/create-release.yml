@@ -77,9 +77,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: |
+          repo_dir="$(basename "$GITHUB_WORKSPACE")"
           cd ../
-          mv opensourcecobol4j/* .
-          mv libcobj/* opensourcecobol4j
+          mv "$repo_dir"/* .
+          mv libcobj/* "$repo_dir"
       - uses: actions/setup-java@v5
         with:
           java-version: '11'

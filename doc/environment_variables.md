@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-This document describes the environment variables used by opensource COBOL 4J.
+This document describes the environment variables used by Hagane COBOL.
 
 ## Compiler Settings
 
