@@ -24,7 +24,6 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.NonReadableChannelException;
 import java.nio.channels.NonWritableChannelException;
 import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
@@ -33,7 +32,6 @@ import jp.osscons.opensourcecobol.libcobj.data.CobolDataStorage;
 class FileIO {
 
     private FileChannel fc;
-    private FileLock fl = null;
     private boolean useStdOut = true;
     private boolean useStdIn = true;
     private boolean atEnd = false;
@@ -67,11 +65,9 @@ class FileIO {
      * TODO: 準備中
      *
      * @param fc TODO: 準備中
-     * @param fl TODO: 準備中
      */
-    void setChannel(FileChannel fc, FileLock fl) {
+    void setChannel(FileChannel fc) {
         this.fc = fc;
-        this.fl = fl;
         this.useStdOut = false;
         this.useStdIn = false;
         this.atEnd = false;
@@ -83,13 +79,11 @@ class FileIO {
      * TODO: 準備中
      *
      * @param ra TODO: 準備中
-     * @param fl TODO: 準備中
      */
-    void setRandomAccessFile(RandomAccessFile ra, FileLock fl) {
+    void setRandomAccessFile(RandomAccessFile ra) {
         this.useStdOut = false;
         this.useStdIn = false;
         this.fc = ra.getChannel();
-        this.fl = fl;
         this.atEnd = false;
         // 開き直した場合に前回の読み込みバッファの状態が残らないようにする
         this.destroyReadBuffer();
@@ -463,6 +457,26 @@ class FileIO {
         }
     }
 
+    /**
+     * 書き込みバッファを出力し、ファイルのチャネルを閉じずにこのインスタンスから切り離して返す。<br>
+     * チャネルを閉じるとOSのファイルロックが失われる場合があるため、閉じる判断は
+     * {@link JvmFileLockRegistry}に委ねる。標準入出力を使っている場合はnullを返す。
+     *
+     * @return 切り離したチャネル。チャネルがない場合はnull
+     */
+    FileChannel detachChannel() {
+        if (useStdOut || useStdIn || this.fc == null) {
+            return null;
+        }
+        // close()と同じく、書き込みの失敗はここでは報告しない
+        outputWriteBuffer();
+        destroyWriteBuffer();
+        destroyReadBuffer();
+        FileChannel channel = this.fc;
+        this.fc = null;
+        return channel;
+    }
+
     /** TODO: 準備中 */
     void flush() {
         if (!useStdOut) {
@@ -527,17 +541,6 @@ class FileIO {
         if (!useStdOut && !useStdIn) {
             try {
                 this.fc.position(0L);
-            } catch (IOException e) {
-                return;
-            }
-        }
-    }
-
-    /** TODO: 準備中 */
-    void releaseLock() {
-        if ((!useStdOut || !useStdIn) && this.fl != null) {
-            try {
-                this.fl.release();
             } catch (IOException e) {
                 return;
             }
