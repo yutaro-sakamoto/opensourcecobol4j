@@ -232,7 +232,7 @@ public interface CobolEsqlBackendInterface {
     void rollback(CobolDataStorage sqlca);
 
     /**
-     * 実行単位の終了時に呼び出される。DISCONNECTされずに残っている接続のコミットとクローズなど、
+     * 実行単位の終了時に呼び出される。DISCONNECTされずに残っている接続のロールバックとクローズなど、
      * バックエンドが保持している資源を解放する。既定では何もしない。
      */
     default void endRunUnit() {}

@@ -91,8 +91,10 @@ in a server that reuses its threads. Without it, the state of the previous run
 unit (open files, resolved programs, `EXTERNAL` items, switches) stays on the
 pooled thread and is seen by the next request that lands on it.
 
-ESQL connections that the program left open (no `DISCONNECT`) are committed and
-closed as well.
+ESQL connections that the program left open (no `DISCONNECT`) are rolled back
+and closed, which is what the database does when a process exits without
+disconnecting. Uncommitted changes are therefore never made permanent by the end
+of a run unit, even when it ends because of a runtime error.
 
 `CobolRunUnit.resetThreadState()` discards the same state **without** closing the
 open files. Use it only when the files have already been closed.

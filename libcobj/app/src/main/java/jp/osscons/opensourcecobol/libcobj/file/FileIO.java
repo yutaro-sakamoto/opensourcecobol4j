@@ -457,6 +457,26 @@ class FileIO {
         }
     }
 
+    /**
+     * 書き込みバッファを出力し、ファイルのチャネルを閉じずにこのインスタンスから切り離して返す。<br>
+     * チャネルを閉じるとOSのファイルロックが失われる場合があるため、閉じる判断は
+     * {@link JvmFileLockRegistry}に委ねる。標準入出力を使っている場合はnullを返す。
+     *
+     * @return 切り離したチャネル。チャネルがない場合はnull
+     */
+    FileChannel detachChannel() {
+        if (useStdOut || useStdIn || this.fc == null) {
+            return null;
+        }
+        // close()と同じく、書き込みの失敗はここでは報告しない
+        outputWriteBuffer();
+        destroyWriteBuffer();
+        destroyReadBuffer();
+        FileChannel channel = this.fc;
+        this.fc = null;
+        return channel;
+    }
+
     /** TODO: 準備中 */
     void flush() {
         if (!useStdOut) {

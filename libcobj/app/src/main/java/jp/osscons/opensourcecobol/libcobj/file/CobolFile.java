@@ -18,6 +18,7 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.NonWritableChannelException;
@@ -465,9 +466,15 @@ public class CobolFile {
     /** このファイルのOPENで取得したJVM内ファイルロックの票。ロックを取得していない場合はnull */
     protected JvmFileLockRegistry.Lease lockLease = null;
 
-    /** OPENで取得したJVM内ファイルロックを解放する。 */
-    protected void releaseLockLease() {
-        JvmFileLockRegistry.release(this.lockLease);
+    /**
+     * OPENで取得したJVM内ファイルロックを解放し、ファイルのチャネルを閉じる。<br>
+     * 他の実行単位がまだファイルを開いている場合、チャネルはロックの解放まで台帳が預かる
+     * (閉じるとOSのロックが失われる場合があるため)。
+     *
+     * @param channel ファイルのI/Oに使っていたチャネル。nullでもよい
+     */
+    protected void releaseLockLease(Closeable channel) {
+        JvmFileLockRegistry.release(this.lockLease, channel);
         this.lockLease = null;
     }
 
@@ -1137,7 +1144,7 @@ public class CobolFile {
         try {
             int openResult = this.open_(openName, mode, sharing);
             if (openResult != 0) {
-                this.releaseLockLease();
+                this.releaseLockLease(this.file.detachChannel());
             }
             switch (openResult) {
                 case 0:
@@ -1187,6 +1194,7 @@ public class CobolFile {
                     return;
             }
         } catch (IOException e) {
+            this.releaseLockLease(this.file.detachChannel());
             saveStatus(COB_STATUS_30_PERMANENT_ERROR, fnstatus);
             return;
         }
@@ -1280,23 +1288,24 @@ public class CobolFile {
             try {
                 this.lockLease = JvmFileLockRegistry.acquire(filename, isSharedLock);
             } catch (NonWritableChannelException e) {
-                fp.close();
+                JvmFileLockRegistry.closeFor(filename, fp);
                 return EBADF;
             } catch (IOException e) {
-                fp.close();
+                JvmFileLockRegistry.closeFor(filename, fp);
                 return COB_STATUS_61_FILE_SHARING;
             }
             if (this.lockLease == null) {
-                fp.close();
+                JvmFileLockRegistry.closeFor(filename, fp);
                 return COB_STATUS_61_FILE_SHARING;
             }
         }
 
+        // 以降で例外が発生しても呼び出し元がロックの解放とチャネルのクローズを行えるよう、先に設定する
+        this.file.setChannel(fp);
         if (mode == COB_OPEN_OUTPUT) {
             fp.truncate(0);
         }
 
-        this.file.setChannel(fp);
         if ((this.flag_select_features & COB_SELECT_LINAGE) != 0) {
             if (this.file_linage_check()) {
                 return COB_LINAGE_INVALID;
@@ -1388,8 +1397,7 @@ public class CobolFile {
                     }
                 }
 
-                this.releaseLockLease();
-                this.file.close();
+                this.releaseLockLease(this.file.detachChannel());
 
                 if (opt == COB_CLOSE_NO_REWIND) {
                     this.open_mode = COB_OPEN_CLOSED;
@@ -2210,7 +2218,10 @@ public class CobolFile {
         } catch (IOException e) {
             int mode = (int) this.last_open_mode;
             try {
-                switch (this.open_(openName, mode, 0)) {
+                // エラーの種類を調べるためだけにオープンするので、取得したロックとチャネルはすぐに手放す
+                int openResult = this.open_(openName, mode, 0);
+                this.releaseLockLease(this.file.detachChannel());
+                switch (openResult) {
                     case ENOENT:
                         saveStatus(COB_STATUS_35_NOT_EXISTS, fnstatus);
                         return;

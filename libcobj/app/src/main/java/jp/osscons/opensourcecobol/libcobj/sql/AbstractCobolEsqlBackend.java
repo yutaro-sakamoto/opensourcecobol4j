@@ -1184,11 +1184,14 @@ public abstract class AbstractCobolEsqlBackend implements CobolEsqlBackendInterf
             Connection conn = entry.getValue();
             try {
                 if (conn != null && !conn.isClosed()) {
+                    // DISCONNECTされずに残った接続の未確定の更新は取り消す。実行単位の終了は
+                    // STOP RUNのほか、実行時エラーによる異常終了でも起こるため、コミットしてはならない
+                    // (プロセスの終了で接続が切れた場合にデータベースが取り消すのと同じ結果にする)
                     try {
-                        commitBeforeClose(conn);
+                        rollbackTransaction(conn);
                     } catch (SQLException e) {
                         CONN_LOG.warn(
-                                "COMMIT at the end of the run unit failed: {}", e.getMessage());
+                                "ROLLBACK at the end of the run unit failed: {}", e.getMessage());
                     }
                     conn.close();
                 }

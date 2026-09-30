@@ -18,6 +18,7 @@
  */
 package jp.osscons.opensourcecobol.libcobj.file;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -46,6 +47,13 @@ import java.util.Map;
  * C版opensource COBOLのfcntlロック(offset 0から無限大)や旧実装の全域ロック([0, Long.MAX_VALUE))は
  * この範囲とも重なるため、それらとの相互検知は保たれる。
  *
+ * <p>多くのOS(Linuxのfcntlロックなど)では、あるプロセスがファイルに対して持つロックは、そのプロセスが
+ * <b>同じファイルを指すどのディスクリプタを閉じても</b>すべて解放される({@link java.nio.channels.FileLock}の
+ * Javadocにも明記されている)。このため、ロックを保持している間は、このJVMの誰もそのファイルのチャネルを
+ * 閉じてはならない。保持者のCLOSEや、FILE STATUS 61で拒否されたOPENが手放すチャネルは、
+ * {@link #release(Lease, Closeable)}と{@link #closeFor(String, Closeable)}を通じて台帳が預かり、
+ * 最後の保持者が解放してOSのロックを手放すときにまとめて閉じる。
+ *
  * <p>ロックのモード変更(同一実行単位がINPUTとOUTPUTを重ねてオープンした場合の昇格・降格)は、
  * 隣接するもう1つの範囲({@link #BRIDGE_POSITION})を橋渡しに使う: 目的のモードでブリッジ範囲を
  * ロックしてから主範囲を取り直す。この台帳の全操作はブリッジ範囲を先にロックする規約なので、
@@ -57,7 +65,7 @@ final class JvmFileLockRegistry {
     private JvmFileLockRegistry() {}
 
     /** OSロックを取得する主範囲の開始位置。実データと重ならないよう、ファイル終端よりはるか先に置く。 */
-    private static final long MAIN_POSITION = Long.MAX_VALUE - 2;
+    static final long MAIN_POSITION = Long.MAX_VALUE - 2;
 
     /** ロックのモード変更時に橋渡しとして使う範囲の開始位置。 */
     private static final long BRIDGE_POSITION = Long.MAX_VALUE - 1;
@@ -65,7 +73,7 @@ final class JvmFileLockRegistry {
     /** ロックする範囲の長さ。 */
     private static final long LOCK_SIZE = 1;
 
-    /** ロックの保持者に渡す票。クローズ時に{@link #release(Lease)}へ渡す。 */
+    /** ロックの保持者に渡す票。クローズ時に{@link #release(Lease, Closeable)}へ渡す。 */
     static final class Lease {
         private final String key;
 
@@ -94,6 +102,9 @@ final class JvmFileLockRegistry {
 
         /** このJVM内での保持者 */
         final List<Lease> holders = new ArrayList<>();
+
+        /** OSのロックを失わないよう、ロックの解放まで閉じずに預かっているチャネル */
+        final List<Closeable> parked = new ArrayList<>();
 
         Entry(FileChannel channel, FileLock osLock, boolean exclusive) {
             this.channel = channel;
@@ -155,11 +166,11 @@ final class JvmFileLockRegistry {
         try {
             osLock = lockMainFenced(channel, shared);
         } catch (RuntimeException e) {
-            closeQuietly(channel, key);
+            closeQuietly(channel);
             throw e;
         }
         if (osLock == null) {
-            closeQuietly(channel, key);
+            closeQuietly(channel);
             return null;
         }
         entry = new Entry(channel, osLock, !shared);
@@ -170,17 +181,17 @@ final class JvmFileLockRegistry {
     }
 
     /**
-     * ロックを解放する。このJVM内の最後の保持者が解放したときにOSのロックも解放する。
-     * 排他を要求していた保持者が解放して共有の保持者だけが残った場合は、OSのロックを共有へ降格する。
+     * ロックを解放し、保持者が使っていたチャネルを閉じる。<br>
+     * このJVM内の最後の保持者が解放したときは、OSのロックを解放してから、預かっていたチャネルと あわせて閉じる。他の保持者が残っている場合は、チャネルを閉じるとOSのロックまで失われるため、
+     * 閉じずに預かる。 排他を要求していた保持者が解放して共有の保持者だけが残った場合は、OSのロックを共有へ降格する。
      *
-     * @param lease {@link #acquire}で取得した票。nullの場合は何もしない
+     * @param lease {@link #acquire}で取得した票。nullの場合はresourceを閉じるだけ
+     * @param resource 保持者がファイルのI/Oに使っていたチャネル。nullでもよい
      */
-    static synchronized void release(Lease lease) {
-        if (lease == null) {
-            return;
-        }
-        Entry entry = entries.get(lease.key);
+    static synchronized void release(Lease lease, Closeable resource) {
+        Entry entry = lease == null ? null : entries.get(lease.key);
         if (entry == null) {
+            closeQuietly(resource);
             return;
         }
         entry.holders.remove(lease);
@@ -192,10 +203,15 @@ final class JvmFileLockRegistry {
                     System.err.println("Failed to release the lock of " + lease.key);
                 }
             }
-            closeQuietly(entry.channel, lease.key);
+            for (Closeable parked : entry.parked) {
+                closeQuietly(parked);
+            }
+            closeQuietly(resource);
+            closeQuietly(entry.channel);
             entries.remove(lease.key);
             return;
         }
+        park(entry, resource);
         boolean exclusive = false;
         for (Lease other : entry.holders) {
             exclusive |= other.exclusiveRequested;
@@ -209,6 +225,42 @@ final class JvmFileLockRegistry {
         } else {
             entry.exclusive = exclusive;
         }
+    }
+
+    /**
+     * ロックを取得していないチャネル(FILE STATUS 61で拒否されたOPENのチャネルなど)を閉じる。<br>
+     * このJVMがそのファイルのロックを保持している間は、閉じるとOSのロックが失われるため、 ロックの解放まで閉じずに預かる。
+     *
+     * @param filename チャネルが指すファイルのパス
+     * @param resource 閉じるチャネル。nullの場合は何もしない
+     */
+    static synchronized void closeFor(String filename, Closeable resource) {
+        if (resource == null) {
+            return;
+        }
+        Entry entry = entries.get(keyOf(filename));
+        if (entry == null) {
+            closeQuietly(resource);
+        } else {
+            park(entry, resource);
+        }
+    }
+
+    private static void park(Entry entry, Closeable resource) {
+        if (resource != null) {
+            entry.parked.add(resource);
+        }
+    }
+
+    /**
+     * 指定したファイルについて預かっているチャネルの数を返す(テスト用)。
+     *
+     * @param filename ファイルのパス
+     * @return 預かっているチャネルの数。ロックされていない場合は0
+     */
+    static synchronized int parkedCount(String filename) {
+        Entry entry = entries.get(keyOf(filename));
+        return entry == null ? 0 : entry.parked.size();
     }
 
     /**
@@ -327,11 +379,14 @@ final class JvmFileLockRegistry {
         throw failure;
     }
 
-    private static void closeQuietly(FileChannel channel, String key) {
+    private static void closeQuietly(Closeable resource) {
+        if (resource == null) {
+            return;
+        }
         try {
-            channel.close();
+            resource.close();
         } catch (IOException e) {
-            System.err.println("Failed to close the lock channel of " + key);
+            System.err.println("Failed to close a file channel: " + e.getMessage());
         }
     }
 

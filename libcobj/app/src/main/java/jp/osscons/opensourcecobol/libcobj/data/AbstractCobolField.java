@@ -561,7 +561,8 @@ public abstract class AbstractCobolField {
             CobolDataStorage pTmp;
             byte[] pBytes = CobolNationalField.judge_hankakujpn_exist(src);
             pTmp = new CobolDataStorage(pBytes);
-            size = pBytes.length;
+            // 変換対象が空または先頭が0x00の場合はnullが返る
+            size = pBytes == null ? 0 : pBytes.length;
             tmpSrcStorage = pTmp;
             tmpSrcSize = size;
             xToN = true;

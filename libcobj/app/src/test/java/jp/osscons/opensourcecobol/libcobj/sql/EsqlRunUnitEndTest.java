@@ -44,7 +44,7 @@ class EsqlRunUnitEndTest {
 
         final List<String> events = new ArrayList<>();
 
-        boolean failOnCommit;
+        boolean failOnRollback;
 
         @Override
         public String id() {
@@ -60,15 +60,17 @@ class EsqlRunUnitEndTest {
         protected void configureConnection(Connection c) {}
 
         @Override
-        protected void commitTransaction(Connection c) throws SQLException {
+        protected void commitTransaction(Connection c) {
             events.add("commitTransaction");
-            if (failOnCommit) {
-                throw new SQLException("commit failure (expected by test)");
-            }
         }
 
         @Override
-        protected void rollbackTransaction(Connection c) {}
+        protected void rollbackTransaction(Connection c) throws SQLException {
+            events.add("rollbackTransaction");
+            if (failOnRollback) {
+                throw new SQLException("rollback failure (expected by test)");
+            }
+        }
 
         @Override
         protected void openCursorImpl(
@@ -152,13 +154,20 @@ class EsqlRunUnitEndTest {
 
     @Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-    void endRunUnitCommitsAndClosesOpenConnections() {
+    void endRunUnitRollsBackAndClosesOpenConnections() {
         StubBackend backend = new StubBackend();
         backend.addConnection("c1", stubConnection(backend.events, false, false));
         backend.addConnection("c2", stubConnection(backend.events, false, false));
         backend.prepared.put("p1", new String[] {"SELECT 1", "0"});
         backend.endRunUnit();
-        assertEquals(2, backend.events.stream().filter("commitTransaction"::equals).count());
+        assertEquals(
+                2,
+                backend.events.stream().filter("rollbackTransaction"::equals).count(),
+                "uncommitted work of every open connection is rolled back");
+        assertEquals(
+                0,
+                backend.events.stream().filter("commitTransaction"::equals).count(),
+                "the end of a run unit never commits");
         assertEquals(2, backend.events.stream().filter("connectionClose"::equals).count());
         assertTrue(backend.connections.isEmpty(), "connections are cleared");
         assertTrue(backend.prepared.isEmpty(), "prepared statements are cleared");
@@ -168,9 +177,9 @@ class EsqlRunUnitEndTest {
     }
 
     @Test
-    void endRunUnitClosesTheConnectionEvenIfCommitFails() {
+    void endRunUnitClosesTheConnectionEvenIfRollbackFails() {
         StubBackend backend = new StubBackend();
-        backend.failOnCommit = true;
+        backend.failOnRollback = true;
         backend.addConnection("c1", stubConnection(backend.events, false, false));
         backend.endRunUnit();
         assertEquals(1, backend.events.stream().filter("connectionClose"::equals).count());

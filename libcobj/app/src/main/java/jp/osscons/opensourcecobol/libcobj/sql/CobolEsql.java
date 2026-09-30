@@ -44,7 +44,7 @@ public final class CobolEsql {
 
     /**
      * 現在のスレッドに紐づくESQLの状態を破棄する。実行単位の終了時に呼び出す。<br>
-     * DISCONNECTされずに残っている接続はコミットしてクローズされる。
+     * DISCONNECTされずに残っている接続は、未確定の更新をロールバックしてクローズされる。
      */
     public static void resetThreadState() {
         CobolEsqlBackendInterface b = backend.get();
